@@ -1,0 +1,25 @@
+# === Credentials & Secrets ===
+.env
+.agents/mcp_config.json
+
+# === Dependencies ===
+node_modules/
+
+# === Cloudflare Tunnel Binary ===
+cloudflared.exe
+
+# === Backups & Snapshots ===
+*_backup*
+*backup*
+index_step_*.html
+step_*_diff.txt
+
+# === Debug / Scratch Scripts ===
+check_*.js
+read_*.js
+
+# === OS junk ===
+.DS_Store
+Thumbs.db
+*.log
+

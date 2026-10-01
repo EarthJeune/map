@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>DA-LARES Road Drawer</title>
+<meta name="viewport" content="initial-scale=1,maximum-scale=1">
+<link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+<script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.js"></script>
+<link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.css" type="text/css">
+<style>
+  body { margin: 0; padding: 0; background: #111; color: white; font-family: sans-serif; }
+  #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+  .panel { 
+      position: absolute; top: 15px; left: 15px; z-index: 10; 
+      background: rgba(20,20,20,0.95); padding: 20px; border-radius: 8px; 
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5); border: 1px solid #333;
+      width: 320px;
+  }
+  h3 { margin-top: 0; color: #3b82f6; }
+  p { font-size: 13px; color: #ccc; line-height: 1.4; }
+  textarea { 
+      width: 100%; height: 200px; margin-top: 15px; font-family: monospace; 
+      font-size: 11px; background: #000; color: #3b82f6; border: 1px solid #444; 
+      padding: 10px; box-sizing: border-box; border-radius: 4px;
+  }
+  button { 
+      margin-top: 15px; width: 100%; padding: 10px; cursor: pointer; 
+      background: #3b82f6; color: white; border: none; border-radius: 6px; 
+      font-weight: bold;
+  }
+  button:hover { background: #2563eb; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div class="panel">
+  <h3>🛣️ Road Drawer Tool</h3>
+  <p>1. Use the line tool in the top right to trace walkways/roads.</p>
+  <p>2. Double-click to finish a road segment.</p>
+  <p>3. Use the point/marker tool to place entrances, and enter the Building ID when prompted.</p>
+  <p>4. Click "Generate Road GeoJSON" when done, and send it to your AI assistant!</p>
+  <button onclick="exportData()">Generate Road GeoJSON</button>
+  <textarea id="output" readonly placeholder="Your GeoJSON code will appear here..."></textarea>
+</div>
+
+<!-- Modal for building selection -->
+<div id="buildingModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:#222; padding:30px; border-radius:10px; border:1px solid #444; width:300px; color:white;">
+        <h3 style="margin-top:0;">Select Building</h3>
+        <p>Which building is this entrance for?</p>
+        <select id="buildingSelect" style="width:100%; padding:10px; margin-bottom:20px; background:#111; color:white; border:1px solid #555; border-radius:4px;">
+            <option value="admin_building">Admin Building</option>
+            <option value="amad_building">Amad Building</option>
+            <option value="fod_building">Fod Building</option>
+            <option value="lares_building">Lares Building</option>
+            <option value="ild_building">Ild Building</option>
+            <option value="f2c2_building">F2c2 Building</option>
+            <option value="seaguard_building">Seaguard Building</option>
+            <option value="raed_building">Raed Building</option>
+            <option value="canteen">Canteen</option>
+            <option value="pmed_building">Pmed Building</option>
+            <option value="amia_building">Amia Building</option>
+            <option value="bac_building">Bac Building</option>
+            <option value="clinic">Clinic</option>
+            <option value="avrc_building">Avrc Building</option>
+            <option value="mis_building">Mis Building</option>
+            <option value="rafis_building">Rafis Building</option>
+            <option value="stiarc_building">Stiarc Building</option>
+            <option value="rnd_building">Rnd Building</option>
+            <option value="laboratory_building">Laboratory Building</option>
+            <option value="prdp_building">Prdp Building</option>
+            <option value="fmr">Fmr</option>
+            <option value="mis_data_center">Mis Data Center</option>
+            <option value="vacant">Vacant</option>
+            <option value="dorm">Dorm</option>
+            <option value="pgrc_building">Pgrc Building</option>
+            <option value="corn/casava_building">Corn/casava Building</option>
+            <option value="rsbsa_building">Rsbsa Building</option>
+            <option value="tissue_culture_building">Tissue Culture Building</option>
+            <option value="rsl_building">Rsl Building</option>
+            <option value="rcpc_building">Rcpc Building</option>
+            <option value="motorpool_barracks">Motorpool Barracks</option>
+            <option value="guest_house">Guest House</option>
+            <option value="guard_house">Guard House</option>
+            <option value="ored_building">Ored Building</option>
+            <option value="argosino_hall">Argosino Hall</option>
+            <option value="exit_guard_house_1">Exit Guard House 1</option>
+            <option value="exit_guard_house_2">Exit Guard House 2</option>
+        </select>
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+            <button onclick="cancelEntrance()" style="background:#555; margin-top:0; width:auto; padding:8px 15px;">Cancel</button>
+            <button onclick="confirmEntrance()" style="margin-top:0; width:auto; padding:8px 15px;">OK</button>
+        </div>
+    </div>
+</div>
+
+<script>
+mapboxgl.accessToken = 'pk.eyJ1IjoiZWFydGgwMzA3IiwiYSI6ImNtdWFqNTR5czAxNmEyd29lMm42YjZlMDkifQ.xdPOP5RVPdn6YNka-ZdwoQ';
+
+const map = new mapboxgl.Map({
+    container: 'map',
+    style: {
+        'version': 8,
+        'sources': {
+            'google-satellite': {
+                'type': 'raster',
+                'tiles': ['https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'],
+                'tileSize': 256,
+                'maxzoom': 22
+            }
+        },
+        'layers': [{ 'id': 'google-satellite-layer', 'type': 'raster', 'source': 'google-satellite' }]
+    },
+    center: [121.1666, 13.9592],
+    zoom: 17.5
+});
+
+const draw = new MapboxDraw({
+    displayControlsDefault: false,
+    controls: {
+        line_string: true,
+        point: true,
+        trash: true
+    }
+});
+map.addControl(draw, 'top-right');
+
+let pendingEntranceId = null;
+
+map.on('draw.create', function(e) {
+    if (e.features[0].geometry.type === 'Point') {
+        pendingEntranceId = e.features[0].id;
+        document.getElementById('buildingModal').style.display = 'flex';
+    }
+});
+
+function confirmEntrance() {
+    const select = document.getElementById('buildingSelect');
+    const buildingId = select.value;
+    
+    if (pendingEntranceId) {
+        draw.setFeatureProperty(pendingEntranceId, 'type', 'entrance');
+        draw.setFeatureProperty(pendingEntranceId, 'buildingId', buildingId);
+        draw.setFeatureProperty(pendingEntranceId, 'name', `Entrance: ${buildingId}`);
+        pendingEntranceId = null;
+    }
+    document.getElementById('buildingModal').style.display = 'none';
+    
+    // We can dispatch a custom event or just trigger an update directly if it's available globally.
+    // However, updateLabels is inside map.on('load'), so we can just trigger a dummy draw event:
+    map.fire('draw.update');
+}
+
+function cancelEntrance() {
+    if (pendingEntranceId) {
+        draw.delete(pendingEntranceId);
+        pendingEntranceId = null;
+    }
+    document.getElementById('buildingModal').style.display = 'none';
+}
+
+map.on('load', () => {
+    // Add a custom layer to show text labels for our entrances
+    map.addSource('draw-labels', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
+    });
+    
+    map.addLayer({
+        'id': 'draw-labels-layer',
+        'type': 'symbol',
+        'source': 'draw-labels',
+        'layout': {
+            'text-field': ['get', 'name'],
+            'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
+            'text-radial-offset': 1,
+            'text-justify': 'center',
+            'text-size': 12
+        },
+        'paint': {
+            'text-color': '#fff',
+            'text-halo-color': '#000',
+            'text-halo-width': 2
+        }
+    });
+
+    // Update labels whenever draw changes
+    function updateLabels() {
+        const data = draw.getAll();
+        const points = {
+            type: 'FeatureCollection',
+            features: data.features.filter(f => f.geometry.type === 'Point' && f.properties.name)
+        };
+        map.getSource('draw-labels').setData(points);
+        
+        // AUTOSAVE to localStorage so work isn't lost on refresh
+        localStorage.setItem('road_draw_autosave', JSON.stringify(data));
+    }
+    
+    map.on('draw.create', updateLabels);
+    map.on('draw.delete', updateLabels);
+    map.on('draw.update', updateLabels);
+
+    // Try to load from autosave first, then fallback to roads.json
+    const autosave = localStorage.getItem('road_draw_autosave');
+    if (autosave) {
+        try {
+            const data = JSON.parse(autosave);
+            if (data && data.features && data.features.length > 0) {
+                draw.add(data);
+                updateLabels();
+                console.log('Restored from autosave.');
+                return;
+            }
+        } catch (e) {
+            console.error('Failed to parse autosave data.');
+        }
+    }
+
+    fetch('roads.json')
+        .then(res => res.json())
+        .then(data => {
+            if (data && data.features && data.features.length > 0) {
+                draw.add(data);
+                updateLabels();
+            }
+        })
+        .catch(err => console.log('No existing roads found, starting fresh.'));
+});
+function exportData() {
+    const data = draw.getAll();
+    const btn = document.querySelector('button');
+    btn.textContent = "Generated!";
+    
+    // Auto-generate IDs for roads
+    let roadCounter = 1;
+    let entranceCounter = 1;
+    for (const f of data.features) {
+        if (!f.properties.id) {
+            if (f.geometry.type === 'Point') {
+                f.properties.id = "entrance_" + entranceCounter++;
+            } else {
+                f.properties.id = "road_" + roadCounter++;
+            }
+        }
+    }
+    
+    const outputField = document.getElementById('output');
+    outputField.value = JSON.stringify(data, null, 2);
+    outputField.select();
+    document.execCommand('copy');
+    
+    setTimeout(() => { btn.textContent = "Copied to clipboard!"; }, 500);
+    setTimeout(() => { btn.textContent = "Generate Road GeoJSON"; }, 3000);
+}
+</script>
+</body>
+</html>
