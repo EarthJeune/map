@@ -37,28 +37,85 @@ export function toggleSettingChip(btn, type) {
         return;
     }
     if (type === 'boundary') {
-        const isCurrentlyActive = btn.classList.contains('active');
-        const nextState = !isCurrentlyActive;
-        btn.classList.toggle('active', nextState);
-        const vis = nextState ? 'visible' : 'none';
-        try {
-            if (map.getLayer('lares-boundary-line')) map.setLayoutProperty('lares-boundary-line', 'visibility', vis);
-            if (map.getLayer('lares-boundary-glow')) map.setLayoutProperty('lares-boundary-glow', 'visibility', vis);
-            if (map.getLayer('lares-boundary-fill')) map.setLayoutProperty('lares-boundary-fill', 'visibility', vis);
-            if (map.getLayer('lares-mask-dimmer')) map.setLayoutProperty('lares-mask-dimmer', 'visibility', vis);
-        } catch (e) { }
+        const targetBtn = btn || document.getElementById('chip-boundary');
+        if (targetBtn) targetBtn.classList.toggle('active');
+        const on = targetBtn ? targetBtn.classList.contains('active') : true;
+        state.boundaryVisible = on;
+        const vis = on ? 'visible' : 'none';
+        const currentMap = state.map || map || window.map;
+
+        if (currentMap) {
+            // Google mode section layers & Mapbox dividing lines
+            LARES_BOUNDARY.features.forEach(f => {
+                const fid = f.properties.fid;
+                ['sec-glow-', 'sec-fill-', 'sec-line-'].forEach(p => {
+                    const lid = `${p}${fid}`;
+                    if (currentMap.getLayer(lid)) {
+                        try { currentMap.setLayoutProperty(lid, 'visibility', vis); } catch (e) { }
+                    }
+                });
+            });
+
+            // Mapbox compound border outline
+            ['lares-compound-border-casing', 'lares-compound-border-line'].forEach(id => {
+                if (currentMap.getLayer(id)) {
+                    try { currentMap.setLayoutProperty(id, 'visibility', vis); } catch (e) { }
+                }
+            });
+
+            if (currentMap.getLayer('sec-labels-layer')) {
+                try { currentMap.setLayoutProperty('sec-labels-layer', 'visibility', vis); } catch (e) { }
+            }
+        }
+
+        // Section Badges (floating HTML markers)
+        if (state.sectionBadges && state.sectionBadges.length > 0) {
+            state.sectionBadges.forEach(m => {
+                if (m && m.getElement()) m.getElement().style.display = on ? 'inline-flex' : 'none';
+            });
+        }
+
         safeResetIdle();
         return;
     }
-    btn.classList.toggle('active');
-    const on = btn.classList.contains('active');
     if (type === 'numbers') {
-        document.querySelectorAll('.bldg-badge').forEach(b => {
-            b.style.display = on ? 'flex' : 'none';
+        const targetBtn = btn || document.getElementById('chip-numbers');
+        if (targetBtn) targetBtn.classList.toggle('active');
+        const on = targetBtn ? targetBtn.classList.contains('active') : true;
+        state.markersVisible = on;
+
+        if (state.markers && state.markers.length > 0) {
+            state.markers.forEach(m => {
+                if (m && m.getElement()) {
+                    m.getElement().style.display = on ? '' : 'none';
+                }
+                if (!on && m.getPopup && m.getPopup() && m.getPopup().isOpen()) {
+                    m.togglePopup();
+                }
+            });
+        }
+
+        // Direct DOM update as fallback for any building marker element
+        document.querySelectorAll('.bldg-map-marker').forEach(el => {
+            el.style.display = on ? '' : 'none';
         });
-        document.querySelectorAll('.bldg-tag-pill').forEach(b => {
-            b.style.display = on ? 'inline-flex' : 'none';
-        });
+
+        safeResetIdle();
+        return;
+    }
+    if (type === 'terrain') {
+        const targetBtn = btn || document.getElementById('chip-terrain');
+        if (targetBtn) targetBtn.classList.toggle('active');
+        const on = targetBtn ? targetBtn.classList.contains('active') : true;
+        state.terrainEnabled = on;
+        const currentMap = state.map || map || window.map;
+        if (currentMap) {
+            try {
+                on ? currentMap.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 }) : currentMap.setTerrain(null);
+            } catch (e) { }
+        }
+        safeResetIdle();
+        return;
     }
     safeResetIdle();
 }

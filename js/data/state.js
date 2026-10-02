@@ -23,6 +23,7 @@ export const state = {
     terrainEnabled: false,
     currentLighting: 'day',
     markersVisible: true,
+    boundaryVisible: true,
 
     // Markers & Overlays
     markers: [],

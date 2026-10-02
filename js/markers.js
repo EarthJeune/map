@@ -8,7 +8,9 @@ export function renderSectionBadges() {
     removeSectionBadges();
     if (state.currentMapStyleMode !== 'mapbox') return;
     const boundaryBtn = document.getElementById('chip-boundary');
-    const isBoundaryOn = boundaryBtn ? boundaryBtn.classList.contains('active') : true;
+    const isBoundaryOn = (state.boundaryVisible !== undefined)
+        ? state.boundaryVisible
+        : (boundaryBtn ? boundaryBtn.classList.contains('active') : true);
 
     const secDefs = [
         { id: 1, coords: [121.17110, 13.96060], dotClass: 'sec-dot-blue' },
@@ -68,11 +70,19 @@ export function updateMarkerZoomState() {
 }
 
 export function createMarkers() {
+    const numbersBtn = document.getElementById('chip-numbers');
+    const areMarkersVisible = (state.markersVisible !== undefined)
+        ? state.markersVisible
+        : (numbersBtn ? numbersBtn.classList.contains('active') : true);
+
     BUILDING_DIRECTORY.forEach((b, index) => {
         const num = index + 1;
         const el = document.createElement('div');
         el.className = 'bldg-map-marker';
         el.dataset.id = b.id;
+        if (!areMarkersVisible) {
+            el.style.display = 'none';
+        }
         el.innerHTML = `
             <div class="bldg-map-badge" style="background:${b.color};">${num}</div>
             <span class="bldg-map-name">${b.name}</span>

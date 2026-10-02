@@ -113,6 +113,12 @@ export function setupLayers() {
     }
 
     // 3. Section ground fills & boundary lines (added first so buildings & roads render ON TOP)
+    const boundaryBtn = document.getElementById('chip-boundary');
+    const isBoundaryOn = (state.boundaryVisible !== undefined)
+        ? state.boundaryVisible
+        : (boundaryBtn ? boundaryBtn.classList.contains('active') : true);
+    const initBoundaryVis = isBoundaryOn ? 'visible' : 'none';
+
     LARES_BOUNDARY.features.forEach(f => {
         const fid = f.properties.fid;
         const color = SECTION_COLORS[fid];
@@ -126,7 +132,7 @@ export function setupLayers() {
                 id: `sec-fill-${fid}`,
                 type: 'fill',
                 source: src,
-                layout: { 'visibility': 'none' },
+                layout: { 'visibility': initBoundaryVis },
                 paint: {
                     'fill-color': color,
                     'fill-opacity': [
@@ -144,7 +150,7 @@ export function setupLayers() {
                 id: `sec-glow-${fid}`,
                 type: 'line',
                 source: src,
-                layout: { 'visibility': 'none' },
+                layout: { 'visibility': initBoundaryVis },
                 paint: {
                     'line-color': color,
                     'line-width': 12,
@@ -164,7 +170,7 @@ export function setupLayers() {
                 id: `sec-line-${fid}`,
                 type: 'line',
                 source: src,
-                layout: { 'visibility': 'none' },
+                layout: { 'visibility': initBoundaryVis },
                 paint: {
                     'line-color': color,
                     'line-width': 3,
@@ -406,7 +412,9 @@ export function setupMapboxStandardLayers() {
     }
 
     const boundaryBtn = document.getElementById('chip-boundary');
-    const isBoundaryOn = boundaryBtn ? boundaryBtn.classList.contains('active') : true;
+    const isBoundaryOn = (state.boundaryVisible !== undefined)
+        ? state.boundaryVisible
+        : (boundaryBtn ? boundaryBtn.classList.contains('active') : true);
     const initBoundaryVis = isBoundaryOn ? 'visible' : 'none';
 
     // 3. Section dividing lines (no fills) — slot 'middle'
@@ -848,9 +856,9 @@ export function toggleTerrain(btn) {
 }
 
 export function toggleMarkers(btn) {
-    const vis = btn.classList.contains('active');
-    state.markers.forEach(m => { m.getElement().style.display = vis ? 'none' : 'block'; if (m.getPopup() && m.getPopup().isOpen()) m.togglePopup() });
-    btn.classList.toggle('active');
+    if (typeof window.toggleSettingChip === 'function') {
+        window.toggleSettingChip(btn || document.getElementById('chip-numbers'), 'numbers');
+    }
 }
 
 export function flyToView(n) {
