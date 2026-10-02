@@ -1,13 +1,30 @@
 // DA-LARES Routing & Graph Pathfinding Module
 // A* / Dijkstra shortest path, road network graph, route drawing, and smoothing.
 
-import { BUILDING_DIRECTORY } from './data/buildings.js';
+import { BUILDING_DIRECTORY, BUILDING_ENTRANCES } from './data/buildings.js';
+import { SAVED_MAIN_KIOSK_COORDS } from './data/config.js';
 import { state } from './data/state.js';
 import { map } from './map-setup.js';
-import { buildSteps, renderStepsList } from './steps.js';
-import { clearArrivedCountdown, declutterLabelsForRoute, restoreLabels, setRouteSpeed } from './walker.js';
+import { buildSteps, renderStepsList, updateLiveNavigation } from './steps.js';
+import { 
+    clearArrivedCountdown, 
+    declutterLabelsForRoute, 
+    restoreLabels, 
+    setRouteSpeed,
+    setRouteCameraMode,
+    resetCameraControlsTimer
+} from './walker.js';
 import { closeBuildingPanel } from './building-panel.js';
-import { isPhoneMode, setPhoneSheetView, setPhoneSheetSnap } from './phone-ui.js';
+import { 
+    isPhoneMode, 
+    setPhoneSheetView, 
+    setPhoneSheetSnap,
+    updatePhoneRouteUI,
+    getResponsiveMapPadding
+} from './phone-ui.js';
+import { updatePhoneLiveNavUI } from './phone-nav.js';
+import { stopPhoneLiveGPS } from './gps.js';
+import { stopOrbit } from './idle.js';
 
 function safeClearArrivedCountdown() {
     if (typeof clearArrivedCountdown === 'function') clearArrivedCountdown();
@@ -28,30 +45,30 @@ function safeRestoreLabels() {
 
 
 export function drawRoute(coords, options = {}) {
-    // Remove existing route and markers
+    // Remove existing route and state.markers
     ['route-glow', 'route-casing', 'route-line', 'route-traveled-line', 'route-dots'].forEach(id => {
         try { if (map.getLayer(id)) map.removeLayer(id); } catch (e) { }
     });
     ['route-source', 'route-traveled-source'].forEach(id => {
         try { if (map.getSource(id)) map.removeSource(id); } catch (e) { }
     });
-    if (routeAnimFrame) cancelAnimationFrame(routeAnimFrame);
-    if (walkAnimFrame) cancelAnimationFrame(walkAnimFrame);
-    if (walkerMarkerInstance) {
-        walkerMarkerInstance.remove();
-        walkerMarkerInstance = null;
+    if (state.routeAnimFrame) cancelAnimationFrame(state.routeAnimFrame);
+    if (state.walkAnimFrame) cancelAnimationFrame(state.walkAnimFrame);
+    if (state.walkerMarkerInstance) {
+        state.walkerMarkerInstance.remove();
+        state.walkerMarkerInstance = null;
     }
-    if (destinationMarkerInstance) {
-        destinationMarkerInstance.remove();
-        destinationMarkerInstance = null;
+    if (state.destinationMarkerInstance) {
+        state.destinationMarkerInstance.remove();
+        state.destinationMarkerInstance = null;
     }
-    // Clean up any existing destination flag pins from DOM and markers list
+    // Clean up any existing destination flag pins from DOM and state.markers list
     document.querySelectorAll('.dest-pin-marker').forEach(el => {
         const parent = el.closest('.mapboxgl-marker');
         if (parent) parent.remove();
         else el.remove();
     });
-    markers = markers.filter(m => {
+    state.markers = state.markers.filter(m => {
         const el = m.getElement();
         if (el && (el.classList.contains('dest-marker') || el.querySelector('.dest-marker') || el.querySelector('.dest-pin-marker'))) {
             m.remove();
@@ -62,9 +79,9 @@ export function drawRoute(coords, options = {}) {
 
     if (coords.length < 2) return;
 
-    activeRouteCoords = coords;
-    activeFullRouteCoords = [...coords];
-    currentWalkerCoord = coords[0];
+    state.activeRouteCoords = coords;
+    state.activeFullRouteCoords = [...coords];
+    state.currentWalkerCoord = coords[0];
 
     // Only animate simulated walker on Kiosk; phones use live GPS or static preview
     const shouldAnimate = (options && options.animated !== undefined) ? options.animated : (!isPhoneMode());
@@ -72,7 +89,7 @@ export function drawRoute(coords, options = {}) {
     if (isPhoneMode()) {
         updatePhoneRouteUI(coords);
     } else {
-        routeCameraMode = 'follow';
+        state.routeCameraMode = 'follow';
         setRouteCameraMode('follow');
         // Show bottom floating camera controls on kiosk
         const fcc = document.getElementById('floating-camera-controls');
@@ -161,9 +178,9 @@ export function drawRoute(coords, options = {}) {
     });
 
     // Add animated pulsing destination marker
-    if (destinationMarkerInstance) {
-        destinationMarkerInstance.remove();
-        destinationMarkerInstance = null;
+    if (state.destinationMarkerInstance) {
+        state.destinationMarkerInstance.remove();
+        state.destinationMarkerInstance = null;
     }
     const endCoord = coords[coords.length - 1];
     const destEl = document.createElement('div');
@@ -172,8 +189,8 @@ export function drawRoute(coords, options = {}) {
         <div class="dest-pulse-ring"></div>
         <div class="dest-pin-badge">🏁</div>
     `;
-    destinationMarkerInstance = new mapboxgl.Marker({ element: destEl, anchor: 'bottom' }).setLngLat(endCoord).addTo(map);
-    markers.push(destinationMarkerInstance);
+    state.destinationMarkerInstance = new mapboxgl.Marker({ element: destEl, anchor: 'bottom' }).setLngLat(endCoord).addTo(map);
+    state.markers.push(state.destinationMarkerInstance);
 
     // Animation Logic
     const routeLine = turf.lineString(coords);
@@ -181,13 +198,13 @@ export function drawRoute(coords, options = {}) {
     if (totalDistance <= 0) return;
 
     // Build Turn-by-Turn Steps
-    const destBuilding = BUILDING_DIRECTORY.find(b => b.id === selectedBuildingId);
-    currentRouteDestName = destBuilding ? destBuilding.name : 'Destination';
-    currentRouteSteps = buildSteps(coords, BUILDING_DIRECTORY, selectedBuildingId);
-    renderStepsList(currentRouteSteps);
+    const destBuilding = BUILDING_DIRECTORY.find(b => b.id === state.selectedBuildingId);
+    state.currentRouteDestName = destBuilding ? destBuilding.name : 'Destination';
+    state.currentRouteSteps = buildSteps(coords, BUILDING_DIRECTORY, state.selectedBuildingId);
+    renderStepsList(state.currentRouteSteps);
 
     // Declutter surrounding 3D building labels along this route corridor
-    safeDeclutterLabelsForRoute(coords, selectedBuildingId);
+    safeDeclutterLabelsForRoute(coords, state.selectedBuildingId);
 
     if (shouldAnimate) {
         // Kiosk animated claymation stop-motion walker mode
@@ -249,15 +266,15 @@ export function drawRoute(coords, options = {}) {
                 </svg>
             </div>
         `;
-        walkerMarkerInstance = new mapboxgl.Marker({ 
+        state.walkerMarkerInstance = new mapboxgl.Marker({ 
             element: walkerEl,
             anchor: 'bottom',
             offset: [0, -72],
             pitchAlignment: 'viewport',
             rotationAlignment: 'viewport'
         }).setLngLat(coords[0]).addTo(map);
-        if (walkerMarkerInstance.getElement()) {
-            walkerMarkerInstance.getElement().style.zIndex = '120';
+        if (state.walkerMarkerInstance.getElement()) {
+            state.walkerMarkerInstance.getElement().style.zIndex = '120';
         }
 
         // Initialize facing direction relative to screen
@@ -283,7 +300,7 @@ export function drawRoute(coords, options = {}) {
         const baseSpeedMps = 6.0;
         let lastTimestamp = null;
 
-        if (routeCameraMode === 'follow') {
+        if (state.routeCameraMode === 'follow') {
             map.flyTo({
                 center: coords[0],
                 zoom: 20.2,
@@ -293,7 +310,7 @@ export function drawRoute(coords, options = {}) {
                 essential: true
             });
         } else {
-            setRouteCameraMode(routeCameraMode);
+            setRouteCameraMode(state.routeCameraMode);
         }
 
         function animateWalking(timestamp) {
@@ -302,20 +319,20 @@ export function drawRoute(coords, options = {}) {
             lastTimestamp = timestamp;
             if (dt > 0.1 || dt <= 0) dt = 0.016;
 
-            currentDistance += baseSpeedMps * routeSpeedMultiplier * dt;
+            currentDistance += baseSpeedMps * state.routeSpeedMultiplier * dt;
 
             if (currentDistance >= totalDistance) {
                 currentDistance = totalDistance;
                 map.getSource('route-source').setData({
                     type: 'Feature', geometry: { type: 'LineString', coordinates: coords }
                 });
-                walkerMarkerInstance.setLngLat(coords[coords.length - 1]);
+                state.walkerMarkerInstance.setLngLat(coords[coords.length - 1]);
                 updateLiveNavigation(totalDistance, totalDistance);
 
                 // At destination: ONLY do idle animation (celebration hop briefly, then continuous idle breathing & waving)
                 walkerEl.className = 'route-walker-avatar mode-celebrate';
                 setTimeout(() => {
-                    if (walkerMarkerInstance && walkerEl.classList.contains('mode-celebrate')) {
+                    if (state.walkerMarkerInstance && walkerEl.classList.contains('mode-celebrate')) {
                         walkerEl.className = 'route-walker-avatar mode-idle';
                     }
                 }, 2200);
@@ -327,8 +344,8 @@ export function drawRoute(coords, options = {}) {
 
             // Auto-flip facing direction based on movement vector relative to SCREEN (not map longitude)
             // Uses map.project() so it accurately reflects left/right on screen regardless of camera rotation or Follow mode
-            if (currentWalkerCoord) {
-                const pPrev = map.project(currentWalkerCoord);
+            if (state.currentWalkerCoord) {
+                const pPrev = map.project(state.currentWalkerCoord);
                 const pCurr = map.project(currentCoord);
                 const screenDx = pCurr.x - pPrev.x;
                 if (Math.abs(screenDx) > 0.3) {
@@ -338,35 +355,35 @@ export function drawRoute(coords, options = {}) {
                     }
                 }
             }
-            currentWalkerCoord = currentCoord;
-            walkerMarkerInstance.setLngLat(currentCoord);
+            state.currentWalkerCoord = currentCoord;
+            state.walkerMarkerInstance.setLngLat(currentCoord);
 
             const slicedLine = turf.lineSliceAlong(routeLine, 0.0001, currentDistance, { units: 'meters' });
             map.getSource('route-source').setData(slicedLine);
 
-            if (routeCameraMode === 'follow' && !isTransitioningToFollow) {
+            if (state.routeCameraMode === 'follow' && !state.isTransitioningToFollow) {
                 map.jumpTo({
                     center: currentCoord
                 });
             }
 
             updateLiveNavigation(currentDistance, totalDistance);
-            walkAnimFrame = requestAnimationFrame(animateWalking);
+            state.walkAnimFrame = requestAnimationFrame(animateWalking);
         }
 
         // Start animation after camera reaches the start (switches from mode-idle to running at selected speed)
         setTimeout(() => {
             lastTimestamp = null;
             if (walkerEl && !walkerEl.classList.contains('mode-celebrate')) {
-                walkerEl.className = 'route-walker-avatar speed-' + routeSpeedMultiplier + 'x';
+                walkerEl.className = 'route-walker-avatar speed-' + state.routeSpeedMultiplier + 'x';
             }
-            walkAnimFrame = requestAnimationFrame(animateWalking);
+            state.walkAnimFrame = requestAnimationFrame(animateWalking);
         }, 1600);
     } else {
         // Static / Live GPS mode (No automated walker)
         updateLiveNavigation(0, totalDistance);
-        if (isPhoneMode() && currentRouteSteps && currentRouteSteps.length > 0) {
-            updatePhoneLiveNavUI(0, totalDistance, currentRouteSteps[0], totalDistance, Math.round(totalDistance));
+        if (isPhoneMode() && state.currentRouteSteps && state.currentRouteSteps.length > 0) {
+            updatePhoneLiveNavUI(0, totalDistance, state.currentRouteSteps[0], totalDistance, Math.round(totalDistance));
         }
     }
 }
@@ -379,30 +396,30 @@ export function clearRoute() {
     ['route-source', 'route-traveled-source'].forEach(id => {
         try { if (map.getSource(id)) map.removeSource(id); } catch (e) { }
     });
-    if (routeAnimFrame) cancelAnimationFrame(routeAnimFrame);
-    if (walkAnimFrame) cancelAnimationFrame(walkAnimFrame);
-    if (walkerMarkerInstance) {
-        walkerMarkerInstance.remove();
-        walkerMarkerInstance = null;
+    if (state.routeAnimFrame) cancelAnimationFrame(state.routeAnimFrame);
+    if (state.walkAnimFrame) cancelAnimationFrame(state.walkAnimFrame);
+    if (state.walkerMarkerInstance) {
+        state.walkerMarkerInstance.remove();
+        state.walkerMarkerInstance = null;
     }
 
-    isTransitioningToFollow = false;
-    if (transitionFollowTimer) {
-        clearTimeout(transitionFollowTimer);
-        transitionFollowTimer = null;
+    state.isTransitioningToFollow = false;
+    if (state.transitionFollowTimer) {
+        clearTimeout(state.transitionFollowTimer);
+        state.transitionFollowTimer = null;
     }
 
-    // Remove destination markers
-    if (destinationMarkerInstance) {
-        destinationMarkerInstance.remove();
-        destinationMarkerInstance = null;
+    // Remove destination state.markers
+    if (state.destinationMarkerInstance) {
+        state.destinationMarkerInstance.remove();
+        state.destinationMarkerInstance = null;
     }
     document.querySelectorAll('.dest-pin-marker').forEach(el => {
         const parent = el.closest('.mapboxgl-marker');
         if (parent) parent.remove();
         else el.remove();
     });
-    markers = markers.filter(m => {
+    state.markers = state.markers.filter(m => {
         const el = m.getElement();
         if (el && (el.classList.contains('dest-marker') || el.querySelector('.dest-marker') || el.querySelector('.dest-pin-marker'))) {
             m.remove();
@@ -420,9 +437,9 @@ export function clearRoute() {
     if (fcc) {
         fcc.classList.remove('active', 'dimmed');
     }
-    if (cameraControlsDimTimer) {
-        clearTimeout(cameraControlsDimTimer);
-        cameraControlsDimTimer = null;
+    if (state.cameraControlsDimTimer) {
+        clearTimeout(state.cameraControlsDimTimer);
+        state.cameraControlsDimTimer = null;
     }
     safeClearArrivedCountdown();
     restoreLabels();
@@ -430,7 +447,7 @@ export function clearRoute() {
 
     const stepsList = document.getElementById('route-steps-list');
     if (stepsList) stepsList.innerHTML = '';
-    currentRouteSteps = null;
+    state.currentRouteSteps = null;
     state.lastActiveStepIdx = -1;
 
     const phoneSteps = document.getElementById('phone-steps-list');
@@ -438,12 +455,12 @@ export function clearRoute() {
 
     document.getElementById('route-info')?.classList.remove('active');
     document.getElementById('sidebar')?.classList.remove('route-active');
-    activeRoute = null;
-    activeRouteCoords = null;
-    activeFullRouteCoords = null;
-    currentWalkerCoord = null;
-    isMobileGPSActive = false;
-    isUserFollowingGPS = false;
+    state.activeRoute = null;
+    state.activeRouteCoords = null;
+    state.activeFullRouteCoords = null;
+    state.currentWalkerCoord = null;
+    state.isMobileGPSActive = false;
+    state.isUserFollowingGPS = false;
     document.getElementById('mobile-recenter-btn')?.classList.remove('active');
     const topHud = document.getElementById('phone-top-nav-hud');
     if (topHud) topHud.classList.remove('active');
@@ -602,7 +619,7 @@ export function findShortestPath(startCoord, endCoord, graph) {
 
 export function computeRouteFromKiosk(buildingId) {
     const building = BUILDING_DIRECTORY.find(b => b.id === buildingId);
-    if (!building) return [KIOSK_COORDS, KIOSK_COORDS];
+    if (!building) return [(state.KIOSK_COORDS || SAVED_MAIN_KIOSK_COORDS), (state.KIOSK_COORDS || SAVED_MAIN_KIOSK_COORDS)];
 
     const ENTRANCE_OVERRIDES = {
         'rafis_building': 'mis_building',
@@ -618,17 +635,17 @@ export function computeRouteFromKiosk(buildingId) {
     const targetBuilding = BUILDING_DIRECTORY.find(b => b.id === targetBuildingId) || building;
     const targetCoords = targetBuilding.coords;
 
-    if (roadGraph && roadGraph.size > 0) {
+    if ((state.roadGraph || window.roadGraph) && (state.roadGraph || window.roadGraph).size > 0) {
         let bestPath = null;
         let minDistance = Infinity;
 
         const entrances = BUILDING_ENTRANCES[targetBuildingId];
         if (entrances && entrances.length > 0) {
             entrances.forEach(ent => {
-                const p = findShortestPath(KIOSK_COORDS, ent, roadGraph);
+                const p = findShortestPath((state.KIOSK_COORDS || SAVED_MAIN_KIOSK_COORDS), ent, (state.roadGraph || window.roadGraph));
                 if (p && p.length > 0) {
                     const pWithEntrance = [...p, ent];
-                    const d = turf.length(turf.lineString([KIOSK_COORDS, ...pWithEntrance]), { units: 'meters' });
+                    const d = turf.length(turf.lineString([(state.KIOSK_COORDS || SAVED_MAIN_KIOSK_COORDS), ...pWithEntrance]), { units: 'meters' });
                     if (d < minDistance) {
                         minDistance = d;
                         bestPath = pWithEntrance;
@@ -636,19 +653,19 @@ export function computeRouteFromKiosk(buildingId) {
                 }
             });
         } else {
-            bestPath = findShortestPath(KIOSK_COORDS, targetCoords, roadGraph);
+            bestPath = findShortestPath((state.KIOSK_COORDS || SAVED_MAIN_KIOSK_COORDS), targetCoords, (state.roadGraph || window.roadGraph));
         }
 
         if (bestPath && bestPath.length > 0) {
-            return [KIOSK_COORDS, ...bestPath];
+            return [(state.KIOSK_COORDS || SAVED_MAIN_KIOSK_COORDS), ...bestPath];
         }
     }
-    return [KIOSK_COORDS, building.coords];
+    return [(state.KIOSK_COORDS || SAVED_MAIN_KIOSK_COORDS), building.coords];
 }
 
 export function getDirections() {
-    if (!selectedBuildingId) return;
-    const building = BUILDING_DIRECTORY.find(b => b.id === selectedBuildingId);
+    if (!state.selectedBuildingId) return;
+    const building = BUILDING_DIRECTORY.find(b => b.id === state.selectedBuildingId);
     if (!building) return;
 
     stopOrbit();
@@ -667,14 +684,14 @@ export function getDirections() {
 
     // Draw route on map
     drawRoute(routeCoords);
-    activeRoute = selectedBuildingId;
+    state.activeRoute = state.selectedBuildingId;
 
     // Close the building panel
     document.getElementById('building-panel').classList.remove('active');
 }
 
 export function replayRoute() {
-    if (activeRoute) {
+    if (state.activeRoute) {
         safeClearArrivedCountdown();
         clearRoute();
         getDirections();
@@ -735,7 +752,7 @@ export function drawCampusRouteFromKiosk(buildingId) {
     if (!building) return;
 
     const routeCoords = computeRouteFromKiosk(buildingId);
-    activeFullRouteCoords = routeCoords;
+    state.activeFullRouteCoords = routeCoords;
     drawRoute(routeCoords, { animated: false });
 
     const routeLine = turf.lineString(routeCoords);

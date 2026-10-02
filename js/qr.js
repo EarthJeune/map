@@ -32,7 +32,7 @@ export function getMobileNavigationUrl(buildingId) {
     }
     if (!path.startsWith('/')) path = '/' + path;
 
-    const currentMode = state.currentMapStyleMode || (typeof currentMapStyleMode !== 'undefined' ? currentMapStyleMode : 'google');
+    const currentMode = state.currentMapStyleMode || 'google';
     const viewMode = (currentMode === 'mapbox') ? 'mapbox' : 'google';
     return `${baseOrigin}${path}?dest=${encodeURIComponent(buildingId)}&mode=phone&view=${viewMode}`;
 }
@@ -48,41 +48,40 @@ export function updateBuildingQR(buildingId) {
             if (typeof QRCode !== 'undefined') {
                 currentQRCodeInstance = new QRCode(qrBox, {
                     text: url,
-                    width: 66,
-                    height: 66,
-                    colorDark: "#020617",
-                    colorLight: "#ffffff",
-                    correctLevel: QRCode.CorrectLevel.M
+                    width: 120,
+                    height: 120,
+                    colorDark: '#0f172a',
+                    colorLight: '#ffffff',
+                    correctLevel: (typeof QRCode !== 'undefined' && QRCode.CorrectLevel) ? QRCode.CorrectLevel.M : 0
                 });
             } else {
-                throw new Error('QRCode library not ready');
+                qrBox.innerHTML = '<div style="font-size:10px;color:#94a3b8;padding:10px;text-align:center;">QR library loading...</div>';
             }
-        } catch (err) {
-            qrBox.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=66x66&data=${encodeURIComponent(url)}" alt="QR" style="width:100%;height:100%;">`;
+        } catch (e) {
+            console.error("QR Code generation error:", e);
         }
 
-        const qrLink = document.getElementById('bp-qr-link');
-        if (qrLink) {
-            qrLink.href = url;
-            qrLink.title = url;
+        const linkEl = document.getElementById('bp-qr-link');
+        if (linkEl) {
+            linkEl.href = url;
+            linkEl.textContent = `Open Link: ${url.replace(/^https?:\/\//, '')}`;
         }
     };
 
-    render();
-
-    if (window.location.protocol !== 'file:') {
+    if (state.PUBLIC_TUNNEL_URL) {
+        render();
+    } else {
         fetch('/api/tunnel')
             .then(res => res.json())
             .then(data => {
-                if (data && data.url && data.url !== state.PUBLIC_TUNNEL_URL) {
+                if (data && data.url) {
                     state.PUBLIC_TUNNEL_URL = data.url;
-                    render();
                 }
+                render();
             })
-            .catch(() => {});
+            .catch(() => render());
     }
 }
 
-// Window reflections
 window.getMobileNavigationUrl = getMobileNavigationUrl;
 window.updateBuildingQR = updateBuildingQR;

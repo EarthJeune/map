@@ -1,10 +1,15 @@
 // DA-LARES Walker & Route Animation Module
 // Animated walking person marker, camera follow modes, speed control, and arrival countdown.
 
-import { DEFAULT_MAP_VIEW } from './data/config.js';
+import { DEFAULT_MAP_VIEW, SAVED_MAIN_KIOSK_COORDS } from './data/config.js';
 import { BUILDING_DIRECTORY } from './data/buildings.js';
 import { state } from './data/state.js';
 import { map } from './map-setup.js';
+import { resetIdle, stopIdleRotation, stopOrbit, orbitBuilding } from './idle.js';
+import { clearRoute } from './routing.js';
+import { showBuildingPanel } from './building-panel.js';
+import { showMobileToast, showPhoneBuildingDetails, getResponsiveMapPadding, isPhoneMode } from './phone-ui.js';
+import { closeRouteAndReset } from './sidebar.js';
 
 // ==========================================
 
@@ -49,15 +54,15 @@ function safeShowBuildingPanel(id) {
 }
 
 export function navigateTo(buildingId) {
-    isIntroAnimating = false;
+    state.state.isIntroAnimating = false;
     resetIdle();
     stopIdleRotation();
     stopOrbit();
 
     // Guard against accidental clicks while navigating on mobile
     if (safeIsPhoneMode() && safeIsNavigationActive()) {
-        if (selectedBuildingId === buildingId) return;
-        showMobileToast(`🧭 Active route to ${currentRouteDestName || 'destination'} in progress. Tap 'Cancel' to choose another building.`, 3500);
+        if (state.selectedBuildingId === buildingId) return;
+        showMobileToast(`🧭 Active route to ${state.currentRouteDestName || 'destination'} in progress. Tap 'Cancel' to choose another building.`, 3500);
         return;
     }
 
@@ -81,15 +86,15 @@ export function navigateTo(buildingId) {
     if (activeMarker) activeMarker.classList.add('active');
 
     // Track selected building
-    selectedBuildingId = buildingId;
+    state.selectedBuildingId = buildingId;
 
     if (safeIsPhoneMode()) {
-        safeShowPhoneBuildingDetails(buildingId);
+        showPhoneBuildingDetails(buildingId);
     } else {
         // Zoom to building and orbit
-        safeOrbitBuilding(building.coords);
+        orbitBuilding(building.coords);
         // Show building info panel
-        safeShowBuildingPanel(buildingId);
+        showBuildingPanel(buildingId);
     }
 }
 
@@ -126,7 +131,7 @@ export function setRouteSpeed(multiplier) {
 }
 
 export function setRouteCameraMode(mode) {
-    isIntroAnimating = false;
+    state.isIntroAnimating = false;
     routeCameraMode = mode;
     isTransitioningToFollow = false;
     if (transitionFollowTimer) {
@@ -167,7 +172,7 @@ export function setRouteCameraMode(mode) {
     } else if (mode === 'follow') {
         map.stop();
         isTransitioningToFollow = true;
-        const target = currentWalkerCoord || activeRouteCoords[0];
+        const target = state.currentWalkerCoord || currentWalkerCoord || (state.activeRouteCoords && state.activeRouteCoords[0]) || activeRouteCoords[0];
         map.flyTo({
             center: target,
             zoom: 20.2,
@@ -199,9 +204,9 @@ export function resetCameraControlsTimer() {
         clearTimeout(cameraControlsDimTimer);
         cameraControlsDimTimer = null;
     }
-    if (activeRoute && fcc.classList.contains('active')) {
+    if (state.activeRoute && fcc.classList.contains('active')) {
         cameraControlsDimTimer = setTimeout(() => {
-            if (activeRoute && fcc.classList.contains('active')) {
+            if (state.activeRoute && fcc.classList.contains('active')) {
                 fcc.classList.add('dimmed');
             }
         }, 5000);
@@ -222,7 +227,8 @@ export function startArrivedCountdown() {
     const countdownText = document.getElementById('arrived-countdown-text');
     const arrivedDesc = document.getElementById('arrived-card-desc');
     if (card) card.style.display = 'flex';
-    if (arrivedDesc) arrivedDesc.textContent = `You have reached ${currentRouteDestName}.`;
+    const dName = state.currentRouteDestName || "your destination";
+    if (arrivedDesc) arrivedDesc.textContent = `You have reached ${dName}.`;
     if (countdownText) countdownText.textContent = `Returning to overview in ${arrivedCountdownSeconds}s`;
 
     arrivedCountdownTimer = setInterval(() => {
@@ -282,7 +288,7 @@ export function declutterLabelsForRoute(coords, destId) {
     if (!coords || coords.length < 2) return;
     const routeLine = turf.lineString(coords);
 
-    markers.forEach(m => {
+    state.markers.forEach(m => {
         const el = m.getElement();
         if (!el || !el.classList.contains('bldg-map-marker')) return;
         const bId = el.dataset.id;
@@ -298,14 +304,15 @@ export function declutterLabelsForRoute(coords, destId) {
         }
 
         // Check collision with Kiosk marker (< 9 meters)
-        const kioskDist = turf.distance(turf.point(b.coords), turf.point(KIOSK_COORDS), { units: 'meters' });
+        const kioskDist = turf.distance(turf.point(b.coords), turf.point(state.KIOSK_COORDS || SAVED_MAIN_KIOSK_COORDS), { units: 'meters' });
         if (kioskDist < 9) {
             el.classList.add('decluttered-hide');
             return;
         }
 
         // Check if mentioned in turn steps
-        const isLandmark = currentRouteSteps && currentRouteSteps.some(s => s.landmark === b.name || (s.text && s.text.includes(b.name)));
+        const steps = state.currentRouteSteps;
+        const isLandmark = steps && steps.some(s => s.landmark === b.name || (s.text && s.text.includes(b.name)));
         if (isLandmark) {
             el.classList.add('decluttered-highlight');
             return;
@@ -322,7 +329,7 @@ export function declutterLabelsForRoute(coords, destId) {
 }
 
 export function restoreLabels() {
-    markers.forEach(m => {
+    state.markers.forEach(m => {
         const el = m.getElement();
         if (el && el.classList.contains('bldg-map-marker')) {
             el.classList.remove('decluttered-dim', 'decluttered-hide', 'decluttered-highlight');
@@ -334,7 +341,7 @@ export function restoreLabels() {
 // We strictly check e.originalEvent so programmatic map.flyTo / easeTo / fitBounds NEVER trigger free mode!
 ['dragstart', 'rotatestart', 'pitchstart', 'zoomstart'].forEach(evt => {
     map.on(evt, (e) => {
-        if (e && e.originalEvent && activeRoute && routeCameraMode === 'follow' && !isTransitioningToFollow) {
+        if (e && e.originalEvent && state.activeRoute && (state.routeCameraMode || 'follow') === 'follow' && !state.isTransitioningToFollow) {
             setRouteCameraMode('free');
         }
     });

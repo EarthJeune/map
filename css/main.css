@@ -3067,70 +3067,338 @@ body {
     }
 }
 
-/* --- PORTRAIT KIOSK STANDING SCREENS (1080x1920, 1440x2560, 4K) --- */
-@media screen and (min-width: 769px) and (orientation: portrait) {
-    :root {
-        --sidebar-offset: 440px;
-    }
+/* ============================================================
+   PHASE 4: PORTRAIT KIOSK LAYOUT (1080x1920)
+   Top Map (58vh) + Bottom Touch Panel (42vh)
+   Scoped under body.kiosk-portrait so landscape & phone are untouched.
+   ============================================================ */
 
-    .sidebar {
-        width: 440px;
-    }
+/* ---------- Layout Shell ---------- */
+body.kiosk-portrait {
+    --portrait-map-height: 58vh;
+    --portrait-panel-height: 42vh;
+    --sidebar-offset: 0px;  /* No left sidebar offset in portrait */
+}
 
-    .sidebar-title h1 {
-        font-size: 22px;
-    }
+body.kiosk-portrait #map {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: var(--portrait-map-height);
+    inset: auto;
+}
 
-    .search-box {
-        height: 54px;
-        padding: 0 16px;
-    }
+/* ---------- Sidebar → Bottom Touch Panel ---------- */
+body.kiosk-portrait .sidebar {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    width: 100vw;
+    height: var(--portrait-panel-height);
+    border-right: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 28px 28px 0 0;
+    transform: none;
+    opacity: 1;
+    box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.5);
+    z-index: 200;
+    overflow: hidden;
+}
 
-    .search-box input {
-        font-size: 16px;
-    }
+body.kiosk-portrait .sidebar.visible {
+    transform: none;
+}
 
-    .dir-item {
-        padding: 16px 20px;
-        min-height: 64px;
-    }
+/* Hide sidebar toggle — panel is always visible in portrait */
+body.kiosk-portrait .sidebar-toggle-btn {
+    display: none !important;
+}
 
-    .dir-item-name {
-        font-size: 16px;
-    }
+/* Prevent collapsed state in portrait (panel always visible) */
+body.kiosk-portrait .sidebar.collapsed {
+    transform: none;
+    box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.5);
+    pointer-events: auto;
+}
 
-    .building-panel {
-        width: 440px;
-        max-height: calc(100vh - 120px);
-    }
+/* ---------- Sidebar Header — Horizontal compact row ---------- */
+body.kiosk-portrait .sidebar-header {
+    padding: 18px 28px 14px;
+    gap: 16px;
+}
 
-    .bp-directions-btn {
-        height: 56px;
-        font-size: 16px;
-    }
+body.kiosk-portrait .sidebar-logo {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    font-size: 20px;
+}
 
-    .turn-by-turn-banner {
-        top: 36px;
-        padding: 16px 28px;
-    }
+body.kiosk-portrait .sidebar-title h1 {
+    font-size: 22px;
+}
 
-    .tbt-distance {
-        font-size: 26px;
-    }
+body.kiosk-portrait .sidebar-title p {
+    font-size: 11px;
+}
 
-    .tbt-instruction {
-        font-size: 20px;
-    }
+/* ---------- Search ---------- */
+body.kiosk-portrait .search-container {
+    padding: 8px 28px 10px;
+}
 
-    .floating-camera-controls {
-        bottom: 36px;
-        padding: 10px 18px;
-    }
+body.kiosk-portrait .search-box input {
+    padding: 16px 18px 16px 48px;
+    font-size: 16px;
+    border-radius: 16px;
+    height: 56px;
+}
 
-    .fcc-btn {
-        padding: 10px 18px;
-        font-size: 15px;
-    }
+body.kiosk-portrait .search-icon {
+    left: 18px;
+    font-size: 18px;
+}
+
+/* ---------- Directory List — Scrollable area ---------- */
+body.kiosk-portrait .directory {
+    padding: 4px 28px 16px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+body.kiosk-portrait .dir-section-title {
+    font-size: 11px;
+    margin: 14px 0 8px;
+}
+
+body.kiosk-portrait .dir-item {
+    padding: 14px 18px;
+    min-height: 60px;
+    border-radius: 14px;
+    gap: 14px;
+}
+
+body.kiosk-portrait .dir-item-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    font-size: 20px;
+}
+
+body.kiosk-portrait .dir-item-name {
+    font-size: 15px;
+}
+
+body.kiosk-portrait .dir-item-desc {
+    font-size: 12px;
+}
+
+body.kiosk-portrait .dir-item:hover,
+body.kiosk-portrait .dir-item:active {
+    transform: translateX(0) scale(1.01);
+}
+
+/* ---------- Settings Bar — Bottom of panel ---------- */
+body.kiosk-portrait .settings-bar {
+    padding: 10px 28px 16px;
+    gap: 10px;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+body.kiosk-portrait .setting-chip {
+    padding: 10px 16px;
+    font-size: 12px;
+    border-radius: 22px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* ---------- Route Info — In bottom panel during navigation ---------- */
+body.kiosk-portrait .sidebar.route-active .route-info {
+    padding: 16px 28px 20px;
+}
+
+body.kiosk-portrait .route-dest {
+    font-size: 20px;
+}
+
+body.kiosk-portrait .route-meta {
+    font-size: 15px;
+}
+
+body.kiosk-portrait .route-back-btn {
+    height: 48px;
+    font-size: 15px;
+    border-radius: 14px;
+}
+
+body.kiosk-portrait .route-steps-container {
+    max-height: none;
+}
+
+body.kiosk-portrait .route-step-item {
+    min-height: 52px;
+    padding: 12px 14px;
+}
+
+body.kiosk-portrait .route-speed-bar {
+    padding: 8px 0;
+}
+
+body.kiosk-portrait .speed-pill {
+    padding: 8px 16px;
+    font-size: 14px;
+}
+
+body.kiosk-portrait .route-actions {
+    gap: 12px;
+}
+
+body.kiosk-portrait .route-replay-btn,
+body.kiosk-portrait .route-close-btn {
+    height: 48px;
+    font-size: 14px;
+    border-radius: 14px;
+}
+
+/* ---------- Building Panel — Right overlay within map area ---------- */
+body.kiosk-portrait .building-panel {
+    position: fixed;
+    top: 16px;
+    right: -440px;
+    width: 400px;
+    max-height: calc(var(--portrait-map-height) - 32px);
+    border-radius: 20px;
+    z-index: 210;
+}
+
+body.kiosk-portrait .building-panel.active {
+    right: 16px;
+}
+
+body.kiosk-portrait .bp-directions-btn {
+    height: 56px;
+    font-size: 16px;
+    border-radius: 14px;
+}
+
+body.kiosk-portrait .bp-title {
+    font-size: 18px;
+}
+
+/* ---------- Turn-by-Turn Banner — Top of map area, centered ---------- */
+body.kiosk-portrait .turn-by-turn-banner {
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: calc(100vw - 48px);
+    padding: 14px 24px 14px 18px;
+    border-radius: 18px;
+}
+
+body.kiosk-portrait .tbt-distance {
+    font-size: 24px;
+}
+
+body.kiosk-portrait .tbt-instruction {
+    font-size: 18px;
+}
+
+body.kiosk-portrait .tbt-icon-wrapper {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+}
+
+/* ---------- Floating Camera Controls — Bottom of map area ---------- */
+body.kiosk-portrait .floating-camera-controls {
+    bottom: auto;
+    top: calc(var(--portrait-map-height) - 64px);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 8px 14px;
+    border-radius: 24px;
+}
+
+body.kiosk-portrait .fcc-btn {
+    padding: 10px 16px;
+    font-size: 14px;
+}
+
+body.kiosk-portrait .fcc-label {
+    font-size: 11px;
+}
+
+/* ---------- Coords Badge — Bottom of map area ---------- */
+body.kiosk-portrait .coords-badge {
+    bottom: auto;
+    top: calc(var(--portrait-map-height) - 52px);
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+/* ---------- Map View Switch Button — Top-right of map area ---------- */
+body.kiosk-portrait .map-view-switch-btn {
+    top: 20px;
+    right: 20px;
+}
+
+/* ---------- Sidebar Backdrop — Not needed in portrait ---------- */
+body.kiosk-portrait .sidebar-backdrop {
+    display: none !important;
+}
+
+/* ---------- Mapbox Controls — Position within map area ---------- */
+body.kiosk-portrait .mapboxgl-ctrl-top-right {
+    top: 64px;
+    right: 12px;
+}
+
+body.kiosk-portrait .mapboxgl-ctrl-bottom-right,
+body.kiosk-portrait .mapboxgl-ctrl-bottom-left {
+    bottom: calc(var(--portrait-panel-height) + 8px);
+}
+
+/* ---------- Kiosk Marker Label — Larger for portrait touch ---------- */
+body.kiosk-portrait .kiosk-marker-label {
+    font-size: 14px;
+    padding: 6px 14px;
+}
+
+/* ---------- Arrived Card — Larger in portrait ---------- */
+body.kiosk-portrait .arrived-card-icon {
+    font-size: 38px;
+}
+
+body.kiosk-portrait .arrived-card-title {
+    font-size: 20px;
+}
+
+body.kiosk-portrait .arrived-card-desc {
+    font-size: 15px;
+}
+
+/* ---------- QR Card — Wider in portrait bottom panel ---------- */
+body.kiosk-portrait .bp-qr-card {
+    margin-top: 8px;
+}
+
+body.kiosk-portrait .bp-qr-box {
+    width: 130px;
+    height: 130px;
+}
+
+/* ---------- Color Picker Modal — Center on screen ---------- */
+body.kiosk-portrait #color-picker-modal {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 
 /* Floating Map View Switcher Button */

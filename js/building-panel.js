@@ -7,9 +7,11 @@ import { state } from './data/state.js';
 import { map, getRoofColorCaseStyle } from './map-setup.js';
 import { updateBuildingQR } from './qr.js';
 import { stopOrbit, resetIdle } from './idle.js';
+import { removeMarkers, createMarkers } from './markers.js';
+import { buildDirectory } from './sidebar.js';
 
 export function showBuildingPanel(buildingId) {
-    isIntroAnimating = false;
+    state.isIntroAnimating = false;
     const index = BUILDING_DIRECTORY.findIndex(b => b.id === buildingId);
     const building = BUILDING_DIRECTORY[index];
     if (!building) return;
@@ -60,7 +62,7 @@ export function closeBuildingPanel() {
     document.getElementById('building-panel').classList.remove('active');
     document.querySelectorAll('.dir-item').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.bldg-map-marker').forEach(el => el.classList.remove('active'));
-    selectedBuildingId = null;
+    state.selectedBuildingId = null;
     stopOrbit();
     // Fly back to default overview angle
     map.flyTo({ center: DEFAULT_MAP_VIEW.center, zoom: DEFAULT_MAP_VIEW.zoom, pitch: DEFAULT_MAP_VIEW.pitch, bearing: DEFAULT_MAP_VIEW.bearing, duration: 2000 });
@@ -72,14 +74,13 @@ export function closeBuildingPanel() {
 // ==========================================
 let activeColorId = null;
 
-
-
 export function openColorPicker(id, name) {
     activeColorId = id;
     document.getElementById('cp-name').innerText = name;
 
-    const roofHex = (savedBuildingColors[id] && savedBuildingColors[id].roof) ? savedBuildingColors[id].roof : '#334155';
-    const iconHex = (savedBuildingColors[id] && savedBuildingColors[id].icon) ? savedBuildingColors[id].icon : '#3b82f6';
+    const colors = state.savedBuildingColors || {};
+    const roofHex = (colors[id] && colors[id].roof) ? colors[id].roof : '#334155';
+    const iconHex = (colors[id] && colors[id].icon) ? colors[id].icon : '#3b82f6';
 
     document.getElementById('cp-roof').value = roofHex;
     document.getElementById('cp-roof-hex').value = roofHex.toUpperCase();
@@ -100,19 +101,19 @@ export function saveColorPicker() {
     const roofColor = document.getElementById('cp-roof').value;
     const iconColor = document.getElementById('cp-icon').value;
 
-    // Save to local variable
-    if (!savedBuildingColors[activeColorId]) savedBuildingColors[activeColorId] = {};
-    savedBuildingColors[activeColorId].roof = roofColor;
-    savedBuildingColors[activeColorId].icon = iconColor;
+    if (!state.savedBuildingColors) state.savedBuildingColors = {};
+    if (!state.savedBuildingColors[activeColorId]) state.savedBuildingColors[activeColorId] = {};
+    state.savedBuildingColors[activeColorId].roof = roofColor;
+    state.savedBuildingColors[activeColorId].icon = iconColor;
 
     // Post to backend database
     fetch('/api/colors', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(savedBuildingColors)
+        body: JSON.stringify(state.savedBuildingColors)
     }).then(() => {
         // Update Directory Object
-        const b = BUILDING_DIRECTORY.find(b => b.id === activeColorId);
+        const b = BUILDING_DIRECTORY.find(item => item.id === activeColorId);
         if (b) b.color = iconColor;
 
         removeMarkers();
@@ -124,7 +125,8 @@ export function saveColorPicker() {
         }
 
         // Update UI Directory
-        buildDirectory(document.getElementById('search-input').value);
+        const searchInput = document.getElementById('search-input');
+        buildDirectory(searchInput ? searchInput.value : '');
         closeColorPicker();
     });
 }
@@ -132,6 +134,7 @@ export function saveColorPicker() {
 export function syncColorInputs(colorId, hexId) {
     const colorInput = document.getElementById(colorId);
     const hexInput = document.getElementById(hexId);
+    if (!colorInput || !hexInput) return;
 
     colorInput.addEventListener('input', (e) => {
         hexInput.value = e.target.value.toUpperCase();
@@ -177,4 +180,3 @@ window.closeColorPicker = closeColorPicker;
 window.saveColorPicker = saveColorPicker;
 window.syncColorInputs = syncColorInputs;
 window.useEyeDropper = useEyeDropper;
-

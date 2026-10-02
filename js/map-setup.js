@@ -26,6 +26,8 @@ import {
 } from './data/buildings.js';
 
 import { state } from './data/state.js';
+import { resetIdle } from './idle.js';
+import { toggleSettingChip } from './sidebar.js';
 
 import {
     createMarkers,
@@ -40,7 +42,7 @@ import {
 mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
 export const map = new mapboxgl.Map({
     container: 'map',
-    style: (state.currentMapStyleMode === 'mapbox')
+    style: (state.state.currentMapStyleMode === 'mapbox')
         ? 'mapbox://styles/mapbox/standard'
         : 'mapbox://styles/mapbox/satellite-streets-v12',
     center: INTRO_START_VIEW.center,
@@ -54,7 +56,7 @@ window.map = map;
 
 export function getRoofColorCaseStyle() {
     let caseStyle = ['case'];
-    const colors = (state && state.savedBuildingColors) ? state.savedBuildingColors : (typeof savedBuildingColors !== 'undefined' ? savedBuildingColors : {});
+    const colors = (state && state.savedBuildingColors) ? state.savedBuildingColors : {};
     for (let id in colors) {
         if (colors[id] && colors[id].roof) {
             caseStyle.push(['==', ['get', 'id'], id]);
@@ -75,13 +77,13 @@ function safeResetIdle() {
 
 export function setupLayers() {
     // If in Mapbox Standard mode, use dedicated setup path
-    if (currentMapStyleMode === 'mapbox') {
+    if (state.currentMapStyleMode === 'mapbox') {
         setupMapboxStandardLayers();
         return;
     }
 
     // 1. Terrain (disabled by default)
-    if (terrainEnabled) {
+    if (state.terrainEnabled) {
         if (!map.getSource('mapbox-dem')) {
             map.addSource('mapbox-dem', { type: 'raster-dem', url: 'mapbox://mapbox.mapbox-terrain-dem-v1', tileSize: 512, maxzoom: 14 });
         }
@@ -107,7 +109,7 @@ export function setupLayers() {
             'type': 'raster',
             'source': 'google-satellite',
             'layout': {
-                'visibility': (currentMapStyleMode === 'google') ? 'visible' : 'none'
+                'visibility': (state.currentMapStyleMode === 'google') ? 'visible' : 'none'
             }
         });
     }
@@ -194,7 +196,7 @@ export function setupLayers() {
             'layout': {
                 'line-cap': 'round',
                 'line-join': 'round',
-                'visibility': (currentMapStyleMode === 'mapbox') ? 'visible' : 'none'
+                'visibility': (state.currentMapStyleMode === 'mapbox') ? 'visible' : 'none'
             },
             'paint': {
                 'line-color': '#64748b',
@@ -218,7 +220,7 @@ export function setupLayers() {
             'layout': {
                 'line-cap': 'round',
                 'line-join': 'round',
-                'visibility': (currentMapStyleMode === 'mapbox') ? 'visible' : 'none'
+                'visibility': (state.currentMapStyleMode === 'mapbox') ? 'visible' : 'none'
             },
             'paint': {
                 'line-color': '#94a3b8',
@@ -250,7 +252,7 @@ export function setupLayers() {
                 'visibility': 'visible'
             },
             'paint': {
-                'fill-color': (currentMapStyleMode === 'mapbox') ? '#060a12' : '#0b1121',
+                'fill-color': (state.currentMapStyleMode === 'mapbox') ? '#060a12' : '#0b1121',
                 'fill-opacity': 1.0
             }
         });
@@ -270,13 +272,13 @@ export function setupLayers() {
             'type': 'fill-extrusion',
             'minzoom': 13,
             'layout': {
-                'visibility': buildingsVisible ? 'visible' : 'none'
+                'visibility': state.buildingsVisible ? 'visible' : 'none'
             },
             'paint': {
-                'fill-extrusion-color': (currentMapStyleMode === 'mapbox') ? '#f8fafc' : '#cbd5e1',
+                'fill-extrusion-color': (state.currentMapStyleMode === 'mapbox') ? '#f8fafc' : '#cbd5e1',
                 'fill-extrusion-height': ['get', 'height'],
                 'fill-extrusion-base': ['get', 'min_height'],
-                'fill-extrusion-opacity': (currentMapStyleMode === 'mapbox') ? 1.0 : 0.95
+                'fill-extrusion-opacity': (state.currentMapStyleMode === 'mapbox') ? 1.0 : 0.95
             }
         });
     }
@@ -287,10 +289,10 @@ export function setupLayers() {
             'type': 'fill-extrusion',
             'minzoom': 13,
             'layout': {
-                'visibility': buildingsVisible ? 'visible' : 'none'
+                'visibility': state.buildingsVisible ? 'visible' : 'none'
             },
             'paint': {
-                'fill-extrusion-color': (currentMapStyleMode === 'mapbox') ? '#e2e8f0' : getRoofColorCaseStyle(),
+                'fill-extrusion-color': (state.currentMapStyleMode === 'mapbox') ? '#e2e8f0' : getRoofColorCaseStyle(),
                 'fill-extrusion-height': ['+', ['get', 'height'], 0.25],
                 'fill-extrusion-base': ['get', 'height'],
                 'fill-extrusion-opacity': 1.0
@@ -326,7 +328,7 @@ export function setupLayers() {
     });
 
     // Sync visual properties with current mode
-    setMapStyleMode(currentMapStyleMode);
+    setMapStyleMode(state.currentMapStyleMode);
 }
 
 // ==========================================
@@ -488,7 +490,7 @@ export function setupMapboxStandardLayers() {
             type: 'fill-extrusion',
             slot: 'middle',
             minzoom: 13,
-            layout: { visibility: buildingsVisible ? 'visible' : 'none' },
+            layout: { visibility: state.buildingsVisible ? 'visible' : 'none' },
             paint: {
                 'fill-extrusion-color': '#f0ece4',
                 'fill-extrusion-height': ['get', 'height'],
@@ -505,7 +507,7 @@ export function setupMapboxStandardLayers() {
             type: 'fill-extrusion',
             slot: 'middle',
             minzoom: 13,
-            layout: { visibility: buildingsVisible ? 'visible' : 'none' },
+            layout: { visibility: state.buildingsVisible ? 'visible' : 'none' },
             paint: {
                 'fill-extrusion-color': '#e8e2d8',
                 'fill-extrusion-height': ['+', ['get', 'height'], 0.25],
@@ -525,7 +527,7 @@ export function setupMapboxStandardLayers() {
     createMarkers();
 
     // 8. Update UI state
-    setMapStyleMode(currentMapStyleMode);
+    setMapStyleMode(state.currentMapStyleMode);
 }
 
 export function ensureTreeIconLoaded(callback) {
@@ -627,11 +629,11 @@ export function renderTreesLayer() {
                 'icon-anchor': 'bottom',
                 'icon-allow-overlap': true,
                 'icon-ignore-placement': true,
-                'visibility': treesVisible ? 'visible' : 'none'
+                'visibility': state.treesVisible ? 'visible' : 'none'
             }
         });
     } else {
-        try { map.setLayoutProperty('3d-trees', 'visibility', treesVisible ? 'visible' : 'none'); } catch (e) { }
+        try { map.setLayoutProperty('3d-trees', 'visibility', state.treesVisible ? 'visible' : 'none'); } catch (e) { }
     }
 }
 
@@ -644,8 +646,10 @@ let mapReady = false;
 let isIntroAnimating = false;
 
 export function revealMap() {
-    if (mapReady) return;
+    if (mapReady || state.mapReady) return;
     mapReady = true;
+    state.mapReady = true;
+    window.mapReady = true;
     document.getElementById('loading-overlay').classList.add('hidden');
     setTimeout(() => document.getElementById('sidebar').classList.add('visible'), 500);
     setTimeout(() => document.getElementById('coords-badge').classList.add('visible'), 800);
@@ -737,41 +741,41 @@ export function syncLightingWithTime() {
 setInterval(syncLightingWithTime, 60000);
 
 export function toggleBuildings(btn) {
-    buildingsVisible = !buildingsVisible;
-    if (btn) btn.classList.toggle('active', buildingsVisible);
+    state.buildingsVisible = !state.buildingsVisible;
+    if (btn) btn.classList.toggle('active', state.buildingsVisible);
     const chip = document.getElementById('chip-buildings');
-    if (chip && chip !== btn) chip.classList.toggle('active', buildingsVisible);
+    if (chip && chip !== btn) chip.classList.toggle('active', state.buildingsVisible);
 
-    const vis = buildingsVisible ? 'visible' : 'none';
+    const vis = state.buildingsVisible ? 'visible' : 'none';
     try {
         if (map.getLayer('3d-drawings')) map.setLayoutProperty('3d-drawings', 'visibility', vis);
         if (map.getLayer('3d-drawings-roofs')) map.setLayoutProperty('3d-drawings-roofs', 'visibility', vis);
         if (map.getLayer('3d-buildings-mapbox')) {
-            map.setLayoutProperty('3d-buildings-mapbox', 'visibility', (buildingsVisible && currentMapStyleMode === 'mapbox') ? 'visible' : 'none');
+            map.setLayoutProperty('3d-buildings-mapbox', 'visibility', (state.buildingsVisible && state.currentMapStyleMode === 'mapbox') ? 'visible' : 'none');
         }
     } catch (e) { }
     safeResetIdle();
 }
 
 export function toggleTrees(btn) {
-    treesVisible = !treesVisible;
-    if (btn) btn.classList.toggle('active', treesVisible);
+    state.treesVisible = !state.treesVisible;
+    if (btn) btn.classList.toggle('active', state.treesVisible);
     const chip = document.getElementById('chip-trees');
-    if (chip && chip !== btn) chip.classList.toggle('active', treesVisible);
+    if (chip && chip !== btn) chip.classList.toggle('active', state.treesVisible);
     const phoneTree = document.getElementById('phone-trees-toggle');
-    if (phoneTree && phoneTree !== btn) phoneTree.classList.toggle('active', treesVisible);
+    if (phoneTree && phoneTree !== btn) phoneTree.classList.toggle('active', state.treesVisible);
 
     try {
         if (map.getLayer('3d-trees')) {
-            map.setLayoutProperty('3d-trees', 'visibility', treesVisible ? 'visible' : 'none');
+            map.setLayoutProperty('3d-trees', 'visibility', state.treesVisible ? 'visible' : 'none');
         }
     } catch (e) { }
     safeResetIdle();
 }
 
 export function toggleMapboxView(btn) {
-    const nextMode = (currentMapStyleMode === 'google') ? 'mapbox' : 'google';
-    currentMapStyleMode = nextMode;
+    const nextMode = (state.currentMapStyleMode === 'google') ? 'mapbox' : 'google';
+    state.currentMapStyleMode = nextMode;
 
     // Preserve current camera view angle, zoom, pitch, and bearing seamlessly
     const currentCenter = map.getCenter();
@@ -796,7 +800,7 @@ export function toggleMapboxView(btn) {
 }
 
 export function setMapStyleMode(mode) {
-    currentMapStyleMode = mode;
+    state.currentMapStyleMode = mode;
     const isMapbox = (mode === 'mapbox');
 
     // Toggle body class for CSS state
@@ -836,18 +840,18 @@ export function setMapStyleMode(mode) {
 }
 
 export function toggleBoundary(btn) {
-    if (typeof toggleSettingChip === 'function') toggleSettingChip(btn, 'boundary'); else if (typeof window.toggleSettingChip === 'function') window.toggleSettingChip(btn, 'boundary');
+    toggleSettingChip(btn, 'boundary');
 }
 
 export function toggleTerrain(btn) {
-    terrainEnabled = !terrainEnabled;
+    state.terrainEnabled = !state.terrainEnabled;
     btn.classList.toggle('active');
-    terrainEnabled ? map.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 }) : map.setTerrain(null);
+    state.terrainEnabled ? map.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 }) : map.setTerrain(null);
 }
 
 export function toggleMarkers(btn) {
     const vis = btn.classList.contains('active');
-    markers.forEach(m => { m.getElement().style.display = vis ? 'none' : 'block'; if (m.getPopup() && m.getPopup().isOpen()) m.togglePopup() });
+    state.markers.forEach(m => { m.getElement().style.display = vis ? 'none' : 'block'; if (m.getPopup() && m.getPopup().isOpen()) m.togglePopup() });
     btn.classList.toggle('active');
 }
 

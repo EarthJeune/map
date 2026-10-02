@@ -34,8 +34,8 @@ export function getResponsiveMapPadding() {
     if (isMobile) {
         return { top: 90, bottom: 240, left: 24, right: 24 };
     } else if (isPortrait) {
-        const sidePad = isSidebarCollapsed ? 40 : 460;
-        return { top: 120, bottom: 120, left: sidePad, right: 40 };
+        // Portrait kiosk: map is top 58vh, no left sidebar offset
+        return { top: 80, bottom: 40, left: 40, right: 40 };
     } else {
         const sidePad = isSidebarCollapsed ? 90 : 420;
         return { top: 80, bottom: 80, left: sidePad, right: 90 };

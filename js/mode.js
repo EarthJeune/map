@@ -65,6 +65,14 @@ export function applyAppModeToDOM() {
         body.classList.add(`kiosk-${orientation}`);
     }
 
+    // Tell Mapbox to recalculate canvas size (critical for portrait: map is 58vh not 100vh)
+    try {
+        if (window.map && typeof window.map.resize === 'function') {
+            // Small delay to let CSS reflow complete before Mapbox measures
+            setTimeout(() => window.map.resize(), 50);
+        }
+    } catch (e) {}
+
     console.log(`[Mode] Active mode: ${mode} (Orientation: ${orientation}, Viewport: ${window.innerWidth}x${window.innerHeight})`);
 }
 

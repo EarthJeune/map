@@ -5,19 +5,24 @@ import { BUILDING_DIRECTORY } from './data/buildings.js';
 import { LARES_BOUNDARY } from './data/geo.js';
 import { state } from './data/state.js';
 import { toggleTrees, toggleBuildings, map } from './map-setup.js';
+import { resetIdle } from './idle.js';
+import { renderPhoneDirectory, isPhoneMode } from './phone-ui.js';
 
 function safeResetIdle() {
-    if (typeof window.resetIdle === 'function') window.resetIdle();
-    else if (typeof resetIdle === 'function') resetIdle();
+    if (typeof resetIdle === 'function') resetIdle();
+    else if (typeof window.resetIdle === 'function') window.resetIdle();
 }
 
 function safeRenderPhoneDirectory(filter) {
-    if (typeof window.renderPhoneDirectory === 'function') {
+    if (typeof renderPhoneDirectory === 'function') {
+        renderPhoneDirectory(filter);
+    } else if (typeof window.renderPhoneDirectory === 'function') {
         window.renderPhoneDirectory(filter);
     }
 }
 
 function safeIsPhoneMode() {
+    if (typeof isPhoneMode === 'function') return isPhoneMode();
     if (typeof window.isPhoneMode === 'function') return window.isPhoneMode();
     return window.innerWidth <= 768;
 }
@@ -31,43 +36,29 @@ export function toggleSettingChip(btn, type) {
         toggleBuildings(btn);
         return;
     }
+    if (type === 'boundary') {
+        const isCurrentlyActive = btn.classList.contains('active');
+        const nextState = !isCurrentlyActive;
+        btn.classList.toggle('active', nextState);
+        const vis = nextState ? 'visible' : 'none';
+        try {
+            if (map.getLayer('lares-boundary-line')) map.setLayoutProperty('lares-boundary-line', 'visibility', vis);
+            if (map.getLayer('lares-boundary-glow')) map.setLayoutProperty('lares-boundary-glow', 'visibility', vis);
+            if (map.getLayer('lares-boundary-fill')) map.setLayoutProperty('lares-boundary-fill', 'visibility', vis);
+            if (map.getLayer('lares-mask-dimmer')) map.setLayoutProperty('lares-mask-dimmer', 'visibility', vis);
+        } catch (e) { }
+        safeResetIdle();
+        return;
+    }
     btn.classList.toggle('active');
     const on = btn.classList.contains('active');
-    if (type === 'boundary') {
-        const vis = on ? 'visible' : 'none';
-        LARES_BOUNDARY.features.forEach(f => {
-            const fid = f.properties.fid;
-            ['sec-glow-', 'sec-fill-', 'sec-line-'].forEach(p => {
-                const lid = `${p}${fid}`;
-                if (map.getLayer(lid)) {
-                    try { map.setLayoutProperty(lid, 'visibility', vis); } catch (e) { }
-                }
-            });
+    if (type === 'numbers') {
+        document.querySelectorAll('.bldg-badge').forEach(b => {
+            b.style.display = on ? 'flex' : 'none';
         });
-        ['lares-compound-border-casing', 'lares-compound-border-line'].forEach(id => {
-            if (map.getLayer(id)) {
-                try { map.setLayoutProperty(id, 'visibility', vis); } catch (e) { }
-            }
+        document.querySelectorAll('.bldg-tag-pill').forEach(b => {
+            b.style.display = on ? 'inline-flex' : 'none';
         });
-        if (map.getLayer('sec-labels-layer')) {
-            try { map.setLayoutProperty('sec-labels-layer', 'visibility', vis); } catch (e) { }
-        }
-        if (state.sectionBadges) {
-            state.sectionBadges.forEach(m => {
-                if (m && m.getElement()) m.getElement().style.display = on ? 'inline-flex' : 'none';
-            });
-        }
-    } else if (type === 'terrain') {
-        state.terrainEnabled = on;
-        on ? map.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 }) : map.setTerrain(null);
-    } else if (type === 'numbers') {
-        state.markersVisible = on;
-        if (state.markers) {
-            state.markers.forEach(m => {
-                m.getElement().style.display = on ? 'flex' : 'none';
-                if (!on && m.getPopup() && m.getPopup().isOpen()) m.togglePopup();
-            });
-        }
     }
     safeResetIdle();
 }
@@ -75,36 +66,48 @@ export function toggleSettingChip(btn, type) {
 export function buildDirectory(filter = '') {
     const dir = document.getElementById('directory');
     if (!dir) return;
-    const lowerFilter = filter.toLowerCase();
 
     let html = '';
-    BUILDING_DIRECTORY.forEach((b, index) => {
-        if (lowerFilter && !b.name.toLowerCase().includes(lowerFilter) && !b.desc.toLowerCase().includes(lowerFilter)) return;
+    let currentSection = '';
 
-        const num = index + 1; // 1-based numbering
-        const bColor = b.color;
-        html += `<div class="dir-item" data-id="${b.id}" onclick="navigateTo('${b.id}')">
-            <div class="dir-item-icon" style="background:${bColor}22;color:${bColor}">
-                <span class="dir-item-icon-number">${num}</span>
-            </div>
-            <div class="dir-item-info">
-                <div class="dir-item-name">${b.name}</div>
-                <div class="dir-item-desc">${b.desc}</div>
-            </div>
-            <button class="three-dots-btn" onclick="event.stopPropagation(); openColorPicker('${b.id}', '${b.name}')" style="background:none; border:none; cursor:pointer; font-size:16px; padding:4px 8px;">⋮</button>
-            <div class="dir-item-arrow">→</div>
-        </div>`;
+    const sorted = [...BUILDING_DIRECTORY].sort((a, b) => {
+        if (a.section !== b.section) return (a.section || '').localeCompare(b.section || '');
+        return a.name.localeCompare(b.name);
     });
 
-    if (!html) html = '<div style="text-align:center;color:#475569;padding:40px 0;font-size:13px;">No results found</div>';
+    const q = filter.toLowerCase().trim();
+    const filtered = q
+        ? sorted.filter(b => b.name.toLowerCase().includes(q) || (b.desc && b.desc.toLowerCase().includes(q)))
+        : sorted;
+
+    filtered.forEach(b => {
+        if (b.section !== currentSection && !q) {
+            currentSection = b.section;
+            html += `<div class="dir-section-header">${currentSection}</div>`;
+        }
+        const bldgIndex = BUILDING_DIRECTORY.findIndex(item => item.id === b.id) + 1;
+        html += `
+            <div class="dir-item" data-id="${b.id}" onclick="navigateTo('${b.id}')">
+                <div class="dir-num" style="background: ${b.color || '#3b82f6'}">${bldgIndex}</div>
+                <div class="dir-info">
+                    <div class="dir-name">${b.name}</div>
+                    <div class="dir-desc">${b.desc || ''}</div>
+                </div>
+            </div>
+        `;
+    });
+
+    if (filtered.length === 0) {
+        html = '<div style="padding: 24px; text-align: center; color: #64748b; font-size: 13px;">No facilities found matching your search.</div>';
+    }
+
     dir.innerHTML = html;
-    safeRenderPhoneDirectory(filter);
 }
 
 export function filterDirectory() {
-    const input = document.getElementById('search-input');
-    const val = input ? input.value : '';
+    const val = document.getElementById('search-input')?.value || '';
     buildDirectory(val);
+    safeRenderPhoneDirectory(val);
     safeResetIdle();
 }
 
@@ -123,7 +126,8 @@ export function toggleSidebarMenu() {
         btn.title = label;
         btn.setAttribute('aria-label', label);
     }
-    document.documentElement.style.setProperty('--sidebar-offset', isCollapsed ? '0px' : '380px');
+    const isPortrait = document.body.classList.contains('kiosk-portrait');
+    document.documentElement.style.setProperty('--sidebar-offset', isPortrait ? '0px' : (isCollapsed ? '0px' : '380px'));
 }
 
 export function collapseSidebarMenu() {
@@ -137,7 +141,9 @@ export function collapseSidebarMenu() {
         btn.title = 'Open menu';
         btn.setAttribute('aria-label', 'Open menu');
     }
-    document.documentElement.style.setProperty('--sidebar-offset', '0px');
+    if (!document.body.classList.contains('kiosk-portrait')) {
+        document.documentElement.style.setProperty('--sidebar-offset', '0px');
+    }
 }
 
 export function openSidebarMenu() {
@@ -151,7 +157,9 @@ export function openSidebarMenu() {
         btn.title = 'Close menu';
         btn.setAttribute('aria-label', 'Close menu');
     }
-    document.documentElement.style.setProperty('--sidebar-offset', '380px');
+    if (!document.body.classList.contains('kiosk-portrait')) {
+        document.documentElement.style.setProperty('--sidebar-offset', '380px');
+    }
 }
 
 export function isNavigationActive() {
@@ -166,3 +174,11 @@ export function isNavigationActive() {
     if (state.walkAnimFrame || state.isMobileGPSActive) return true;
     return false;
 }
+
+window.toggleSettingChip = toggleSettingChip;
+window.buildDirectory = buildDirectory;
+window.filterDirectory = filterDirectory;
+window.toggleSidebarMenu = toggleSidebarMenu;
+window.collapseSidebarMenu = collapseSidebarMenu;
+window.openSidebarMenu = openSidebarMenu;
+window.isNavigationActive = isNavigationActive;

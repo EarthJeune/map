@@ -4,11 +4,14 @@
 import { BUILDING_DIRECTORY } from './data/buildings.js';
 import { state } from './data/state.js';
 import { map } from './map-setup.js';
+import { startArrivedCountdown } from './walker.js';
+import { isPhoneMode } from './mode.js';
+import { updatePhoneLiveNavUI } from './phone-nav.js';
 
 // GOOGLE MAPS TURN-BY-TURN DIRECTIONS ENGINE
 // ==========================================
-let currentRouteSteps = null;
-let currentRouteDestName = '';
+let steps = null;
+let destName = '';
 let lastActiveStepIdx = -1;
 
 export function buildSteps(coords, directory, destId) {
@@ -187,18 +190,14 @@ export function buildSteps(coords, directory, destId) {
 
     // If no detectable turns or straightaways
     if (combined.length === 0) {
-        return [
-            {
-                at: 0,
-                point: coords[0],
-                type: 'straight',
-                action: 'Head straight',
-                icon: '⬆️',
-                landmark: null,
-                text: `Head straight to ${destName}`
-            },
-            arriveStep
+        const resultSteps = [
+
         ];
+        steps = resultSteps;
+        destName = destName;
+        state.steps = resultSteps;
+        state.destName = destName;
+        return resultSteps;
     }
 
     // Initial start step
@@ -218,7 +217,12 @@ export function buildSteps(coords, directory, destId) {
 
     // Filter out any step too close to start or arrive
     const middleSteps = combined.filter(s => s.at >= 8 && s.at <= totalDistance - 6);
-    return [startStep, ...middleSteps, arriveStep];
+    const resultSteps = [startStep, ...middleSteps, arriveStep];
+    steps = resultSteps;
+    destName = destName;
+    state.steps = resultSteps;
+    state.destName = destName;
+    return resultSteps;
 }
 
 export function renderStepsList(steps) {
@@ -244,8 +248,8 @@ export function renderStepsList(steps) {
 }
 
 export function focusRouteStep(idx) {
-    if (!currentRouteSteps || !currentRouteSteps[idx]) return;
-    const s = currentRouteSteps[idx];
+    if (!steps || !steps[idx]) return;
+    const s = steps[idx];
     map.flyTo({
         center: s.point,
         zoom: 19.8,
@@ -271,7 +275,9 @@ export function highlightActiveStep(idx) {
 }
 
 export function updateLiveNavigation(currentDist, totalDist) {
-    if (!currentRouteSteps || currentRouteSteps.length === 0) return;
+    const steps = state.steps || steps;
+    const destName = state.destName || destName;
+    if (!steps || steps.length === 0) return;
     const banner = document.getElementById('turn-by-turn-banner');
     if (!banner) return;
 
@@ -279,8 +285,8 @@ export function updateLiveNavigation(currentDist, totalDist) {
         banner.classList.add('arrived');
         document.getElementById('tbt-icon').innerHTML = '🏁';
         document.getElementById('tbt-distance').textContent = 'Arrived';
-        document.getElementById('tbt-instruction').textContent = `You have arrived at ${currentRouteDestName}`;
-        highlightActiveStep(currentRouteSteps.length - 1);
+        document.getElementById('tbt-instruction').textContent = `You have arrived at ${destName}`;
+        highlightActiveStep(steps.length - 1);
         startArrivedCountdown();
         return;
     }
@@ -288,10 +294,10 @@ export function updateLiveNavigation(currentDist, totalDist) {
     banner.classList.remove('arrived');
 
     // Find next step where step.at > currentDist
-    let nextIdx = currentRouteSteps.findIndex(s => s.at > currentDist + 1);
-    if (nextIdx === -1) nextIdx = currentRouteSteps.length - 1;
+    let nextIdx = steps.findIndex(s => s.at > currentDist + 1);
+    if (nextIdx === -1) nextIdx = steps.length - 1;
 
-    const nextStep = currentRouteSteps[nextIdx];
+    const nextStep = steps[nextIdx];
     const remaining = Math.max(0, nextStep.at - currentDist);
     const rounded = Math.max(5, Math.round(remaining / 5) * 5);
 
