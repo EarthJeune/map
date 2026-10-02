@@ -1,8 +1,8 @@
 // DA-LARES Markers Module
 // Google Maps-style numbered pins, section badges, and compound entrance arrow.
 
-import { BUILDING_DIRECTORY } from './data/buildings.js';
-import { state } from './data/state.js';
+import { BUILDING_DIRECTORY } from './data/buildings.js?v=5';
+import { state } from './data/state.js?v=5';
 
 export function renderSectionBadges() {
     removeSectionBadges();

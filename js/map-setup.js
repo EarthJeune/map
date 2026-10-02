@@ -10,7 +10,7 @@ import {
     VIEWS,
     SECTION_COLORS,
     SECTION_PASTEL_COLORS
-} from './data/config.js';
+} from './data/config.js?v=5';
 
 import {
     DA_LARES_OUTER_PERIMETER,
@@ -18,14 +18,14 @@ import {
     LARES_COMPOUND_OUTLINE,
     LARES_TREES,
     LARES_BOUNDARY
-} from './data/geo.js';
+} from './data/geo.js?v=5';
 
 import {
     LARES_DRAWINGS,
     BUILDING_DIRECTORY
-} from './data/buildings.js';
+} from './data/buildings.js?v=5';
 
-import { state } from './data/state.js';
+import { state } from './data/state.js?v=5';
 
 import {
     createMarkers,
@@ -34,7 +34,7 @@ import {
     removeSectionBadges,
     createEntranceArrowMarker,
     updateMarkerZoomState
-} from './markers.js';
+} from './markers.js?v=5';
 
 // Mapbox Map Instance
 mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;

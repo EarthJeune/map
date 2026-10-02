@@ -13,7 +13,7 @@ import {
     PREDEFINED_ROUTES,
     SAVED_MAIN_KIOSK_COORDS,
     IDLE_TIMEOUT
-} from './data/config.js';
+} from './data/config.js?v=5';
 
 import {
     DA_LARES_OUTER_PERIMETER,
@@ -21,18 +21,18 @@ import {
     LARES_COMPOUND_OUTLINE,
     LARES_TREES,
     LARES_BOUNDARY
-} from './data/geo.js';
+} from './data/geo.js?v=5';
 
 import {
     LARES_DRAWINGS,
     KNOWN_BUILDING_NAMES,
     CUSTOM_BUILDING_CENTERS,
     BUILDING_DIRECTORY
-} from './data/buildings.js';
+} from './data/buildings.js?v=5';
 
 mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
 let KIOSK_COORDS = [...SAVED_MAIN_KIOSK_COORDS];
-import { state } from './data/state.js';
+import { state } from './data/state.js?v=5';
 
 import {
     renderSectionBadges,
@@ -41,7 +41,7 @@ import {
     updateMarkerZoomState,
     createMarkers,
     removeMarkers
-} from './markers.js';
+} from './markers.js?v=5';
 
 import {
     map,
@@ -60,149 +60,18 @@ import {
     toggleTerrain,
     toggleMarkers,
     flyToView
-} from './map-setup.js';
+} from './map-setup.js?v=5';
 
-// SETTINGS CHIPS
-// ==========================================
-function toggleSettingChip(btn, type) {
-    if (type === 'trees') {
-        toggleTrees(btn);
-        return;
-    }
-    if (type === 'buildings') {
-        toggleBuildings(btn);
-        return;
-    }
-    btn.classList.toggle('active');
-    const on = btn.classList.contains('active');
-    if (type === 'boundary') {
-        const vis = on ? 'visible' : 'none';
-        LARES_BOUNDARY.features.forEach(f => {
-            const fid = f.properties.fid;
-            ['sec-glow-', 'sec-fill-', 'sec-line-'].forEach(p => {
-                try { map.setLayoutProperty(`${p}${fid}`, 'visibility', vis) } catch (e) { }
-            });
-        });
-        ['lares-compound-border-casing', 'lares-compound-border-line'].forEach(id => {
-            if (map.getLayer(id)) { try { map.setLayoutProperty(id, 'visibility', vis); } catch (e) { } }
-        });
-        if (map.getLayer('sec-labels-layer')) { try { map.setLayoutProperty('sec-labels-layer', 'visibility', vis); } catch (e) { } }
-        sectionBadges.forEach(m => {
-            if (m && m.getElement()) m.getElement().style.display = on ? 'inline-flex' : 'none';
-        });
-    } else if (type === 'terrain') {
-        terrainEnabled = on;
-        on ? map.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 }) : map.setTerrain(null);
-    } else if (type === 'numbers') {
-        markersVisible = on;
-        markers.forEach(m => {
-            m.getElement().style.display = on ? 'flex' : 'none';
-            if (!on && m.getPopup() && m.getPopup().isOpen()) m.togglePopup();
-        });
-    }
-    resetIdle();
-}
+import {
+    toggleSettingChip,
+    buildDirectory,
+    filterDirectory,
+    toggleSidebarMenu,
+    collapseSidebarMenu,
+    openSidebarMenu,
+    isNavigationActive
+} from './sidebar.js?v=5';
 
-// ==========================================
-// KIOSK — BUILDING DIRECTORY
-// ==========================================
-function buildDirectory(filter = '') {
-    const dir = document.getElementById('directory');
-    const lowerFilter = filter.toLowerCase();
-
-    let html = '';
-    BUILDING_DIRECTORY.forEach((b, index) => {
-        if (lowerFilter && !b.name.toLowerCase().includes(lowerFilter) && !b.desc.toLowerCase().includes(lowerFilter)) return;
-
-        const num = index + 1; // 1-based numbering
-        const bColor = b.color;
-        html += `<div class="dir-item" data-id="${b.id}" onclick="navigateTo('${b.id}')">
-            <div class="dir-item-icon" style="background:${bColor}22;color:${bColor}">
-                <span class="dir-item-icon-number">${num}</span>
-            </div>
-            <div class="dir-item-info">
-                <div class="dir-item-name">${b.name}</div>
-                <div class="dir-item-desc">${b.desc}</div>
-            </div>
-            <button class="three-dots-btn" onclick="event.stopPropagation(); openColorPicker('${b.id}', '${b.name}')" style="background:none; border:none; cursor:pointer; font-size:16px; padding:4px 8px;">⋮</button>
-            <div class="dir-item-arrow">→</div>
-        </div>`;
-    });
-
-    if (!html) html = '<div style="text-align:center;color:#475569;padding:40px 0;font-size:13px;">No results found</div>';
-    dir.innerHTML = html;
-    renderPhoneDirectory(filter);
-}
-
-function filterDirectory() {
-    const val = document.getElementById('search-input').value;
-    buildDirectory(val);
-    resetIdle();
-}
-
-// ==========================================
-// SIDEBAR COLLAPSE / EXPAND TOGGLE
-// ==========================================
-function toggleSidebarMenu() {
-    const sidebar = document.getElementById('sidebar');
-    const icon = document.getElementById('sidebar-toggle-icon');
-    const btn = document.getElementById('sidebar-toggle-btn');
-    if (!sidebar) return;
-
-    const isCollapsed = sidebar.classList.toggle('collapsed');
-    if (icon) {
-        icon.textContent = isCollapsed ? '>' : '<';
-    }
-    if (btn) {
-        const label = isCollapsed ? 'Open menu' : 'Close menu';
-        btn.title = label;
-        btn.setAttribute('aria-label', label);
-    }
-    document.documentElement.style.setProperty('--sidebar-offset', isCollapsed ? '0px' : '380px');
-}
-
-function collapseSidebarMenu() {
-    const sidebar = document.getElementById('sidebar');
-    const icon = document.getElementById('sidebar-toggle-icon');
-    const btn = document.getElementById('sidebar-toggle-btn');
-    if (!sidebar || sidebar.classList.contains('collapsed')) return;
-    sidebar.classList.add('collapsed');
-    if (icon) icon.textContent = '>';
-    if (btn) {
-        btn.title = 'Open menu';
-        btn.setAttribute('aria-label', 'Open menu');
-    }
-    document.documentElement.style.setProperty('--sidebar-offset', '0px');
-}
-
-function openSidebarMenu() {
-    const sidebar = document.getElementById('sidebar');
-    const icon = document.getElementById('sidebar-toggle-icon');
-    const btn = document.getElementById('sidebar-toggle-btn');
-    if (!sidebar || !sidebar.classList.contains('collapsed')) return;
-    sidebar.classList.remove('collapsed');
-    if (icon) icon.textContent = '<';
-    if (btn) {
-        btn.title = 'Close menu';
-        btn.setAttribute('aria-label', 'Close menu');
-    }
-    document.documentElement.style.setProperty('--sidebar-offset', '380px');
-}
-
-function isNavigationActive() {
-    if (isPhoneMode()) {
-        const routeSheet = document.getElementById('phone-view-route');
-        const isRouteSheetVisible = routeSheet && routeSheet.classList.contains('active');
-        if (isRouteSheetVisible && (isMobileGPSActive || walkAnimFrame)) {
-            return true;
-        }
-        return false;
-    }
-    if (walkAnimFrame || isMobileGPSActive) return true;
-    return false;
-}
-
-// ==========================================
 // KIOSK — WAYFINDING / ROUTING
 // ==========================================
 window.navigateTo = navigateTo;
