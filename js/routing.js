@@ -19,10 +19,9 @@ import {
     isPhoneMode, 
     setPhoneSheetView, 
     setPhoneSheetSnap,
-    updatePhoneRouteUI,
     getResponsiveMapPadding
 } from './phone-ui.js';
-import { updatePhoneLiveNavUI } from './phone-nav.js';
+import { updatePhoneRouteUI, updatePhoneLiveNavUI } from './phone-nav.js';
 import { stopPhoneLiveGPS } from './gps.js';
 import { stopOrbit } from './idle.js';
 

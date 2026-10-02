@@ -225,3 +225,6 @@ export const BUILDING_DIRECTORY = LARES_DRAWINGS.features.map(f => {
         color: '#3b82f6'
     };
 });
+
+export const BUILDING_ENTRANCES = (typeof window !== "undefined" && window.BUILDING_ENTRANCES) ? window.BUILDING_ENTRANCES : {};
+if (typeof window !== "undefined") { window.BUILDING_ENTRANCES = BUILDING_ENTRANCES; }

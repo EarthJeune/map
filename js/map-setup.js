@@ -26,8 +26,6 @@ import {
 } from './data/buildings.js';
 
 import { state } from './data/state.js';
-import { resetIdle } from './idle.js';
-import { toggleSettingChip } from './sidebar.js';
 
 import {
     createMarkers,
@@ -42,7 +40,7 @@ import {
 mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
 export const map = new mapboxgl.Map({
     container: 'map',
-    style: (state.state.currentMapStyleMode === 'mapbox')
+    style: (state.currentMapStyleMode === 'mapbox')
         ? 'mapbox://styles/mapbox/standard'
         : 'mapbox://styles/mapbox/satellite-streets-v12',
     center: INTRO_START_VIEW.center,
@@ -840,7 +838,7 @@ export function setMapStyleMode(mode) {
 }
 
 export function toggleBoundary(btn) {
-    toggleSettingChip(btn, 'boundary');
+    if (typeof window.toggleSettingChip === 'function') window.toggleSettingChip(btn, 'boundary');
 }
 
 export function toggleTerrain(btn) {

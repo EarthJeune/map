@@ -31,7 +31,8 @@ import {
     navigateTo, 
     setRouteSpeed, 
     setRouteCameraMode, 
-    exitRouteMode 
+    exitRouteMode, 
+    initWalkerCameraListeners 
 } from './walker.js';
 
 import { 
@@ -240,6 +241,7 @@ window.addEventListener('resize', applyAppModeToDOM);
 initPhoneSheetGestures();
 initIdleListeners();
 initGPSMapListeners();
+initWalkerCameraListeners();
 handleUrlParameters();
 
 // ============================================================

@@ -6,10 +6,9 @@ import { BUILDING_DIRECTORY } from './data/buildings.js';
 import { state } from './data/state.js';
 import { map } from './map-setup.js';
 import { resetIdle, stopIdleRotation, stopOrbit, orbitBuilding } from './idle.js';
-import { clearRoute } from './routing.js';
+import { clearRoute, closeRouteAndReset } from './routing.js';
 import { showBuildingPanel } from './building-panel.js';
 import { showMobileToast, showPhoneBuildingDetails, getResponsiveMapPadding, isPhoneMode } from './phone-ui.js';
-import { closeRouteAndReset } from './sidebar.js';
 
 // ==========================================
 
@@ -54,7 +53,7 @@ function safeShowBuildingPanel(id) {
 }
 
 export function navigateTo(buildingId) {
-    state.state.isIntroAnimating = false;
+    state.isIntroAnimating = false;
     resetIdle();
     stopIdleRotation();
     stopOrbit();
@@ -339,13 +338,20 @@ export function restoreLabels() {
 
 // Allow manual free look during route without fighting the walker animation.
 // We strictly check e.originalEvent so programmatic map.flyTo / easeTo / fitBounds NEVER trigger free mode!
-['dragstart', 'rotatestart', 'pitchstart', 'zoomstart'].forEach(evt => {
-    map.on(evt, (e) => {
-        if (e && e.originalEvent && state.activeRoute && (state.routeCameraMode || 'follow') === 'follow' && !state.isTransitioningToFollow) {
-            setRouteCameraMode('free');
+export function initWalkerCameraListeners() {
+    ['dragstart', 'rotatestart', 'pitchstart', 'zoomstart'].forEach(evt => {
+        if (map && typeof map.on === 'function') {
+            map.on(evt, (e) => {
+                if (e && e.originalEvent && state.activeRoute && (state.routeCameraMode || 'follow') === 'follow' && !state.isTransitioningToFollow) {
+                    setRouteCameraMode('free');
+                }
+            });
         }
     });
-});
+}
+if (typeof window !== 'undefined') {
+    window.initWalkerCameraListeners = initWalkerCameraListeners;
+}
 
 // ==========================================
 window.navigateTo = navigateTo;
