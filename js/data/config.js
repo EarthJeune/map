@@ -1,6 +1,9 @@
 // DA-LARES Configuration & View Presets
 
 export const MAPBOX_ACCESS_TOKEN = 'pk.eyJ1IjoiZWFydGgwMzA3IiwiYSI6ImNtdWFqNTR5czAxNmEyd29lMm42YjZlMDkifQ.xdPOP5RVPdn6YNka-ZdwoQ';
+if (typeof mapboxgl !== 'undefined') {
+    mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
+}
 export const CENTER = [121.16928638966252, 13.959884572708496];
 
 export const SECTION_COLORS = { 10: '#22c55e', 20: '#3b82f6', 21: '#fbbf24' };
