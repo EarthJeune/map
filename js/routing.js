@@ -1,12 +1,13 @@
 // DA-LARES Routing & Graph Pathfinding Module
 // A* / Dijkstra shortest path, road network graph, route drawing, and smoothing.
 
-import { BUILDING_DIRECTORY } from './data/buildings.js?v=5';
-import { state } from './data/state.js?v=5';
-import { map } from './map-setup.js?v=5';
-import { buildSteps, renderStepsList } from './steps.js?v=5';
-import { clearArrivedCountdown, declutterLabelsForRoute, restoreLabels } from './walker.js?v=5';
-import { closeBuildingPanel } from './building-panel.js?v=5';
+import { BUILDING_DIRECTORY } from './data/buildings.js';
+import { state } from './data/state.js';
+import { map } from './map-setup.js';
+import { buildSteps, renderStepsList } from './steps.js';
+import { clearArrivedCountdown, declutterLabelsForRoute, restoreLabels, setRouteSpeed } from './walker.js';
+import { closeBuildingPanel } from './building-panel.js';
+import { isPhoneMode, setPhoneSheetView, setPhoneSheetSnap } from './phone-ui.js';
 
 function safeClearArrivedCountdown() {
     if (typeof clearArrivedCountdown === 'function') clearArrivedCountdown();
@@ -430,7 +431,7 @@ export function clearRoute() {
     const stepsList = document.getElementById('route-steps-list');
     if (stepsList) stepsList.innerHTML = '';
     currentRouteSteps = null;
-    lastActiveStepIdx = -1;
+    state.lastActiveStepIdx = -1;
 
     const phoneSteps = document.getElementById('phone-steps-list');
     if (phoneSteps) phoneSteps.innerHTML = '';
@@ -449,7 +450,7 @@ export function clearRoute() {
     document.body.classList.remove('phone-nav-active');
     const sheet = document.getElementById('phone-bottom-sheet');
     if (sheet) sheet.classList.remove('route-active');
-    routeSpeedMultiplier = 2;
+    state.routeSpeedMultiplier = 2;
     setRouteSpeed(2);
 
     if (isPhoneMode()) {

@@ -42,6 +42,8 @@ export const state = {
     activeFullRouteCoords: null,
     currentRouteSteps: [],
     currentRouteDestName: '',
+    lastActiveStepIdx: -1,
+    routeSpeedMultiplier: 2,
 
     // Walker & Camera Follow
     walkerMarkerInstance: null,
@@ -63,13 +65,22 @@ export const state = {
     isOrbiting: false,
     orbitTimeout: null,
 
+    // Mobile Phone UI & Bottom Sheet
+    phoneSheetCurrentSnap: 'peek',
+    phoneSheetCurrentView: 'dir',
+    activeTouchCount: 0,
+    PUBLIC_TUNNEL_URL: 'https://studio-comprehensive-mariah-styles.trycloudflare.com',
+
     // Mobile GPS & Orientation
     isMobileGPSActive: false,
     userGPSMarker: null,
     userGPSAccuracyCircle: null,
+    gpsAccuracyCircle: null,
     gpsWatchId: null,
     lastKnownGPSCoords: null,
-    isUserFollowingGPS: false,
+    isUserFollowingGPS: true,
+    offRouteCounter: 0,
+    lastRecalcTime: 0,
     markerCurrentLngLat: null,
     markerAnimFrame: null,
     smoothedCompassHeading: null,
@@ -78,6 +89,8 @@ export const state = {
     lastTrimmedCoord: null,
     isFirstPhoneOrientation: true,
     hasPromptedPhoneCompass: false,
+    compassPermissionGranted: false,
+    compassListenersBound: false,
 };
 
 // Mirror state properties onto window so legacy/unqualified lookups bind seamlessly

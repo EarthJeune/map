@@ -1,9 +1,9 @@
 // DA-LARES Turn-by-Turn Directions Steps Module
 // Build step instructions, step list rendering, and active step highlighting.
 
-import { BUILDING_DIRECTORY } from './data/buildings.js?v=5';
-import { state } from './data/state.js?v=5';
-import { map } from './map-setup.js?v=5';
+import { BUILDING_DIRECTORY } from './data/buildings.js';
+import { state } from './data/state.js';
+import { map } from './map-setup.js';
 
 // GOOGLE MAPS TURN-BY-TURN DIRECTIONS ENGINE
 // ==========================================
@@ -255,8 +255,8 @@ export function focusRouteStep(idx) {
 }
 
 export function highlightActiveStep(idx) {
-    if (idx === lastActiveStepIdx) return;
-    lastActiveStepIdx = idx;
+    if (idx === state.lastActiveStepIdx) return;
+    state.lastActiveStepIdx = idx;
     document.querySelectorAll('.route-step-item').forEach((el, i) => {
         el.classList.remove('active', 'completed', 'upcoming');
         if (i < idx) {

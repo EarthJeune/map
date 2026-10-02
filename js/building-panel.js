@@ -1,9 +1,12 @@
 // DA-LARES Building Info Panel & Color Customization Module
 // Building detail drawer, photo gallery trigger, and color picker.
 
-import { BUILDING_DIRECTORY } from './data/buildings.js?v=5';
-import { state } from './data/state.js?v=5';
-import { map, getRoofColorCaseStyle } from './map-setup.js?v=5';
+import { DEFAULT_MAP_VIEW } from './data/config.js';
+import { BUILDING_DIRECTORY } from './data/buildings.js';
+import { state } from './data/state.js';
+import { map, getRoofColorCaseStyle } from './map-setup.js';
+import { updateBuildingQR } from './qr.js';
+import { stopOrbit, resetIdle } from './idle.js';
 
 export function showBuildingPanel(buildingId) {
     isIntroAnimating = false;

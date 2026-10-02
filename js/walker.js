@@ -1,10 +1,10 @@
 // DA-LARES Walker & Route Animation Module
 // Animated walking person marker, camera follow modes, speed control, and arrival countdown.
 
-import { DEFAULT_MAP_VIEW } from './data/config.js?v=5';
-import { BUILDING_DIRECTORY } from './data/buildings.js?v=5';
-import { state } from './data/state.js?v=5';
-import { map } from './map-setup.js?v=5';
+import { DEFAULT_MAP_VIEW } from './data/config.js';
+import { BUILDING_DIRECTORY } from './data/buildings.js';
+import { state } from './data/state.js';
+import { map } from './map-setup.js';
 
 // ==========================================
 

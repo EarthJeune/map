@@ -1,0 +1,516 @@
+// DA-LARES Wayfinding — Phone UI & Bottom Sheet Module
+
+import { DEFAULT_MAP_VIEW } from './data/config.js';
+import { BUILDING_DIRECTORY } from './data/buildings.js';
+import { state } from './data/state.js';
+import { map } from './map-setup.js';
+import { clearRoute } from './routing.js';
+import { isNavigationActive } from './sidebar.js';
+import { 
+    requestUserInitialLocation, 
+    requestDeviceOrientationPermission, 
+    stopPhoneLiveGPS 
+} from './gps.js';
+
+export function isPhoneMode() {
+    return window.innerWidth <= 768;
+}
+
+export function isMobileDevice() {
+    return window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|Mobile/i.test(navigator.userAgent);
+}
+
+export function getResponsiveMapPadding() {
+    const isMobile = window.innerWidth <= 768;
+    const isPortraitKiosk = window.innerWidth > 768 && window.innerHeight > window.innerWidth;
+    const isSidebarCollapsed = document.getElementById('sidebar')?.classList.contains('collapsed');
+
+    if (isMobile) {
+        return { top: 90, bottom: 240, left: 24, right: 24 };
+    } else if (isPortraitKiosk) {
+        const sidePad = isSidebarCollapsed ? 40 : 460;
+        return { top: 120, bottom: 120, left: sidePad, right: 40 };
+    } else {
+        const sidePad = isSidebarCollapsed ? 90 : 420;
+        return { top: 80, bottom: 80, left: sidePad, right: 90 };
+    }
+}
+
+// --- High-Contrast Text Color for Badges ---
+export function getContrastTextColor(hexColor) {
+    if (!hexColor || typeof hexColor !== 'string') return '#ffffff';
+    let hex = hexColor.replace('#', '');
+    if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+    if (hex.length !== 6) return '#ffffff';
+    const r = parseInt(hex.substring(0, 2), 16) || 0;
+    const g = parseInt(hex.substring(2, 4), 16) || 0;
+    const b = parseInt(hex.substring(4, 6), 16) || 0;
+    const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+    return yiq >= 150 ? '#0f172a' : '#ffffff';
+}
+
+export function showMobileToast(text, duration = 3500) {
+    const toast = document.getElementById('mobile-gps-toast');
+    const textEl = document.getElementById('mobile-gps-toast-text');
+    if (!toast || !textEl) return;
+    textEl.textContent = text;
+    toast.classList.add('visible');
+    setTimeout(() => toast.classList.remove('visible'), duration);
+}
+
+export function setPhoneSheetSnap(snap) {
+    const sheet = document.getElementById('phone-bottom-sheet');
+    const camControls = document.getElementById('floating-camera-controls');
+    if (!sheet) return;
+    sheet.classList.remove('snap-peek', 'snap-half', 'snap-full');
+    sheet.classList.add('snap-' + snap);
+    state.phoneSheetCurrentSnap = snap;
+
+    if (camControls && isPhoneMode()) {
+        if (snap === 'full') {
+            camControls.classList.add('sheet-full-hidden');
+        } else {
+            camControls.classList.remove('sheet-full-hidden');
+        }
+    }
+}
+
+export function cyclePhoneSheetSnap() {
+    if (state.phoneSheetCurrentSnap === 'peek') setPhoneSheetSnap('half');
+    else if (state.phoneSheetCurrentSnap === 'half') setPhoneSheetSnap('full');
+    else setPhoneSheetSnap('peek');
+}
+
+export function togglePhoneRouteSheet() {
+    if (state.phoneSheetCurrentSnap === 'peek') setPhoneSheetSnap('half');
+    else setPhoneSheetSnap('peek');
+}
+
+export function setPhoneSheetView(viewName) {
+    document.querySelectorAll('.sheet-view').forEach(v => v.classList.remove('active'));
+    const target = document.getElementById('phone-view-' + viewName);
+    if (target) target.classList.add('active');
+    state.phoneSheetCurrentView = viewName;
+
+    const sheet = document.getElementById('phone-bottom-sheet');
+    if (sheet) {
+        if (viewName === 'route') {
+            sheet.classList.add('route-active');
+            document.body.classList.add('phone-nav-active');
+        } else {
+            sheet.classList.remove('route-active');
+            document.body.classList.remove('phone-nav-active');
+            const topHud = document.getElementById('phone-top-nav-hud');
+            if (topHud) topHud.classList.remove('active');
+        }
+    }
+}
+
+export function initPhoneSheetGestures() {
+    const handle = document.getElementById('sheet-drag-handle');
+    const sheet = document.getElementById('phone-bottom-sheet');
+    if (!handle || !sheet) return;
+
+    let touchStartY = 0;
+    let initialSheetHeight = 0;
+    let isDragging = false;
+    let lastY = 0;
+    let lastTime = 0;
+    let dragVelocityY = 0;
+
+    function getSafeBottomPx() {
+        const s = getComputedStyle(document.documentElement).getPropertyValue('--safe-bottom') || '';
+        return parseInt(s, 10) || 0;
+    }
+
+    function getSnapHeights() {
+        const vh = window.innerHeight;
+        const peek = 88 + getSafeBottomPx();
+        const half = Math.round(vh * 0.50);
+        const full = Math.round(vh * 0.92);
+        return { peek, half, full, vh };
+    }
+
+    function onTouchStart(e) {
+        const target = e.target;
+        if (target.closest('button') || target.closest('input') || target.closest('.phone-search-clear')) {
+            return;
+        }
+
+        const touch = e.touches[0];
+        touchStartY = touch.clientY;
+        lastY = touchStartY;
+        lastTime = performance.now();
+        dragVelocityY = 0;
+        isDragging = true;
+
+        initialSheetHeight = sheet.getBoundingClientRect().height;
+        sheet.classList.add('dragging');
+    }
+
+    function onTouchMove(e) {
+        if (!isDragging) return;
+
+        const touch = e.touches[0];
+        const currentY = touch.clientY;
+        const currentTime = performance.now();
+        const deltaY = touchStartY - currentY;
+        const dt = Math.max(1, currentTime - lastTime);
+
+        dragVelocityY = (currentY - lastY) / dt;
+        lastY = currentY;
+        lastTime = currentTime;
+
+        const snaps = getSnapHeights();
+        let newHeight = initialSheetHeight + deltaY;
+
+        if (newHeight < snaps.peek) {
+            const under = snaps.peek - newHeight;
+            newHeight = snaps.peek - (under * 0.25);
+        } else if (newHeight > snaps.full) {
+            const over = newHeight - snaps.full;
+            newHeight = snaps.full + (over * 0.25);
+        }
+
+        sheet.style.height = `${Math.round(newHeight)}px`;
+        if (e.cancelable) e.preventDefault();
+    }
+
+    function onTouchEnd() {
+        if (!isDragging) return;
+        isDragging = false;
+        sheet.classList.remove('dragging');
+        sheet.style.height = '';
+
+        const snaps = getSnapHeights();
+        const currentHeight = sheet.getBoundingClientRect().height;
+
+        let targetSnap = 'peek';
+        if (dragVelocityY < -0.45) {
+            targetSnap = (currentHeight < snaps.half) ? 'half' : 'full';
+        } else if (dragVelocityY > 0.45) {
+            targetSnap = (currentHeight > snaps.half) ? 'half' : 'peek';
+        } else {
+            const dPeek = Math.abs(currentHeight - snaps.peek);
+            const dHalf = Math.abs(currentHeight - snaps.half);
+            const dFull = Math.abs(currentHeight - snaps.full);
+
+            if (dPeek <= dHalf && dPeek <= dFull) {
+                targetSnap = 'peek';
+            } else if (dHalf <= dPeek && dHalf <= dFull) {
+                targetSnap = 'half';
+            } else {
+                targetSnap = 'full';
+            }
+        }
+
+        setPhoneSheetSnap(targetSnap);
+    }
+
+    handle.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onTouchEnd, { passive: true });
+    window.addEventListener('touchcancel', onTouchEnd, { passive: true });
+}
+
+// --- Photo Gallery Mosaic & Lightbox Engine ---
+export const BUILDING_PHOTOS = {
+    'admin_building': ['images/admin_building.jpg']
+};
+
+export function renderPhoneBuildingGallery(buildingId) {
+    const container = document.getElementById('phone-bldg-gallery-container');
+    if (!container) return;
+
+    const bldg = BUILDING_DIRECTORY.find(b => b.id === buildingId);
+    const bldgName = bldg ? bldg.name : 'Building';
+
+    let candidatePhotos = [];
+    if (BUILDING_PHOTOS[buildingId] && BUILDING_PHOTOS[buildingId].length > 0) {
+        candidatePhotos = [...BUILDING_PHOTOS[buildingId]];
+    }
+
+    const validImages = [];
+    if (candidatePhotos.length === 0) {
+        displayGalleryDOM([], bldgName);
+        return;
+    }
+
+    let checked = 0;
+    candidatePhotos.forEach(src => {
+        const img = new Image();
+        img.onload = () => {
+            validImages.push(src);
+            checked++;
+            if (checked === candidatePhotos.length) {
+                displayGalleryDOM(validImages, bldgName);
+            }
+        };
+        img.onerror = () => {
+            checked++;
+            if (checked === candidatePhotos.length) {
+                displayGalleryDOM(validImages, bldgName);
+            }
+        };
+        img.src = src;
+    });
+
+    function displayGalleryDOM(images, name) {
+        if (!container) return;
+        if (images.length === 0) {
+            container.innerHTML = `
+                <div class="pbg-empty-card">
+                    <div class="pbg-empty-icon">🏛️</div>
+                    <div style="font-weight:700;color:#f1f5f9;font-size:14px;">${name}</div>
+                    <div style="font-size:12px;color:#94a3b8;">Facility photos will be added in upcoming updates</div>
+                </div>
+            `;
+            return;
+        }
+
+        if (images.length === 1) {
+            container.innerHTML = `
+                <div class="phone-bldg-gallery-grid single-photo" onclick="openPhotoLightbox('${images[0]}', '${name}')">
+                    <div class="pbg-single-slot">
+                        <img src="${images[0]}" alt="${name}">
+                        <div class="pbg-badge-pill">📷 1 Photo</div>
+                    </div>
+                </div>
+            `;
+        } else if (images.length === 2) {
+            container.innerHTML = `
+                <div class="phone-bldg-gallery-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:4px;height:180px;">
+                    <div class="pbg-main-slot" onclick="openPhotoLightbox('${images[0]}', '${name} - View 1')">
+                        <img src="${images[0]}" alt="${name} 1">
+                    </div>
+                    <div class="pbg-main-slot" onclick="openPhotoLightbox('${images[1]}', '${name} - View 2')">
+                        <img src="${images[1]}" alt="${name} 2">
+                    </div>
+                    <div class="pbg-badge-pill">📷 2 Photos</div>
+                </div>
+            `;
+        } else {
+            container.innerHTML = `
+                <div class="phone-bldg-gallery-grid mosaic">
+                    <div class="pbg-main-slot" onclick="openPhotoLightbox('${images[0]}', '${name} - Main View')">
+                        <img src="${images[0]}" alt="${name} 1">
+                    </div>
+                    <div class="pbg-side-slots">
+                        <div class="pbg-side-item" onclick="openPhotoLightbox('${images[1]}', '${name} - Side View')">
+                            <img src="${images[1]}" alt="${name} 2">
+                        </div>
+                        <div class="pbg-side-item" onclick="openPhotoLightbox('${images[2]}', '${name} - Interior / Detail')">
+                            <img src="${images[2]}" alt="${name} 3">
+                        </div>
+                    </div>
+                    <div class="pbg-badge-pill">📷 ${images.length} Photos</div>
+                </div>
+            `;
+        }
+    }
+}
+
+export function openPhotoLightbox(src, caption) {
+    const modal = document.getElementById('photo-lightbox-modal');
+    const img = document.getElementById('lightbox-img');
+    const cap = document.getElementById('lightbox-caption');
+    if (!modal || !img) return;
+    img.src = src;
+    if (cap) cap.textContent = caption || 'Facility Photo';
+    modal.style.display = 'flex';
+}
+
+export function closePhotoLightbox(e) {
+    if (e) e.stopPropagation();
+    const modal = document.getElementById('photo-lightbox-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+// --- Mobile Welcome Onboarding Modal Handlers ---
+export function showPhoneWelcomeModal() {
+    const modal = document.getElementById('phone-welcome-modal');
+    if (!modal) return;
+    modal.style.display = 'flex';
+}
+
+export function handleWelcomeContinue() {
+    sessionStorage.setItem('da_lares_welcome_seen', '1');
+    const modal = document.getElementById('phone-welcome-modal');
+    if (modal) {
+        modal.classList.add('closing');
+        setTimeout(() => {
+            modal.style.display = 'none';
+            modal.classList.remove('closing');
+        }, 260);
+    }
+    // Acquire user location to place blue dot on campus; do NOT start a walking route
+    requestUserInitialLocation();
+    requestDeviceOrientationPermission();
+}
+
+export function handleWelcomeSkip() {
+    sessionStorage.setItem('da_lares_welcome_seen', '1');
+    const modal = document.getElementById('phone-welcome-modal');
+    if (modal) {
+        modal.classList.add('closing');
+        setTimeout(() => {
+            modal.style.display = 'none';
+            modal.classList.remove('closing');
+        }, 260);
+    }
+    showMobileToast('🏛️ Welcome to DA-LARES! Tap any building to navigate.', 3000);
+}
+
+// --- Phone Directory & Filtering ---
+export function renderPhoneDirectory(filter = '') {
+    const list = document.getElementById('phone-directory-list');
+    if (!list) return;
+    const lowerFilter = filter.toLowerCase().trim();
+
+    let html = '';
+    BUILDING_DIRECTORY.forEach((b, index) => {
+        if (lowerFilter && !b.name.toLowerCase().includes(lowerFilter) && !(b.desc && b.desc.toLowerCase().includes(lowerFilter))) {
+            return;
+        }
+
+        const num = index + 1;
+        const textColor = getContrastTextColor(b.color);
+        const isSelected = state.selectedBuildingId === b.id;
+
+        html += `
+            <div class="phone-dir-item ${isSelected ? 'active' : ''}" data-id="${b.id}" onclick="navigateTo('${b.id}')">
+                <div class="phone-dir-badge" style="background:${b.color}; color:${textColor};">
+                    ${num}
+                </div>
+                <div class="phone-dir-info">
+                    <div class="phone-dir-name">${b.name}</div>
+                    <div class="phone-dir-sub">${b.desc || b.section || 'DA-LARES Facility'}</div>
+                </div>
+                <div class="phone-dir-arrow">›</div>
+            </div>
+        `;
+    });
+
+    if (!html) {
+        html = '<div style="text-align:center;color:#64748b;padding:32px 12px;font-size:14px;">No places found</div>';
+    }
+    list.innerHTML = html;
+}
+
+export function filterPhoneDirectory() {
+    const input = document.getElementById('phone-search-input');
+    const val = input ? input.value : '';
+    renderPhoneDirectory(val);
+    if (state.phoneSheetCurrentSnap === 'peek' && val.length > 0) {
+        setPhoneSheetSnap('half');
+    }
+}
+
+export function clearPhoneSearch() {
+    const input = document.getElementById('phone-search-input');
+    if (input) input.value = '';
+    renderPhoneDirectory('');
+}
+
+// --- Phone Building Details View ---
+export function showPhoneBuildingDetails(buildingId) {
+    // Guard against accidental switches while navigation is active
+    if (isNavigationActive()) {
+        if (state.selectedBuildingId === buildingId) return;
+        showMobileToast(`🧭 Active route to ${state.currentRouteDestName || 'destination'} in progress. Tap 'Cancel' to choose another building.`, 3500);
+        return;
+    }
+
+    const index = BUILDING_DIRECTORY.findIndex(b => b.id === buildingId);
+    const building = BUILDING_DIRECTORY[index];
+    if (!building) return;
+
+    const num = index + 1;
+    state.selectedBuildingId = buildingId;
+
+    // Set badge number & color with contrast check
+    const badgeEl = document.getElementById('phone-bldg-badge');
+    if (badgeEl) {
+        badgeEl.textContent = num;
+        badgeEl.style.background = building.color;
+        badgeEl.style.color = getContrastTextColor(building.color);
+    }
+
+    // Set titles
+    const titleEl = document.getElementById('phone-bldg-title');
+    const descEl = document.getElementById('phone-bldg-desc');
+    if (titleEl) titleEl.textContent = building.name;
+    if (descEl) descEl.textContent = building.desc || 'DA-LARES Facility';
+
+    // Meta info (Section and Type; Coords row is strictly hidden)
+    const sectionEl = document.getElementById('phone-bldg-section');
+    const typeEl = document.getElementById('phone-bldg-type');
+    if (sectionEl) sectionEl.textContent = building.section || 'Compound';
+    if (typeEl) typeEl.textContent = building.type || 'Office / Facility';
+
+    // Render Google Maps photo mosaic / gallery form
+    renderPhoneBuildingGallery(buildingId);
+
+    // Switch to building view and snap to half height
+    setPhoneSheetView('bldg');
+    setPhoneSheetSnap('half');
+
+    // Frame camera comfortably in 45° 3D tilt overlooking the building
+    map.easeTo({
+        center: [building.coords[0], building.coords[1] - 0.00035],
+        zoom: 19.3,
+        pitch: 46,
+        bearing: -15,
+        duration: 900
+    });
+}
+
+export function showPhoneDirectoryView() {
+    state.selectedBuildingId = null;
+    clearRoute();
+    stopPhoneLiveGPS();
+    document.querySelectorAll('.phone-dir-item').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.bldg-map-marker').forEach(el => el.classList.remove('active'));
+    setPhoneSheetView('dir');
+    setPhoneSheetSnap('half');
+    renderPhoneDirectory('');
+}
+
+export function closePhoneBuildingDetails() {
+    state.selectedBuildingId = null;
+    document.querySelectorAll('.phone-dir-item').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.bldg-map-marker').forEach(el => el.classList.remove('active'));
+    setPhoneSheetView('dir');
+    setPhoneSheetSnap('peek');
+    map.flyTo({
+        center: DEFAULT_MAP_VIEW.center,
+        zoom: DEFAULT_MAP_VIEW.zoom,
+        pitch: DEFAULT_MAP_VIEW.pitch,
+        bearing: DEFAULT_MAP_VIEW.bearing,
+        duration: 1500
+    });
+}
+
+// Window reflections
+window.isPhoneMode = isPhoneMode;
+window.isMobileDevice = isMobileDevice;
+window.getResponsiveMapPadding = getResponsiveMapPadding;
+window.getContrastTextColor = getContrastTextColor;
+window.showMobileToast = showMobileToast;
+window.setPhoneSheetSnap = setPhoneSheetSnap;
+window.cyclePhoneSheetSnap = cyclePhoneSheetSnap;
+window.togglePhoneRouteSheet = togglePhoneRouteSheet;
+window.setPhoneSheetView = setPhoneSheetView;
+window.initPhoneSheetGestures = initPhoneSheetGestures;
+window.renderPhoneBuildingGallery = renderPhoneBuildingGallery;
+window.openPhotoLightbox = openPhotoLightbox;
+window.closePhotoLightbox = closePhotoLightbox;
+window.showPhoneWelcomeModal = showPhoneWelcomeModal;
+window.handleWelcomeContinue = handleWelcomeContinue;
+window.handleWelcomeSkip = handleWelcomeSkip;
+window.renderPhoneDirectory = renderPhoneDirectory;
+window.filterPhoneDirectory = filterPhoneDirectory;
+window.clearPhoneSearch = clearPhoneSearch;
+window.showPhoneBuildingDetails = showPhoneBuildingDetails;
+window.showPhoneDirectoryView = showPhoneDirectoryView;
+window.closePhoneBuildingDetails = closePhoneBuildingDetails;

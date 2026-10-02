@@ -1,10 +1,10 @@
 // DA-LARES Sidebar & Directory Module
 // Directory list, search filter, sidebar menu toggle/collapse, and setting chips.
 
-import { BUILDING_DIRECTORY } from './data/buildings.js?v=5';
-import { LARES_BOUNDARY } from './data/geo.js?v=5';
-import { state } from './data/state.js?v=5';
-import { toggleTrees, toggleBuildings, map } from './map-setup.js?v=5';
+import { BUILDING_DIRECTORY } from './data/buildings.js';
+import { LARES_BOUNDARY } from './data/geo.js';
+import { state } from './data/state.js';
+import { toggleTrees, toggleBuildings, map } from './map-setup.js';
 
 function safeResetIdle() {
     if (typeof window.resetIdle === 'function') window.resetIdle();
