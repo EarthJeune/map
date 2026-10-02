@@ -6,9 +6,13 @@
 import { SAVED_MAIN_KIOSK_COORDS } from './config.js';
 
 const urlParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
-const urlViewParam = urlParams.get('view') || urlParams.get('mode');
+const urlViewParam = urlParams.get('view');
 
 export const state = {
+    // Mode & Orientation
+    appMode: 'kiosk',
+    kioskOrientation: 'landscape',
+
     // Map & Style
     map: null,
     mapReady: false,

@@ -12,22 +12,28 @@ import {
     stopPhoneLiveGPS 
 } from './gps.js';
 
-export function isPhoneMode() {
-    return window.innerWidth <= 768;
-}
+import { 
+    isPhoneMode, 
+    isKioskMode, 
+    isPortraitKiosk, 
+    detectAppMode, 
+    detectKioskOrientation 
+} from './mode.js';
+
+export { isPhoneMode, isKioskMode, isPortraitKiosk };
 
 export function isMobileDevice() {
-    return window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|Mobile/i.test(navigator.userAgent);
+    return isPhoneMode() || /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|Mobile/i.test(navigator.userAgent);
 }
 
 export function getResponsiveMapPadding() {
-    const isMobile = window.innerWidth <= 768;
-    const isPortraitKiosk = window.innerWidth > 768 && window.innerHeight > window.innerWidth;
+    const isMobile = isPhoneMode();
+    const isPortrait = isPortraitKiosk();
     const isSidebarCollapsed = document.getElementById('sidebar')?.classList.contains('collapsed');
 
     if (isMobile) {
         return { top: 90, bottom: 240, left: 24, right: 24 };
-    } else if (isPortraitKiosk) {
+    } else if (isPortrait) {
         const sidePad = isSidebarCollapsed ? 40 : 460;
         return { top: 120, bottom: 120, left: sidePad, right: 40 };
     } else {

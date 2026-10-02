@@ -6,6 +6,7 @@ import { map } from './map-setup.js';
 import { clearRoute } from './routing.js';
 import { buildDirectory } from './sidebar.js';
 import { navigateTo } from './walker.js';
+import { isKioskMode } from './mode.js';
 
 export function createKioskMarker() {
     if (state.kioskMarkerInstance) state.kioskMarkerInstance.remove();
@@ -41,11 +42,12 @@ export function createKioskMarker() {
 export function resetIdle() {
     if (state.idleTimer) clearTimeout(state.idleTimer);
     stopIdleRotation();
+    if (!isKioskMode()) return;
     state.idleTimer = setTimeout(startIdleRotation, IDLE_TIMEOUT);
 }
 
 export function startIdleRotation() {
-    if (state.idleRotating) return;
+    if (!isKioskMode() || state.idleRotating) return;
     state.idleRotating = true;
     // Clear any active route and close panels
     if (state.activeRoute) clearRoute();

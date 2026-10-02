@@ -50,7 +50,13 @@ import {
 } from './building-panel.js';
 
 import { 
-    isPhoneMode, 
+    applyAppModeToDOM,
+    isPhoneMode,
+    isKioskMode,
+    isPortraitKiosk
+} from './mode.js';
+
+import { 
     showPhoneWelcomeModal, 
     handleWelcomeContinue, 
     handleWelcomeSkip, 
@@ -188,10 +194,9 @@ map.on('load', () => {
 export function handleUrlParameters() {
     const params = new URLSearchParams(window.location.search);
     const destParam = params.get('dest');
-    const modeParam = params.get('mode');
     const viewParam = params.get('view');
 
-    if (viewParam === 'mapbox' || modeParam === 'mapbox') {
+    if (viewParam === 'mapbox') {
         const interval = setInterval(() => {
             if (state.mapReady) {
                 clearInterval(interval);
@@ -223,13 +228,15 @@ export function handleUrlParameters() {
         }, 250);
     }
 
-    // On mobile viewports or QR scan visits: Show Welcome / Onboarding modal if not seen in session
-    if ((isPhoneMode() || window.innerWidth <= 768 || destParam) && !sessionStorage.getItem('da_lares_welcome_seen')) {
+    // On phone mode: Show Welcome / Onboarding modal if not seen in session
+    if (isPhoneMode() && !sessionStorage.getItem('da_lares_welcome_seen')) {
         setTimeout(showPhoneWelcomeModal, 450);
     }
 }
 
-// Initialize gesture and event listeners
+// Initialize mode, gesture, and event listeners
+applyAppModeToDOM();
+window.addEventListener('resize', applyAppModeToDOM);
 initPhoneSheetGestures();
 initIdleListeners();
 initGPSMapListeners();

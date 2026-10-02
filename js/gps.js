@@ -102,6 +102,9 @@ export function requestDeviceOrientationPermission(callback) {
 
 // Auto-request compass on the first user interaction anywhere on the screen
 export function triggerCompassPermissionOnFirstGesture() {
+    if (typeof window.isPhoneMode === 'function' && !window.isPhoneMode()) {
+        return;
+    }
     requestDeviceOrientationPermission();
     window.removeEventListener('touchend', triggerCompassPermissionOnFirstGesture);
     window.removeEventListener('click', triggerCompassPermissionOnFirstGesture);
