@@ -1,4 +1,5 @@
-// DA-LARES Wayfinding — Live Mobile GPS Engine & Compass System
+// DA-LARES Wayfinding — Live Mobile GPS Engine & Sensor Fusion Optimization Module
+// High-precision road snapping, Kalman-style jitter filtering, haptics, and compass sync
 
 import { BUILDING_DIRECTORY } from './data/buildings.js';
 import { state } from './data/state.js';
@@ -22,23 +23,152 @@ import {
     startPhoneAnimatedRoute 
 } from './phone-nav.js';
 
+// ============================================================
+// SENSOR FUSION & JITTER FILTER ENGINE
+// ============================================================
+
+class GPSFilter {
+    constructor() {
+        this.lastRawCoord = null;
+        this.lastFilteredCoord = null;
+        this.lastUpdateTime = 0;
+        this.currentSpeedMps = 0;
+        this.isStationary = true;
+    }
+
+    reset() {
+        this.lastRawCoord = null;
+        this.lastFilteredCoord = null;
+        this.lastUpdateTime = 0;
+        this.currentSpeedMps = 0;
+        this.isStationary = true;
+    }
+
+    filter(rawLng, rawLat, accuracy, timestamp) {
+        const now = timestamp || Date.now();
+        const rawPt = [rawLng, rawLat];
+
+        if (!this.lastFilteredCoord) {
+            this.lastRawCoord = rawPt;
+            this.lastFilteredCoord = rawPt;
+            this.lastUpdateTime = now;
+            this.currentSpeedMps = 0;
+            this.isStationary = true;
+            return { coord: rawPt, speed: 0, isStationary: true };
+        }
+
+        const dtSec = Math.max(0.2, (now - this.lastUpdateTime) / 1000);
+        this.lastUpdateTime = now;
+
+        const moveDist = turf.distance(
+            turf.point(this.lastFilteredCoord),
+            turf.point(rawPt),
+            { units: 'meters' }
+        );
+
+        this.currentSpeedMps = moveDist / dtSec;
+
+        // Reject GPS teleport spikes (> 15 m/s when accuracy is loose)
+        if (this.currentSpeedMps > 15 && accuracy > 12) {
+            console.warn('[GPS Filter] Suppressed multipath GPS jump:', Math.round(moveDist), 'm');
+            return { coord: this.lastFilteredCoord, speed: this.currentSpeedMps, isStationary: this.isStationary };
+        }
+
+        // Stationary Deadband: suppress jitter while user is standing still
+        if (moveDist < 1.6 && (this.currentSpeedMps < 0.5 || accuracy > 15)) {
+            this.isStationary = true;
+            const alpha = 0.08;
+            const lng = this.lastFilteredCoord[0] + (rawLng - this.lastFilteredCoord[0]) * alpha;
+            const lat = this.lastFilteredCoord[1] + (rawLat - this.lastFilteredCoord[1]) * alpha;
+            this.lastFilteredCoord = [lng, lat];
+            return { coord: this.lastFilteredCoord, speed: 0, isStationary: true };
+        }
+
+        this.isStationary = false;
+
+        // Dynamic Confidence Weighting based on satellite accuracy
+        const safeAccuracy = Math.max(5, accuracy || 15);
+        const alpha = Math.min(0.85, Math.max(0.25, 12 / safeAccuracy));
+
+        const lng = this.lastFilteredCoord[0] + (rawLng - this.lastFilteredCoord[0]) * alpha;
+        const lat = this.lastFilteredCoord[1] + (rawLat - this.lastFilteredCoord[1]) * alpha;
+        this.lastFilteredCoord = [lng, lat];
+        this.lastRawCoord = rawPt;
+
+        return {
+            coord: this.lastFilteredCoord,
+            speed: this.currentSpeedMps,
+            isStationary: false
+        };
+    }
+}
+
+class HeadingFilter {
+    constructor() {
+        this.currentHeading = null;
+        this.targetHeading = null;
+    }
+
+    reset() {
+        this.currentHeading = null;
+        this.targetHeading = null;
+    }
+
+    setTarget(heading) {
+        if (heading === null || isNaN(heading)) return;
+        this.targetHeading = (heading + 360) % 360;
+        if (this.currentHeading === null) {
+            this.currentHeading = this.targetHeading;
+        }
+    }
+
+    step(dtSec) {
+        if (this.currentHeading === null || this.targetHeading === null) return this.currentHeading;
+
+        let diff = this.targetHeading - this.currentHeading;
+        while (diff < -180) diff += 360;
+        while (diff > 180) diff -= 360;
+
+        const factor = Math.min(1.0, dtSec * 8.5);
+        this.currentHeading = (this.currentHeading + diff * factor + 360) % 360;
+        return this.currentHeading;
+    }
+}
+
+const gpsFilter = new GPSFilter();
+const headingFilter = new HeadingFilter();
+
 let gpsNavigationStartTime = 0;
 let userDismissedGPSPrompt = false;
 let lastCameraFollowLngLat = null;
 let lastTrimmedTime = 0;
+let lastAccuracyCircleUpdate = 0;
 
 let markerCurrentLngLat = null;
 let markerTargetLngLat = null;
 let markerLerpStartTime = 0;
-let markerLerpDuration = 500;
+let markerLerpDuration = 450;
 let markerAnimFrame = null;
 let lastTrimmedCoord = null;
 
-let smoothedCompassHeading = null;
 let rawCompassHeading = null;
 let headingAnimFrame = null;
+let lastHeadingFrameTime = 0;
 
 let activeTouchCount = 0;
+
+// Haptic feedback helpers
+export function triggerHapticArrival() {
+    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+        try { navigator.vibrate([180, 80, 180]); } catch (e) {}
+    }
+}
+
+export function triggerHapticRecalculate() {
+    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+        try { navigator.vibrate(60); } catch (e) {}
+    }
+}
 
 export function createUserGPSMarkerElement() {
     const el = document.createElement('div');
@@ -54,7 +184,6 @@ export function createUserGPSMarkerElement() {
                         <stop offset="100%" stop-color="#0284c7" stop-opacity="0" />
                     </radialGradient>
                 </defs>
-                <!-- 60-degree glowing fan beam cone pointing forward -->
                 <path d="M 60 60 L 29.5 7.2 A 61 61 0 0 1 90.5 7.2 Z" fill="url(#userFanGradient)" />
             </svg>
         </div>
@@ -100,7 +229,6 @@ export function requestDeviceOrientationPermission(callback) {
     }
 }
 
-// Auto-request compass on the first user interaction anywhere on the screen
 export function triggerCompassPermissionOnFirstGesture() {
     if (typeof window.isPhoneMode === 'function' && !window.isPhoneMode()) {
         return;
@@ -163,7 +291,7 @@ export function requestUserInitialLocation() {
             navigator.geolocation.getCurrentPosition(
                 onInitialPos,
                 (err2) => {
-                    if (err2.code === 1) { // PERMISSION_DENIED
+                    if (err2.code === 1) {
                         showGPSPermissionCard();
                     } else {
                         showMobileToast('📍 GPS signal weak. You can still use the Kiosk as starting point.', 3500);
@@ -181,6 +309,8 @@ export function startPhoneLiveGPS(buildingId) {
     if (!buildingId) return;
     state.selectedBuildingId = buildingId;
     gpsNavigationStartTime = Date.now();
+    gpsFilter.reset();
+    headingFilter.reset();
 
     // Stop animated walker simulation if running
     if (state.walkAnimFrame) cancelAnimationFrame(state.walkAnimFrame);
@@ -199,7 +329,7 @@ export function startPhoneLiveGPS(buildingId) {
     const bldgName = building ? building.name : 'Destination';
     state.currentRouteDestName = bldgName;
 
-    // Immediately switch sheet to route view so user gets immediate visual feedback!
+    // Immediate visual feedback in route view
     const destName = document.getElementById('phone-route-dest-name');
     const remainTag = document.getElementById('phone-route-remain-tag');
     if (destName) destName.textContent = bldgName;
@@ -219,12 +349,10 @@ export function startPhoneLiveGPS(buildingId) {
     setPhoneSheetView('route');
     setPhoneSheetSnap('peek');
 
-    // Switch to top-down 2D view for accurate walkway navigation
     try { map.easeTo({ pitch: 0, duration: 600 }); } catch (e) {}
 
-    state.activeFullRouteCoords = null; // Clear so new route from user GPS is always drawn
+    state.activeFullRouteCoords = null;
 
-    // If last known GPS is already cached, compute and draw immediately from user's live position!
     if (state.lastKnownGPSCoords) {
         computeAndDrawRouteFromGPS(state.lastKnownGPSCoords, buildingId);
     }
@@ -242,31 +370,25 @@ export function startPhoneLiveGPS(buildingId) {
         state.gpsWatchId = null;
     }
 
-    // Set up GPS accuracy and connector layers on map
     setupGPSLayers();
-
-    // Start continuous tracking immediately for fastest satellite fix
     startContinuousTracking(buildingId);
 
-    // Also initiate high-accuracy query with generous timeout
     navigator.geolocation.getCurrentPosition(
         (pos) => handleGPSPositionUpdate(pos, buildingId),
         (err) => {
             console.warn('Initial GPS query note:', err);
-            if (err && err.code === 1) { // PERMISSION_DENIED
+            if (err && err.code === 1) {
                 showGPSPermissionCard(buildingId);
             }
         },
         { enableHighAccuracy: true, maximumAge: 0, timeout: 12000 }
     );
 
-    // Request and bind device orientation / compass on this direct user tap
     requestDeviceOrientationPermission();
 }
 
 export function startContinuousTracking(buildingId) {
     if (state.gpsWatchId) return;
-    // CRITICAL: maximumAge: 0 forces the device to ALWAYS deliver the freshest real-time hardware GPS fix
     state.gpsWatchId = navigator.geolocation.watchPosition(
         (pos) => handleGPSPositionUpdate(pos, buildingId),
         (err) => {
@@ -276,7 +398,8 @@ export function startContinuousTracking(buildingId) {
     );
 }
 
-export function animateMarkerTo(targetLngLat) {
+// 60fps Marker Gliding with dynamic duration based on fix interval
+export function animateMarkerTo(targetLngLat, duration = 450) {
     if (!state.userGPSMarker) return;
     if (!markerCurrentLngLat) {
         markerCurrentLngLat = targetLngLat;
@@ -286,13 +409,14 @@ export function animateMarkerTo(targetLngLat) {
     const startLngLat = [...markerCurrentLngLat];
     markerTargetLngLat = targetLngLat;
     markerLerpStartTime = performance.now();
+    markerLerpDuration = duration;
 
     if (markerAnimFrame) cancelAnimationFrame(markerAnimFrame);
 
     function step(now) {
         const elapsed = now - markerLerpStartTime;
         const progress = Math.min(1, elapsed / markerLerpDuration);
-        const ease = 1 - (1 - progress) * (1 - progress); // Smooth quad ease-out
+        const ease = 1 - Math.pow(1 - progress, 2);
 
         const currentLng = startLngLat[0] + (markerTargetLngLat[0] - startLngLat[0]) * ease;
         const currentLat = startLngLat[1] + (markerTargetLngLat[1] - startLngLat[1]) * ease;
@@ -321,9 +445,8 @@ export function updateSmoothCameraFollow(targetLngLat, distFromCompoundMeters) {
         });
         return;
     }
-    // Only update camera if user moved at least 2.0 meters from last camera focus
     const moveD = turf.distance(turf.point(lastCameraFollowLngLat), turf.point(targetLngLat), { units: 'meters' });
-    if (moveD >= 2.0) {
+    if (moveD >= 1.8) {
         lastCameraFollowLngLat = targetLngLat;
         map.panTo(targetLngLat, {
             duration: 600,
@@ -368,7 +491,6 @@ export function stopPhoneLiveGPS() {
         }
     } catch (e) { }
     stopHeadingSync();
-    smoothedCompassHeading = null;
     rawCompassHeading = null;
 }
 
@@ -424,33 +546,28 @@ export function setupGPSLayers() {
 export function applyUserHeading(targetHeading) {
     if (targetHeading === null || targetHeading === undefined || isNaN(targetHeading)) return;
     rawCompassHeading = targetHeading;
-
-    if (smoothedCompassHeading === null) {
-        smoothedCompassHeading = targetHeading;
-    } else {
-        let diff = targetHeading - smoothedCompassHeading;
-        while (diff < -180) diff += 360;
-        while (diff > 180) diff -= 360;
-        smoothedCompassHeading = (smoothedCompassHeading + diff * 0.25 + 360) % 360;
-    }
-
-    // Subtract map bearing so fan always points real-world north-relative
-    const mapBearing = map ? (map.getBearing() || 0) : 0;
-    const visualRotation = (smoothedCompassHeading - mapBearing + 360) % 360;
-
-    const headingEl = document.getElementById('user-gps-heading');
-    if (headingEl) {
-        headingEl.style.display = 'flex';
-        headingEl.style.transform = `rotate(${Math.round(visualRotation)}deg)`;
-    }
+    headingFilter.setTarget(targetHeading);
+    startHeadingSync();
 }
 
-// Continuously re-apply heading on map rotate/move so fan stays aligned
 export function startHeadingSync() {
     if (headingAnimFrame) return;
-    function syncLoop() {
-        if (rawCompassHeading !== null) {
-            applyUserHeading(rawCompassHeading);
+    lastHeadingFrameTime = performance.now();
+
+    function syncLoop(now) {
+        const dtSec = Math.max(0.001, (now - lastHeadingFrameTime) / 1000);
+        lastHeadingFrameTime = now;
+
+        const smoothed = headingFilter.step(dtSec);
+        if (smoothed !== null) {
+            const mapBearing = map ? (map.getBearing() || 0) : 0;
+            const visualRotation = (smoothed - mapBearing + 360) % 360;
+
+            const headingEl = document.getElementById('user-gps-heading');
+            if (headingEl) {
+                headingEl.style.display = 'flex';
+                headingEl.style.transform = `rotate(${Math.round(visualRotation)}deg)`;
+            }
         }
         headingAnimFrame = requestAnimationFrame(syncLoop);
     }
@@ -467,25 +584,22 @@ export function stopHeadingSync() {
 export function handleDeviceHeading(e) {
     let heading = null;
 
-    // 1. iOS Safari: webkitCompassHeading (0 = True North, clockwise)
     if (typeof e.webkitCompassHeading === 'number' && !isNaN(e.webkitCompassHeading)) {
         heading = e.webkitCompassHeading;
-    }
-    // 2. Android Chrome / Standard: alpha (0 = arbitrary, but deviceorientationabsolute gives true north)
-    else if (typeof e.alpha === 'number' && !isNaN(e.alpha)) {
+    } else if (typeof e.alpha === 'number' && !isNaN(e.alpha)) {
         heading = (360 - e.alpha) % 360;
     }
 
     if (heading !== null && !isNaN(heading)) {
-        // Adjust for screen orientation (landscape, etc.)
         const screenAngle = (typeof window.orientation === 'number')
             ? window.orientation
             : (screen.orientation ? screen.orientation.angle : 0) || 0;
         const correctedHeading = (heading + screenAngle + 360) % 360;
 
-        rawCompassHeading = correctedHeading;
-        applyUserHeading(correctedHeading);
-        startHeadingSync();
+        // If user is walking at reasonable speed, motion course takes priority over compass
+        if (gpsFilter.isStationary || gpsFilter.currentSpeedMps < 0.8) {
+            applyUserHeading(correctedHeading);
+        }
     }
 }
 
@@ -528,16 +642,13 @@ export function computeAndDrawRouteFromGPS(startCoord, buildingId) {
     state.activeFullRouteCoords = routeCoords;
     state.activeRouteCoords = routeCoords;
 
-    // Turn-by-turn steps
     state.currentRouteSteps = buildSteps(routeCoords, BUILDING_DIRECTORY, building.id);
     state.currentRouteDestName = building.name;
 
-    // Update UI turn-by-turn steps and peek card!
     updatePhoneRouteUI(routeCoords);
     setPhoneSheetView('route');
     setPhoneSheetSnap('peek');
 
-    // Draw route statically without automated walker sprint
     drawRoute(routeCoords, { animated: false });
 
     const userPt = turf.point(startCoord);
@@ -553,7 +664,6 @@ export function computeAndDrawRouteFromGPS(startCoord, buildingId) {
             duration: 1200
         });
     } else {
-        // Top-down 2D orthogonal view for precision accuracy
         map.easeTo({
             center: startCoord,
             zoom: 19.5,
@@ -565,43 +675,44 @@ export function computeAndDrawRouteFromGPS(startCoord, buildingId) {
 
 export function handleGPSPositionUpdate(pos, targetBuildingId) {
     if (!targetBuildingId) targetBuildingId = state.selectedBuildingId;
-    const userLng = pos.coords.longitude;
-    const userLat = pos.coords.latitude;
+    const rawLng = pos.coords.longitude;
+    const rawLat = pos.coords.latitude;
     const accuracy = Math.max(5, pos.coords.accuracy || 10);
+    const nowTime = Date.now();
 
-    // Dismiss permission card if visible
     dismissGPSPermissionCard(false);
 
-    // 1. Distance check from DA-LARES compound
-    const userPt = turf.point([userLng, userLat]);
+    // 1. Pass raw GPS through Kalman-style Jitter Filter
+    const filterResult = gpsFilter.filter(rawLng, rawLat, accuracy, nowTime);
+    const [filteredLng, filteredLat] = filterResult.coord;
+    const userPt = turf.point([filteredLng, filteredLat]);
+
     const compoundCenter = turf.point([121.1665, 13.9582]);
     const distFromCompoundMeters = turf.distance(userPt, compoundCenter, { units: 'meters' });
 
-    // 2. Walkway Map-Matching (Road Snapping)
-    let snappedCoord = [userLng, userLat];
+    // 2. High-precision walkway map-matching (Road Snapping)
+    let snappedCoord = [filteredLng, filteredLat];
     let isSnapped = false;
 
-    // Prioritize snapping directly onto active navigation route line
+    // Prioritize active route line if within 15 meters
     if (state.activeFullRouteCoords && state.activeFullRouteCoords.length > 1) {
         try {
             const fullLine = turf.lineString(state.activeFullRouteCoords);
             const snappedOnRoute = turf.nearestPointOnLine(fullLine, userPt);
             const distToRoute = turf.distance(userPt, snappedOnRoute, { units: 'meters' });
-            // Snap cleanly if within 14 meters of active route line
-            if (distToRoute <= 14) {
+            if (distToRoute <= 15) {
                 snappedCoord = snappedOnRoute.geometry.coordinates;
                 isSnapped = true;
             }
-        } catch(e) {}
+        } catch (e) {}
     }
 
-    // If not snapped to active route, snap to nearest registered campus walkway/road
+    // Secondary: snap to general campus walkway network if within 12 meters
     const roadNetwork = (typeof window !== 'undefined' && window.ROAD_NETWORK) ? window.ROAD_NETWORK : null;
     if (!isSnapped && roadNetwork && distFromCompoundMeters <= 1500) {
         try {
             const snappedPt = turf.nearestPointOnLine(roadNetwork, userPt);
             const distToWalkway = turf.distance(userPt, snappedPt, { units: 'meters' });
-            // Snap cleanly if within 12 meters of a campus walkway
             if (distToWalkway <= 12) {
                 snappedCoord = snappedPt.geometry.coordinates;
                 isSnapped = true;
@@ -609,10 +720,10 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
         } catch (err) {}
     }
 
-    // Direction from GPS hardware heading or walking delta
+    // 3. Sensor Fusion: Course Over Ground (movement bearing) when walking actively
     if (typeof pos.coords.heading === 'number' && !isNaN(pos.coords.heading) && pos.coords.heading >= 0) {
         applyUserHeading(pos.coords.heading);
-    } else if (state.lastKnownGPSCoords) {
+    } else if (state.lastKnownGPSCoords && filterResult.speed >= 0.8) {
         try {
             const movedDist = turf.distance(turf.point(state.lastKnownGPSCoords), turf.point(snappedCoord), { units: 'meters' });
             if (movedDist >= 1.2) {
@@ -622,10 +733,10 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
         } catch (e) {}
     }
 
-    // Cache snapped location
     state.lastKnownGPSCoords = snappedCoord;
 
-    // 3. Smooth 60fps User GPS Marker Gliding to the Snapped Position
+    // 4. Smooth 60fps Marker Gliding (adaptive duration 300-500ms)
+    const lerpDuration = filterResult.isStationary ? 300 : Math.min(600, Math.max(350, 1000 / (filterResult.speed + 1)));
     if (!state.userGPSMarker) {
         const el = createUserGPSMarkerElement();
         state.userGPSMarker = new mapboxgl.Marker({ 
@@ -635,33 +746,32 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
         }).setLngLat(snappedCoord).addTo(map);
         markerCurrentLngLat = snappedCoord;
     } else {
-        animateMarkerTo(snappedCoord);
+        animateMarkerTo(snappedCoord, lerpDuration);
     }
 
-    // 4. Update soft accuracy circle on map (centered on snapped marker)
-    try {
-        if (map.getSource('gps-accuracy-source')) {
-            const circle = turf.circle(snappedCoord, Math.min(accuracy, 25), { units: 'meters' });
-            map.getSource('gps-accuracy-source').setData(circle);
-        }
-    } catch (err) { }
-
-    // 5. Subtle off-road connector line (only shown if user walks far into an open field)
-    try {
-        if (map.getSource('gps-connector-source')) {
-            if (!isSnapped && distFromCompoundMeters <= 1500) {
-                const connectorLine = turf.lineString([
-                    [userLng, userLat],
-                    snappedCoord
-                ]);
-                map.getSource('gps-connector-source').setData(connectorLine);
-            } else {
-                map.getSource('gps-connector-source').setData({ type: 'FeatureCollection', features: [] });
+    // 5. Throttled Accuracy Circle & Connector Line update (reduces GeoJSON re-parsing)
+    if (nowTime - lastAccuracyCircleUpdate > 600) {
+        lastAccuracyCircleUpdate = nowTime;
+        try {
+            if (map.getSource('gps-accuracy-source')) {
+                const circle = turf.circle(snappedCoord, Math.min(accuracy, 25), { units: 'meters' });
+                map.getSource('gps-accuracy-source').setData(circle);
             }
-        }
-    } catch (err) { }
+            if (map.getSource('gps-connector-source')) {
+                if (!isSnapped && distFromCompoundMeters <= 1500) {
+                    const connectorLine = turf.lineString([
+                        [filteredLng, filteredLat],
+                        snappedCoord
+                    ]);
+                    map.getSource('gps-connector-source').setData(connectorLine);
+                } else {
+                    map.getSource('gps-connector-source').setData({ type: 'FeatureCollection', features: [] });
+                }
+            }
+        } catch (err) {}
+    }
 
-    // If route hasn't been drawn yet, or if it was previously set to Kiosk route, draw starting from user's live GPS position!
+    // 6. Route Generation / Reset from User GPS
     const isRouteFromKiosk = state.activeFullRouteCoords && state.activeFullRouteCoords.length > 0 &&
         (Math.abs(state.activeFullRouteCoords[0][0] - state.KIOSK_COORDS[0]) < 0.00005 && Math.abs(state.activeFullRouteCoords[0][1] - state.KIOSK_COORDS[1]) < 0.00005);
 
@@ -682,18 +792,17 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
         return;
     }
 
-    // 5. Throttled Dynamic Route Trimming (Prevents main-thread UI lag)
-    const nowTime = Date.now();
+    // 7. Throttled Dynamic Route Trimming & Off-Route Detection
     let shouldTrimRoute = false;
     if (!lastTrimmedCoord) {
         shouldTrimRoute = true;
-        lastTrimmedCoord = [userLng, userLat];
+        lastTrimmedCoord = [filteredLng, filteredLat];
         lastTrimmedTime = nowTime;
     } else {
         const moveDist = turf.distance(turf.point(lastTrimmedCoord), userPt, { units: 'meters' });
-        if (moveDist >= 1.2 || (nowTime - lastTrimmedTime >= 1200)) {
+        if (moveDist >= 1.4 || (nowTime - lastTrimmedTime >= 1200)) {
             shouldTrimRoute = true;
-            lastTrimmedCoord = [userLng, userLat];
+            lastTrimmedCoord = [filteredLng, filteredLat];
             lastTrimmedTime = nowTime;
         }
     }
@@ -705,13 +814,14 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
             const startPt = turf.point(state.activeFullRouteCoords[0]);
             const destPt = turf.point(state.activeFullRouteCoords[state.activeFullRouteCoords.length - 1]);
 
-            // Check off-route distance (> 25m off route)
+            // Off-route check (> 22m away for 3 consecutive cycles)
             const distFromRoute = turf.distance(userPt, userSnappedOnRoute, { units: 'meters' });
-            if (distFromRoute > 25 && distFromCompoundMeters <= 1500) {
+            if (distFromRoute > 22 && distFromCompoundMeters <= 1500) {
                 state.offRouteCounter++;
-                if (state.offRouteCounter >= 3 && (nowTime - state.lastRecalcTime > 8000)) {
+                if (state.offRouteCounter >= 3 && (nowTime - state.lastRecalcTime > 6000)) {
                     state.lastRecalcTime = nowTime;
                     state.offRouteCounter = 0;
+                    triggerHapticRecalculate();
                     showMobileToast('🔄 Recalculating path from your location…', 2500);
                     computeAndDrawRouteFromGPS(snappedCoord, targetBuildingId);
                     return;
@@ -720,9 +830,9 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
                 state.offRouteCounter = 0;
             }
 
-            // Only slice/trim route ahead if user is actually on or close to the route (<= 10 meters)
+            // Slice remaining route ahead of user
             let remainingDistMeters;
-            if (distFromRoute <= 10) {
+            if (distFromRoute <= 12) {
                 const remainingSlice = turf.lineSlice(userSnappedOnRoute, destPt, fullLine);
                 remainingDistMeters = turf.length(remainingSlice, { units: 'meters' });
 
@@ -730,19 +840,17 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
                     map.getSource('route-source').setData(remainingSlice);
                 }
 
-                // Traveled path behind user
                 try {
                     const traveledSlice = turf.lineSlice(startPt, userSnappedOnRoute, fullLine);
                     if (map.getSource('route-traveled-source')) {
                         map.getSource('route-traveled-source').setData(traveledSlice);
                     }
-                } catch (e) { }
+                } catch (e) {}
             } else {
-                // User is far from route: DO NOT slice green line away! Keep route line full so user sees how to return
                 remainingDistMeters = turf.length(fullLine, { units: 'meters' });
             }
 
-            // Update UI distance and ETA
+            // Update UI ETA & distance
             const roundedDist = Math.max(0, Math.round(remainingDistMeters));
             const remainTag = document.getElementById('phone-route-remain-tag');
             if (remainTag) remainTag.textContent = `${roundedDist} m remaining`;
@@ -757,12 +865,13 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
             const currentDist = Math.max(0, totalDist - remainingDistMeters);
             updateLiveNavigation(currentDist, totalDist);
 
-            // 6. Check Arrival: User MUST be physically within 18m of target AND remaining route <= 12m
+            // 8. Arrival Verification with Haptics
             const targetBldg = BUILDING_DIRECTORY.find(b => b.id === targetBuildingId);
             const targetCoord = targetBldg ? targetBldg.coords : state.activeFullRouteCoords[state.activeFullRouteCoords.length - 1];
             const actualDistToDest = turf.distance(userPt, turf.point(targetCoord), { units: 'meters' });
 
-            if ((nowTime - gpsNavigationStartTime > 5000) && actualDistToDest <= 18 && remainingDistMeters <= 12) {
+            if ((nowTime - gpsNavigationStartTime > 4000) && actualDistToDest <= 18 && remainingDistMeters <= 14) {
+                triggerHapticArrival();
                 showPhoneArrival(targetBuildingId);
                 return;
             }
@@ -771,7 +880,7 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
         }
     }
 
-    // 7. Smooth Camera Glide Following (follows snapped walkway position)
+    // 9. Camera Follow
     updateSmoothCameraFollow(snappedCoord, distFromCompoundMeters);
 }
 
@@ -781,7 +890,7 @@ export function recalculateRouteFromPoint(startCoord, buildingId) {
 
 export function handleGPSError(err, buildingId) {
     console.warn('GPS location error:', err);
-    if (err && err.code === 1) { // PERMISSION_DENIED
+    if (err && err.code === 1) {
         if (state.gpsWatchId) {
             navigator.geolocation.clearWatch(state.gpsWatchId);
             state.gpsWatchId = null;
@@ -792,7 +901,6 @@ export function handleGPSError(err, buildingId) {
         return;
     }
     if (err && err.code === 3) {
-        // Transient timeout while acquiring satellites indoors
         showMobileToast('📍 Acquiring GPS satellites… please ensure clear sky visibility', 3500);
         return;
     }
@@ -945,12 +1053,10 @@ export function initGPSMapListeners() {
         }, { passive: true });
     }
 
-    // Pause follow ONLY on single-finger manual drag, NOT during pinch zoom
     map.on('dragstart', (e) => {
         if (!state.isMobileGPSActive) return;
         const touches = e.originalEvent && e.originalEvent.touches;
         const touchCount = touches ? touches.length : activeTouchCount;
-        // If user is pinching (2+ fingers), keep follow active!
         if (touchCount > 1) {
             return;
         }
@@ -965,7 +1071,6 @@ export function initGPSMapListeners() {
         }
     });
 
-    // When zoom ends: If camera is following GPS, re-center smoothly on user's location at the new zoom level!
     map.on('zoomend', () => {
         if (state.isMobileGPSActive && state.isUserFollowingGPS && state.lastKnownGPSCoords) {
             map.easeTo({
@@ -990,3 +1095,7 @@ window.retryPhoneGPS = retryPhoneGPS;
 window.startTapToPlaceLocation = startTapToPlaceLocation;
 window.recenterOnUserGPS = recenterOnUserGPS;
 window.handleWelcomeContinue = window.handleWelcomeContinue;
+window.triggerHapticArrival = triggerHapticArrival;
+window.triggerHapticRecalculate = triggerHapticRecalculate;
+window.handleGPSPositionUpdate = handleGPSPositionUpdate;
+window.computeAndDrawRouteFromGPS = computeAndDrawRouteFromGPS;
