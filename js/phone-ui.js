@@ -8,7 +8,6 @@ import { clearRoute } from './routing.js';
 import { isNavigationActive } from './sidebar.js';
 import { 
     requestUserInitialLocation, 
-    requestDeviceOrientationPermission, 
     stopPhoneLiveGPS 
 } from './gps.js';
 
@@ -351,7 +350,6 @@ export function handleWelcomeContinue() {
     }
     // Acquire user location to place blue dot on campus; do NOT start a walking route
     requestUserInitialLocation();
-    requestDeviceOrientationPermission();
 }
 
 export function handleWelcomeSkip() {

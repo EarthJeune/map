@@ -51,6 +51,8 @@ export const map = new mapboxgl.Map({
 });
 state.map = map;
 window.map = map;
+map.on('zoom', updateMarkerZoomState);
+map.on('zoomend', updateMarkerZoomState);
 
 export function getRoofColorCaseStyle() {
     let caseStyle = ['case'];

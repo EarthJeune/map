@@ -229,16 +229,8 @@ export function requestDeviceOrientationPermission(callback) {
     }
 }
 
-export function triggerCompassPermissionOnFirstGesture() {
-    if (typeof window.isPhoneMode === 'function' && !window.isPhoneMode()) {
-        return;
-    }
-    requestDeviceOrientationPermission();
-    window.removeEventListener('touchend', triggerCompassPermissionOnFirstGesture);
-    window.removeEventListener('click', triggerCompassPermissionOnFirstGesture);
-}
-window.addEventListener('touchend', triggerCompassPermissionOnFirstGesture, { passive: true });
-window.addEventListener('click', triggerCompassPermissionOnFirstGesture, { passive: true });
+// Note: Compass permission is triggered only on explicit user request (e.g. starting live navigation),
+// preventing double permission dialogs upon tapping Continue on the welcome modal.
 
 export function updateUserGPSMarker(lng, lat) {
     if (!state.userGPSMarker) {
@@ -685,57 +677,28 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
     // 1. Pass raw GPS through Kalman-style Jitter Filter
     const filterResult = gpsFilter.filter(rawLng, rawLat, accuracy, nowTime);
     const [filteredLng, filteredLat] = filterResult.coord;
-    const userPt = turf.point([filteredLng, filteredLat]);
+    const userCoord = [filteredLng, filteredLat];
+    const userPt = turf.point(userCoord);
 
     const compoundCenter = turf.point([121.1665, 13.9582]);
     const distFromCompoundMeters = turf.distance(userPt, compoundCenter, { units: 'meters' });
 
-    // 2. High-precision walkway map-matching (Road Snapping)
-    let snappedCoord = [filteredLng, filteredLat];
-    let isSnapped = false;
-
-    // Prioritize active route line if within 15 meters
-    if (state.activeFullRouteCoords && state.activeFullRouteCoords.length > 1) {
-        try {
-            const fullLine = turf.lineString(state.activeFullRouteCoords);
-            const snappedOnRoute = turf.nearestPointOnLine(fullLine, userPt);
-            const distToRoute = turf.distance(userPt, snappedOnRoute, { units: 'meters' });
-            if (distToRoute <= 15) {
-                snappedCoord = snappedOnRoute.geometry.coordinates;
-                isSnapped = true;
-            }
-        } catch (e) {}
-    }
-
-    // Secondary: snap to general campus walkway network if within 12 meters
-    const roadNetwork = (typeof window !== 'undefined' && window.ROAD_NETWORK) ? window.ROAD_NETWORK : null;
-    if (!isSnapped && roadNetwork && distFromCompoundMeters <= 1500) {
-        try {
-            const snappedPt = turf.nearestPointOnLine(roadNetwork, userPt);
-            const distToWalkway = turf.distance(userPt, snappedPt, { units: 'meters' });
-            if (distToWalkway <= 12) {
-                snappedCoord = snappedPt.geometry.coordinates;
-                isSnapped = true;
-            }
-        } catch (err) {}
-    }
-
-    // 3. Sensor Fusion: Course Over Ground (movement bearing) when walking actively
+    // 2. Sensor Fusion: Course Over Ground (movement bearing) when walking actively
     if (typeof pos.coords.heading === 'number' && !isNaN(pos.coords.heading) && pos.coords.heading >= 0) {
         applyUserHeading(pos.coords.heading);
     } else if (state.lastKnownGPSCoords && filterResult.speed >= 0.8) {
         try {
-            const movedDist = turf.distance(turf.point(state.lastKnownGPSCoords), turf.point(snappedCoord), { units: 'meters' });
+            const movedDist = turf.distance(turf.point(state.lastKnownGPSCoords), userPt, { units: 'meters' });
             if (movedDist >= 1.2) {
-                const bearing = turf.bearing(turf.point(state.lastKnownGPSCoords), turf.point(snappedCoord));
+                const bearing = turf.bearing(turf.point(state.lastKnownGPSCoords), userPt);
                 applyUserHeading((bearing + 360) % 360);
             }
         } catch (e) {}
     }
 
-    state.lastKnownGPSCoords = snappedCoord;
+    state.lastKnownGPSCoords = userCoord;
 
-    // 4. Smooth 60fps Marker Gliding (adaptive duration 300-500ms)
+    // 3. Smooth 60fps Marker Gliding directly following phone position (no forced road snapping)
     const lerpDuration = filterResult.isStationary ? 300 : Math.min(600, Math.max(350, 1000 / (filterResult.speed + 1)));
     if (!state.userGPSMarker) {
         const el = createUserGPSMarkerElement();
@@ -743,35 +706,26 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
             element: el,
             rotationAlignment: 'map',
             pitchAlignment: 'map'
-        }).setLngLat(snappedCoord).addTo(map);
-        markerCurrentLngLat = snappedCoord;
+        }).setLngLat(userCoord).addTo(map);
+        markerCurrentLngLat = userCoord;
     } else {
-        animateMarkerTo(snappedCoord, lerpDuration);
+        animateMarkerTo(userCoord, lerpDuration);
     }
 
-    // 5. Throttled Accuracy Circle & Connector Line update (reduces GeoJSON re-parsing)
-    if (nowTime - lastAccuracyCircleUpdate > 600) {
+    // 4. Clean GPS accuracy layers (omits oversized polygon radar circle)
+    if (nowTime - lastAccuracyCircleUpdate > 1000) {
         lastAccuracyCircleUpdate = nowTime;
         try {
             if (map.getSource('gps-accuracy-source')) {
-                const circle = turf.circle(snappedCoord, Math.min(accuracy, 25), { units: 'meters' });
-                map.getSource('gps-accuracy-source').setData(circle);
+                map.getSource('gps-accuracy-source').setData({ type: 'FeatureCollection', features: [] });
             }
             if (map.getSource('gps-connector-source')) {
-                if (!isSnapped && distFromCompoundMeters <= 1500) {
-                    const connectorLine = turf.lineString([
-                        [filteredLng, filteredLat],
-                        snappedCoord
-                    ]);
-                    map.getSource('gps-connector-source').setData(connectorLine);
-                } else {
-                    map.getSource('gps-connector-source').setData({ type: 'FeatureCollection', features: [] });
-                }
+                map.getSource('gps-connector-source').setData({ type: 'FeatureCollection', features: [] });
             }
         } catch (err) {}
     }
 
-    // 6. Route Generation / Reset from User GPS
+    // 5. Route Generation / Reset from User GPS
     const isRouteFromKiosk = state.activeFullRouteCoords && state.activeFullRouteCoords.length > 0 &&
         (Math.abs(state.activeFullRouteCoords[0][0] - state.KIOSK_COORDS[0]) < 0.00005 && Math.abs(state.activeFullRouteCoords[0][1] - state.KIOSK_COORDS[1]) < 0.00005);
 
@@ -787,12 +741,12 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
             drawRoute(kCoords, { animated: false });
         } else {
             showMobileToast('📍 Connected to phone GPS. Route started from your location.', 3000);
-            computeAndDrawRouteFromGPS(snappedCoord, targetBuildingId);
+            computeAndDrawRouteFromGPS(userCoord, targetBuildingId);
         }
         return;
     }
 
-    // 7. Throttled Dynamic Route Trimming & Off-Route Detection
+    // 6. Throttled Dynamic Route Trimming & Off-Route Detection
     let shouldTrimRoute = false;
     if (!lastTrimmedCoord) {
         shouldTrimRoute = true;
@@ -823,7 +777,7 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
                     state.offRouteCounter = 0;
                     triggerHapticRecalculate();
                     showMobileToast('🔄 Recalculating path from your location…', 2500);
-                    computeAndDrawRouteFromGPS(snappedCoord, targetBuildingId);
+                    computeAndDrawRouteFromGPS(userCoord, targetBuildingId);
                     return;
                 }
             } else {
@@ -865,7 +819,7 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
             const currentDist = Math.max(0, totalDist - remainingDistMeters);
             updateLiveNavigation(currentDist, totalDist);
 
-            // 8. Arrival Verification with Haptics
+            // 7. Arrival Verification with Haptics
             const targetBldg = BUILDING_DIRECTORY.find(b => b.id === targetBuildingId);
             const targetCoord = targetBldg ? targetBldg.coords : state.activeFullRouteCoords[state.activeFullRouteCoords.length - 1];
             const actualDistToDest = turf.distance(userPt, turf.point(targetCoord), { units: 'meters' });
@@ -880,8 +834,8 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
         }
     }
 
-    // 9. Camera Follow
-    updateSmoothCameraFollow(snappedCoord, distFromCompoundMeters);
+    // 8. Camera Follow
+    updateSmoothCameraFollow(userCoord, distFromCompoundMeters);
 }
 
 export function recalculateRouteFromPoint(startCoord, buildingId) {

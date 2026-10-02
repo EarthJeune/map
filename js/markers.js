@@ -62,10 +62,10 @@ export function updateMarkerZoomState() {
     const z = state.map.getZoom();
     const container = state.map.getContainer();
     if (!container) return;
-    if (z < 17) {
-        container.classList.add('map-zoomed-out');
-    } else {
-        container.classList.remove('map-zoomed-out');
+    const isZoomedOut = z < 17.8;
+    container.classList.toggle('map-zoomed-out', isZoomedOut);
+    if (document.body) {
+        document.body.classList.toggle('map-zoomed-out', isZoomedOut);
     }
 }
 
