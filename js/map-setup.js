@@ -53,17 +53,17 @@ state.map = map;
 window.map = map;
 
 export function getRoofColorCaseStyle() {
-    let hasConditions = false;
     let caseStyle = ['case'];
     const colors = (state && state.savedBuildingColors) ? state.savedBuildingColors : (typeof savedBuildingColors !== 'undefined' ? savedBuildingColors : {});
     for (let id in colors) {
         if (colors[id] && colors[id].roof) {
             caseStyle.push(['==', ['get', 'id'], id]);
             caseStyle.push(colors[id].roof);
-            hasConditions = true;
         }
     }
-    if (!hasConditions) return '#334155';
+    // Default special roof color for Guard House
+    caseStyle.push(['==', ['get', 'id'], 'guard_house']);
+    caseStyle.push('#dc2626');
     caseStyle.push('#334155'); // Default roof color
     return caseStyle;
 }

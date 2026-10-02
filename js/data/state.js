@@ -25,6 +25,7 @@ export const state = {
     sectionBadges: [],
     entranceArrowMarker: null,
     kioskMarkerInstance: null,
+    isKioskDraggable: false,
     KIOSK_COORDS: [...SAVED_MAIN_KIOSK_COORDS],
 
     // Building Selection & Customization
