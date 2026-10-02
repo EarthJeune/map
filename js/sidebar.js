@@ -66,42 +66,36 @@ export function toggleSettingChip(btn, type) {
 export function buildDirectory(filter = '') {
     const dir = document.getElementById('directory');
     if (!dir) return;
+    const lowerFilter = filter.toLowerCase().trim();
 
     let html = '';
-    let currentSection = '';
-
-    const sorted = [...BUILDING_DIRECTORY].sort((a, b) => {
-        if (a.section !== b.section) return (a.section || '').localeCompare(b.section || '');
-        return a.name.localeCompare(b.name);
-    });
-
-    const q = filter.toLowerCase().trim();
-    const filtered = q
-        ? sorted.filter(b => b.name.toLowerCase().includes(q) || (b.desc && b.desc.toLowerCase().includes(q)))
-        : sorted;
-
-    filtered.forEach(b => {
-        if (b.section !== currentSection && !q) {
-            currentSection = b.section;
-            html += `<div class="dir-section-header">${currentSection}</div>`;
+    BUILDING_DIRECTORY.forEach((b, index) => {
+        if (lowerFilter && !b.name.toLowerCase().includes(lowerFilter) && !(b.desc && b.desc.toLowerCase().includes(lowerFilter))) {
+            return;
         }
-        const bldgIndex = BUILDING_DIRECTORY.findIndex(item => item.id === b.id) + 1;
-        html += `
-            <div class="dir-item" data-id="${b.id}" onclick="navigateTo('${b.id}')">
-                <div class="dir-num" style="background: ${b.color || '#3b82f6'}">${bldgIndex}</div>
-                <div class="dir-info">
-                    <div class="dir-name">${b.name}</div>
-                    <div class="dir-desc">${b.desc || ''}</div>
-                </div>
+
+        const num = index + 1; // 1-based numbering matching 3D map pins
+        const bColor = b.color || '#3b82f6';
+        const isSelected = state.selectedBuildingId === b.id;
+        html += `<div class="dir-item ${isSelected ? 'active' : ''}" data-id="${b.id}" onclick="navigateTo('${b.id}')">
+            <div class="dir-item-icon" style="background:${bColor}22;color:${bColor}">
+                <span class="dir-item-icon-number">${num}</span>
             </div>
-        `;
+            <div class="dir-item-info">
+                <div class="dir-item-name">${b.name}</div>
+                <div class="dir-item-desc">${b.desc || 'DA-LARES Facility'}</div>
+            </div>
+            <button class="three-dots-btn" onclick="event.stopPropagation(); openColorPicker('${b.id}', '${b.name.replace(/'/g, "\\'")}')" style="background:none; border:none; cursor:pointer; font-size:16px; padding:4px 8px;" title="Customize Color">⋮</button>
+            <div class="dir-item-arrow">→</div>
+        </div>`;
     });
 
-    if (filtered.length === 0) {
+    if (!html) {
         html = '<div style="padding: 24px; text-align: center; color: #64748b; font-size: 13px;">No facilities found matching your search.</div>';
     }
 
     dir.innerHTML = html;
+    safeRenderPhoneDirectory(filter);
 }
 
 export function filterDirectory() {

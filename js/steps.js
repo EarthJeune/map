@@ -219,9 +219,10 @@ export function buildSteps(coords, directory, destId) {
     const middleSteps = combined.filter(s => s.at >= 8 && s.at <= totalDistance - 6);
     const resultSteps = [startStep, ...middleSteps, arriveStep];
     steps = resultSteps;
-    destName = destName;
     state.steps = resultSteps;
     state.destName = destName;
+    state.currentRouteSteps = resultSteps;
+    state.currentRouteDestName = destName;
     return resultSteps;
 }
 
@@ -248,8 +249,9 @@ export function renderStepsList(steps) {
 }
 
 export function focusRouteStep(idx) {
-    if (!steps || !steps[idx]) return;
-    const s = steps[idx];
+    const currentSteps = state.currentRouteSteps || state.steps || steps;
+    if (!currentSteps || !currentSteps[idx]) return;
+    const s = currentSteps[idx];
     map.flyTo({
         center: s.point,
         zoom: 19.8,
@@ -275,9 +277,9 @@ export function highlightActiveStep(idx) {
 }
 
 export function updateLiveNavigation(currentDist, totalDist) {
-    const steps = state.steps || steps;
-    const destName = state.destName || destName;
-    if (!steps || steps.length === 0) return;
+    const routeSteps = state.currentRouteSteps || state.steps || steps;
+    const destinationName = state.currentRouteDestName || state.destName || destName;
+    if (!routeSteps || routeSteps.length === 0) return;
     const banner = document.getElementById('turn-by-turn-banner');
     if (!banner) return;
 
@@ -286,7 +288,7 @@ export function updateLiveNavigation(currentDist, totalDist) {
         document.getElementById('tbt-icon').innerHTML = '🏁';
         document.getElementById('tbt-distance').textContent = 'Arrived';
         document.getElementById('tbt-instruction').textContent = `You have arrived at ${destName}`;
-        highlightActiveStep(steps.length - 1);
+        highlightActiveStep(routeSteps.length - 1);
         startArrivedCountdown();
         return;
     }
@@ -294,10 +296,10 @@ export function updateLiveNavigation(currentDist, totalDist) {
     banner.classList.remove('arrived');
 
     // Find next step where step.at > currentDist
-    let nextIdx = steps.findIndex(s => s.at > currentDist + 1);
-    if (nextIdx === -1) nextIdx = steps.length - 1;
+    let nextIdx = routeSteps.findIndex(s => s.at > currentDist + 1);
+    if (nextIdx === -1) nextIdx = routeSteps.length - 1;
 
-    const nextStep = steps[nextIdx];
+    const nextStep = routeSteps[nextIdx];
     const remaining = Math.max(0, nextStep.at - currentDist);
     const rounded = Math.max(5, Math.round(remaining / 5) * 5);
 

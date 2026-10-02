@@ -197,13 +197,14 @@ export function drawRoute(coords, options = {}) {
     if (totalDistance <= 0) return;
 
     // Build Turn-by-Turn Steps
-    const destBuilding = BUILDING_DIRECTORY.find(b => b.id === state.selectedBuildingId);
+    const currentDestId = state.selectedBuildingId || window.selectedBuildingId || state.activeRoute;
+    const destBuilding = BUILDING_DIRECTORY.find(b => b.id === currentDestId);
     state.currentRouteDestName = destBuilding ? destBuilding.name : 'Destination';
-    state.currentRouteSteps = buildSteps(coords, BUILDING_DIRECTORY, state.selectedBuildingId);
+    state.currentRouteSteps = buildSteps(coords, BUILDING_DIRECTORY, currentDestId);
     renderStepsList(state.currentRouteSteps);
 
     // Declutter surrounding 3D building labels along this route corridor
-    safeDeclutterLabelsForRoute(coords, state.selectedBuildingId);
+    safeDeclutterLabelsForRoute(coords, currentDestId);
 
     if (shouldAnimate) {
         // Kiosk animated claymation stop-motion walker mode
@@ -357,8 +358,16 @@ export function drawRoute(coords, options = {}) {
             state.currentWalkerCoord = currentCoord;
             state.walkerMarkerInstance.setLngLat(currentCoord);
 
-            const slicedLine = turf.lineSliceAlong(routeLine, 0.0001, currentDistance, { units: 'meters' });
-            map.getSource('route-source').setData(slicedLine);
+            try {
+                if (currentDistance > 0.05) {
+                    const slicedLine = turf.lineSliceAlong(routeLine, 0, currentDistance, { units: 'meters' });
+                    if (map.getSource('route-source')) {
+                        map.getSource('route-source').setData(slicedLine);
+                    }
+                }
+            } catch (err) {
+                console.warn('Line slice notice:', err);
+            }
 
             if (state.routeCameraMode === 'follow' && !state.isTransitioningToFollow) {
                 map.jumpTo({
@@ -638,7 +647,10 @@ export function computeRouteFromKiosk(buildingId) {
         let bestPath = null;
         let minDistance = Infinity;
 
-        const entrances = BUILDING_ENTRANCES[targetBuildingId];
+        const bEntrances = (typeof window !== 'undefined' && window.BUILDING_ENTRANCES && Object.keys(window.BUILDING_ENTRANCES).length > 0)
+            ? window.BUILDING_ENTRANCES
+            : (BUILDING_ENTRANCES || {});
+        const entrances = bEntrances[targetBuildingId];
         if (entrances && entrances.length > 0) {
             entrances.forEach(ent => {
                 const p = findShortestPath((state.KIOSK_COORDS || SAVED_MAIN_KIOSK_COORDS), ent, (state.roadGraph || window.roadGraph));
@@ -663,30 +675,36 @@ export function computeRouteFromKiosk(buildingId) {
 }
 
 export function getDirections() {
-    if (!state.selectedBuildingId) return;
-    const building = BUILDING_DIRECTORY.find(b => b.id === state.selectedBuildingId);
+    const targetId = state.selectedBuildingId || window.selectedBuildingId;
+    if (!targetId) return;
+    const building = BUILDING_DIRECTORY.find(b => b.id === targetId);
     if (!building) return;
 
     stopOrbit();
 
     const routeCoords = computeRouteFromKiosk(building.id);
+    if (!routeCoords || routeCoords.length < 2) return;
     const routeLine = turf.lineString(routeCoords);
     const routeDistance = turf.length(routeLine, { units: 'meters' });
     const routeWalkTime = Math.ceil(routeDistance / 80) || 1;
 
-    // Show route info bar
-    document.getElementById('route-dest').textContent = building.name;
-    document.getElementById('route-meta').innerHTML =
-        `<span class="rm-stat">📏 ${Math.round(routeDistance)}m</span>` +
-        `<span class="rm-stat">🚶 ~${routeWalkTime} min walk</span>`;
-    document.getElementById('route-info').classList.add('active');
-
-    // Draw route on map
+    // Draw route on map first (which clears previous route and adds route-active to sidebar)
     drawRoute(routeCoords);
-    state.activeRoute = state.selectedBuildingId;
+    state.activeRoute = targetId;
+
+    // Show route info bar in sidebar
+    const destEl = document.getElementById('route-dest');
+    if (destEl) destEl.textContent = building.name;
+    const metaEl = document.getElementById('route-meta');
+    if (metaEl) {
+        metaEl.innerHTML =
+            `<span class="rm-stat">📏 ${Math.round(routeDistance)}m</span>` +
+            `<span class="rm-stat">🚶 ~${routeWalkTime} min walk</span>`;
+    }
+    document.getElementById('route-info')?.classList.add('active');
 
     // Close the building panel
-    document.getElementById('building-panel').classList.remove('active');
+    document.getElementById('building-panel')?.classList.remove('active');
 }
 
 export function replayRoute() {

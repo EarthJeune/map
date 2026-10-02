@@ -12,20 +12,20 @@ import { showMobileToast, showPhoneBuildingDetails, getResponsiveMapPadding, isP
 
 // ==========================================
 
-
 function safeResetIdle() {
-    if (typeof window.resetIdle === 'function') window.safeResetIdle();
-    else if (typeof resetIdle === 'function') resetIdle();
+    if (typeof resetIdle === 'function') resetIdle();
+    else if (typeof window.resetIdle === 'function') window.resetIdle();
 }
 function safeStopIdleRotation() {
-    if (typeof window.stopIdleRotation === 'function') window.safeStopIdleRotation();
-    else if (typeof stopIdleRotation === 'function') stopIdleRotation();
+    if (typeof stopIdleRotation === 'function') stopIdleRotation();
+    else if (typeof window.stopIdleRotation === 'function') window.stopIdleRotation();
 }
 function safeStopOrbit() {
-    if (typeof window.stopOrbit === 'function') window.safeStopOrbit();
-    else if (typeof stopOrbit === 'function') stopOrbit();
+    if (typeof stopOrbit === 'function') stopOrbit();
+    else if (typeof window.stopOrbit === 'function') window.stopOrbit();
 }
 function safeIsPhoneMode() {
+    if (typeof isPhoneMode === 'function') return isPhoneMode();
     if (typeof window.isPhoneMode === 'function') return window.isPhoneMode();
     return window.innerWidth <= 768;
 }
@@ -34,38 +34,40 @@ function safeIsNavigationActive() {
     return Boolean(state.walkAnimFrame || state.isMobileGPSActive);
 }
 function safeShowMobileToast(msg, dur) {
-    if (typeof window.showMobileToast === 'function') window.safeShowMobileToast(msg, dur);
+    if (typeof showMobileToast === 'function') showMobileToast(msg, dur);
+    else if (typeof window.showMobileToast === 'function') window.showMobileToast(msg, dur);
 }
 function safeClearRoute() {
-    if (typeof window.clearRoute === 'function') window.safeClearRoute();
-    else if (typeof clearRoute === 'function') clearRoute();
+    if (typeof clearRoute === 'function') clearRoute();
+    else if (typeof window.clearRoute === 'function') window.clearRoute();
 }
 function safeShowPhoneBuildingDetails(id) {
-    if (typeof window.showPhoneBuildingDetails === 'function') window.showPhoneBuildingDetails(id);
+    if (typeof showPhoneBuildingDetails === 'function') showPhoneBuildingDetails(id);
+    else if (typeof window.showPhoneBuildingDetails === 'function') window.showPhoneBuildingDetails(id);
 }
 function safeOrbitBuilding(coords) {
-    if (typeof window.orbitBuilding === 'function') window.orbitBuilding(coords);
-    else if (typeof orbitBuilding === 'function') orbitBuilding(coords);
+    if (typeof orbitBuilding === 'function') orbitBuilding(coords);
+    else if (typeof window.orbitBuilding === 'function') window.orbitBuilding(coords);
 }
 function safeShowBuildingPanel(id) {
-    if (typeof window.showBuildingPanel === 'function') window.showBuildingPanel(id);
-    else if (typeof showBuildingPanel === 'function') showBuildingPanel(id);
+    if (typeof showBuildingPanel === 'function') showBuildingPanel(id);
+    else if (typeof window.showBuildingPanel === 'function') window.showBuildingPanel(id);
 }
 
 export function navigateTo(buildingId) {
     state.isIntroAnimating = false;
-    resetIdle();
-    stopIdleRotation();
-    stopOrbit();
+    safeResetIdle();
+    safeStopIdleRotation();
+    safeStopOrbit();
 
     // Guard against accidental clicks while navigating on mobile
     if (safeIsPhoneMode() && safeIsNavigationActive()) {
         if (state.selectedBuildingId === buildingId) return;
-        showMobileToast(`🧭 Active route to ${state.currentRouteDestName || 'destination'} in progress. Tap 'Cancel' to choose another building.`, 3500);
+        safeShowMobileToast(`🧭 Active route to ${state.currentRouteDestName || 'destination'} in progress. Tap 'Cancel' to choose another building.`, 3500);
         return;
     }
 
-    clearRoute(); // Clear any existing route/green lines
+    safeClearRoute(); // Clear any existing route/green lines
     const building = BUILDING_DIRECTORY.find(b => b.id === buildingId);
     if (!building) return;
 
@@ -84,20 +86,19 @@ export function navigateTo(buildingId) {
     const activeMarker = document.querySelector(`.bldg-map-marker[data-id="${buildingId}"]`);
     if (activeMarker) activeMarker.classList.add('active');
 
-    // Track selected building
+    // Track selected building across state and window
     state.selectedBuildingId = buildingId;
+    window.selectedBuildingId = buildingId;
 
     if (safeIsPhoneMode()) {
-        showPhoneBuildingDetails(buildingId);
+        safeShowPhoneBuildingDetails(buildingId);
     } else {
         // Zoom to building and orbit
-        orbitBuilding(building.coords);
+        safeOrbitBuilding(building.coords);
         // Show building info panel
-        showBuildingPanel(buildingId);
+        safeShowBuildingPanel(buildingId);
     }
 }
-
-
 
 let walkerMarkerInstance = null;
 let destinationMarkerInstance = null;
@@ -111,6 +112,7 @@ let routeSpeedMultiplier = 2;
 
 export function setRouteSpeed(multiplier) {
     routeSpeedMultiplier = multiplier;
+    state.routeSpeedMultiplier = multiplier;
     document.querySelectorAll('.speed-pill').forEach(btn => {
         const spd = parseInt(btn.dataset.speed || btn.getAttribute('data-speed'), 10);
         if (spd === multiplier) {
@@ -121,8 +123,9 @@ export function setRouteSpeed(multiplier) {
     });
 
     // Dynamically update stop-motion runner avatar animation speed (no badge on model!)
-    if (walkerMarkerInstance) {
-        const el = walkerMarkerInstance.getElement();
+    const walker = state.walkerMarkerInstance || walkerMarkerInstance;
+    if (walker) {
+        const el = walker.getElement();
         if (el && !el.classList.contains('mode-idle') && !el.classList.contains('mode-celebrate')) {
             el.className = 'route-walker-avatar speed-' + multiplier + 'x';
         }
@@ -132,7 +135,9 @@ export function setRouteSpeed(multiplier) {
 export function setRouteCameraMode(mode) {
     state.isIntroAnimating = false;
     routeCameraMode = mode;
+    state.routeCameraMode = mode;
     isTransitioningToFollow = false;
+    state.isTransitioningToFollow = false;
     if (transitionFollowTimer) {
         clearTimeout(transitionFollowTimer);
         transitionFollowTimer = null;
@@ -143,8 +148,9 @@ export function setRouteCameraMode(mode) {
     const fccBtn = document.getElementById('fcc-' + mode);
     if (fccBtn) fccBtn.classList.add('active');
 
-    if (!activeRouteCoords || activeRouteCoords.length < 2) return;
-    const routeLine = turf.lineString(activeRouteCoords);
+    const activeCoords = state.activeRouteCoords || activeRouteCoords;
+    if (!activeCoords || activeCoords.length < 2) return;
+    const routeLine = turf.lineString(activeCoords);
 
     const responsivePadding = getResponsiveMapPadding();
 
@@ -171,7 +177,8 @@ export function setRouteCameraMode(mode) {
     } else if (mode === 'follow') {
         map.stop();
         isTransitioningToFollow = true;
-        const target = state.currentWalkerCoord || currentWalkerCoord || (state.activeRouteCoords && state.activeRouteCoords[0]) || activeRouteCoords[0];
+        state.isTransitioningToFollow = true;
+        const target = state.currentWalkerCoord || currentWalkerCoord || activeCoords[0];
         map.flyTo({
             center: target,
             zoom: 20.2,
@@ -182,9 +189,11 @@ export function setRouteCameraMode(mode) {
         });
         transitionFollowTimer = setTimeout(() => {
             isTransitioningToFollow = false;
+            state.isTransitioningToFollow = false;
         }, 850);
         map.once('moveend', () => {
             isTransitioningToFollow = false;
+            state.isTransitioningToFollow = false;
             if (transitionFollowTimer) {
                 clearTimeout(transitionFollowTimer);
                 transitionFollowTimer = null;
@@ -355,9 +364,6 @@ if (typeof window !== 'undefined') {
 
 // ==========================================
 window.navigateTo = navigateTo;
-
-
-window.navigateTo = navigateTo;
 window.setRouteSpeed = setRouteSpeed;
 window.setRouteCameraMode = setRouteCameraMode;
 window.resetCameraControlsTimer = resetCameraControlsTimer;
@@ -367,4 +373,3 @@ window.returnToOverviewFromArrival = returnToOverviewFromArrival;
 window.exitRouteMode = exitRouteMode;
 window.declutterLabelsForRoute = declutterLabelsForRoute;
 window.restoreLabels = restoreLabels;
-
