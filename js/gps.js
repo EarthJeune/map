@@ -692,9 +692,12 @@ export function computeAndDrawRouteFromGPS(startCoord, buildingId) {
 
     const ENTRANCE_OVERRIDES = {
         'rafis_building': 'mis_building',
-        'bac_building': 'pmed_building',
-        'vacant': 'fmr',
-        'mis_data_center': 'fmr'
+        'fod_building': 'lares_building',
+        'bac_building': 'tanco_hall_building',
+        'pmed_building': 'tanco_hall_building',
+        'fmr': 'multi_purpose_administrative_building',
+        'mis_data_center': 'multi_purpose_administrative_building',
+        'vacant': 'multi_purpose_administrative_building'
     };
 
     let targetBuildingId = building.id;

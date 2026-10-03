@@ -117,12 +117,21 @@ fetch('roads.json')
 
         // Extract entrances
         if (data.features) {
+            const aliasMap = {
+                'fod_building': 'lares_building',
+                'bac_building': 'tanco_hall_building',
+                'pmed_building': 'tanco_hall_building',
+                'fmr': 'multi_purpose_administrative_building',
+                'mis_data_center': 'multi_purpose_administrative_building',
+                'vacant': 'multi_purpose_administrative_building'
+            };
             data.features.forEach(f => {
                 if (f.geometry.type === 'Point' && f.properties.type === 'entrance' && f.properties.buildingId) {
-                    if (!window.BUILDING_ENTRANCES[f.properties.buildingId]) {
-                        window.BUILDING_ENTRANCES[f.properties.buildingId] = [];
+                    const bId = aliasMap[f.properties.buildingId] || f.properties.buildingId;
+                    if (!window.BUILDING_ENTRANCES[bId]) {
+                        window.BUILDING_ENTRANCES[bId] = [];
                     }
-                    window.BUILDING_ENTRANCES[f.properties.buildingId].push(f.geometry.coordinates);
+                    window.BUILDING_ENTRANCES[bId].push(f.geometry.coordinates);
                 }
             });
         }
