@@ -1605,40 +1605,6 @@
       }
     },
     {
-      "id": "fe4c1aa186ea6413bdee3c616ba1c0e2",
-      "type": "Feature",
-      "properties": {
-        "type": "entrance",
-        "buildingId": "multi_purpose_administrative_building",
-        "name": "Entrance: multi_purpose_administrative_building",
-        "id": "entrance_20"
-      },
-      "geometry": {
-        "coordinates": [
-          121.16686847422807,
-          13.958058009906225
-        ],
-        "type": "Point"
-      }
-    },
-    {
-      "id": "24cf399b7c3fa5b99b91e17434afac3e",
-      "type": "Feature",
-      "properties": {
-        "type": "entrance",
-        "buildingId": "multi_purpose_administrative_building",
-        "name": "Entrance: multi_purpose_administrative_building",
-        "id": "entrance_21"
-      },
-      "geometry": {
-        "coordinates": [
-          121.16686789023044,
-          13.958057008567579
-        ],
-        "type": "Point"
-      }
-    },
-    {
       "id": "bf1b62308eb03a369912962fe2ab732c",
       "type": "Feature",
       "properties": {
