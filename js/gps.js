@@ -170,6 +170,88 @@ export function triggerHapticRecalculate() {
     }
 }
 
+// ============================================================
+// SCREEN WAKE LOCK API (Keeps screen awake during navigation)
+// ============================================================
+let screenWakeLock = null;
+
+export async function acquireWakeLock() {
+    try {
+        if ('wakeLock' in navigator && navigator.wakeLock) {
+            screenWakeLock = await navigator.wakeLock.request('screen');
+            screenWakeLock.addEventListener('release', () => {
+                screenWakeLock = null;
+            });
+        }
+    } catch (err) {
+        // Non-blocking warning (requires user gesture or secure context on some OS)
+    }
+}
+
+export async function releaseWakeLock() {
+    try {
+        if (screenWakeLock) {
+            await screenWakeLock.release();
+            screenWakeLock = null;
+        }
+    } catch (err) {}
+}
+
+if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && state.isMobileGPSActive) {
+            acquireWakeLock();
+        }
+    });
+}
+
+// ============================================================
+// DIAGNOSTIC HUD OVERLAY (?debug=1)
+// ============================================================
+const isDebugMode = (typeof window !== 'undefined') && new URLSearchParams(window.location.search).get('debug') === '1';
+let debugHudEl = null;
+let lastFpsTime = (typeof performance !== 'undefined') ? performance.now() : Date.now();
+let frameCount = 0;
+let currentFps = 60;
+
+export function updateDebugHUD(data = {}) {
+    if (!isDebugMode || typeof document === 'undefined') return;
+    if (!debugHudEl) {
+        debugHudEl = document.createElement('div');
+        debugHudEl.id = 'gps-debug-hud';
+        debugHudEl.className = 'gps-debug-hud';
+        debugHudEl.innerHTML = `
+            <div class="debug-title">⚙ GPS ENGINE DIAGNOSTICS</div>
+            <div class="debug-row"><span>Fix Age:</span> <strong id="dbg-fix-age">--</strong></div>
+            <div class="debug-row"><span>Accuracy:</span> <strong id="dbg-acc">--</strong></div>
+            <div class="debug-row"><span>Speed:</span> <strong id="dbg-speed">--</strong></div>
+            <div class="debug-row"><span>Heading:</span> <strong id="dbg-heading">--</strong></div>
+            <div class="debug-row"><span>FPS:</span> <strong id="dbg-fps">60</strong></div>
+        `;
+        document.body.appendChild(debugHudEl);
+    }
+    const ageEl = document.getElementById('dbg-fix-age');
+    const accEl = document.getElementById('dbg-acc');
+    const spdEl = document.getElementById('dbg-speed');
+    const hdgEl = document.getElementById('dbg-heading');
+    if (ageEl && data.fixAge !== undefined) ageEl.textContent = `${Math.round(data.fixAge)} ms`;
+    if (accEl && data.accuracy !== undefined) accEl.textContent = `±${data.accuracy.toFixed(1)} m`;
+    if (spdEl && data.speed !== undefined) spdEl.textContent = `${(data.speed * 3.6).toFixed(1)} km/h`;
+    if (hdgEl && data.heading !== undefined) hdgEl.textContent = `${Math.round(data.heading)}°`;
+}
+
+export function tickDebugFPS(now) {
+    if (!isDebugMode) return;
+    frameCount++;
+    if (now - lastFpsTime >= 1000) {
+        currentFps = Math.round((frameCount * 1000) / (now - lastFpsTime));
+        frameCount = 0;
+        lastFpsTime = now;
+        const fpsEl = document.getElementById('dbg-fps');
+        if (fpsEl) fpsEl.textContent = `${currentFps} fps`;
+    }
+}
+
 export function createUserGPSMarkerElement() {
     const el = document.createElement('div');
     el.className = 'user-gps-marker';
@@ -362,6 +444,7 @@ export function startPhoneLiveGPS(buildingId) {
         state.gpsWatchId = null;
     }
 
+    acquireWakeLock();
     setupGPSLayers();
     startContinuousTracking(buildingId);
 
@@ -406,6 +489,10 @@ export function animateMarkerTo(targetLngLat, duration = 450) {
     if (markerAnimFrame) cancelAnimationFrame(markerAnimFrame);
 
     function step(now) {
+        if (isDebugMode) {
+            tickDebugFPS(now);
+        }
+
         const elapsed = now - markerLerpStartTime;
         const progress = Math.min(1, elapsed / markerLerpDuration);
         const ease = 1 - Math.pow(1 - progress, 2);
@@ -448,6 +535,7 @@ export function updateSmoothCameraFollow(targetLngLat, distFromCompoundMeters) {
 }
 
 export function stopPhoneLiveGPS() {
+    releaseWakeLock();
     if (state.gpsWatchId) {
         navigator.geolocation.clearWatch(state.gpsWatchId);
         state.gpsWatchId = null;
@@ -682,6 +770,17 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
 
     const compoundCenter = turf.point([121.1665, 13.9582]);
     const distFromCompoundMeters = turf.distance(userPt, compoundCenter, { units: 'meters' });
+
+    if (isDebugMode) {
+        updateDebugHUD({
+            fixAge: (pos.timestamp ? Math.max(0, nowTime - pos.timestamp) : 0),
+            accuracy: accuracy,
+            speed: filterResult.speed,
+            heading: (typeof pos.coords.heading === 'number' && !isNaN(pos.coords.heading) && pos.coords.heading >= 0)
+                ? pos.coords.heading
+                : (rawCompassHeading || 0)
+        });
+    }
 
     // 2. Sensor Fusion: Course Over Ground (movement bearing) when walking actively
     if (typeof pos.coords.heading === 'number' && !isNaN(pos.coords.heading) && pos.coords.heading >= 0) {
