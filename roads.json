@@ -1422,8 +1422,8 @@
       "type": "Feature",
       "properties": {
         "type": "entrance",
-        "buildingId": "pmed_building",
-        "name": "Entrance: pmed_building",
+        "buildingId": "tanco_hall_building",
+        "name": "Entrance: tanco_hall_building",
         "id": "entrance_9"
       },
       "geometry": {
@@ -1592,8 +1592,8 @@
       "type": "Feature",
       "properties": {
         "type": "entrance",
-        "buildingId": "fmr",
-        "name": "Entrance: fmr",
+        "buildingId": "multi_purpose_administrative_building",
+        "name": "Entrance: multi_purpose_administrative_building",
         "id": "entrance_19"
       },
       "geometry": {
@@ -1609,8 +1609,8 @@
       "type": "Feature",
       "properties": {
         "type": "entrance",
-        "buildingId": "mis_data_center",
-        "name": "Entrance: mis_data_center",
+        "buildingId": "multi_purpose_administrative_building",
+        "name": "Entrance: multi_purpose_administrative_building",
         "id": "entrance_20"
       },
       "geometry": {
@@ -1626,8 +1626,8 @@
       "type": "Feature",
       "properties": {
         "type": "entrance",
-        "buildingId": "vacant",
-        "name": "Entrance: vacant",
+        "buildingId": "multi_purpose_administrative_building",
+        "name": "Entrance: multi_purpose_administrative_building",
         "id": "entrance_21"
       },
       "geometry": {
@@ -1796,8 +1796,8 @@
       "type": "Feature",
       "properties": {
         "type": "entrance",
-        "buildingId": "fod_building",
-        "name": "Entrance: fod_building",
+        "buildingId": "lares_building",
+        "name": "Entrance: lares_building",
         "id": "entrance_31"
       },
       "geometry": {
