@@ -188,7 +188,7 @@ export const KNOWN_BUILDING_NAMES = {
 };
 
 export const CUSTOM_BUILDING_CENTERS = {
-    'lares_building': [121.166298, 13.959240],
+    'lares_building': [121.16628, 13.95910],
     'tanco_hall_building': [121.166590, 13.958238],
     'multi_purpose_administrative_building': [121.166935, 13.957976]
 };
