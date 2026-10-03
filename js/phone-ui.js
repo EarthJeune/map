@@ -2,6 +2,7 @@
 
 import { DEFAULT_MAP_VIEW } from './data/config.js';
 import { BUILDING_DIRECTORY } from './data/buildings.js';
+import { renderBuildingOfficesHTML, getFlatBuildingOffices } from './data/offices.js';
 import { state } from './data/state.js';
 import { map } from './map-setup.js';
 import { clearRoute } from './routing.js';
@@ -373,13 +374,24 @@ export function renderPhoneDirectory(filter = '') {
 
     let html = '';
     BUILDING_DIRECTORY.forEach((b, index) => {
-        if (lowerFilter && !b.name.toLowerCase().includes(lowerFilter) && !(b.desc && b.desc.toLowerCase().includes(lowerFilter))) {
+        const flatOffices = getFlatBuildingOffices(b.id);
+        const matchedOffice = lowerFilter ? flatOffices.find(off => off.toLowerCase().includes(lowerFilter)) : null;
+        const matchesNameOrDesc = lowerFilter && (b.name.toLowerCase().includes(lowerFilter) || (b.desc && b.desc.toLowerCase().includes(lowerFilter)));
+
+        if (lowerFilter && !matchesNameOrDesc && !matchedOffice) {
             return;
         }
 
         const num = index + 1;
         const textColor = getContrastTextColor(b.color);
         const isSelected = state.selectedBuildingId === b.id;
+
+        let subText = b.desc || b.section || 'DA-LARES Facility';
+        if (matchedOffice) {
+            subText = `<span class="phone-dir-office-tag">🏢 Office: <strong>${matchedOffice}</strong></span>`;
+        } else if (flatOffices.length > 0) {
+            subText = `<span class="phone-dir-offices-count">${flatOffices.length} offices inside</span>`;
+        }
 
         html += `
             <div class="phone-dir-item ${isSelected ? 'active' : ''}" data-id="${b.id}" onclick="navigateTo('${b.id}')">
@@ -388,7 +400,7 @@ export function renderPhoneDirectory(filter = '') {
                 </div>
                 <div class="phone-dir-info">
                     <div class="phone-dir-name">${b.name}</div>
-                    <div class="phone-dir-sub">${b.desc || b.section || 'DA-LARES Facility'}</div>
+                    <div class="phone-dir-sub">${subText}</div>
                 </div>
                 <div class="phone-dir-arrow">›</div>
             </div>
@@ -451,6 +463,12 @@ export function showPhoneBuildingDetails(buildingId) {
     const typeEl = document.getElementById('phone-bldg-type');
     if (sectionEl) sectionEl.textContent = building.section || 'Compound';
     if (typeEl) typeEl.textContent = building.type || 'Office / Facility';
+
+    // Render offices & units
+    const officesContainer = document.getElementById('phone-bldg-offices-container');
+    if (officesContainer) {
+        officesContainer.innerHTML = renderBuildingOfficesHTML(buildingId);
+    }
 
     // Render Google Maps photo mosaic / gallery form
     renderPhoneBuildingGallery(buildingId);

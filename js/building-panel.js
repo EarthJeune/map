@@ -3,6 +3,7 @@
 
 import { DEFAULT_MAP_VIEW } from './data/config.js';
 import { BUILDING_DIRECTORY } from './data/buildings.js';
+import { renderBuildingOfficesHTML } from './data/offices.js';
 import { state } from './data/state.js';
 import { map, getRoofColorCaseStyle } from './map-setup.js';
 import { updateBuildingQR } from './qr.js';
@@ -33,6 +34,12 @@ export function showBuildingPanel(buildingId) {
     document.getElementById('bp-type').textContent = 'Office Building';
     document.getElementById('bp-coords').textContent =
         building.coords[1].toFixed(5) + '°N, ' + building.coords[0].toFixed(5) + '°E';
+
+    // Render offices & units
+    const officesContainer = document.getElementById('bp-offices-container');
+    if (officesContainer) {
+        officesContainer.innerHTML = renderBuildingOfficesHTML(buildingId);
+    }
 
     // Load Image
     const imgEl = document.getElementById('bp-real-image');

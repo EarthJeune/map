@@ -2,6 +2,7 @@
 // Directory list, search filter, sidebar menu toggle/collapse, and setting chips.
 
 import { BUILDING_DIRECTORY } from './data/buildings.js';
+import { getFlatBuildingOffices } from './data/offices.js';
 import { LARES_BOUNDARY } from './data/geo.js';
 import { state } from './data/state.js';
 import { toggleTrees, toggleBuildings, map } from './map-setup.js';
@@ -127,20 +128,32 @@ export function buildDirectory(filter = '') {
 
     let html = '';
     BUILDING_DIRECTORY.forEach((b, index) => {
-        if (lowerFilter && !b.name.toLowerCase().includes(lowerFilter) && !(b.desc && b.desc.toLowerCase().includes(lowerFilter))) {
+        const flatOffices = getFlatBuildingOffices(b.id);
+        const matchedOffice = lowerFilter ? flatOffices.find(off => off.toLowerCase().includes(lowerFilter)) : null;
+        const matchesNameOrDesc = lowerFilter && (b.name.toLowerCase().includes(lowerFilter) || (b.desc && b.desc.toLowerCase().includes(lowerFilter)));
+
+        if (lowerFilter && !matchesNameOrDesc && !matchedOffice) {
             return;
         }
 
         const num = index + 1; // 1-based numbering matching 3D map pins
         const bColor = b.color || '#3b82f6';
         const isSelected = state.selectedBuildingId === b.id;
+
+        let subText = b.desc || 'DA-LARES Facility';
+        if (matchedOffice) {
+            subText = `<span class="dir-office-tag">🏢 Office: <strong>${matchedOffice}</strong></span>`;
+        } else if (flatOffices.length > 0) {
+            subText = `<span class="dir-offices-count">${flatOffices.length} offices inside</span>`;
+        }
+
         html += `<div class="dir-item ${isSelected ? 'active' : ''}" data-id="${b.id}" onclick="navigateTo('${b.id}')">
             <div class="dir-item-icon" style="background:${bColor}22;color:${bColor}">
                 <span class="dir-item-icon-number">${num}</span>
             </div>
             <div class="dir-item-info">
                 <div class="dir-item-name">${b.name}</div>
-                <div class="dir-item-desc">${b.desc || 'DA-LARES Facility'}</div>
+                <div class="dir-item-desc">${subText}</div>
             </div>
             <button class="three-dots-btn" onclick="event.stopPropagation(); openColorPicker('${b.id}', '${b.name.replace(/'/g, "\\'")}')" style="background:none; border:none; cursor:pointer; font-size:16px; padding:4px 8px;" title="Customize Color">⋮</button>
             <div class="dir-item-arrow">→</div>

@@ -4212,4 +4212,147 @@ body.mode-phone .kiosk-marker-label {
     font-weight: 600;
 }
 
+/* ==========================================================================
+   DA-LARES FACILITY OFFICES & OPERATIONAL UNITS STYLING
+   ========================================================================== */
+.bldg-offices-card {
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-top: 12px;
+}
+
+.bldg-offices-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.bldg-offices-icon {
+    font-size: 15px;
+    line-height: 1;
+}
+
+.bldg-offices-title {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #f1f5f9;
+    letter-spacing: 0.3px;
+}
+
+.bldg-offices-total {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+.bldg-floor-group {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.bldg-floor-group:first-of-type {
+    margin-top: 4px;
+    padding-top: 0;
+    border-top: none;
+}
+
+.bldg-floor-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.bldg-floor-badge {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.12);
+    border: 1px solid rgba(251, 191, 36, 0.25);
+    padding: 2px 7px;
+    border-radius: 6px;
+}
+
+.bldg-floor-count {
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+.bldg-offices-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.office-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 8px;
+    padding: 4px 9px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #e2e8f0;
+    transition: all 0.15s ease;
+}
+
+.office-pill:hover {
+    background: rgba(56, 189, 248, 0.14);
+    border-color: rgba(56, 189, 248, 0.35);
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+.op-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #38bdf8;
+    flex-shrink: 0;
+}
+
+.bldg-offices-pending {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #94a3b8;
+    font-style: italic;
+    padding: 6px 0;
+}
+
+.pending-icon {
+    font-size: 14px;
+}
+
+/* Directory search tags for offices */
+.dir-office-tag,
+.phone-dir-office-tag {
+    color: #38bdf8 !important;
+    font-size: 11px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.dir-offices-count,
+.phone-dir-offices-count {
+    color: #64748b;
+    font-size: 11px;
+}
+
+
 
