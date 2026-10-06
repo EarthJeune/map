@@ -319,8 +319,9 @@ export function updateUserGPSMarker(lng, lat) {
         const el = createUserGPSMarkerElement();
         state.userGPSMarker = new mapboxgl.Marker({ 
             element: el,
-            rotationAlignment: 'map',
-            pitchAlignment: 'map'
+            anchor: 'center',
+            rotationAlignment: 'viewport',
+            pitchAlignment: 'viewport'
         }).setLngLat([lng, lat]).addTo(map);
     } else {
         state.userGPSMarker.setLngLat([lng, lat]);
@@ -396,6 +397,8 @@ export function startPhoneLiveGPS(buildingId) {
     state.isMobileGPSActive = true;
     state.isUserFollowingGPS = true;
     state.offRouteCounter = 0;
+    state.lastRecalcTime = 0;
+    state.minDestDistance = null;
     document.body.classList.add('phone-gps-active');
     updateRecenterStateUI(true);
 
@@ -551,6 +554,8 @@ export function stopPhoneLiveGPS() {
 
     state.isMobileGPSActive = false;
     state.isUserFollowingGPS = false;
+    state.offRouteCounter = 0;
+    state.minDestDistance = null;
     document.body.classList.remove('phone-gps-active');
     if (state.autoRecenterTimer) {
         clearTimeout(state.autoRecenterTimer);
@@ -691,7 +696,8 @@ export function computeAndDrawRouteFromGPS(startCoord, buildingId) {
     if (!building || !roadGraph || roadGraph.size === 0) return;
 
     const ENTRANCE_OVERRIDES = {
-        'rafis_building': 'mis_building',
+        'mis_building': 'mis_rafis_building',
+        'rafis_building': 'mis_rafis_building',
         'fod_building': 'lares_building',
         'bac_building': 'tanco_hall_building',
         'pmed_building': 'tanco_hall_building',
@@ -724,6 +730,13 @@ export function computeAndDrawRouteFromGPS(startCoord, buildingId) {
     const routeCoords = bestPath || [startCoord, building.coords];
     state.activeFullRouteCoords = routeCoords;
     state.activeRouteCoords = routeCoords;
+    lastTrimmedCoord = null;
+    lastTrimmedTime = 0;
+    try {
+        state.minDestDistance = turf.length(turf.lineString(routeCoords), { units: 'meters' });
+    } catch (e) {
+        state.minDestDistance = null;
+    }
 
     state.currentRouteSteps = buildSteps(routeCoords, BUILDING_DIRECTORY, building.id);
     state.currentRouteDestName = building.name;
@@ -806,6 +819,7 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
         const el = createUserGPSMarkerElement();
         state.userGPSMarker = new mapboxgl.Marker({ 
             element: el,
+            anchor: 'center',
             rotationAlignment: 'map',
             pitchAlignment: 'map'
         }).setLngLat(userCoord).addTo(map);
@@ -869,26 +883,49 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
             const userSnappedOnRoute = turf.nearestPointOnLine(fullLine, userPt);
             const startPt = turf.point(state.activeFullRouteCoords[0]);
             const destPt = turf.point(state.activeFullRouteCoords[state.activeFullRouteCoords.length - 1]);
+            const targetBldg = BUILDING_DIRECTORY.find(b => b.id === targetBuildingId);
+            const targetCoord = targetBldg ? targetBldg.coords : state.activeFullRouteCoords[state.activeFullRouteCoords.length - 1];
+            const actualDistToDest = turf.distance(userPt, turf.point(targetCoord), { units: 'meters' });
 
-            // Off-route check (> 22m away for 3 consecutive cycles)
+            // Track minimum distance achieved to destination for reverse/walking-away detection
+            if (state.minDestDistance === undefined || state.minDestDistance === null || actualDistToDest < state.minDestDistance) {
+                state.minDestDistance = actualDistToDest;
+            }
+
+            // Perpendicular distance from user GPS to active route line
             const distFromRoute = turf.distance(userPt, userSnappedOnRoute, { units: 'meters' });
-            if (distFromRoute > 22 && distFromCompoundMeters <= 1500) {
+
+            // Dynamic Off-Route / Detour Detection:
+            // 1. If user is > 14m away: immediate reroute (took another road)
+            // 2. If user is > 8.5m away for 2 cycles: sustained detour onto another path
+            // 3. If user is walking in the opposite direction (distance to destination increased by > 12m from closest point)
+            const isFarOffRoute = distFromRoute > 14;
+            const isMediumOffRoute = distFromRoute > 8.5;
+            const isWalkingAway = (state.minDestDistance !== null && (actualDistToDest - state.minDestDistance > 12) && (nowTime - gpsNavigationStartTime > 4000));
+
+            if (isFarOffRoute || isMediumOffRoute || isWalkingAway) {
                 state.offRouteCounter++;
-                if (state.offRouteCounter >= 3 && (nowTime - state.lastRecalcTime > 6000)) {
-                    state.lastRecalcTime = nowTime;
-                    state.offRouteCounter = 0;
-                    triggerHapticRecalculate();
-                    showMobileToast('🔄 Recalculating path from your location…', 2500);
-                    computeAndDrawRouteFromGPS(userCoord, targetBuildingId);
-                    return;
-                }
             } else {
                 state.offRouteCounter = 0;
             }
 
-            // Slice remaining route ahead of user
+            const shouldTriggerReroute = isFarOffRoute || (state.offRouteCounter >= 2) || (isWalkingAway && state.offRouteCounter >= 2);
+
+            if (shouldTriggerReroute && distFromCompoundMeters <= 1500) {
+                if (nowTime - (state.lastRecalcTime || 0) > 2500) {
+                    state.lastRecalcTime = nowTime;
+                    state.offRouteCounter = 0;
+                    state.minDestDistance = actualDistToDest;
+                    triggerHapticRecalculate();
+                    showMobileToast('🔄 Rerouting path from your location…', 2000);
+                    computeAndDrawRouteFromGPS(userCoord, targetBuildingId);
+                    return;
+                }
+            }
+
+            // Slice remaining route ahead of user when following the corridor
             let remainingDistMeters;
-            if (distFromRoute <= 12) {
+            if (distFromRoute <= 8.5) {
                 const remainingSlice = turf.lineSlice(userSnappedOnRoute, destPt, fullLine);
                 remainingDistMeters = turf.length(remainingSlice, { units: 'meters' });
 
@@ -902,6 +939,22 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
                         map.getSource('route-traveled-source').setData(traveledSlice);
                     }
                 } catch (e) {}
+
+                // Dynamic subtle dashed connector line if user drifts 3.5m - 8.5m into trees/sidewalk
+                if (distFromRoute >= 3.5 && map.getSource('gps-connector-source')) {
+                    map.getSource('gps-connector-source').setData({
+                        type: 'FeatureCollection',
+                        features: [{
+                            type: 'Feature',
+                            geometry: {
+                                type: 'LineString',
+                                coordinates: [userCoord, userSnappedOnRoute.geometry.coordinates]
+                            }
+                        }]
+                    });
+                } else if (map.getSource('gps-connector-source')) {
+                    map.getSource('gps-connector-source').setData({ type: 'FeatureCollection', features: [] });
+                }
             } else {
                 remainingDistMeters = turf.length(fullLine, { units: 'meters' });
             }
@@ -922,10 +975,6 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
             updateLiveNavigation(currentDist, totalDist);
 
             // 7. Arrival Verification with Haptics
-            const targetBldg = BUILDING_DIRECTORY.find(b => b.id === targetBuildingId);
-            const targetCoord = targetBldg ? targetBldg.coords : state.activeFullRouteCoords[state.activeFullRouteCoords.length - 1];
-            const actualDistToDest = turf.distance(userPt, turf.point(targetCoord), { units: 'meters' });
-
             if ((nowTime - gpsNavigationStartTime > 4000) && actualDistToDest <= 18 && remainingDistMeters <= 14) {
                 triggerHapticArrival();
                 showPhoneArrival(targetBuildingId);
@@ -1018,6 +1067,7 @@ export function startTapToPlaceLocation(buildingId) {
             const el = createUserGPSMarkerElement();
             state.userGPSMarker = new mapboxgl.Marker({ 
                 element: el,
+                anchor: 'center',
                 rotationAlignment: 'map',
                 pitchAlignment: 'map'
             }).setLngLat(tappedCoord).addTo(map);
@@ -1088,38 +1138,17 @@ export function recenterOnUserGPS(opts = {}) {
 }
 
 export function initGPSMapListeners() {
-    const mapCanvas = map.getCanvas();
-    if (mapCanvas) {
-        mapCanvas.addEventListener('touchstart', (e) => {
-            activeTouchCount = e.touches ? e.touches.length : 1;
-            if (state.isMobileGPSActive && !state.isUserFollowingGPS) {
-                scheduleAutoRecenter();
-            }
-        }, { passive: true });
-
-        mapCanvas.addEventListener('touchend', (e) => {
-            activeTouchCount = e.touches ? e.touches.length : 0;
-            if (state.isMobileGPSActive && !state.isUserFollowingGPS) {
-                scheduleAutoRecenter();
-            }
-        }, { passive: true });
-
-        mapCanvas.addEventListener('touchcancel', () => {
-            activeTouchCount = 0;
-        }, { passive: true });
-    }
-
-    map.on('dragstart', (e) => {
+    function pauseFollowingOnUserGesture() {
         if (!state.isMobileGPSActive) return;
-        const touches = e.originalEvent && e.originalEvent.touches;
-        const touchCount = touches ? touches.length : activeTouchCount;
-        if (touchCount > 1) {
-            return;
-        }
         state.isUserFollowingGPS = false;
         updateRecenterStateUI(false);
         scheduleAutoRecenter();
-    });
+    }
+
+    map.on('dragstart', pauseFollowingOnUserGesture);
+    map.on('zoomstart', pauseFollowingOnUserGesture);
+    map.on('rotatestart', pauseFollowingOnUserGesture);
+    map.on('pitchstart', pauseFollowingOnUserGesture);
 
     map.on('dragend', () => {
         if (state.isMobileGPSActive && !state.isUserFollowingGPS) {
@@ -1128,12 +1157,8 @@ export function initGPSMapListeners() {
     });
 
     map.on('zoomend', () => {
-        if (state.isMobileGPSActive && state.isUserFollowingGPS && state.lastKnownGPSCoords) {
-            map.easeTo({
-                center: state.lastKnownGPSCoords,
-                duration: 250,
-                easing: t => t
-            });
+        if (state.isMobileGPSActive && !state.isUserFollowingGPS) {
+            scheduleAutoRecenter();
         }
     });
 }

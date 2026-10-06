@@ -11,32 +11,45 @@ import { isKioskMode } from './mode.js';
 export function createKioskMarker() {
     if (state.kioskMarkerInstance) state.kioskMarkerInstance.remove();
     const el = document.createElement('div');
-    el.className = 'kiosk-marker';
-    el.innerHTML = '<div class="kiosk-marker-pulse"></div><div class="kiosk-marker-dot"></div><div class="kiosk-marker-label" style="cursor:pointer;pointer-events:auto;" onclick="toggleKioskLock(event)">📍 You Are Here 🔒</div>';
-    state.kioskMarkerInstance = new mapboxgl.Marker({ element: el, anchor: 'center', draggable: state.isKioskDraggable })
+    el.className = 'kiosk-marker' + (state.isAdmin ? ' admin-mode' : ' visitor-mode');
+
+    if (state.isAdmin) {
+        el.innerHTML = '<div class="kiosk-marker-pulse"></div><div class="kiosk-marker-dot"></div><div class="kiosk-marker-label" style="cursor:pointer;pointer-events:auto;" onclick="toggleKioskLock(event)">📍 You Are Here 🔒 (Admin)</div>';
+    } else {
+        el.innerHTML = '<div class="kiosk-marker-pulse"></div><div class="kiosk-marker-dot"></div><div class="kiosk-marker-label" style="pointer-events:none;cursor:default;user-select:none;">📍 You Are Here</div>';
+    }
+
+    state.kioskMarkerInstance = new mapboxgl.Marker({
+        element: el,
+        anchor: 'center',
+        draggable: !!(state.isAdmin && state.isKioskDraggable)
+    })
         .setLngLat(state.KIOSK_COORDS)
         .addTo(map);
+
     if (state.kioskMarkerInstance.getElement()) {
         state.kioskMarkerInstance.getElement().style.zIndex = '99999';
     }
 
-    state.kioskMarkerInstance.on('dragend', () => {
-        const lngLat = state.kioskMarkerInstance.getLngLat();
-        state.KIOSK_COORDS = [lngLat.lng, lngLat.lat];
+    if (state.isAdmin) {
+        state.kioskMarkerInstance.on('dragend', () => {
+            const lngLat = state.kioskMarkerInstance.getLngLat();
+            state.KIOSK_COORDS = [lngLat.lng, lngLat.lat];
 
-        fetch('/api/pin', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ coordinates: state.KIOSK_COORDS })
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    alert("Saved new Kiosk Location!");
-                    if (state.activeRoute) navigateTo(state.activeRoute); // Refresh route
-                }
-            });
-    });
+            fetch('/api/pin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ coordinates: state.KIOSK_COORDS })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        alert("Saved new Kiosk Location!");
+                        if (state.activeRoute) navigateTo(state.activeRoute); // Refresh route
+                    }
+                });
+        });
+    }
 }
 
 export function resetIdle() {

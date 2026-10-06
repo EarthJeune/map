@@ -1024,6 +1024,10 @@ body.map-zoomed-out .bldg-map-marker {
     z-index: 100 !important;
 }
 
+.bldg-map-marker.decluttered-dest {
+    z-index: 2000 !important;
+}
+
 /* Pulsing Destination Pin Marker */
 .dest-pin-marker {
     position: relative;
@@ -1153,9 +1157,14 @@ body.map-zoomed-out .bldg-map-marker {
     border: 1.5px solid #22c55e;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6), 0 0 10px rgba(34, 197, 94, 0.25);
     z-index: 100000 !important;
+    pointer-events: none;
+    cursor: default;
+    user-select: none;
+}
+
+.kiosk-marker.admin-mode .kiosk-marker-label {
     pointer-events: auto;
     cursor: pointer;
-    user-select: none;
 }
 
 .kiosk-marker-label::before {
@@ -1438,6 +1447,7 @@ body.map-zoomed-out .bldg-map-marker {
 }
 
 .three-dots-btn {
+    display: none;
     background: none;
     border: none;
     color: #94a3b8;
@@ -1446,6 +1456,10 @@ body.map-zoomed-out .bldg-map-marker {
     padding: 0 10px;
     line-height: 1;
     border-radius: 4px;
+}
+
+body.admin-mode .three-dots-btn {
+    display: inline-block;
 }
 
 .three-dots-btn:hover {
@@ -4343,9 +4357,29 @@ body.mode-phone .kiosk-marker-label {
 .phone-dir-office-tag {
     color: #38bdf8 !important;
     font-size: 11px;
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
+    line-height: 1.35;
+    margin-top: 2px;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.dir-office-tag .dot-office,
+.phone-dir-office-tag .dot-office {
+    flex-shrink: 0;
+    font-size: 11px;
+}
+
+.dir-office-tag .office-name-text,
+.phone-dir-office-tag .office-name-text {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 500;
 }
 
 .dir-offices-count,

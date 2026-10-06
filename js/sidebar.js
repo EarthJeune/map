@@ -142,10 +142,14 @@ export function buildDirectory(filter = '') {
 
         let subText = b.desc || 'DA-LARES Facility';
         if (matchedOffice) {
-            subText = `<span class="dir-office-tag">🏢 Office: <strong>${matchedOffice}</strong></span>`;
+            subText = `<span class="dir-office-tag" title="${matchedOffice.replace(/"/g, '&quot;')}"><span class="dot-office">🏢</span><span class="office-name-text">${matchedOffice}</span></span>`;
         } else if (flatOffices.length > 0) {
             subText = `<span class="dir-offices-count">${flatOffices.length} offices inside</span>`;
         }
+
+        const adminBtn = state.isAdmin
+            ? `<button class="three-dots-btn" onclick="event.stopPropagation(); openColorPicker('${b.id}', '${b.name.replace(/'/g, "\\'")}')" style="background:none; border:none; cursor:pointer; font-size:16px; padding:4px 8px;" title="Customize Color">⋮</button>`
+            : '';
 
         html += `<div class="dir-item ${isSelected ? 'active' : ''}" data-id="${b.id}" onclick="navigateTo('${b.id}')">
             <div class="dir-item-icon" style="background:${bColor}22;color:${bColor}">
@@ -155,7 +159,7 @@ export function buildDirectory(filter = '') {
                 <div class="dir-item-name">${b.name}</div>
                 <div class="dir-item-desc">${subText}</div>
             </div>
-            <button class="three-dots-btn" onclick="event.stopPropagation(); openColorPicker('${b.id}', '${b.name.replace(/'/g, "\\'")}')" style="background:none; border:none; cursor:pointer; font-size:16px; padding:4px 8px;" title="Customize Color">⋮</button>
+            ${adminBtn}
             <div class="dir-item-arrow">→</div>
         </div>`;
     });

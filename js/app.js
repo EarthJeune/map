@@ -118,6 +118,8 @@ fetch('roads.json')
         // Extract entrances
         if (data.features) {
             const aliasMap = {
+                'mis_building': 'mis_rafis_building',
+                'rafis_building': 'mis_rafis_building',
                 'fod_building': 'lares_building',
                 'bac_building': 'tanco_hall_building',
                 'pmed_building': 'tanco_hall_building',
@@ -296,3 +298,27 @@ window.toggleSidebarMenu = toggleSidebarMenu;
 window.toggleTerrain = toggleTerrain;
 window.toggleTrees = toggleTrees;
 window.useEyeDropper = useEyeDropper;
+
+// Sync Admin Mode state to DOM
+if (typeof document !== 'undefined') {
+    document.body.classList.toggle('admin-mode', !!state.isAdmin);
+}
+
+// Secret Admin Mode Toggle Shortcut: Alt + Shift + A
+window.addEventListener('keydown', (e) => {
+    if (e.altKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+        e.preventDefault();
+        state.isAdmin = !state.isAdmin;
+        if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('da_admin_mode', state.isAdmin ? 'true' : 'false');
+        }
+        document.body.classList.toggle('admin-mode', state.isAdmin);
+        buildDirectory();
+        createKioskMarker();
+        const msg = state.isAdmin 
+            ? '🔓 Admin Mode Enabled (Calibration & Customization Unlocked)' 
+            : '🔒 Visitor Kiosk Mode (Admin Controls Hidden)';
+        console.log(msg);
+        alert(msg);
+    }
+});

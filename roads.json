@@ -250,6 +250,10 @@
             13.95910430654149
           ],
           [
+            121.16657809366842,
+            13.959080617095921
+          ],
+          [
             121.1665473218718,
             13.959069486415146
           ],
@@ -1384,35 +1388,18 @@
       }
     },
     {
-      "id": "21767288794839ba287013e6a411cef8",
-      "type": "Feature",
-      "properties": {
-        "type": "entrance",
-        "buildingId": "rafis_building",
-        "name": "Entrance: rafis_building",
-        "id": "entrance_7"
-      },
-      "geometry": {
-        "coordinates": [
-          121.16660153530421,
-          13.959001849515744
-        ],
-        "type": "Point"
-      }
-    },
-    {
       "id": "1b6fac09ce9d94a83dd71a200c25b941",
       "type": "Feature",
       "properties": {
         "type": "entrance",
-        "buildingId": "mis_building",
-        "name": "Entrance: mis_building",
+        "buildingId": "mis_rafis_building",
+        "name": "Entrance: mis_rafis_building",
         "id": "entrance_8"
       },
       "geometry": {
         "coordinates": [
-          121.1666050078901,
-          13.959002617388379
+          121.16660362648145,
+          13.959002963278223
         ],
         "type": "Point"
       }

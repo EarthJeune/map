@@ -9,6 +9,7 @@ import { clearRoute } from './routing.js';
 import { isNavigationActive } from './sidebar.js';
 import { 
     requestUserInitialLocation, 
+    requestDeviceOrientationPermission,
     stopPhoneLiveGPS 
 } from './gps.js';
 
@@ -349,6 +350,9 @@ export function handleWelcomeContinue() {
             modal.classList.remove('closing');
         }, 260);
     }
+    // iOS requires the Motion/Compass prompt to be triggered synchronously inside this tap,
+    // so request it here together with location (prevents a second prompt on "Guide me live").
+    requestDeviceOrientationPermission();
     // Acquire user location to place blue dot on campus; do NOT start a walking route
     requestUserInitialLocation();
 }
@@ -388,7 +392,7 @@ export function renderPhoneDirectory(filter = '') {
 
         let subText = b.desc || b.section || 'DA-LARES Facility';
         if (matchedOffice) {
-            subText = `<span class="phone-dir-office-tag">🏢 Office: <strong>${matchedOffice}</strong></span>`;
+            subText = `<span class="phone-dir-office-tag" title="${matchedOffice.replace(/"/g, '&quot;')}"><span class="dot-office">🏢</span><span class="office-name-text">${matchedOffice}</span></span>`;
         } else if (flatOffices.length > 0) {
             subText = `<span class="phone-dir-offices-count">${flatOffices.length} offices inside</span>`;
         }

@@ -630,7 +630,8 @@ export function computeRouteFromKiosk(buildingId) {
     if (!building) return [(state.KIOSK_COORDS || SAVED_MAIN_KIOSK_COORDS), (state.KIOSK_COORDS || SAVED_MAIN_KIOSK_COORDS)];
 
     const ENTRANCE_OVERRIDES = {
-        'rafis_building': 'mis_building',
+        'mis_building': 'mis_rafis_building',
+        'rafis_building': 'mis_rafis_building',
         'fod_building': 'lares_building',
         'bac_building': 'tanco_hall_building',
         'pmed_building': 'tanco_hall_building',
@@ -725,8 +726,10 @@ let kioskMarkerInstance = null;
 let isKioskDraggable = false;
 
 window.toggleKioskLock = function (e) {
+    if (!state.isAdmin) return;
     if (e) e.stopPropagation();
     isKioskDraggable = !isKioskDraggable;
+    state.isKioskDraggable = isKioskDraggable;
     const label = document.querySelector('.kiosk-marker-label');
     if (label) {
         if (isKioskDraggable) {
@@ -735,14 +738,15 @@ window.toggleKioskLock = function (e) {
             label.style.color = '#000';
             label.style.border = '1px solid #ca8a04';
         } else {
-            label.innerHTML = '📍 You Are Here 🔒';
+            label.innerHTML = '📍 You Are Here 🔒 (Admin)';
             label.style.background = 'rgba(15, 23, 42, .9)';
             label.style.color = '#22c55e';
             label.style.border = '1px solid rgba(34, 197, 94, .3)';
         }
     }
-    if (kioskMarkerInstance) {
-        kioskMarkerInstance.setDraggable(isKioskDraggable);
+    const marker = state.kioskMarkerInstance || kioskMarkerInstance;
+    if (marker) {
+        marker.setDraggable(isKioskDraggable);
     }
 }
 

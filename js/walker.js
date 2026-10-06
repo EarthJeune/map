@@ -303,11 +303,19 @@ export function declutterLabelsForRoute(coords, destId) {
         const b = BUILDING_DIRECTORY.find(item => item.id === bId);
         if (!b) return;
 
-        el.classList.remove('decluttered-dim', 'decluttered-hide', 'decluttered-highlight');
+        el.classList.remove('decluttered-dim', 'decluttered-hide', 'decluttered-highlight', 'decluttered-dest');
 
-        // Destination building stays highlighted
+        // Destination building stays highlighted and always stacks above every other label
         if (b.id === destId) {
-            el.classList.add('decluttered-highlight');
+            el.classList.add('decluttered-highlight', 'decluttered-dest');
+            return;
+        }
+
+        // Hide immediate neighbours whose label would sit on top of the destination label
+        // (e.g. RAFIS shares a wall with MIS, so their labels overlap almost exactly)
+        const destB = BUILDING_DIRECTORY.find(item => item.id === destId);
+        if (destB && turf.distance(turf.point(b.coords), turf.point(destB.coords), { units: 'meters' }) < 12) {
+            el.classList.add('decluttered-hide');
             return;
         }
 
@@ -340,7 +348,7 @@ export function restoreLabels() {
     state.markers.forEach(m => {
         const el = m.getElement();
         if (el && el.classList.contains('bldg-map-marker')) {
-            el.classList.remove('decluttered-dim', 'decluttered-hide', 'decluttered-highlight');
+            el.classList.remove('decluttered-dim', 'decluttered-hide', 'decluttered-highlight', 'decluttered-dest');
         }
     });
 }

@@ -64,6 +64,18 @@ export const BUILDING_OFFICES = {
         'MIS Data Center',
         'BAC Extension Office'
     ],
+    'mis_rafis_building': [
+        'Management Information Systems (MIS)',
+        'Regional Agriculture and Fisheries Information Section (RAFIS)'
+    ],
+    'mis_building': [
+        'Management Information Systems (MIS)',
+        'Regional Agriculture and Fisheries Information Section (RAFIS)'
+    ],
+    'rafis_building': [
+        'Management Information Systems (MIS)',
+        'Regional Agriculture and Fisheries Information Section (RAFIS)'
+    ],
     'rnd_building': {
         status: 'pending',
         message: 'Offices information pending update'

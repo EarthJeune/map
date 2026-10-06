@@ -20,8 +20,9 @@ export function buildSteps(coords, directory, destId) {
     const routeLine = turf.lineString(coords);
     const totalDistance = turf.length(routeLine, { units: 'meters' });
 
-    const destBuilding = directory.find(b => b.id === destId);
-    const destName = destBuilding ? destBuilding.name : 'Destination';
+    const destBuilding = directory ? directory.find(b => b.id === destId) : null;
+    destName = destBuilding ? destBuilding.name : (state.currentRouteDestName || 'Destination');
+    state.currentRouteDestName = destName;
 
     // 1. Calculate cumulative distance for each vertex along the route
     const cumulativeDists = [0];
@@ -278,7 +279,8 @@ export function highlightActiveStep(idx) {
 
 export function updateLiveNavigation(currentDist, totalDist) {
     const routeSteps = state.currentRouteSteps || state.steps || steps;
-    const destinationName = state.currentRouteDestName || state.destName || destName;
+    const destBldg = (typeof BUILDING_DIRECTORY !== 'undefined') ? BUILDING_DIRECTORY.find(b => b.id === (state.selectedBuildingId || state.activeRoute)) : null;
+    const targetDestName = state.currentRouteDestName || (destBldg ? destBldg.name : '') || state.destName || destName || (routeSteps && routeSteps[routeSteps.length - 1]?.landmark) || 'your destination';
     if (!routeSteps || routeSteps.length === 0) return;
     const banner = document.getElementById('turn-by-turn-banner');
     if (!banner) return;
@@ -287,7 +289,7 @@ export function updateLiveNavigation(currentDist, totalDist) {
         banner.classList.add('arrived');
         document.getElementById('tbt-icon').innerHTML = '🏁';
         document.getElementById('tbt-distance').textContent = 'Arrived';
-        document.getElementById('tbt-instruction').textContent = `You have arrived at ${destName}`;
+        document.getElementById('tbt-instruction').textContent = `You have arrived at ${targetDestName}`;
         highlightActiveStep(routeSteps.length - 1);
         startArrivedCountdown();
         return;

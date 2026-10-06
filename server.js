@@ -163,6 +163,25 @@ app.post('/api/colors', async (req, res) => {
     }
 });
 
+// API endpoint to save updated roads.json directly from road drawer tool
+app.post('/api/roads', (req, res) => {
+    try {
+        const data = req.body;
+        if (!data || !data.features) {
+            return res.status(400).json({ error: 'Invalid GeoJSON: features array expected' });
+        }
+        if (fs.existsSync('roads.json')) {
+            fs.copyFileSync('roads.json', 'roads.backup.json');
+        }
+        fs.writeFileSync('roads.json', JSON.stringify(data, null, 2), 'utf8');
+        console.log(`Saved roads.json with ${data.features.length} features.`);
+        res.json({ success: true, count: data.features.length });
+    } catch (err) {
+        console.error('Error saving roads.json:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Serve static files (like index.html, assets, etc.) with no-cache for instant development updates
 app.use(express.static(__dirname, {
     etag: false,

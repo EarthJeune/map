@@ -7,11 +7,13 @@ import { SAVED_MAIN_KIOSK_COORDS } from './config.js';
 
 const urlParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
 const urlViewParam = urlParams.get('view');
+const urlAdminParam = urlParams.get('admin');
 
 export const state = {
     // Mode & Orientation
     appMode: 'kiosk',
     kioskOrientation: 'landscape',
+    isAdmin: (urlAdminParam === '1' || urlAdminParam === 'true' || (typeof localStorage !== 'undefined' && localStorage.getItem('da_admin_mode') === 'true')),
 
     // Map & Style
     map: null,

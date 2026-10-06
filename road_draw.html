@@ -39,8 +39,8 @@
   <p>1. Use the line tool in the top right to trace walkways/roads.</p>
   <p>2. Double-click to finish a road segment.</p>
   <p>3. Use the point/marker tool to place entrances, and enter the Building ID when prompted.</p>
-  <p>4. Click "Generate Road GeoJSON" when done, and send it to your AI assistant!</p>
-  <button onclick="exportData()">Generate Road GeoJSON</button>
+  <button id="saveDirectBtn" onclick="saveDirectlyToMap()" style="background:#22c55e; margin-bottom:8px;">💾 Save Directly to Map (roads.json)</button>
+  <button onclick="exportData()" style="background:#3b82f6;">📋 Copy Road GeoJSON to Clipboard</button>
   <textarea id="output" readonly placeholder="Your GeoJSON code will appear here..."></textarea>
 </div>
 
@@ -64,8 +64,7 @@
             <option value="bac_building">Bac Building</option>
             <option value="clinic">Clinic</option>
             <option value="avrc_building">Avrc Building</option>
-            <option value="mis_building">Mis Building</option>
-            <option value="rafis_building">Rafis Building</option>
+            <option value="mis_rafis_building">MIS / RAFIS Building</option>
             <option value="stiarc_building">Stiarc Building</option>
             <option value="rnd_building">Rnd Building</option>
             <option value="laboratory_building">Post Harvest Laboratory Building</option>
@@ -228,6 +227,53 @@ map.on('load', () => {
         })
         .catch(err => console.log('No existing roads found, starting fresh.'));
 });
+function saveDirectlyToMap() {
+    const data = draw.getAll();
+    const btn = document.getElementById('saveDirectBtn');
+    btn.textContent = "Saving to roads.json...";
+    btn.disabled = true;
+    
+    // Auto-generate IDs for roads
+    let roadCounter = 1;
+    let entranceCounter = 1;
+    for (const f of data.features) {
+        if (!f.properties.id) {
+            if (f.geometry.type === 'Point') {
+                f.properties.id = "entrance_" + entranceCounter++;
+            } else {
+                f.properties.id = "road_" + roadCounter++;
+            }
+        }
+    }
+    
+    fetch('/api/roads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res.success) {
+            btn.textContent = `✅ Saved ${res.count} features to roads.json!`;
+            btn.style.background = "#10b981";
+            setTimeout(() => {
+                btn.textContent = "💾 Save Directly to Map (roads.json)";
+                btn.style.background = "#22c55e";
+                btn.disabled = false;
+            }, 3000);
+        } else {
+            alert('Failed to save: ' + (res.error || 'Unknown error'));
+            btn.textContent = "❌ Error Saving";
+            btn.disabled = false;
+        }
+    })
+    .catch(err => {
+        alert('Network error: ' + err.message);
+        btn.textContent = "❌ Error Saving";
+        btn.disabled = false;
+    });
+}
+
 function exportData() {
     const data = draw.getAll();
     const btn = document.querySelector('button');
