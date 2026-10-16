@@ -1,6 +1,6 @@
 // DA-LARES Wayfinding — Phone Navigation & Arrival Controller
 
-import { BUILDING_DIRECTORY } from './data/buildings.js';
+import { BUILDING_DIRECTORY } from './data/buildings.js?v=60';
 import { DEFAULT_MAP_VIEW } from './data/config.js';
 import { state } from './data/state.js';
 import { map } from './map-setup.js';
@@ -19,6 +19,7 @@ import {
     dismissGPSPermissionCard, 
     startPhoneLiveGPS 
 } from './gps.js';
+import { stopOrbit } from './idle.js';
 
 // --- Phone Active Route & Steps ---
 export function updatePhoneRouteUI(coords) {
@@ -133,6 +134,7 @@ export function updatePhoneLiveNavUI(currentDist, totalDist, nextStep, remaining
 }
 
 export function startPhoneAnimatedRoute() {
+    stopOrbit();
     stopPhoneLiveGPS(); // Stop any active live GPS
     dismissGPSPermissionCard(); // Never show permission card for animated route
 
@@ -189,6 +191,7 @@ export function replayPhoneRoute() {
 }
 
 export function cancelPhoneRoute() {
+    stopOrbit();
     stopPhoneLiveGPS();
     clearRoute();
     state.selectedBuildingId = null;

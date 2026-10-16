@@ -17,13 +17,15 @@ import {
     LARES_MASK,
     LARES_COMPOUND_OUTLINE,
     LARES_TREES,
-    LARES_BOUNDARY
+    LARES_BOUNDARY,
+    LARES_UNIFIED_BOUNDARY
 } from './data/geo.js';
 
 import {
     LARES_DRAWINGS,
-    BUILDING_DIRECTORY
-} from './data/buildings.js';
+    BUILDING_DIRECTORY,
+    CUSTOM_3D_BUILDINGS
+} from './data/buildings.js?v=60';
 
 import { state } from './data/state.js';
 
@@ -47,7 +49,11 @@ export const map = new mapboxgl.Map({
     zoom: INTRO_START_VIEW.zoom,
     pitch: INTRO_START_VIEW.pitch,
     bearing: INTRO_START_VIEW.bearing,
-    antialias: true
+    antialias: true,
+    pixelRatio: Math.min(window.devicePixelRatio || 1, 1.5),
+    maxTileCacheSize: 80,
+    fadeDuration: 100,
+    refreshExpiredTiles: false
 });
 state.map = map;
 window.map = map;
@@ -91,6 +97,8 @@ export function setupLayers() {
     } else {
         try { map.setTerrain(null); } catch (e) { }
     }
+    // 2. Synchronize initial sky and atmospheric lighting
+    syncLightingWithTime();
 
     // 2. Google Satellite raster source & layer (rendered at the bottom)
     if (!map.getSource('google-satellite')) {
@@ -100,7 +108,7 @@ export function setupLayers() {
                 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
             ],
             'tileSize': 256,
-            'maxzoom': 22
+            'maxzoom': 20
         });
     }
     if (!map.getLayer('google-satellite-layer')) {
@@ -114,77 +122,83 @@ export function setupLayers() {
         });
     }
 
-    // 3. Section ground fills & boundary lines (added first so buildings & roads render ON TOP)
+    // 3. Unified DA-LARES Compound Boundary (Single grass green outline, zero internal dividing lines)
     const boundaryBtn = document.getElementById('chip-boundary');
     const isBoundaryOn = (state.boundaryVisible !== undefined)
         ? state.boundaryVisible
         : (boundaryBtn ? boundaryBtn.classList.contains('active') : true);
     const initBoundaryVis = isBoundaryOn ? 'visible' : 'none';
 
-    LARES_BOUNDARY.features.forEach(f => {
-        const fid = f.properties.fid;
-        const color = SECTION_COLORS[fid];
-        const pastel = SECTION_PASTEL_COLORS[fid] || color;
-        const src = `sec-${fid}`;
-        if (!map.getSource(src)) map.addSource(src, { type: 'geojson', data: f });
+    if (!map.getSource('lares-unified-boundary-source')) {
+        map.addSource('lares-unified-boundary-source', {
+            type: 'geojson',
+            data: LARES_UNIFIED_BOUNDARY
+        });
+    }
 
-        // Fill ground layer
-        if (!map.getLayer(`sec-fill-${fid}`)) {
-            map.addLayer({
-                id: `sec-fill-${fid}`,
-                type: 'fill',
-                source: src,
-                layout: { 'visibility': initBoundaryVis },
-                paint: {
-                    'fill-color': color,
-                    'fill-opacity': [
-                        'interpolate', ['linear'], ['zoom'],
-                        15.5, 0.35,
-                        17.5, 0.0
-                    ]
-                }
-            });
-        }
+    // Subtle grass-green lawn tint (fades out gracefully on high zoom to reveal aerial details)
+    if (!map.getLayer('lares-boundary-fill')) {
+        map.addLayer({
+            id: 'lares-boundary-fill',
+            type: 'fill',
+            source: 'lares-unified-boundary-source',
+            layout: { 'visibility': initBoundaryVis },
+            paint: {
+                'fill-color': '#22c55e',
+                'fill-opacity': [
+                    'interpolate', ['linear'], ['zoom'],
+                    14, 0.08,
+                    16, 0.04,
+                    18, 0.0
+                ]
+            }
+        });
+    }
 
-        // Boundary glow (Google mode)
-        if (!map.getLayer(`sec-glow-${fid}`)) {
-            map.addLayer({
-                id: `sec-glow-${fid}`,
-                type: 'line',
-                source: src,
-                layout: { 'visibility': initBoundaryVis },
-                paint: {
-                    'line-color': color,
-                    'line-width': 12,
-                    'line-blur': 4,
-                    'line-opacity': [
-                        'interpolate', ['linear'], ['zoom'],
-                        16, 0.6,
-                        18, 0.0
-                    ]
-                }
-            });
-        }
+    // Soft ambient grass green glow (Google Satellite mode)
+    if (!map.getLayer('lares-boundary-glow')) {
+        map.addLayer({
+            id: 'lares-boundary-glow',
+            type: 'line',
+            source: 'lares-unified-boundary-source',
+            layout: { 'visibility': initBoundaryVis },
+            paint: {
+                'line-color': '#4ade80',
+                'line-width': 10,
+                'line-blur': 4,
+                'line-opacity': [
+                    'interpolate', ['linear'], ['zoom'],
+                    14, 0.5,
+                    16, 0.4,
+                    18, 0.2
+                ]
+            }
+        });
+    }
 
-        // Crisp boundary line
-        if (!map.getLayer(`sec-line-${fid}`)) {
-            map.addLayer({
-                id: `sec-line-${fid}`,
-                type: 'line',
-                source: src,
-                layout: { 'visibility': initBoundaryVis },
-                paint: {
-                    'line-color': color,
-                    'line-width': 3,
-                    'line-opacity': [
-                        'interpolate', ['linear'], ['zoom'],
-                        16, 1.0,
-                        18, 0.2
-                    ]
-                }
-            });
-        }
-    });
+    // Crisp unified grass green perimeter line (Google Satellite mode)
+    if (!map.getLayer('lares-boundary-line')) {
+        map.addLayer({
+            id: 'lares-boundary-line',
+            type: 'line',
+            source: 'lares-unified-boundary-source',
+            layout: {
+                'line-cap': 'round',
+                'line-join': 'round',
+                'visibility': initBoundaryVis
+            },
+            paint: {
+                'line-color': '#22c55e',
+                'line-width': [
+                    'interpolate', ['linear'], ['zoom'],
+                    14, 2.5,
+                    16, 3.5,
+                    18, 4.0
+                ],
+                'line-opacity': 0.95
+            }
+        });
+    }
 
     // 4. Stylized Road Network (from roads.json) - rendered directly on top of section ground fills
     if (!map.getSource('lares-roads-source')) {
@@ -276,7 +290,8 @@ export function setupLayers() {
             'id': '3d-drawings',
             'source': 'lares-drawings-source',
             'type': 'fill-extrusion',
-            'minzoom': 13,
+            'filter': ['!=', ['get', 'has_3d_model'], true],
+            'minzoom': 14.5,
             'layout': {
                 'visibility': state.buildingsVisible ? 'visible' : 'none'
             },
@@ -293,7 +308,8 @@ export function setupLayers() {
             'id': '3d-drawings-roofs',
             'source': 'lares-drawings-source',
             'type': 'fill-extrusion',
-            'minzoom': 13,
+            'filter': ['!=', ['get', 'has_3d_model'], true],
+            'minzoom': 14.5,
             'layout': {
                 'visibility': state.buildingsVisible ? 'visible' : 'none'
             },
@@ -306,12 +322,8 @@ export function setupLayers() {
         });
     }
 
-    // 7. 3D Trees — DISABLED for now
-    // if (typeof LARES_TREES !== 'undefined' && LARES_TREES.features) {
-    //     ensureTreeIconLoaded(() => {
-    //         renderTreesLayer();
-    //     });
-    // }
+    // 7. Custom Realistic 3D Building Models (MIS-RAFIS, etc.)
+    setup3DBuildingModelsLayer(map, false);
 
     // 8. Main Entrance Arrow Marker
     createEntranceArrowMarker();
@@ -323,13 +335,16 @@ export function setupLayers() {
     removeMarkers();
     createMarkers();
 
-    // Hide ALL Mapbox base style layers (roads, labels, fills, native buildings, etc.)
+    // Strip unused Mapbox base style layers to keep style graph ultra-lean (~110 layers removed)
     // We provide our own Google satellite tiles + custom layers, so nothing from the base is needed.
     const customPrefixes = ['sec-', 'lares-', 'route-', 'google-', '3d-', 'gps-', 'phone-'];
-    map.getStyle().layers.forEach(layer => {
+    const currentLayers = map.getStyle().layers || [];
+    currentLayers.forEach(layer => {
         const isCustom = customPrefixes.some(p => layer.id.startsWith(p));
         if (!isCustom) {
-            try { map.setLayoutProperty(layer.id, 'visibility', 'none'); } catch (e) { }
+            try { map.removeLayer(layer.id); } catch (e) {
+                try { map.setLayoutProperty(layer.id, 'visibility', 'none'); } catch (e2) { }
+            }
         }
     });
 
@@ -344,16 +359,20 @@ export function setupMapboxStandardLayers() {
     // 1. Configure Mapbox Standard style properties
     // Hide all external buildings (3D + 2D) and trees. Keep roads!
     try {
+        map.setConfigProperty('basemap', 'lightPreset', 'day');
         map.setConfigProperty('basemap', 'show3dObjects', false);
         map.setConfigProperty('basemap', 'show3dBuildings', false);
         map.setConfigProperty('basemap', 'show3dLandmarks', false);
         map.setConfigProperty('basemap', 'show3dTrees', false);
+        map.setConfigProperty('basemap', 'showPedestrianRoads', false);
         map.setConfigProperty('basemap', 'colorBuildings', 'rgba(0,0,0,0)');
         map.setConfigProperty('basemap', 'showPointOfInterestLabels', false);
         map.setConfigProperty('basemap', 'showTransitLabels', false);
         map.setConfigProperty('basemap', 'showPlaceLabels', false);
         map.setConfigProperty('basemap', 'showRoadLabels', true);
-    } catch(e) { console.warn('Config properties not supported:', e); }
+    } catch (e) { console.warn('Config properties not supported:', e); }
+    // Synchronize initial sky and atmospheric lighting with current time of day
+    syncLightingWithTime();
 
     // 2. Stylized Internal Road Network (roads.json) — slot 'middle'
     if (!map.getSource('lares-roads-source')) {
@@ -419,28 +438,7 @@ export function setupMapboxStandardLayers() {
         : (boundaryBtn ? boundaryBtn.classList.contains('active') : true);
     const initBoundaryVis = isBoundaryOn ? 'visible' : 'none';
 
-    // 3. Section dividing lines (no fills) — slot 'middle'
-    LARES_BOUNDARY.features.forEach(f => {
-        const fid = f.properties.fid;
-        const src = `sec-${fid}`;
-        if (!map.getSource(src)) map.addSource(src, { type: 'geojson', data: f });
-        if (!map.getLayer(`sec-line-${fid}`)) {
-            map.addLayer({
-                id: `sec-line-${fid}`,
-                type: 'line',
-                source: src,
-                slot: 'middle',
-                layout: { 'visibility': initBoundaryVis },
-                paint: {
-                    'line-color': '#94a3b8',
-                    'line-width': 1.5,
-                    'line-opacity': 0.5
-                }
-            });
-        }
-    });
-
-    // 4. Distinct DA-LARES Compound Border Outline (distinguishes the compound by outline only) — slot 'middle'
+    // 3. Distinct DA-LARES Compound Border Outline (single grass green outline per QGIS perimeter) — slot 'middle'
     if (!map.getSource('lares-compound-border-source')) {
         map.addSource('lares-compound-border-source', {
             type: 'geojson',
@@ -459,8 +457,8 @@ export function setupMapboxStandardLayers() {
                 'visibility': initBoundaryVis
             },
             paint: {
-                'line-color': '#334155',
-                'line-width': 5,
+                'line-color': '#14532d',
+                'line-width': 5.5,
                 'line-opacity': 0.8
             }
         });
@@ -477,9 +475,9 @@ export function setupMapboxStandardLayers() {
                 'visibility': initBoundaryVis
             },
             paint: {
-                'line-color': '#0284c7',
-                'line-width': 2.5,
-                'line-opacity': 1.0
+                'line-color': '#22c55e',
+                'line-width': 3,
+                'line-opacity': 0.95
             }
         });
     }
@@ -497,14 +495,16 @@ export function setupMapboxStandardLayers() {
             source: 'lares-drawings-source',
             type: 'fill-extrusion',
             slot: 'middle',
-            minzoom: 13,
+            filter: ['!=', ['get', 'has_3d_model'], true],
+            minzoom: 14.5,
             layout: { visibility: state.buildingsVisible ? 'visible' : 'none' },
             paint: {
                 'fill-extrusion-color': '#f0ece4',
                 'fill-extrusion-height': ['get', 'height'],
                 'fill-extrusion-base': ['get', 'min_height'],
                 'fill-extrusion-opacity': 0.95,
-                'fill-extrusion-emissive-strength': 0.3
+                'fill-extrusion-emissive-strength': 0.35,
+                'fill-extrusion-cast-shadows': false
             }
         });
     }
@@ -514,20 +514,79 @@ export function setupMapboxStandardLayers() {
             source: 'lares-drawings-source',
             type: 'fill-extrusion',
             slot: 'middle',
-            minzoom: 13,
+            filter: ['!=', ['get', 'has_3d_model'], true],
+            minzoom: 14.5,
             layout: { visibility: state.buildingsVisible ? 'visible' : 'none' },
             paint: {
                 'fill-extrusion-color': '#e8e2d8',
                 'fill-extrusion-height': ['+', ['get', 'height'], 0.25],
                 'fill-extrusion-base': ['get', 'height'],
                 'fill-extrusion-opacity': 1.0,
-                'fill-extrusion-emissive-strength': 0.3
+                'fill-extrusion-emissive-strength': 0.35,
+                'fill-extrusion-cast-shadows': false
             }
         });
     }
 
-    // 6. Section Badges & Entrance Arrow
-    renderSectionBadges();
+    // Custom Realistic 3D Building Models (MIS-RAFIS, etc.)
+    setup3DBuildingModelsLayer(map, true);
+
+    // 6. Custom 3D Low-Poly Tree Models (Mapbox 3D mode only — from trees.json)
+    try {
+        const TREE_MODELS = {
+            'tree_mango': 'models/tree_mango.glb',
+            'tree_palm':  'models/tree_palm.glb',
+            'tree_pine':  'models/tree_pine.glb',
+            'tree_bush':  'models/tree_bush.glb'
+        };
+        Object.keys(TREE_MODELS).forEach(k => {
+            if (!map.hasModel(k)) map.addModel(k, TREE_MODELS[k]);
+        });
+
+        if (!map.getSource('lares-3d-trees-source')) {
+            map.addSource('lares-3d-trees-source', {
+                type: 'geojson',
+                data: 'trees.json'
+            });
+        }
+
+        const treeBtn = document.getElementById('chip-trees');
+        const isTreesOn = (state.treesVisible !== undefined)
+            ? state.treesVisible
+            : (treeBtn ? treeBtn.classList.contains('active') : true);
+        const initTreeVis = isTreesOn ? 'visible' : 'none';
+
+        if (!map.getLayer('3d-trees-layer')) {
+            map.addLayer({
+                id: '3d-trees-layer',
+                type: 'model',
+                source: 'lares-3d-trees-source',
+                slot: 'middle',
+                minzoom: 17.8,
+                layout: {
+                    'model-id': ['coalesce', ['get', 'model'], 'tree_mango'],
+                    'visibility': initTreeVis
+                },
+                paint: {
+                    'model-scale': [
+                        'case',
+                        ['==', ['get', 'scale'], 0.75], [0.75, 0.75, 0.75],
+                        ['==', ['get', 'scale'], 1.35], [1.35, 1.35, 1.35],
+                        ['==', ['get', 'scale'], 1.7],  [1.7, 1.7, 1.7],
+                        [1.0, 1.0, 1.0]
+                    ],
+                    'model-rotation': [0, 0, ['coalesce', ['get', 'rotation'], 0]],
+                    'model-cast-shadows': false,
+                    'model-receive-shadows': false
+                }
+            });
+        }
+    } catch (e) {
+        console.warn('Could not initialize 3D tree models:', e);
+    }
+
+    // 7. Entrance Arrow
+    removeSectionBadges();
     createEntranceArrowMarker();
 
     // 7. Building Name Markers (numbered labels)
@@ -536,6 +595,112 @@ export function setupMapboxStandardLayers() {
 
     // 8. Update UI state
     setMapStyleMode(state.currentMapStyleMode);
+}
+
+export function setup3DBuildingModelsLayer(map, isStandardMode) {
+    if (!CUSTOM_3D_BUILDINGS || typeof CUSTOM_3D_BUILDINGS !== 'object') return;
+
+    try {
+        // 1. Register GLB models with Mapbox
+        Object.keys(CUSTOM_3D_BUILDINGS).forEach(id => {
+            const b = CUSTOM_3D_BUILDINGS[id];
+            if (!map.hasModel(b.modelId)) {
+                map.addModel(b.modelId, b.modelUrl);
+            }
+        });
+
+        // 2. Prepare GeoJSON source for 3D building instances
+        const features = Object.keys(CUSTOM_3D_BUILDINGS).map(id => {
+            const b = CUSTOM_3D_BUILDINGS[id];
+            return {
+                type: 'Feature',
+                id: id,
+                properties: {
+                    id: id,
+                    model: b.modelId,
+                    rotation: b.rotation || 0,
+                    scale: b.scale || [1, 1, 1]
+                },
+                geometry: {
+                    type: 'Point',
+                    coordinates: b.coords
+                }
+            };
+        });
+
+        const sourceId = 'lares-3d-buildings-models-source';
+        if (!map.getSource(sourceId)) {
+            map.addSource(sourceId, {
+                type: 'geojson',
+                data: {
+                    type: 'FeatureCollection',
+                    features: features
+                }
+            });
+        } else {
+            map.getSource(sourceId).setData({
+                type: 'FeatureCollection',
+                features: features
+            });
+        }
+
+        const layerId = '3d-buildings-models-layer';
+        if (!map.getLayer(layerId)) {
+            const layerDef = {
+                id: layerId,
+                type: 'model',
+                source: sourceId,
+                minzoom: 14.5,
+                layout: {
+                    'model-id': ['get', 'model'],
+                    'visibility': state.buildingsVisible ? 'visible' : 'none'
+                },
+                paint: {
+                    'model-scale': [1.0, 1.0, 1.0],
+                    'model-rotation': [0, 0, ['coalesce', ['get', 'rotation'], 0]],
+                    'model-opacity': 1.0,
+                    'model-opacity-transition': { duration: 250, delay: 0 },
+                    'model-cast-shadows': false,
+                    'model-receive-shadows': false,
+                    'model-emissive-strength': 0.8
+                }
+            };
+            if (isStandardMode) {
+                layerDef.slot = 'middle';
+            }
+            map.addLayer(layerDef);
+        }
+
+        const transLayerId = '3d-buildings-models-transparent';
+        if (!map.getLayer(transLayerId)) {
+            const transLayerDef = {
+                id: transLayerId,
+                type: 'model',
+                source: sourceId,
+                minzoom: 14.5,
+                layout: {
+                    'model-id': ['get', 'model'],
+                    'visibility': state.buildingsVisible ? 'visible' : 'none'
+                },
+                paint: {
+                    'model-scale': [1.0, 1.0, 1.0],
+                    'model-rotation': [0, 0, ['coalesce', ['get', 'rotation'], 0]],
+                    'model-opacity': 0.25,
+                    'model-opacity-transition': { duration: 250, delay: 0 },
+                    'model-cast-shadows': false,
+                    'model-receive-shadows': false,
+                    'model-emissive-strength': 0.8
+                },
+                filter: ['in', ['get', 'id'], ['literal', []]]
+            };
+            if (isStandardMode) {
+                transLayerDef.slot = 'middle';
+            }
+            map.addLayer(transLayerDef);
+        }
+    } catch (e) {
+        console.warn('Could not initialize 3D building models layer:', e);
+    }
 }
 
 export function ensureTreeIconLoaded(callback) {
@@ -653,6 +818,12 @@ map.on('style.load', setupLayers);
 let mapReady = false;
 let isIntroAnimating = false;
 
+export function stopIntroAnimation() {
+    isIntroAnimating = false;
+    state.isIntroAnimating = false;
+    try { map.stop(); } catch (e) {}
+}
+
 export function revealMap() {
     if (mapReady || state.mapReady) return;
     mapReady = true;
@@ -661,6 +832,13 @@ export function revealMap() {
     document.getElementById('loading-overlay').classList.add('hidden');
     setTimeout(() => document.getElementById('sidebar').classList.add('visible'), 500);
     setTimeout(() => document.getElementById('coords-badge').classList.add('visible'), 800);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('dest')) {
+        isIntroAnimating = false;
+        state.isIntroAnimating = false;
+        return;
+    }
 
     // Startup animation sequence:
     // 1. Starts top-down 2D view zoomed out (zoom: 17.2, pitch: 0, bearing: 0)
@@ -707,9 +885,42 @@ export function revealMap() {
     });
 });
 
+// Custom Mapbox Accessibility 1-Finger Orbit Joystick Control
+class OrbitControl {
+    onAdd(map) {
+        this._map = map;
+        this._container = document.createElement('div');
+        this._container.className = 'mapboxgl-ctrl mapboxgl-ctrl-group ctrl-orbit-group';
+        
+        const btn = document.createElement('button');
+        btn.className = 'mapboxgl-ctrl-icon ctrl-orbit-btn';
+        btn.type = 'button';
+        btn.title = 'Toggle 1-Finger Orbit Mode (SketchUp Orbit)';
+        btn.innerHTML = '<span style="font-size: 16px; display: inline-block;">🕹️</span>';
+
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            if (typeof window.toggleOneFingerOrbitMode === 'function') {
+                window.toggleOneFingerOrbitMode();
+            }
+        };
+
+        this._container.appendChild(btn);
+        return this._container;
+    }
+
+    onRemove() {
+        if (this._container && this._container.parentNode) {
+            this._container.parentNode.removeChild(this._container);
+        }
+        this._map = undefined;
+    }
+}
+
 map.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), 'top-right');
+map.addControl(new OrbitControl(), 'top-right');
 map.addControl(new mapboxgl.ScaleControl({ maxWidth: 120 }), 'bottom-right');
-map.addControl(new mapboxgl.FullscreenControl(), 'top-right');
+map.addControl(new mapboxgl.FullscreenControl({ container: document.documentElement }), 'top-right');
 
 // Strategy 1: full load
 map.on('load', () => setTimeout(revealMap, 300));
@@ -718,21 +929,70 @@ map.on('style.load', () => setTimeout(() => { if (!mapReady) revealMap(); }, 500
 // Strategy 3: hard timeout
 setTimeout(() => { if (!mapReady) revealMap(); }, 10000);
 
+export const SKY_PRESETS = {
+    day: {
+        lightPreset: 'day',
+        fog: {
+            'range': [0.8, 12],
+            'color': '#e0f2fe',
+            'high-color': '#0284c7',
+            'horizon-blend': 0.15,
+            'space-color': '#0369a1',
+            'star-intensity': 0.0
+        }
+    },
+    dawn: {
+        lightPreset: 'dawn',
+        fog: {
+            'range': [0.5, 10],
+            'color': '#fde68a',
+            'high-color': '#38bdf8',
+            'horizon-blend': 0.2,
+            'space-color': '#1e3a8a',
+            'star-intensity': 0.1
+        }
+    },
+    dusk: {
+        lightPreset: 'dusk',
+        fog: {
+            'range': [0.5, 9],
+            'color': '#fdba74',
+            'high-color': '#6366f1',
+            'horizon-blend': 0.25,
+            'space-color': '#1e1b4b',
+            'star-intensity': 0.25
+        }
+    },
+    night: {
+        lightPreset: 'night',
+        fog: {
+            'range': [0.5, 8],
+            'color': '#0f172a',
+            'high-color': '#020617',
+            'horizon-blend': 0.1,
+            'space-color': '#020617',
+            'star-intensity': 0.6
+        }
+    }
+};
+
+let currentSkyPreset = 'day';
+
 export function setLighting(preset) {
-    const canvas = map.getCanvas();
-    if (!canvas) return;
-    if (preset === 'day') {
-        canvas.style.filter = 'none';
-        map.setFog(null);
-    } else if (preset === 'dawn') {
-        canvas.style.filter = 'brightness(95%) saturate(105%) hue-rotate(-5deg)';
-        map.setFog(null);
-    } else if (preset === 'dusk') {
-        canvas.style.filter = 'brightness(85%) saturate(105%) sepia(15%) hue-rotate(-15deg)';
-        map.setFog(null);
-    } else if (preset === 'night') {
-        canvas.style.filter = 'brightness(50%) saturate(80%) sepia(10%) hue-rotate(180deg)';
-        map.setFog(null);
+    const config = SKY_PRESETS[preset] || SKY_PRESETS['day'];
+    currentSkyPreset = preset;
+
+    // 1. If in Mapbox Standard 3D mode, update basemap lightPreset and clear external fog pass
+    if (state.currentMapStyleMode === 'mapbox') {
+        try {
+            map.setConfigProperty('basemap', 'lightPreset', config.lightPreset);
+            map.setFog(null);
+        } catch (e) { }
+    } else {
+        // 2. Set atmospheric sky/fog for Google Satellite mode
+        try {
+            map.setFog(config.fog);
+        } catch (e) { }
     }
 }
 
@@ -758,6 +1018,10 @@ export function toggleBuildings(btn) {
     try {
         if (map.getLayer('3d-drawings')) map.setLayoutProperty('3d-drawings', 'visibility', vis);
         if (map.getLayer('3d-drawings-roofs')) map.setLayoutProperty('3d-drawings-roofs', 'visibility', vis);
+        if (map.getLayer('3d-drawings-transparent')) map.setLayoutProperty('3d-drawings-transparent', 'visibility', vis);
+        if (map.getLayer('3d-drawings-roofs-transparent')) map.setLayoutProperty('3d-drawings-roofs-transparent', 'visibility', vis);
+        if (map.getLayer('3d-buildings-models-layer')) map.setLayoutProperty('3d-buildings-models-layer', 'visibility', vis);
+        if (map.getLayer('3d-buildings-models-transparent')) map.setLayoutProperty('3d-buildings-models-transparent', 'visibility', vis);
         if (map.getLayer('3d-buildings-mapbox')) {
             map.setLayoutProperty('3d-buildings-mapbox', 'visibility', (state.buildingsVisible && state.currentMapStyleMode === 'mapbox') ? 'visible' : 'none');
         }
@@ -774,16 +1038,53 @@ export function toggleTrees(btn) {
     if (phoneTree && phoneTree !== btn) phoneTree.classList.toggle('active', state.treesVisible);
 
     try {
+        if (map.getLayer('3d-trees-layer')) {
+            map.setLayoutProperty('3d-trees-layer', 'visibility', (state.treesVisible && state.currentMapStyleMode === 'mapbox') ? 'visible' : 'none');
+        }
         if (map.getLayer('3d-trees')) {
-            map.setLayoutProperty('3d-trees', 'visibility', state.treesVisible ? 'visible' : 'none');
+            map.setLayoutProperty('3d-trees', 'visibility', 'none');
         }
     } catch (e) { }
     safeResetIdle();
 }
 
-export function toggleMapboxView(btn) {
-    const nextMode = (state.currentMapStyleMode === 'google') ? 'mapbox' : 'google';
-    state.currentMapStyleMode = nextMode;
+export function toggleMapLayerMenu() {
+    const isPhone = (typeof isPhoneMode === 'function' && isPhoneMode()) || window.innerWidth <= 768;
+    if (isPhone) {
+        openMapLayerModal();
+    } else {
+        const widget = document.getElementById('map-layer-widget');
+        if (widget) {
+            widget.classList.toggle('expanded');
+        }
+    }
+}
+
+export function openMapLayerModal() {
+    const modal = document.getElementById('map-layer-modal');
+    const backdrop = document.getElementById('map-layer-modal-backdrop');
+    if (modal) modal.classList.add('active');
+    if (backdrop) backdrop.classList.add('active');
+}
+
+export function closeMapLayerModal() {
+    const modal = document.getElementById('map-layer-modal');
+    const backdrop = document.getElementById('map-layer-modal-backdrop');
+    if (modal) modal.classList.remove('active');
+    if (backdrop) backdrop.classList.remove('active');
+}
+
+export function closeMapLayerFlyout() {
+    const widget = document.getElementById('map-layer-widget');
+    if (widget) widget.classList.remove('expanded');
+}
+
+export function selectMapStyle(mode) {
+    closeMapLayerModal();
+    closeMapLayerFlyout();
+
+    if (state.currentMapStyleMode === mode) return;
+    state.currentMapStyleMode = mode;
 
     // Preserve current camera view angle, zoom, pitch, and bearing seamlessly
     const currentCenter = map.getCenter();
@@ -791,10 +1092,14 @@ export function toggleMapboxView(btn) {
     const currentPitch = map.getPitch();
     const currentBearing = map.getBearing();
 
-    if (nextMode === 'mapbox') {
+    if (mode === 'mapbox') {
         map.setStyle('mapbox://styles/mapbox/standard');
     } else {
         map.setStyle('mapbox://styles/mapbox/satellite-streets-v12');
+    }
+
+    if (typeof window.resetOcclusion === 'function') {
+        window.resetOcclusion();
     }
 
     map.once('style.load', () => {
@@ -804,7 +1109,15 @@ export function toggleMapboxView(btn) {
             pitch: currentPitch,
             bearing: currentBearing
         });
+        setMapStyleMode(mode);
     });
+
+    setMapStyleMode(mode);
+}
+
+export function toggleMapboxView(btn) {
+    const nextMode = (state.currentMapStyleMode === 'google') ? 'mapbox' : 'google';
+    selectMapStyle(nextMode);
 }
 
 export function setMapStyleMode(mode) {
@@ -813,6 +1126,24 @@ export function setMapStyleMode(mode) {
 
     // Toggle body class for CSS state
     document.body.classList.toggle('map-mode-mapbox', isMapbox);
+
+    // Update Desktop flyout options
+    const optGoogle = document.getElementById('layer-opt-google');
+    const optMapbox = document.getElementById('layer-opt-mapbox');
+    if (optGoogle) optGoogle.classList.toggle('active', !isMapbox);
+    if (optMapbox) optMapbox.classList.toggle('active', isMapbox);
+
+    // Update Mobile pop-up modal options
+    const mlmGoogle = document.getElementById('mlm-opt-google');
+    const mlmMapbox = document.getElementById('mlm-opt-mapbox');
+    if (mlmGoogle) mlmGoogle.classList.toggle('active', !isMapbox);
+    if (mlmMapbox) mlmMapbox.classList.toggle('active', isMapbox);
+
+    // Update top-right trigger icon
+    const triggerIcon = document.getElementById('mlt-current-icon');
+    if (triggerIcon) {
+        triggerIcon.textContent = isMapbox ? '🗺️' : '🚁';
+    }
 
     // Update UI buttons across kiosk and mobile
     const chip = document.getElementById('chip-mapbox-view');
@@ -827,24 +1158,46 @@ export function setMapStyleMode(mode) {
         floatBtn.classList.toggle('active', isMapbox);
         const icon = floatBtn.querySelector('.mvs-icon');
         const label = floatBtn.querySelector('.mvs-text');
-        if (icon) icon.textContent = isMapbox ? '🛰️' : '🗺️';
-        if (label) label.textContent = isMapbox ? 'Google Sat' : 'Mapbox 3D';
+        if (icon) icon.textContent = isMapbox ? '🚁' : '🗺️';
+        if (label) label.textContent = isMapbox ? 'Aerial Drone' : 'Mapbox 3D';
     }
 
     const phoneToggle = document.getElementById('phone-mapbox-toggle');
     if (phoneToggle) {
         phoneToggle.classList.toggle('active', isMapbox);
-        phoneToggle.textContent = isMapbox ? '🛰️ Google Sat' : '🗺️ Mapbox 3D';
+        phoneToggle.textContent = isMapbox ? '🚁 Aerial Drone' : '🗺️ Mapbox 3D';
     }
 
-    if (isMapbox) {
-        renderSectionBadges();
-    } else {
-        removeSectionBadges();
-    }
+    removeSectionBadges();
+    try {
+        if (map.getLayer('3d-trees-layer')) {
+            map.setLayoutProperty('3d-trees-layer', 'visibility', (isMapbox && state.treesVisible) ? 'visible' : 'none');
+        }
+        if (map.getLayer('3d-trees')) {
+            map.setLayoutProperty('3d-trees', 'visibility', 'none');
+        }
+    } catch (e) { }
+    // Maintain atmospheric sky across mode toggles
+    setLighting(currentSkyPreset);
 
     updateMarkerZoomState();
     safeResetIdle();
+}
+
+if (typeof window !== 'undefined') {
+    window.addEventListener('click', (e) => {
+        const widget = document.getElementById('map-layer-widget');
+        if (widget && widget.classList.contains('expanded')) {
+            if (!widget.contains(e.target)) {
+                widget.classList.remove('expanded');
+            }
+        }
+    });
+    window.toggleMapLayerMenu = toggleMapLayerMenu;
+    window.openMapLayerModal = openMapLayerModal;
+    window.closeMapLayerModal = closeMapLayerModal;
+    window.closeMapLayerFlyout = closeMapLayerFlyout;
+    window.selectMapStyle = selectMapStyle;
 }
 
 export function toggleBoundary(btn) {
@@ -868,3 +1221,6 @@ export function flyToView(n) {
     const v = VIEWS[n]; if (!v) return;
     map.flyTo({ center: v.center, zoom: v.zoom, pitch: v.pitch, bearing: v.bearing, duration: v.duration, essential: true, curve: 1.2 });
 }
+
+window.stopIntroAnimation = stopIntroAnimation;
+

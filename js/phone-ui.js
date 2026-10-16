@@ -1,8 +1,8 @@
 // DA-LARES Wayfinding — Phone UI & Bottom Sheet Module
 
 import { DEFAULT_MAP_VIEW } from './data/config.js';
-import { BUILDING_DIRECTORY } from './data/buildings.js';
-import { renderBuildingOfficesHTML, getFlatBuildingOffices } from './data/offices.js';
+import { BUILDING_DIRECTORY } from './data/buildings.js?v=60';
+import { renderBuildingOfficesHTML, getFlatBuildingOffices } from './data/offices.js?v=52';
 import { state } from './data/state.js';
 import { map } from './map-setup.js';
 import { clearRoute } from './routing.js';
@@ -12,6 +12,8 @@ import {
     requestDeviceOrientationPermission,
     stopPhoneLiveGPS 
 } from './gps.js';
+import { orbitBuilding, stopOrbit } from './idle.js';
+import { stopIntroAnimation } from './map-setup.js';
 
 import { 
     isPhoneMode, 
@@ -235,6 +237,9 @@ export function renderPhoneBuildingGallery(buildingId) {
     let candidatePhotos = [];
     if (BUILDING_PHOTOS[buildingId] && BUILDING_PHOTOS[buildingId].length > 0) {
         candidatePhotos = [...BUILDING_PHOTOS[buildingId]];
+    } else {
+        const safeId = buildingId.replace(/\//g, '_');
+        candidatePhotos = [`images/${safeId}.jpg`];
     }
 
     const validImages = [];
@@ -350,10 +355,9 @@ export function handleWelcomeContinue() {
             modal.classList.remove('closing');
         }, 260);
     }
-    // iOS requires the Motion/Compass prompt to be triggered synchronously inside this tap,
-    // so request it here together with location (prevents a second prompt on "Guide me live").
+    // Single consolidated permission request on initial user gesture:
+    // Request both compass/orientation AND GPS location in this single click gesture
     requestDeviceOrientationPermission();
-    // Acquire user location to place blue dot on campus; do NOT start a walking route
     requestUserInitialLocation();
 }
 
@@ -397,8 +401,9 @@ export function renderPhoneDirectory(filter = '') {
             subText = `<span class="phone-dir-offices-count">${flatOffices.length} offices inside</span>`;
         }
 
+        const officeArg = matchedOffice ? matchedOffice.replace(/'/g, "\\'") : '';
         html += `
-            <div class="phone-dir-item ${isSelected ? 'active' : ''}" data-id="${b.id}" onclick="navigateTo('${b.id}')">
+            <div class="phone-dir-item ${isSelected ? 'active' : ''}" data-id="${b.id}" onclick="navigateTo('${b.id}', '${officeArg}')">
                 <div class="phone-dir-badge" style="background:${b.color}; color:${textColor};">
                     ${num}
                 </div>
@@ -424,6 +429,13 @@ export function filterPhoneDirectory() {
     if (state.phoneSheetCurrentSnap === 'peek' && val.length > 0) {
         setPhoneSheetSnap('half');
     }
+    // If phone building details view is active, update offices in real time
+    if (state.phoneSheetCurrentView === 'bldg' && state.selectedBuildingId) {
+        const officesContainer = document.getElementById('phone-bldg-offices-container');
+        if (officesContainer) {
+            officesContainer.innerHTML = renderBuildingOfficesHTML(state.selectedBuildingId, val);
+        }
+    }
 }
 
 export function clearPhoneSearch() {
@@ -433,7 +445,7 @@ export function clearPhoneSearch() {
 }
 
 // --- Phone Building Details View ---
-export function showPhoneBuildingDetails(buildingId) {
+export function showPhoneBuildingDetails(buildingId, targetOffice = '') {
     // Guard against accidental switches while navigation is active
     if (isNavigationActive()) {
         if (state.selectedBuildingId === buildingId) return;
@@ -468,10 +480,17 @@ export function showPhoneBuildingDetails(buildingId) {
     if (sectionEl) sectionEl.textContent = building.section || 'Compound';
     if (typeEl) typeEl.textContent = building.type || 'Office / Facility';
 
-    // Render offices & units
+    // Render offices & units with highlighted query
     const officesContainer = document.getElementById('phone-bldg-offices-container');
     if (officesContainer) {
-        officesContainer.innerHTML = renderBuildingOfficesHTML(buildingId);
+        const query = targetOffice || document.getElementById('phone-search-input')?.value || '';
+        officesContainer.innerHTML = renderBuildingOfficesHTML(buildingId, query);
+        const highlightedPill = officesContainer.querySelector('.office-pill.highlighted');
+        if (highlightedPill) {
+            setTimeout(() => {
+                highlightedPill.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 150);
+        }
     }
 
     // Render Google Maps photo mosaic / gallery form
@@ -481,18 +500,17 @@ export function showPhoneBuildingDetails(buildingId) {
     setPhoneSheetView('bldg');
     setPhoneSheetSnap('half');
 
-    // Frame camera comfortably in 45° 3D tilt overlooking the building
-    map.easeTo({
-        center: [building.coords[0], building.coords[1] - 0.00035],
-        zoom: 19.3,
-        pitch: 46,
-        bearing: -15,
-        duration: 900
-    });
+    // Safe stop any lingering intro flyover
+    stopIntroAnimation();
+
+    // Focus camera directly on scanned/selected building and start 3D orbit
+    orbitBuilding(building.coords);
 }
 
 export function showPhoneDirectoryView() {
     state.selectedBuildingId = null;
+    state.activeSearchedOffice = '';
+    stopOrbit();
     clearRoute();
     stopPhoneLiveGPS();
     document.querySelectorAll('.phone-dir-item').forEach(el => el.classList.remove('active'));
@@ -504,6 +522,8 @@ export function showPhoneDirectoryView() {
 
 export function closePhoneBuildingDetails() {
     state.selectedBuildingId = null;
+    state.activeSearchedOffice = '';
+    stopOrbit();
     document.querySelectorAll('.phone-dir-item').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.bldg-map-marker').forEach(el => el.classList.remove('active'));
     setPhoneSheetView('dir');

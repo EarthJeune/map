@@ -1,9 +1,10 @@
 // DA-LARES Wayfinding — Live Mobile GPS Engine & Sensor Fusion Optimization Module
 // High-precision road snapping, Kalman-style jitter filtering, haptics, and compass sync
 
-import { BUILDING_DIRECTORY } from './data/buildings.js';
+import { BUILDING_DIRECTORY } from './data/buildings.js?v=60';
 import { state } from './data/state.js';
-import { map } from './map-setup.js';
+import { map, stopIntroAnimation } from './map-setup.js';
+import { stopOrbit } from './idle.js';
 import { 
     computeRouteFromKiosk, 
     drawRoute, 
@@ -22,6 +23,7 @@ import {
     showPhoneArrival, 
     startPhoneAnimatedRoute 
 } from './phone-nav.js';
+import { updateOcclusion, resetOcclusion } from './occlusion.js';
 
 // ============================================================
 // SENSOR FUSION & JITTER FILTER ENGINE
@@ -320,10 +322,14 @@ export function updateUserGPSMarker(lng, lat) {
         state.userGPSMarker = new mapboxgl.Marker({ 
             element: el,
             anchor: 'center',
-            rotationAlignment: 'viewport',
-            pitchAlignment: 'viewport'
+            rotationAlignment: 'map',
+            pitchAlignment: 'map'
         }).setLngLat([lng, lat]).addTo(map);
     } else {
+        if (typeof state.userGPSMarker.setPitchAlignment === 'function') {
+            state.userGPSMarker.setPitchAlignment('map');
+            state.userGPSMarker.setRotationAlignment('map');
+        }
         state.userGPSMarker.setLngLat([lng, lat]);
     }
 }
@@ -333,7 +339,6 @@ export function requestUserInitialLocation() {
         showMobileToast('📍 GPS not supported on this browser.', 3000);
         return;
     }
-    showMobileToast('📍 Locating your position on campus…', 3000);
 
     let initialFound = false;
     const onInitialPos = (pos) => {
@@ -343,12 +348,14 @@ export function requestUserInitialLocation() {
         const userLat = pos.coords.latitude;
         state.lastKnownGPSCoords = [userLng, userLat];
         updateUserGPSMarker(userLng, userLat);
-        showMobileToast('📍 Location found! Tap any building to navigate.', 3500);
+        showMobileToast('📍 Location found! Tap any building to navigate.', 3000);
 
         const userPt = turf.point([userLng, userLat]);
         const compoundCenter = turf.point([121.1665, 13.9582]);
         const distFromCompoundMeters = turf.distance(userPt, compoundCenter, { units: 'meters' });
-        if (distFromCompoundMeters <= 2500) {
+        // Only re-center on user coordinates if NO building is actively selected!
+        // When arriving via QR scan for a specific building, leave the camera orbiting the destination building!
+        if (!state.selectedBuildingId && distFromCompoundMeters <= 2500) {
             map.easeTo({
                 center: [userLng, userLat],
                 zoom: 18.8,
@@ -362,20 +369,17 @@ export function requestUserInitialLocation() {
         onInitialPos,
         (err) => {
             if (initialFound) return;
-            console.warn('Initial high accuracy GPS slow, trying standard accuracy:', err);
+            console.warn('Initial GPS check:', err);
+            // Silent fallback to standard accuracy if needed, without popup notifications
             navigator.geolocation.getCurrentPosition(
                 onInitialPos,
                 (err2) => {
-                    if (err2.code === 1) {
-                        showGPSPermissionCard();
-                    } else {
-                        showMobileToast('📍 GPS signal weak. You can still use the Kiosk as starting point.', 3500);
-                    }
+                    console.warn('Initial GPS fallback failed:', err2);
                 },
                 { enableHighAccuracy: false, maximumAge: 30000, timeout: 6000 }
             );
         },
-        { enableHighAccuracy: true, maximumAge: 10000, timeout: 4500 }
+        { enableHighAccuracy: true, maximumAge: 10000, timeout: 6000 }
     );
 }
 
@@ -386,6 +390,13 @@ export function startPhoneLiveGPS(buildingId) {
     gpsNavigationStartTime = Date.now();
     gpsFilter.reset();
     headingFilter.reset();
+    lastCameraFollowLngLat = null;
+
+    // 1. Unconditionally stop any building orbit and intro animations!
+    stopOrbit();
+    if (typeof stopIntroAnimation === 'function') stopIntroAnimation();
+    if (typeof window.stopOrbit === 'function') window.stopOrbit();
+    try { map.stop(); } catch (e) {}
 
     // Stop animated walker simulation if running
     if (state.walkAnimFrame) cancelAnimationFrame(state.walkAnimFrame);
@@ -426,12 +437,20 @@ export function startPhoneLiveGPS(buildingId) {
     setPhoneSheetView('route');
     setPhoneSheetSnap('peek');
 
-    try { map.easeTo({ pitch: 0, duration: 600 }); } catch (e) {}
-
     state.activeFullRouteCoords = null;
 
-    if (state.lastKnownGPSCoords) {
-        computeAndDrawRouteFromGPS(state.lastKnownGPSCoords, buildingId);
+    // 2. Immediately fly camera straight to blue ping if available!
+    const pingCoord = state.lastKnownGPSCoords || (state.userGPSMarker ? [state.userGPSMarker.getLngLat().lng, state.userGPSMarker.getLngLat().lat] : null);
+
+    if (pingCoord) {
+        map.flyTo({
+            center: pingCoord,
+            zoom: 19.3,
+            pitch: 45,
+            duration: 900,
+            essential: true
+        });
+        computeAndDrawRouteFromGPS(pingCoord, buildingId);
     }
 
     if (!navigator.geolocation) {
@@ -440,7 +459,7 @@ export function startPhoneLiveGPS(buildingId) {
         return;
     }
 
-    showMobileToast('📍 Locating your position…', 3000);
+    showMobileToast('📍 Guiding live from your blue ping…', 3000);
 
     if (state.gpsWatchId) {
         navigator.geolocation.clearWatch(state.gpsWatchId);
@@ -516,29 +535,33 @@ export function animateMarkerTo(targetLngLat, duration = 450) {
 }
 
 export function updateSmoothCameraFollow(targetLngLat, distFromCompoundMeters) {
-    if (!state.isUserFollowingGPS || distFromCompoundMeters > 1500) return;
+    if (!state.isUserFollowingGPS) return;
     if (!lastCameraFollowLngLat) {
         lastCameraFollowLngLat = targetLngLat;
         map.easeTo({
             center: targetLngLat,
-            zoom: 19.5,
-            pitch: 0,
+            zoom: 19.3,
+            pitch: 45,
             duration: 800
         });
         return;
     }
     const moveD = turf.distance(turf.point(lastCameraFollowLngLat), turf.point(targetLngLat), { units: 'meters' });
-    if (moveD >= 1.8) {
+    if (moveD >= 1.5) {
         lastCameraFollowLngLat = targetLngLat;
         map.panTo(targetLngLat, {
-            duration: 600,
+            duration: 500,
             easing: t => t
         });
+        if (state.activeRoute) {
+            updateOcclusion(targetLngLat, state.selectedBuildingId);
+        }
     }
 }
 
 export function stopPhoneLiveGPS() {
     releaseWakeLock();
+    resetOcclusion();
     if (state.gpsWatchId) {
         navigator.geolocation.clearWatch(state.gpsWatchId);
         state.gpsWatchId = null;
@@ -645,8 +668,9 @@ export function startHeadingSync() {
 
         const smoothed = headingFilter.step(dtSec);
         if (smoothed !== null) {
+            const isMapRotated = state.userGPSMarker && typeof state.userGPSMarker.getRotationAlignment === 'function' && state.userGPSMarker.getRotationAlignment() === 'map';
             const mapBearing = map ? (map.getBearing() || 0) : 0;
-            const visualRotation = (smoothed - mapBearing + 360) % 360;
+            const visualRotation = isMapRotated ? (smoothed % 360) : ((smoothed - mapBearing + 360) % 360);
 
             const headingEl = document.getElementById('user-gps-heading');
             if (headingEl) {
@@ -747,26 +771,17 @@ export function computeAndDrawRouteFromGPS(startCoord, buildingId) {
 
     drawRoute(routeCoords, { animated: false });
 
-    const userPt = turf.point(startCoord);
-    const compoundCenter = turf.point([121.1665, 13.9582]);
-    const distFromCompoundMeters = turf.distance(userPt, compoundCenter, { units: 'meters' });
+    stopOrbit();
+    try { map.stop(); } catch (e) {}
 
-    if (distFromCompoundMeters > 1500) {
-        const bbox = turf.bbox(turf.lineString(routeCoords));
-        map.fitBounds(bbox, {
-            padding: getResponsiveMapPadding(),
-            maxZoom: 17,
-            pitch: 0,
-            duration: 1200
-        });
-    } else {
-        map.easeTo({
-            center: startCoord,
-            zoom: 19.5,
-            pitch: 0,
-            duration: 800
-        });
-    }
+    // Focus camera directly on the blue ping (startCoord)
+    map.flyTo({
+        center: startCoord,
+        zoom: 19.3,
+        pitch: 45,
+        duration: 900,
+        essential: true
+    });
 }
 
 export function handleGPSPositionUpdate(pos, targetBuildingId) {
@@ -825,6 +840,10 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
         }).setLngLat(userCoord).addTo(map);
         markerCurrentLngLat = userCoord;
     } else {
+        if (typeof state.userGPSMarker.setPitchAlignment === 'function') {
+            state.userGPSMarker.setPitchAlignment('map');
+            state.userGPSMarker.setRotationAlignment('map');
+        }
         animateMarkerTo(userCoord, lerpDuration);
     }
 
@@ -1072,6 +1091,10 @@ export function startTapToPlaceLocation(buildingId) {
                 pitchAlignment: 'map'
             }).setLngLat(tappedCoord).addTo(map);
         } else {
+            if (typeof state.userGPSMarker.setPitchAlignment === 'function') {
+                state.userGPSMarker.setPitchAlignment('map');
+                state.userGPSMarker.setRotationAlignment('map');
+            }
             state.userGPSMarker.setLngLat(tappedCoord);
         }
         

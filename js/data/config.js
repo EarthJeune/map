@@ -41,5 +41,5 @@ export const VIEWS = {
 
 export const PREDEFINED_ROUTES = {};
 
-export const SAVED_MAIN_KIOSK_COORDS = [121.16646567620313, 13.958189696041458];
+export const SAVED_MAIN_KIOSK_COORDS = [121.16656995, 13.95810799];
 export const IDLE_TIMEOUT = 60000; // 60 seconds

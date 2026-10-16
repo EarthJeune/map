@@ -2,8 +2,8 @@
 // Building detail drawer, photo gallery trigger, and color picker.
 
 import { DEFAULT_MAP_VIEW } from './data/config.js';
-import { BUILDING_DIRECTORY } from './data/buildings.js';
-import { renderBuildingOfficesHTML } from './data/offices.js';
+import { BUILDING_DIRECTORY } from './data/buildings.js?v=60';
+import { renderBuildingOfficesHTML } from './data/offices.js?v=52';
 import { state } from './data/state.js';
 import { map, getRoofColorCaseStyle } from './map-setup.js';
 import { updateBuildingQR } from './qr.js';
@@ -11,7 +11,7 @@ import { stopOrbit, resetIdle } from './idle.js';
 import { removeMarkers, createMarkers } from './markers.js';
 import { buildDirectory } from './sidebar.js';
 
-export function showBuildingPanel(buildingId) {
+export function showBuildingPanel(buildingId, targetOffice = '') {
     state.isIntroAnimating = false;
     const index = BUILDING_DIRECTORY.findIndex(b => b.id === buildingId);
     const building = BUILDING_DIRECTORY[index];
@@ -31,20 +31,28 @@ export function showBuildingPanel(buildingId) {
 
     // Set info
     document.getElementById('bp-section').textContent = building.section || 'Compound';
-    document.getElementById('bp-type').textContent = 'Office Building';
+    document.getElementById('bp-type').textContent = building.type || 'Standalone Facility';
     document.getElementById('bp-coords').textContent =
         building.coords[1].toFixed(5) + '°N, ' + building.coords[0].toFixed(5) + '°E';
 
-    // Render offices & units
+    // Render offices & units with highlighted query
     const officesContainer = document.getElementById('bp-offices-container');
     if (officesContainer) {
-        officesContainer.innerHTML = renderBuildingOfficesHTML(buildingId);
+        const query = targetOffice || state.activeSearchedOffice || document.getElementById('search-input')?.value || '';
+        officesContainer.innerHTML = renderBuildingOfficesHTML(buildingId, query);
+        const highlightedPill = officesContainer.querySelector('.office-pill.highlighted');
+        if (highlightedPill) {
+            setTimeout(() => {
+                highlightedPill.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 150);
+        }
     }
 
     // Load Image
     const imgEl = document.getElementById('bp-real-image');
     const placeholderEl = document.getElementById('bp-image-placeholder');
-    const imgPath = `images/${buildingId}.jpg`;
+    const safeId = buildingId.replace(/\//g, '_');
+    const imgPath = `images/${safeId}.jpg`;
 
     const img = new Image();
     img.onload = function () {
@@ -66,13 +74,41 @@ export function showBuildingPanel(buildingId) {
 }
 
 export function closeBuildingPanel() {
-    document.getElementById('building-panel').classList.remove('active');
+    const panel = document.getElementById('building-panel');
+    if (panel) panel.classList.remove('active');
+    
+    // Unhighlight directory items and map markers
     document.querySelectorAll('.dir-item').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.bldg-map-marker').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.phone-dir-item').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.bldg-map-marker').forEach(el => {
+        el.classList.remove('active', 'decluttered-dim', 'decluttered-hide', 'decluttered-highlight', 'decluttered-dest');
+    });
+
+    // Close any open popups on markers
+    if (state.markers) {
+        state.markers.forEach(m => {
+            if (m.getPopup() && m.getPopup().isOpen()) m.getPopup().remove();
+        });
+    }
+
     state.selectedBuildingId = null;
+    window.selectedBuildingId = null;
+    state.activeSearchedOffice = '';
     stopOrbit();
+
+    if (typeof restoreLabels === 'function') {
+        restoreLabels();
+    }
+
     // Fly back to default overview angle
-    map.flyTo({ center: DEFAULT_MAP_VIEW.center, zoom: DEFAULT_MAP_VIEW.zoom, pitch: DEFAULT_MAP_VIEW.pitch, bearing: DEFAULT_MAP_VIEW.bearing, duration: 2000 });
+    map.flyTo({ 
+        center: DEFAULT_MAP_VIEW.center, 
+        zoom: DEFAULT_MAP_VIEW.zoom, 
+        pitch: DEFAULT_MAP_VIEW.pitch, 
+        bearing: DEFAULT_MAP_VIEW.bearing, 
+        duration: 2000 
+    });
+
     resetIdle();
 }
 
@@ -130,6 +166,9 @@ export function saveColorPicker() {
         if (map.getLayer('3d-drawings-roofs')) {
             map.setPaintProperty('3d-drawings-roofs', 'fill-extrusion-color', getRoofColorCaseStyle());
         }
+        if (map.getLayer('3d-drawings-roofs-transparent')) {
+            map.setPaintProperty('3d-drawings-roofs-transparent', 'fill-extrusion-color', getRoofColorCaseStyle());
+        }
 
         // Update UI Directory
         const searchInput = document.getElementById('search-input');
@@ -175,7 +214,7 @@ export async function useEyeDropper(colorId, hexId) {
 document.addEventListener('DOMContentLoaded', () => {
     syncColorInputs('cp-roof', 'cp-roof-hex');
     syncColorInputs('cp-icon', 'cp-icon-hex');
-    // handleUrlParameters called from app.js
+    // handleUrlParameters called from app.js?v=50
 });
 
 // ==========================================

@@ -1,7 +1,7 @@
 // DA-LARES Turn-by-Turn Directions Steps Module
 // Build step instructions, step list rendering, and active step highlighting.
 
-import { BUILDING_DIRECTORY } from './data/buildings.js';
+import { BUILDING_DIRECTORY } from './data/buildings.js?v=60';
 import { state } from './data/state.js';
 import { map } from './map-setup.js';
 import { startArrivedCountdown } from './walker.js';
@@ -22,6 +22,7 @@ export function buildSteps(coords, directory, destId) {
 
     const destBuilding = directory ? directory.find(b => b.id === destId) : null;
     destName = destBuilding ? destBuilding.name : (state.currentRouteDestName || 'Destination');
+    if (destName === 'Mis Rafis Building') destName = 'MIS / RAFIS Building';
     state.currentRouteDestName = destName;
 
     // 1. Calculate cumulative distance for each vertex along the route
@@ -111,25 +112,32 @@ export function buildSteps(coords, directory, destId) {
         mergedTurns.push(t);
     }
 
-    // 4. Pick nearest landmark within 40m (excluding destination)
+    // 4. Pick nearest landmark within 35m (excluding destination), deduplicating consecutive mentions
+    let lastMentionedLandmark = null;
     mergedTurns.forEach(turn => {
         let nearestDist = Infinity;
         let nearestBuilding = null;
         directory.forEach(b => {
             if (b.id === destId) return; // Exclude destination
             const d = turf.distance(turn.point, b.coords, { units: 'meters' });
-            if (d <= 40 && d < nearestDist) {
+            if (d <= 35 && d < nearestDist) {
                 nearestDist = d;
                 nearestBuilding = b;
             }
         });
 
         if (nearestBuilding) {
-            turn.landmark = nearestBuilding.name;
-            turn.text = `${turn.action} at ${nearestBuilding.name}`;
+            if (nearestBuilding.name === lastMentionedLandmark) {
+                turn.landmark = nearestBuilding.name;
+                turn.text = `${turn.action} along walkway`;
+            } else {
+                turn.landmark = nearestBuilding.name;
+                turn.text = `${turn.action} at ${nearestBuilding.name}`;
+                lastMentionedLandmark = nearestBuilding.name;
+            }
         } else {
             turn.landmark = null;
-            turn.text = turn.action;
+            turn.text = `${turn.action} along walkway`;
         }
     });
 
@@ -277,25 +285,53 @@ export function highlightActiveStep(idx) {
     });
 }
 
+let tbtBannerEl = null;
+let tbtIconEl = null;
+let tbtDistEl = null;
+let tbtInstEl = null;
+let lastTbtIcon = '';
+let lastTbtDist = '';
+let lastTbtInst = '';
+let lastActiveNavStepIdx = -1;
+
+export function resetStepsNavigation() {
+    lastActiveNavStepIdx = -1;
+    lastTbtIcon = '';
+    lastTbtDist = '';
+    lastTbtInst = '';
+    state.lastActiveStepIdx = -1;
+    document.querySelectorAll('.route-step-item').forEach((el, i) => {
+        el.classList.remove('active', 'completed', 'upcoming');
+        if (i === 0) el.classList.add('active');
+        else el.classList.add('upcoming');
+    });
+}
+
 export function updateLiveNavigation(currentDist, totalDist) {
     const routeSteps = state.currentRouteSteps || state.steps || steps;
     const destBldg = (typeof BUILDING_DIRECTORY !== 'undefined') ? BUILDING_DIRECTORY.find(b => b.id === (state.selectedBuildingId || state.activeRoute)) : null;
-    const targetDestName = state.currentRouteDestName || (destBldg ? destBldg.name : '') || state.destName || destName || (routeSteps && routeSteps[routeSteps.length - 1]?.landmark) || 'your destination';
+    let targetDestName = state.currentRouteDestName || (destBldg ? destBldg.name : '') || state.destName || destName || (routeSteps && routeSteps[routeSteps.length - 1]?.landmark) || 'your destination';
+    if (targetDestName === 'Mis Rafis Building') targetDestName = 'MIS / RAFIS Building';
     if (!routeSteps || routeSteps.length === 0) return;
-    const banner = document.getElementById('turn-by-turn-banner');
-    if (!banner) return;
+
+    if (!tbtBannerEl) tbtBannerEl = document.getElementById('turn-by-turn-banner');
+    if (!tbtIconEl) tbtIconEl = document.getElementById('tbt-icon');
+    if (!tbtDistEl) tbtDistEl = document.getElementById('tbt-distance');
+    if (!tbtInstEl) tbtInstEl = document.getElementById('tbt-instruction');
+    if (!tbtBannerEl) return;
 
     if (currentDist >= totalDist - 3) {
-        banner.classList.add('arrived');
-        document.getElementById('tbt-icon').innerHTML = '🏁';
-        document.getElementById('tbt-distance').textContent = 'Arrived';
-        document.getElementById('tbt-instruction').textContent = `You have arrived at ${targetDestName}`;
+        tbtBannerEl.classList.add('arrived');
+        if (tbtIconEl && lastTbtIcon !== '🏁') { tbtIconEl.innerHTML = '🏁'; lastTbtIcon = '🏁'; }
+        if (tbtDistEl && lastTbtDist !== 'Arrived') { tbtDistEl.textContent = 'Arrived'; lastTbtDist = 'Arrived'; }
+        const arrText = `You have arrived at ${targetDestName}`;
+        if (tbtInstEl && lastTbtInst !== arrText) { tbtInstEl.textContent = arrText; lastTbtInst = arrText; }
         highlightActiveStep(routeSteps.length - 1);
         startArrivedCountdown();
         return;
     }
 
-    banner.classList.remove('arrived');
+    tbtBannerEl.classList.remove('arrived');
 
     // Find next step where step.at > currentDist
     let nextIdx = routeSteps.findIndex(s => s.at > currentDist + 1);
@@ -307,16 +343,25 @@ export function updateLiveNavigation(currentDist, totalDist) {
 
     // Highlight active step in list
     const activeListIdx = nextIdx > 0 ? nextIdx - 1 : 0;
-    highlightActiveStep(activeListIdx);
+    if (activeListIdx !== lastActiveNavStepIdx) {
+        lastActiveNavStepIdx = activeListIdx;
+        highlightActiveStep(activeListIdx);
+    }
 
-    document.getElementById('tbt-icon').innerHTML = nextStep.icon;
+    if (tbtIconEl && lastTbtIcon !== nextStep.icon) {
+        tbtIconEl.innerHTML = nextStep.icon;
+        lastTbtIcon = nextStep.icon;
+    }
 
-    if (remaining <= 10) {
-        document.getElementById('tbt-distance').textContent = 'Now';
-        document.getElementById('tbt-instruction').textContent = nextStep.text;
-    } else {
-        document.getElementById('tbt-distance').textContent = `In ${rounded} m`;
-        document.getElementById('tbt-instruction').textContent = nextStep.text;
+    const distText = (remaining <= 10) ? 'Now' : `In ${rounded} m`;
+    if (tbtDistEl && lastTbtDist !== distText) {
+        tbtDistEl.textContent = distText;
+        lastTbtDist = distText;
+    }
+
+    if (tbtInstEl && lastTbtInst !== nextStep.text) {
+        tbtInstEl.textContent = nextStep.text;
+        lastTbtInst = nextStep.text;
     }
 
     if (isPhoneMode()) {

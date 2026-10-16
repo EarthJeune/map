@@ -250,10 +250,6 @@
             13.95910430654149
           ],
           [
-            121.16657809366842,
-            13.959080617095921
-          ],
-          [
             121.1665473218718,
             13.959069486415146
           ],
@@ -342,8 +338,8 @@
             13.958223414543113
           ],
           [
-            121.1664419632304,
-            13.958215248550061
+            121.16643441515129,
+            13.958193821170312
           ]
         ],
         "type": "LineString"
@@ -441,7 +437,7 @@
       "id": "497c0ab8253699c2d8d5047368c8f94e",
       "type": "Feature",
       "properties": {
-        "id": "road_15"
+        "id": "road_16"
       },
       "geometry": {
         "coordinates": [
@@ -461,7 +457,7 @@
       "id": "4be056085e5d45101f00db659261e381",
       "type": "Feature",
       "properties": {
-        "id": "road_16"
+        "id": "road_17"
       },
       "geometry": {
         "coordinates": [
@@ -481,7 +477,7 @@
       "id": "401ff538525319466ab2fd2442e5ee54",
       "type": "Feature",
       "properties": {
-        "id": "road_17"
+        "id": "road_18"
       },
       "geometry": {
         "coordinates": [
@@ -501,7 +497,7 @@
       "id": "e43f6447170e2a2b81cb59ae5fe1a7fd",
       "type": "Feature",
       "properties": {
-        "id": "road_18"
+        "id": "road_19"
       },
       "geometry": {
         "coordinates": [
@@ -525,7 +521,7 @@
       "id": "bc888ad7f148f48b753b0b09668fa8f3",
       "type": "Feature",
       "properties": {
-        "id": "road_19"
+        "id": "road_20"
       },
       "geometry": {
         "coordinates": [
@@ -553,7 +549,7 @@
       "id": "903169e26e6cc1975b687ceccb6ae27d",
       "type": "Feature",
       "properties": {
-        "id": "road_20"
+        "id": "road_21"
       },
       "geometry": {
         "coordinates": [
@@ -597,7 +593,7 @@
       "id": "3c9453a4b35eee25ffe2657b8981844a",
       "type": "Feature",
       "properties": {
-        "id": "road_21"
+        "id": "road_22"
       },
       "geometry": {
         "coordinates": [
@@ -625,7 +621,7 @@
       "id": "b5f16b39e9dfcefe38efd98c501d475a",
       "type": "Feature",
       "properties": {
-        "id": "road_22"
+        "id": "road_23"
       },
       "geometry": {
         "coordinates": [
@@ -653,7 +649,7 @@
       "id": "82b541d08bd79a248d4cd8488b7a3a04",
       "type": "Feature",
       "properties": {
-        "id": "road_23"
+        "id": "road_24"
       },
       "geometry": {
         "coordinates": [
@@ -682,8 +678,8 @@
             13.958386257131977
           ],
           [
-            121.16698255608486,
-            13.95839922117176
+            121.16697592204258,
+            13.958400025385401
           ],
           [
             121.16690284089924,
@@ -709,7 +705,7 @@
       "id": "92a3dbfaed8e338ff1f7113be763e5b3",
       "type": "Feature",
       "properties": {
-        "id": "road_24"
+        "id": "road_25"
       },
       "geometry": {
         "coordinates": [
@@ -729,7 +725,7 @@
       "id": "12d3332a8f939f63a0fa67bc09ac4b7b",
       "type": "Feature",
       "properties": {
-        "id": "road_25"
+        "id": "road_26"
       },
       "geometry": {
         "coordinates": [
@@ -749,7 +745,7 @@
       "id": "e990bccf3336a01ff31e00b8640dbaee",
       "type": "Feature",
       "properties": {
-        "id": "road_26"
+        "id": "road_27"
       },
       "geometry": {
         "coordinates": [
@@ -769,7 +765,7 @@
       "id": "79b0cb4589c9ce36c3d2d45250046d90",
       "type": "Feature",
       "properties": {
-        "id": "road_27"
+        "id": "road_28"
       },
       "geometry": {
         "coordinates": [
@@ -833,7 +829,7 @@
       "id": "1143f9e54856a0f4d23d1a29d7faec0e",
       "type": "Feature",
       "properties": {
-        "id": "road_28"
+        "id": "road_29"
       },
       "geometry": {
         "coordinates": [
@@ -857,7 +853,7 @@
       "id": "eea353c2f3d3437957218af4e41eddec",
       "type": "Feature",
       "properties": {
-        "id": "road_29"
+        "id": "road_30"
       },
       "geometry": {
         "coordinates": [
@@ -881,7 +877,7 @@
       "id": "00cb58b01f7fa0540fab2dc7c6e42d5a",
       "type": "Feature",
       "properties": {
-        "id": "road_30"
+        "id": "road_31"
       },
       "geometry": {
         "coordinates": [
@@ -901,7 +897,7 @@
       "id": "4872f871cd43b31286d9fcc9cb070602",
       "type": "Feature",
       "properties": {
-        "id": "road_31"
+        "id": "road_32"
       },
       "geometry": {
         "coordinates": [
@@ -1001,7 +997,7 @@
       "id": "cd6935dc2f9ebc0508254ae3718615d6",
       "type": "Feature",
       "properties": {
-        "id": "road_32"
+        "id": "road_33"
       },
       "geometry": {
         "coordinates": [
@@ -1021,7 +1017,7 @@
       "id": "6aebdd3b0e0247d7206ba4f0787d42ff",
       "type": "Feature",
       "properties": {
-        "id": "road_33"
+        "id": "road_34"
       },
       "geometry": {
         "coordinates": [
@@ -1049,7 +1045,7 @@
       "id": "53704cf5f21df86d1d69669a6fc8bed7",
       "type": "Feature",
       "properties": {
-        "id": "road_34"
+        "id": "road_35"
       },
       "geometry": {
         "coordinates": [
@@ -1073,7 +1069,7 @@
       "id": "cd0c38236d46c6dec3d5af250306835c",
       "type": "Feature",
       "properties": {
-        "id": "road_35"
+        "id": "road_36"
       },
       "geometry": {
         "coordinates": [
@@ -1157,7 +1153,7 @@
       "id": "94087dccbe984cbac76d0d67ac08a8f1",
       "type": "Feature",
       "properties": {
-        "id": "road_36"
+        "id": "road_37"
       },
       "geometry": {
         "coordinates": [
@@ -1177,7 +1173,7 @@
       "id": "d21b050e5aaf7559712d86948780e456",
       "type": "Feature",
       "properties": {
-        "id": "road_37"
+        "id": "road_38"
       },
       "geometry": {
         "coordinates": [
@@ -1197,7 +1193,7 @@
       "id": "4dc1ebbb2346e56bac9271aafbeb2a82",
       "type": "Feature",
       "properties": {
-        "id": "road_38"
+        "id": "road_39"
       },
       "geometry": {
         "coordinates": [
@@ -1217,7 +1213,7 @@
       "id": "be499ea50dd9816f99ace12347aeeca0",
       "type": "Feature",
       "properties": {
-        "id": "road_39"
+        "id": "road_40"
       },
       "geometry": {
         "coordinates": [
@@ -1343,7 +1339,7 @@
         "type": "entrance",
         "buildingId": "amad_building",
         "name": "Entrance: amad_building",
-        "id": "entrance_4"
+        "id": "entrance_6"
       },
       "geometry": {
         "coordinates": [
@@ -1360,7 +1356,7 @@
         "type": "entrance",
         "buildingId": "admin_building",
         "name": "Entrance: admin_building",
-        "id": "entrance_5"
+        "id": "entrance_7"
       },
       "geometry": {
         "coordinates": [
@@ -1377,7 +1373,7 @@
         "type": "entrance",
         "buildingId": "admin_building",
         "name": "Entrance: admin_building",
-        "id": "entrance_6"
+        "id": "entrance_8"
       },
       "geometry": {
         "coordinates": [
@@ -1388,18 +1384,35 @@
       }
     },
     {
+      "id": "21767288794839ba287013e6a411cef8",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rafis_building",
+        "name": "Entrance: rafis_building",
+        "id": "entrance_9"
+      },
+      "geometry": {
+        "coordinates": [
+          121.16660153530421,
+          13.959001849515744
+        ],
+        "type": "Point"
+      }
+    },
+    {
       "id": "1b6fac09ce9d94a83dd71a200c25b941",
       "type": "Feature",
       "properties": {
         "type": "entrance",
-        "buildingId": "mis_rafis_building",
-        "name": "Entrance: mis_rafis_building",
-        "id": "entrance_8"
+        "buildingId": "mis_building",
+        "name": "Entrance: mis_building",
+        "id": "entrance_10"
       },
       "geometry": {
         "coordinates": [
-          121.16660362648145,
-          13.959002963278223
+          121.1666050078901,
+          13.959002617388379
         ],
         "type": "Point"
       }
@@ -1409,9 +1422,9 @@
       "type": "Feature",
       "properties": {
         "type": "entrance",
-        "buildingId": "tanco_hall_building",
-        "name": "Entrance: tanco_hall_building",
-        "id": "entrance_9"
+        "buildingId": "pmed_building",
+        "name": "Entrance: pmed_building",
+        "id": "entrance_12"
       },
       "geometry": {
         "coordinates": [
@@ -1428,12 +1441,12 @@
         "type": "entrance",
         "buildingId": "argosino_hall",
         "name": "Entrance: argosino_hall",
-        "id": "entrance_10"
+        "id": "entrance_14"
       },
       "geometry": {
         "coordinates": [
-          121.16644188810568,
-          13.958214842442032
+          121.1664187702143,
+          13.958151303046918
         ],
         "type": "Point"
       }
@@ -1445,7 +1458,7 @@
         "type": "entrance",
         "buildingId": "laboratory_building",
         "name": "Entrance: laboratory_building",
-        "id": "entrance_11"
+        "id": "entrance_15"
       },
       "geometry": {
         "coordinates": [
@@ -1462,7 +1475,7 @@
         "type": "entrance",
         "buildingId": "prdp_building",
         "name": "Entrance: prdp_building",
-        "id": "entrance_12"
+        "id": "entrance_16"
       },
       "geometry": {
         "coordinates": [
@@ -1479,7 +1492,7 @@
         "type": "entrance",
         "buildingId": "tissue_culture_building",
         "name": "Entrance: tissue_culture_building",
-        "id": "entrance_13"
+        "id": "entrance_17"
       },
       "geometry": {
         "coordinates": [
@@ -1496,7 +1509,7 @@
         "type": "entrance",
         "buildingId": "tissue_culture_building",
         "name": "Entrance: tissue_culture_building",
-        "id": "entrance_14"
+        "id": "entrance_18"
       },
       "geometry": {
         "coordinates": [
@@ -1513,7 +1526,7 @@
         "type": "entrance",
         "buildingId": "pgrc_building",
         "name": "Entrance: pgrc_building",
-        "id": "entrance_15"
+        "id": "entrance_19"
       },
       "geometry": {
         "coordinates": [
@@ -1530,7 +1543,7 @@
         "type": "entrance",
         "buildingId": "corn/casava_building",
         "name": "Entrance: corn/casava_building",
-        "id": "entrance_16"
+        "id": "entrance_20"
       },
       "geometry": {
         "coordinates": [
@@ -1547,7 +1560,7 @@
         "type": "entrance",
         "buildingId": "rsbsa_building",
         "name": "Entrance: rsbsa_building",
-        "id": "entrance_17"
+        "id": "entrance_21"
       },
       "geometry": {
         "coordinates": [
@@ -1564,29 +1577,12 @@
         "type": "entrance",
         "buildingId": "rnd_building",
         "name": "Entrance: rnd_building",
-        "id": "entrance_18"
+        "id": "entrance_22"
       },
       "geometry": {
         "coordinates": [
           121.16690031430875,
           13.958200012744982
-        ],
-        "type": "Point"
-      }
-    },
-    {
-      "id": "a751d9ad02214525f2418342267f7bce",
-      "type": "Feature",
-      "properties": {
-        "type": "entrance",
-        "buildingId": "multi_purpose_administrative_building",
-        "name": "Entrance: multi_purpose_administrative_building",
-        "id": "entrance_19"
-      },
-      "geometry": {
-        "coordinates": [
-          121.16686852870413,
-          13.95805903767858
         ],
         "type": "Point"
       }
@@ -1598,7 +1594,7 @@
         "type": "entrance",
         "buildingId": "dorm",
         "name": "Entrance: dorm",
-        "id": "entrance_22"
+        "id": "entrance_26"
       },
       "geometry": {
         "coordinates": [
@@ -1615,7 +1611,7 @@
         "type": "entrance",
         "buildingId": "rsl_building",
         "name": "Entrance: rsl_building",
-        "id": "entrance_23"
+        "id": "entrance_27"
       },
       "geometry": {
         "coordinates": [
@@ -1632,7 +1628,7 @@
         "type": "entrance",
         "buildingId": "guard_house",
         "name": "Entrance: guard_house",
-        "id": "entrance_24"
+        "id": "entrance_28"
       },
       "geometry": {
         "coordinates": [
@@ -1649,7 +1645,7 @@
         "type": "entrance",
         "buildingId": "exit_guard_house_1",
         "name": "Entrance: exit_guard_house_1",
-        "id": "entrance_25"
+        "id": "entrance_29"
       },
       "geometry": {
         "coordinates": [
@@ -1666,7 +1662,7 @@
         "type": "entrance",
         "buildingId": "rcpc_building",
         "name": "Entrance: rcpc_building",
-        "id": "entrance_26"
+        "id": "entrance_30"
       },
       "geometry": {
         "coordinates": [
@@ -1683,7 +1679,7 @@
         "type": "entrance",
         "buildingId": "motorpool_barracks",
         "name": "Entrance: motorpool_barracks",
-        "id": "entrance_27"
+        "id": "entrance_31"
       },
       "geometry": {
         "coordinates": [
@@ -1700,7 +1696,7 @@
         "type": "entrance",
         "buildingId": "guest_house",
         "name": "Entrance: guest_house",
-        "id": "entrance_28"
+        "id": "entrance_32"
       },
       "geometry": {
         "coordinates": [
@@ -1717,7 +1713,7 @@
         "type": "entrance",
         "buildingId": "exit_guard_house_2",
         "name": "Entrance: exit_guard_house_2",
-        "id": "entrance_29"
+        "id": "entrance_33"
       },
       "geometry": {
         "coordinates": [
@@ -1734,7 +1730,7 @@
         "type": "entrance",
         "buildingId": "lares_building",
         "name": "Entrance: lares_building",
-        "id": "entrance_30"
+        "id": "entrance_1"
       },
       "geometry": {
         "coordinates": [
@@ -1749,9 +1745,9 @@
       "type": "Feature",
       "properties": {
         "type": "entrance",
-        "buildingId": "lares_building",
-        "name": "Entrance: lares_building",
-        "id": "entrance_31"
+        "buildingId": "fod_building",
+        "name": "Entrance: fod_building",
+        "id": "entrance_2"
       },
       "geometry": {
         "coordinates": [
@@ -1768,7 +1764,7 @@
         "type": "entrance",
         "buildingId": "ild_building",
         "name": "Entrance: ild_building",
-        "id": "entrance_32"
+        "id": "entrance_3"
       },
       "geometry": {
         "coordinates": [
@@ -1782,7 +1778,7 @@
       "id": "5c00dcc1f0fbbbcae853b92cfa2a2971",
       "type": "Feature",
       "properties": {
-        "id": "road_40"
+        "id": "road_1"
       },
       "geometry": {
         "coordinates": [
@@ -1809,12 +1805,12 @@
         "type": "entrance",
         "buildingId": "seaguard_building",
         "name": "Entrance: seaguard_building",
-        "id": "entrance_33"
+        "id": "entrance_4"
       },
       "geometry": {
         "coordinates": [
-          121.16615904292013,
-          13.959307727660303
+          121.16615876197841,
+          13.959376945621159
         ],
         "type": "Point"
       }
@@ -1826,41 +1822,21 @@
         "type": "entrance",
         "buildingId": "f2c2_building",
         "name": "Entrance: f2c2_building",
-        "id": "entrance_34"
+        "id": "entrance_5"
       },
       "geometry": {
         "coordinates": [
-          121.16617560158721,
-          13.959207225364281
+          121.16618318442994,
+          13.9591885264565
         ],
         "type": "Point"
-      }
-    },
-    {
-      "id": "7999158db8ae34d5a53cf3bd5f412431",
-      "type": "Feature",
-      "properties": {
-        "id": "road_41"
-      },
-      "geometry": {
-        "coordinates": [
-          [
-            121.1661531422696,
-            13.95920087359714
-          ],
-          [
-            121.1661754660957,
-            13.959207201416675
-          ]
-        ],
-        "type": "LineString"
       }
     },
     {
       "id": "77ee2681bd44cd3db3d11efb8632ee1f",
       "type": "Feature",
       "properties": {
-        "id": "road_42"
+        "id": "road_2"
       },
       "geometry": {
         "coordinates": [
@@ -1869,12 +1845,12 @@
             13.95923836226551
           ],
           [
-            121.16612186239684,
-            13.959296530212924
+            121.16609916185962,
+            13.959359117278566
           ],
           [
-            121.16615911994126,
-            13.959307952350983
+            121.1661568624616,
+            13.959376622307389
           ]
         ],
         "type": "LineString"
@@ -1884,7 +1860,7 @@
       "id": "f79296eee237f19b012a802e4334a838",
       "type": "Feature",
       "properties": {
-        "id": "road_43"
+        "id": "road_3"
       },
       "geometry": {
         "coordinates": [
@@ -1898,6 +1874,120 @@
           ]
         ],
         "type": "LineString"
+      }
+    },
+    {
+      "id": "275793e7d1a2a14256ccd286e76ebdd6",
+      "type": "Feature",
+      "properties": {
+        "id": "road_4"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.16618692184863,
+            13.958431385826941
+          ],
+          [
+            121.16603314016453,
+            13.958475954463154
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "aa3c7c66e4ff0d634af56de89f98e3ec",
+      "type": "Feature",
+      "properties": {
+        "id": "road_5"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.16615999321897,
+            13.959180868345555
+          ],
+          [
+            121.16618221448527,
+            13.959188473054638
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "65f9ef06c0a41f6337e5a01b2fd8007a",
+      "type": "Feature",
+      "properties": {
+        "id": "road_6"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.16643434219367,
+            13.958194194046072
+          ],
+          [
+            121.16641957062319,
+            13.958153048404242
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "802f52d63912542dcee105f98e737644",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "fmr",
+        "name": "Entrance: fmr",
+        "id": "entrance_6"
+      },
+      "geometry": {
+        "coordinates": [
+          121.16686868894806,
+          13.958059031300266
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "d8e36eeaa6bfd7e0bb16880bfa6da1b0",
+      "type": "Feature",
+      "properties": {
+        "id": "road_7"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.16705189257732,
+            13.957695265895495
+          ],
+          [
+            121.16700150746232,
+            13.957680331214675
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "d906a5e3e606e1c75081f64182813c46",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "mushroom_laboratory",
+        "name": "Entrance: mushroom_laboratory",
+        "id": "entrance_7"
+      },
+      "geometry": {
+        "coordinates": [
+          121.16699812858019,
+          13.957679133408703
+        ],
+        "type": "Point"
       }
     }
   ]

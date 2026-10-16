@@ -11,6 +11,9 @@ export function detectAppMode() {
     const modeParam = (params.get('mode') || '').toLowerCase();
     if (modeParam === 'kiosk') return 'kiosk';
     if (modeParam === 'phone' || modeParam === 'mobile') return 'phone';
+    if (params.get('portrait') === '1' || params.get('orientation') === 'portrait') {
+        return 'kiosk';
+    }
 
     // 2. Cloudflare Tunnel hostname check:
     // If accessed via public tunnel (trycloudflare.com), it's overwhelmingly a mobile phone visitor!
@@ -33,6 +36,9 @@ export function detectAppMode() {
 
 export function detectKioskOrientation() {
     if (typeof window === 'undefined') return 'landscape';
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('portrait') === '1' || params.get('orientation') === 'portrait') return 'portrait';
+    if (params.get('orientation') === 'landscape') return 'landscape';
     return (window.innerHeight > window.innerWidth) ? 'portrait' : 'landscape';
 }
 
@@ -65,7 +71,11 @@ export function applyAppModeToDOM() {
         body.classList.add(`kiosk-${orientation}`);
     }
 
-    // Tell Mapbox to recalculate canvas size (critical for portrait: map is 58vh not 100vh)
+    if (typeof window.updateSidebarToggleIcon === 'function') {
+        window.updateSidebarToggleIcon();
+    }
+
+    // Tell Mapbox to recalculate canvas size
     try {
         if (window.map && typeof window.map.resize === 'function') {
             // Small delay to let CSS reflow complete before Mapbox measures

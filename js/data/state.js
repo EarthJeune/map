@@ -37,6 +37,7 @@ export const state = {
 
     // Building Selection & Customization
     selectedBuildingId: null,
+    activeSearchedOffice: '',
     savedBuildingColors: {},
     activeColorId: null,
 
@@ -56,9 +57,14 @@ export const state = {
     walkerMarkerInstance: null,
     destinationMarkerInstance: null,
     walkAnimFrame: null,
+    walkStartTimer: null,
+    celebrationTimer: null,
     currentWalkerCoord: null,
-    routeCameraMode: 'follow-heading',
+    routeCameraMode: 'follow',
+    isFollowing: true,
+    routeCameraPerspective: 'follow',
     isTransitioningToFollow: false,
+    cameraTransition: null,
     transitionFollowTimer: null,
     cameraControlsDimTimer: null,
     currentRouteSpeed: 2,

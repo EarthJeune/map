@@ -1,17 +1,18 @@
 // DA-LARES Routing & Graph Pathfinding Module
 // A* / Dijkstra shortest path, road network graph, route drawing, and smoothing.
 
-import { BUILDING_DIRECTORY, BUILDING_ENTRANCES } from './data/buildings.js';
+import { BUILDING_DIRECTORY, BUILDING_ENTRANCES } from './data/buildings.js?v=60';
 import { SAVED_MAIN_KIOSK_COORDS } from './data/config.js';
 import { state } from './data/state.js';
 import { map } from './map-setup.js';
-import { buildSteps, renderStepsList, updateLiveNavigation } from './steps.js';
+import { buildSteps, renderStepsList, updateLiveNavigation, resetStepsNavigation } from './steps.js';
 import { 
     clearArrivedCountdown, 
     declutterLabelsForRoute, 
     restoreLabels, 
     setRouteSpeed,
     setRouteCameraMode,
+    resetCameraModeToDefault,
     resetCameraControlsTimer
 } from './walker.js';
 import { closeBuildingPanel } from './building-panel.js';
@@ -24,6 +25,8 @@ import {
 import { updatePhoneRouteUI, updatePhoneLiveNavUI } from './phone-nav.js';
 import { stopPhoneLiveGPS } from './gps.js';
 import { stopOrbit } from './idle.js';
+import { updateRouteQR } from './qr.js';
+import { updateOcclusion, resetOcclusion } from './occlusion.js';
 
 function safeClearArrivedCountdown() {
     if (typeof clearArrivedCountdown === 'function') clearArrivedCountdown();
@@ -42,8 +45,188 @@ function safeRestoreLabels() {
     else if (typeof window.restoreLabels === 'function') window.restoreLabels();
 }
 
+function launchWalkerLoop(coords, walkerEl, totalDistance, routeLine) {
+    if (state.walkAnimFrame) {
+        cancelAnimationFrame(state.walkAnimFrame);
+        state.walkAnimFrame = null;
+    }
+    if (state.walkStartTimer) {
+        clearTimeout(state.walkStartTimer);
+        state.walkStartTimer = null;
+    }
+    if (state.celebrationTimer) {
+        clearTimeout(state.celebrationTimer);
+        state.celebrationTimer = null;
+    }
+
+    let currentDistance = 0;
+    const baseSpeedMps = 6.0;
+    let lastTimestamp = null;
+
+    function animateWalking(timestamp) {
+        if (!lastTimestamp) lastTimestamp = timestamp;
+        let dt = (timestamp - lastTimestamp) / 1000;
+        lastTimestamp = timestamp;
+        if (dt > 0.1 || dt <= 0) dt = 0.016;
+
+        currentDistance += baseSpeedMps * state.routeSpeedMultiplier * dt;
+
+        if (currentDistance >= totalDistance) {
+            currentDistance = totalDistance;
+            if (map.getSource('route-source')) {
+                map.getSource('route-source').setData({
+                    type: 'Feature', geometry: { type: 'LineString', coordinates: coords }
+                });
+            }
+            if (state.walkerMarkerInstance) {
+                state.walkerMarkerInstance.setLngLat(coords[coords.length - 1]);
+            }
+            updateLiveNavigation(totalDistance, totalDistance);
+
+            // At destination: ONLY do idle animation (celebration hop briefly, then continuous idle breathing & waving)
+            if (walkerEl) {
+                walkerEl.className = 'route-walker-avatar mode-celebrate';
+            }
+            resetOcclusion();
+            state.celebrationTimer = setTimeout(() => {
+                if (state.walkerMarkerInstance && walkerEl && walkerEl.classList.contains('mode-celebrate')) {
+                    walkerEl.className = 'route-walker-avatar mode-idle';
+                }
+            }, 2200);
+            return;
+        }
+
+        const currentPoint = turf.along(routeLine, currentDistance, { units: 'meters' });
+        const currentCoord = currentPoint.geometry.coordinates;
+
+        // Auto-flip facing direction based on movement vector relative to SCREEN (not map longitude)
+        if (state.currentWalkerCoord) {
+            const pPrev = map.project(state.currentWalkerCoord);
+            const pCurr = map.project(currentCoord);
+            const screenDx = pCurr.x - pPrev.x;
+            if (Math.abs(screenDx) > 0.3) {
+                const wrap = walkerEl ? walkerEl.querySelector('.clay-svg-wrap') : null;
+                if (wrap) {
+                    wrap.style.transform = screenDx < 0 ? 'scaleX(-1)' : 'scaleX(1)';
+                }
+            }
+        }
+        state.currentWalkerCoord = currentCoord;
+        if (state.walkerMarkerInstance) {
+            state.walkerMarkerInstance.setLngLat(currentCoord);
+        }
+
+        try {
+            if (currentDistance > 0.05 && map.getSource('route-source')) {
+                const slicedLine = turf.lineSliceAlong(routeLine, 0, currentDistance, { units: 'meters' });
+                map.getSource('route-source').setData(slicedLine);
+            }
+        } catch (err) {
+            console.warn('Line slice notice:', err);
+        }
+
+        if (state.isFollowing) {
+            if (state.cameraTransition) {
+                const now = performance.now();
+                const elapsed = now - state.cameraTransition.startTime;
+                const progress = Math.min(elapsed / state.cameraTransition.duration, 1);
+
+                // Smooth ease-out cubic curve (fast onset, gentle settle)
+                const ease = 1 - Math.pow(1 - progress, 3);
+
+                const curPitch = state.cameraTransition.startPitch + (state.cameraTransition.targetPitch - state.cameraTransition.startPitch) * ease;
+                const curBearing = state.cameraTransition.startBearing + state.cameraTransition.bearingDiff * ease;
+                const curZoom = state.cameraTransition.startZoom + (state.cameraTransition.targetZoom - state.cameraTransition.startZoom) * ease;
+
+                map.jumpTo({
+                    center: currentCoord,
+                    pitch: curPitch,
+                    bearing: curBearing,
+                    zoom: curZoom
+                });
+
+                if (progress >= 1) {
+                    state.cameraTransition = null;
+                    state.isTransitioningToFollow = false;
+                }
+            } else if (!state.isTransitioningToFollow) {
+                map.jumpTo({
+                    center: currentCoord
+                });
+            }
+        }
+
+        // Smart 3D building occlusion: fade buildings blocking sightline to frosted glass
+        updateOcclusion(currentCoord, state.selectedBuildingId);
+
+        updateLiveNavigation(currentDistance, totalDistance);
+        state.walkAnimFrame = requestAnimationFrame(animateWalking);
+    }
+
+    // Camera reposition duration scaled dynamically to actual distance
+    const curCenter = map.getCenter();
+    const camDist = turf.distance([curCenter.lng, curCenter.lat], coords[0], { units: 'meters' });
+
+    let camDuration = 350;
+    if (camDist > 120) {
+        camDuration = Math.min(1000, Math.round(camDist * 6));
+    } else if (camDist > 50) {
+        camDuration = Math.round(camDist * 6.5);
+    } else if (camDist <= 25) {
+        camDuration = 300;
+    } else {
+        camDuration = 350;
+    }
+
+    if (state.isFollowing) {
+        const pitch = state.routeCameraPerspective === 'topdown' ? 0 : (state.routeCameraPerspective === 'overview' ? 48 : 68);
+        const bearing = state.routeCameraPerspective === 'topdown' ? 0 : -20;
+        const zoom = state.routeCameraPerspective === 'follow' ? 20.2 : 19.5;
+        if (camDist <= 50) {
+            map.easeTo({
+                center: coords[0],
+                zoom: zoom,
+                pitch: pitch,
+                bearing: bearing,
+                duration: camDuration,
+                essential: true
+            });
+        } else {
+            map.flyTo({
+                center: coords[0],
+                zoom: zoom,
+                pitch: pitch,
+                bearing: bearing,
+                duration: camDuration,
+                essential: true
+            });
+        }
+    } else {
+        setRouteCameraMode(state.routeCameraMode || 'follow');
+    }
+
+    // Start walker immediately as camera settles
+    const startDelay = Math.max(150, camDuration + 40);
+    state.walkStartTimer = setTimeout(() => {
+        lastTimestamp = null;
+        if (walkerEl && !walkerEl.classList.contains('mode-celebrate')) {
+            walkerEl.className = 'route-walker-avatar speed-' + state.routeSpeedMultiplier + 'x';
+        }
+        state.walkAnimFrame = requestAnimationFrame(animateWalking);
+    }, startDelay);
+}
+
 
 export function drawRoute(coords, options = {}) {
+    // Clear any previous route timers
+    if (state.walkStartTimer) {
+        clearTimeout(state.walkStartTimer);
+        state.walkStartTimer = null;
+    }
+    if (state.celebrationTimer) {
+        clearTimeout(state.celebrationTimer);
+        state.celebrationTimer = null;
+    }
     // Remove existing route and state.markers
     ['route-glow', 'route-casing', 'route-line', 'route-traveled-line', 'route-dots'].forEach(id => {
         try { if (map.getLayer(id)) map.removeLayer(id); } catch (e) { }
@@ -88,8 +271,8 @@ export function drawRoute(coords, options = {}) {
     if (isPhoneMode()) {
         updatePhoneRouteUI(coords);
     } else {
-        state.routeCameraMode = 'follow';
-        setRouteCameraMode('follow');
+        resetCameraModeToDefault();
+        setRouteCameraMode('follow', true);
         // Show bottom floating camera controls on kiosk
         const fcc = document.getElementById('floating-camera-controls');
         if (fcc) {
@@ -294,99 +477,10 @@ export function drawRoute(coords, options = {}) {
             banner.classList.add('active');
         }
 
+        resetStepsNavigation();
         updateLiveNavigation(0, totalDistance);
 
-        let currentDistance = 0;
-        const baseSpeedMps = 6.0;
-        let lastTimestamp = null;
-
-        if (state.routeCameraMode === 'follow') {
-            map.flyTo({
-                center: coords[0],
-                zoom: 20.2,
-                pitch: 68,
-                bearing: -20,
-                duration: 1500,
-                essential: true
-            });
-        } else {
-            setRouteCameraMode(state.routeCameraMode);
-        }
-
-        function animateWalking(timestamp) {
-            if (!lastTimestamp) lastTimestamp = timestamp;
-            let dt = (timestamp - lastTimestamp) / 1000;
-            lastTimestamp = timestamp;
-            if (dt > 0.1 || dt <= 0) dt = 0.016;
-
-            currentDistance += baseSpeedMps * state.routeSpeedMultiplier * dt;
-
-            if (currentDistance >= totalDistance) {
-                currentDistance = totalDistance;
-                map.getSource('route-source').setData({
-                    type: 'Feature', geometry: { type: 'LineString', coordinates: coords }
-                });
-                state.walkerMarkerInstance.setLngLat(coords[coords.length - 1]);
-                updateLiveNavigation(totalDistance, totalDistance);
-
-                // At destination: ONLY do idle animation (celebration hop briefly, then continuous idle breathing & waving)
-                walkerEl.className = 'route-walker-avatar mode-celebrate';
-                setTimeout(() => {
-                    if (state.walkerMarkerInstance && walkerEl.classList.contains('mode-celebrate')) {
-                        walkerEl.className = 'route-walker-avatar mode-idle';
-                    }
-                }, 2200);
-                return;
-            }
-
-            const currentPoint = turf.along(routeLine, currentDistance, { units: 'meters' });
-            const currentCoord = currentPoint.geometry.coordinates;
-
-            // Auto-flip facing direction based on movement vector relative to SCREEN (not map longitude)
-            // Uses map.project() so it accurately reflects left/right on screen regardless of camera rotation or Follow mode
-            if (state.currentWalkerCoord) {
-                const pPrev = map.project(state.currentWalkerCoord);
-                const pCurr = map.project(currentCoord);
-                const screenDx = pCurr.x - pPrev.x;
-                if (Math.abs(screenDx) > 0.3) {
-                    const wrap = walkerEl.querySelector('.clay-svg-wrap');
-                    if (wrap) {
-                        wrap.style.transform = screenDx < 0 ? 'scaleX(-1)' : 'scaleX(1)';
-                    }
-                }
-            }
-            state.currentWalkerCoord = currentCoord;
-            state.walkerMarkerInstance.setLngLat(currentCoord);
-
-            try {
-                if (currentDistance > 0.05) {
-                    const slicedLine = turf.lineSliceAlong(routeLine, 0, currentDistance, { units: 'meters' });
-                    if (map.getSource('route-source')) {
-                        map.getSource('route-source').setData(slicedLine);
-                    }
-                }
-            } catch (err) {
-                console.warn('Line slice notice:', err);
-            }
-
-            if (state.routeCameraMode === 'follow' && !state.isTransitioningToFollow) {
-                map.jumpTo({
-                    center: currentCoord
-                });
-            }
-
-            updateLiveNavigation(currentDistance, totalDistance);
-            state.walkAnimFrame = requestAnimationFrame(animateWalking);
-        }
-
-        // Start animation after camera reaches the start (switches from mode-idle to running at selected speed)
-        setTimeout(() => {
-            lastTimestamp = null;
-            if (walkerEl && !walkerEl.classList.contains('mode-celebrate')) {
-                walkerEl.className = 'route-walker-avatar speed-' + state.routeSpeedMultiplier + 'x';
-            }
-            state.walkAnimFrame = requestAnimationFrame(animateWalking);
-        }, 1600);
+        launchWalkerLoop(coords, walkerEl, totalDistance, routeLine);
     } else {
         // Static / Live GPS mode (No automated walker)
         updateLiveNavigation(0, totalDistance);
@@ -398,6 +492,14 @@ export function drawRoute(coords, options = {}) {
 
 export function clearRoute() {
     if (typeof stopPhoneLiveGPS === 'function') stopPhoneLiveGPS();
+    if (state.walkStartTimer) {
+        clearTimeout(state.walkStartTimer);
+        state.walkStartTimer = null;
+    }
+    if (state.celebrationTimer) {
+        clearTimeout(state.celebrationTimer);
+        state.celebrationTimer = null;
+    }
     ['route-glow', 'route-casing', 'route-line', 'route-traveled-line', 'route-dots'].forEach(id => {
         try { if (map.getLayer(id)) map.removeLayer(id); } catch (e) { }
     });
@@ -410,8 +512,10 @@ export function clearRoute() {
         state.walkerMarkerInstance.remove();
         state.walkerMarkerInstance = null;
     }
+    resetOcclusion();
 
     state.isTransitioningToFollow = false;
+    state.cameraTransition = null;
     if (state.transitionFollowTimer) {
         clearTimeout(state.transitionFollowTimer);
         state.transitionFollowTimer = null;
@@ -445,6 +549,7 @@ export function clearRoute() {
     if (fcc) {
         fcc.classList.remove('active', 'dimmed');
     }
+    resetCameraModeToDefault();
     if (state.cameraControlsDimTimer) {
         clearTimeout(state.cameraControlsDimTimer);
         state.cameraControlsDimTimer = null;
@@ -467,6 +572,8 @@ export function clearRoute() {
     state.activeRouteCoords = null;
     state.activeFullRouteCoords = null;
     state.currentWalkerCoord = null;
+    state.isFollowing = true;
+    state.routeCameraPerspective = 'follow';
     state.isMobileGPSActive = false;
     state.isUserFollowingGPS = false;
     document.getElementById('mobile-recenter-btn')?.classList.remove('active');
@@ -706,17 +813,88 @@ export function getDirections() {
             `<span class="rm-stat">🚶 ~${routeWalkTime} min walk</span>`;
     }
     document.getElementById('route-info')?.classList.add('active');
+    updateRouteQR(targetId);
 
     // Close the building panel
     document.getElementById('building-panel')?.classList.remove('active');
 }
 
 export function replayRoute() {
-    if (state.activeRoute) {
-        safeClearArrivedCountdown();
-        clearRoute();
-        getDirections();
+    if (!state.activeRoute) return;
+    safeClearArrivedCountdown();
+
+    if (state.walkStartTimer) {
+        clearTimeout(state.walkStartTimer);
+        state.walkStartTimer = null;
     }
+    if (state.celebrationTimer) {
+        clearTimeout(state.celebrationTimer);
+        state.celebrationTimer = null;
+    }
+    if (state.walkAnimFrame) {
+        cancelAnimationFrame(state.walkAnimFrame);
+        state.walkAnimFrame = null;
+    }
+
+    const coords = state.activeRouteCoords;
+    const walkerEl = state.walkerMarkerInstance ? state.walkerMarkerInstance.getElement() : null;
+    const routeSource = map.getSource('route-source');
+    const traveledSource = map.getSource('route-traveled-source');
+
+    if (coords && coords.length >= 2 && walkerEl && routeSource && traveledSource) {
+        // Fast in-place rewind: zero layer destruction, zero WebGL shader recompile
+        routeSource.setData({
+            type: 'Feature',
+            geometry: { type: 'LineString', coordinates: [coords[0], coords[0]] }
+        });
+        traveledSource.setData({
+            type: 'FeatureCollection',
+            features: []
+        });
+
+        state.currentWalkerCoord = coords[0];
+        state.walkerMarkerInstance.setLngLat(coords[0]);
+        walkerEl.className = 'route-walker-avatar mode-idle';
+
+        if (coords.length > 1) {
+            const p0 = map.project(coords[0]);
+            const p1 = map.project(coords[1]);
+            const initialScreenDx = p1.x - p0.x;
+            const wrap = walkerEl.querySelector('.clay-svg-wrap');
+            if (wrap && Math.abs(initialScreenDx) > 0.4) {
+                wrap.style.transform = initialScreenDx < 0 ? 'scaleX(-1)' : 'scaleX(1)';
+            }
+        }
+
+        const banner = document.getElementById('turn-by-turn-banner');
+        if (banner) {
+            banner.classList.remove('arrived');
+            banner.classList.add('active');
+        }
+        resetStepsNavigation();
+
+        const routeLine = turf.lineString(coords);
+        const totalDistance = turf.length(routeLine, { units: 'meters' });
+        updateLiveNavigation(0, totalDistance);
+
+        state.isFollowing = true;
+        state.cameraTransition = null;
+        state.isTransitioningToFollow = false;
+
+        const curPersp = state.routeCameraPerspective || 'follow';
+        const fccFollow = document.getElementById('fcc-follow');
+        const fccOverview = document.getElementById('fcc-overview');
+        const fccTopdown = document.getElementById('fcc-topdown');
+        if (fccFollow) fccFollow.classList.toggle('active', curPersp === 'follow');
+        if (fccOverview) fccOverview.classList.toggle('active', curPersp === 'overview');
+        if (fccTopdown) fccTopdown.classList.toggle('active', curPersp === 'topdown');
+
+        launchWalkerLoop(coords, walkerEl, totalDistance, routeLine);
+        return;
+    }
+
+    clearRoute();
+    getDirections();
 }
 
 // ==========================================

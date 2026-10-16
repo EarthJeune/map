@@ -22,7 +22,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/main.css?v=33">
+    <link rel="stylesheet" href="css/main.css?v=53">
 </head>
 
 <body>
@@ -32,11 +32,57 @@
     </div>
     <div id="map"></div>
 
-    <!-- Floating Map View Mode Switcher (Google Satellite vs Mapbox 3D) -->
-    <button class="map-view-switch-btn" id="map-view-switch-btn" onclick="toggleMapboxView(this)" title="Switch between Google Satellite and Mapbox 3D View">
-        <span class="mvs-icon">🗺️</span>
-        <span class="mvs-text">Mapbox 3D</span>
-    </button>
+    <!-- Floating Map View Mode Switcher Widget (Expandable on Desktop/Kiosk, Pop-up on Mobile) -->
+    <div class="map-layer-widget" id="map-layer-widget" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()">
+        <!-- Flyout Panel (expands to the left on desktop / kiosk) -->
+        <div class="map-layer-flyout" id="map-layer-flyout">
+            <button class="map-layer-option active" id="layer-opt-google" onclick="selectMapStyle('google')" title="Switch to Aerial Drone View">
+                <span class="mlo-icon">🚁</span>
+                <span class="mlo-name">Aerial Drone View</span>
+                <span class="mlo-check">✓</span>
+            </button>
+            <button class="map-layer-option" id="layer-opt-mapbox" onclick="selectMapStyle('mapbox')" title="Switch to Mapbox 3D View">
+                <span class="mlo-icon">🗺️</span>
+                <span class="mlo-name">Mapbox View</span>
+                <span class="mlo-check">✓</span>
+            </button>
+        </div>
+
+        <!-- Main Icon Trigger Button -->
+        <button class="map-layer-trigger-btn" id="map-layer-trigger-btn" onclick="toggleMapLayerMenu()" title="Map View Options" aria-label="Toggle map view options">
+            <span class="mlt-icon" id="mlt-current-icon">🚁</span>
+        </button>
+    </div>
+
+    <!-- Mobile Map View Pop-up Modal (Phone Mode) -->
+    <div class="map-layer-modal-backdrop" id="map-layer-modal-backdrop" onclick="closeMapLayerModal()"></div>
+    <div class="map-layer-modal" id="map-layer-modal" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()">
+        <div class="mlm-header">
+            <div class="mlm-title-wrap">
+                <span class="mlm-badge">MAP LAYER</span>
+                <h4 class="mlm-title">Choose Map View</h4>
+            </div>
+            <button class="mlm-close-btn" onclick="closeMapLayerModal()" aria-label="Close">✕</button>
+        </div>
+        <div class="mlm-options">
+            <button class="mlm-option active" id="mlm-opt-google" onclick="selectMapStyle('google')">
+                <div class="mlm-option-icon">🚁</div>
+                <div class="mlm-option-info">
+                    <span class="mlm-option-name">Aerial Drone View</span>
+                    <span class="mlm-option-desc">High-Resolution Drone Imagery</span>
+                </div>
+                <div class="mlm-option-radio"></div>
+            </button>
+            <button class="mlm-option" id="mlm-opt-mapbox" onclick="selectMapStyle('mapbox')">
+                <div class="mlm-option-icon">🗺️</div>
+                <div class="mlm-option-info">
+                    <span class="mlm-option-name">Mapbox View</span>
+                    <span class="mlm-option-desc">3D Digital Campus Masterplan</span>
+                </div>
+                <div class="mlm-option-radio"></div>
+            </button>
+        </div>
+    </div>
 
     <!-- Google Maps-style Turn-by-Turn Live Navigation Banner -->
     <div class="turn-by-turn-banner" id="turn-by-turn-banner" onmousedown="event.stopPropagation()"
@@ -53,13 +99,11 @@
         ontouchstart="event.stopPropagation()">
         <span class="fcc-label">CAMERA</span>
         <button class="fcc-btn active" id="fcc-follow" onclick="setRouteCameraMode('follow')"
-            title="Follow walking camera">🚶 Follow</button>
+            title="Follow walking camera (Click to toggle follow / free look)">🚶 Follow</button>
         <button class="fcc-btn" id="fcc-overview" onclick="setRouteCameraMode('overview')"
-            title="3D Overview perspective">🧭 3D</button>
+            title="Side View perspective (follows walker)">🧭 Side View</button>
         <button class="fcc-btn" id="fcc-topdown" onclick="setRouteCameraMode('topdown')"
-            title="2D Top-down perspective">🗺️ 2D</button>
-        <button class="fcc-btn" id="fcc-free" onclick="setRouteCameraMode('free')" title="Free camera rotation">🎯 Free
-            Look</button>
+            title="Top View perspective (follows walker)">🗺️ Top View</button>
     </div>
 
     <!-- Color Picker Modal -->
@@ -93,7 +137,9 @@
         <!-- Sidebar Collapse / Expand Toggle Button -->
         <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" onclick="toggleSidebarMenu()" title="Close menu"
             aria-label="Toggle Menu">
-            <span class="sidebar-toggle-icon" id="sidebar-toggle-icon">&lt;</span>
+            <span class="sidebar-toggle-icon" id="sidebar-toggle-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:auto;"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </span>
         </button>
 
         <div class="sidebar-header">
@@ -110,6 +156,23 @@
                 <input type="text" id="search-input" placeholder="Search for a building or place…"
                     oninput="filterDirectory()">
             </div>
+            <!-- Category Filter Chips -->
+            <div class="kiosk-categories-bar" id="kiosk-categories-bar">
+                <button class="cat-chip active" data-cat="all" onclick="filterByCategory('all')">🌐 All</button>
+                <button class="cat-chip" data-cat="office" onclick="filterByCategory('office')">🏛️ Offices</button>
+                <button class="cat-chip" data-cat="lab" onclick="filterByCategory('lab')">🔬 Labs & R&D</button>
+                <button class="cat-chip" data-cat="hall" onclick="filterByCategory('hall')">🎓 Halls & Dorm</button>
+                <button class="cat-chip" data-cat="service" onclick="filterByCategory('service')">🚻 Facilities</button>
+            </div>
+            <!-- Quick Search Suggestion Tags -->
+            <div class="kiosk-quick-tags" id="kiosk-quick-tags">
+                <span class="quick-tag-label">Popular:</span>
+                <button class="quick-tag" onclick="quickSearch('MIS')">MIS / RAFIS</button>
+                <button class="quick-tag" onclick="quickSearch('Admin')">Admin</button>
+                <button class="quick-tag" onclick="quickSearch('Tanco')">Tanco Hall</button>
+                <button class="quick-tag" onclick="quickSearch('Canteen')">Canteen</button>
+                <button class="quick-tag" onclick="quickSearch('RSL')">Soils Lab</button>
+            </div>
         </div>
 
         <div class="directory" id="directory">
@@ -117,14 +180,24 @@
         </div>
 
         <div class="route-info" id="route-info">
-            <button class="route-back-btn" onclick="exitRouteMode()" title="Change destination">
+            <button class="route-back-btn" onclick="exitRouteMode()" title="Back to building directory">
                 <span class="route-back-arrow">←</span>
-                <span>Change Destination</span>
+                <span>Back to Directory</span>
             </button>
 
             <div class="route-header-wrap">
                 <div class="route-dest" id="route-dest">—</div>
                 <div class="route-meta" id="route-meta">—</div>
+            </div>
+
+            <!-- Prominent QR Code Handoff Card during Active Directions -->
+            <div class="route-qr-card" id="route-qr-card">
+                <div class="rqr-info">
+                    <span class="rqr-badge">📱 Mobile Navigation</span>
+                    <span class="rqr-title">Take route on your phone</span>
+                    <span class="rqr-sub">Scan camera to open live turn-by-turn guidance</span>
+                </div>
+                <div class="rqr-box" id="route-qr-box" onclick="openQRZoomModal()" title="Tap to zoom QR code"></div>
             </div>
 
             <!-- Arrived Card (shown on arrival) -->
@@ -148,7 +221,7 @@
                     <button class="speed-pill" onclick="setRouteSpeed(1)" data-speed="1"
                         title="1x Normal speed">1x</button>
                     <button class="speed-pill active" onclick="setRouteSpeed(2)" data-speed="2"
-                        title="2x Fast speed (Default)">2x</button>
+                        title="2x Fast speed">2x</button>
                     <button class="speed-pill" onclick="setRouteSpeed(4)" data-speed="4"
                         title="4x Very fast speed">4x</button>
                     <button class="speed-pill" onclick="setRouteSpeed(6)" data-speed="6"
@@ -157,16 +230,12 @@
             </div>
 
             <div class="route-actions">
-                <button class="route-replay-btn" onclick="replayRoute()" title="Replay route">🔄 Repeat</button>
-                <button class="route-close-btn" onclick="closeRouteAndReset()" title="Cancel route">✕ Cancel</button>
+                <button class="route-replay-btn" onclick="replayRoute()" title="Replay walking route">🔄 Replay Walk</button>
+                <button class="route-close-btn" onclick="exitRouteMode()" title="Exit route navigation">✕ Exit Route</button>
             </div>
         </div>
 
         <div class="settings-bar">
-            <button class="setting-chip mapbox-view-chip" id="chip-mapbox-view" onclick="toggleMapboxView(this)" title="Toggle Mapbox 3D Satellite & Street view">
-                <span class="chip-icon">🗺️</span>
-                <span class="chip-text">Mapbox 3D</span>
-            </button>
             <button class="setting-chip active" id="chip-trees" onclick="toggleSettingChip(this, 'trees')" title="Toggle 3D Trees" style="display:none;">🌲 3D Trees</button>
             <button class="setting-chip active" id="chip-buildings" onclick="toggleSettingChip(this, 'buildings')">🏢 Buildings</button>
             <button class="setting-chip active" id="chip-numbers" onclick="toggleSettingChip(this, 'numbers')">🏷️ Building Names</button>
@@ -238,14 +307,14 @@
                     </div>
                 </div>
                 <div class="bp-qr-card-content">
-                    <div class="bp-qr-box" id="bp-qr-box" title="Scan with your phone camera">
+                    <div class="bp-qr-box" id="bp-qr-box" onclick="openQRZoomModal()" title="Tap to zoom QR code">
                         <!-- QR rendered by JS -->
                     </div>
                     <div class="bp-qr-steps">
                         <div class="bp-qr-step"><span class="step-num">1</span> Open phone camera</div>
                         <div class="bp-qr-step"><span class="step-num">2</span> Scan this QR code</div>
                         <div class="bp-qr-step"><span class="step-num">3</span> Follow live GPS path</div>
-                        <a id="bp-qr-link" href="#" target="_blank" style="font-size: 9.5px; color: #38bdf8; text-decoration: underline; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 155px;" title="Test mobile link">🔗 Test link directly</a>
+                        <div class="bp-qr-zoom-hint" onclick="openQRZoomModal()">🔍 Tap QR to Enlarge</div>
                     </div>
                 </div>
             </div>
@@ -458,20 +527,38 @@
                 <div class="pwm-info-card highlighted">
                     <div class="pwm-card-icon">📍</div>
                     <div class="pwm-card-content">
-                        <div class="pwm-card-title">Why do we need your location?</div>
-                        <div class="pwm-card-desc">To guide you in real-time from where you are standing directly to your chosen building. Your location stays on your phone and is never shared.</div>
+                        <div class="pwm-card-title">Live GPS & Compass Navigation</div>
+                        <div class="pwm-card-desc">Allows the map to locate your position on campus and orient your live walking direction in real time. Your location stays private on your phone.</div>
                     </div>
                 </div>
             </div>
 
             <div class="pwm-actions">
                 <button class="pwm-btn-continue" id="pwm-continue-btn" onclick="handleWelcomeContinue()">
-                    <span>Continue & Allow Location</span>
+                    <span>Accept & Continue</span>
                     <span class="pwm-btn-arrow">→</span>
                 </button>
                 <button class="pwm-btn-skip" onclick="handleWelcomeSkip()">
                     Explore without GPS (Use Kiosk)
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Code Zoom Modal (Full Screen Enlarge) -->
+    <div class="qr-zoom-modal-backdrop" id="qr-zoom-modal" style="display: none;" onclick="closeQRZoomModal(event)">
+        <div class="qr-zoom-card" onclick="event.stopPropagation()">
+            <button class="qr-zoom-close-btn" onclick="closeQRZoomModal(event)" title="Close">✕</button>
+            <div class="qr-zoom-header">
+                <span class="qr-zoom-badge">📱 Mobile Navigation</span>
+                <div class="qr-zoom-title">Scan QR Code with Phone</div>
+                <div class="qr-zoom-subtitle">Point camera at QR code to open live route</div>
+            </div>
+            <div class="qr-zoom-box-wrapper">
+                <div class="qr-zoom-box" id="qr-zoom-box"></div>
+            </div>
+            <div class="qr-zoom-footer">
+                <span>💡 Tip: Hold phone camera close to screen</span>
             </div>
         </div>
     </div>
@@ -485,14 +572,26 @@
         </div>
     </div>
 
+    <!-- 1-Finger Orbit Mode Active Floating Toast Indicator -->
+    <div class="orbit-toast-badge" id="orbit-toast-badge" style="display: none;" onclick="toggleOneFingerOrbitMode(false)">
+        <span class="orbit-toast-icon">🕹️</span>
+        <div class="orbit-toast-text">
+            <span class="orbit-toast-title">1-Finger Orbit Active</span>
+            <span class="orbit-toast-sub">Drag 1 finger to rotate & tilt • Tap to exit</span>
+        </div>
+        <button class="orbit-toast-close" title="Exit 1-Finger Orbit Mode">✕</button>
+    </div>
+
     <div class="coords-badge" id="coords-badge">
         <div class="dot"></div>
         <span id="coords-text">13.9599° N, 121.1693° E</span>
         <span style="color:#475569">|</span>
         <span id="zoom-text">Zoom 17.0</span>
+        <span style="color:#475569">|</span>
+        <span id="fps-badge" style="font-weight:700;color:#22c55e;">60 FPS</span>
     </div>
 
-    <script type="module" src="js/app.js?v=34"></script>
+    <script type="module" src="js/app.js?v=60"></script>
 </body>
 
 </html>

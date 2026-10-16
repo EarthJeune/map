@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>DA-LARES 3D Tree Planter & Drawer</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <!-- Mapbox GL JS v3.31.0 -->
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.31.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.31.0/mapbox-gl.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; padding: 0; background: #0b0f19; color: #f1f5f9; font-family: 'Inter', system-ui, sans-serif; overflow: hidden; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; height: 100%; }
+
+        /* Floating Tree Tool Panel */
+        .planter-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            width: 340px;
+            max-height: calc(100vh - 40px);
+            background: rgba(15, 23, 42, 0.94);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 16px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            overflow-y: auto;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 12px;
+        }
+        .panel-title {
+            font-size: 17px;
+            font-weight: 700;
+            color: #4ade80;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+        }
+        .tree-badge {
+            background: rgba(34, 197, 94, 0.2);
+            border: 1px solid #22c55e;
+            color: #4ade80;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 20px;
+        }
+
+        /* View Mode Toggle Button */
+        .view-switch-btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            border: 1px solid #38bdf8;
+            background: linear-gradient(135deg, rgba(2, 132, 199, 0.35), rgba(14, 165, 233, 0.2));
+            color: #e0f2fe;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+        .view-switch-btn:hover {
+            background: linear-gradient(135deg, rgba(2, 132, 199, 0.55), rgba(14, 165, 233, 0.4));
+            transform: translateY(-1px);
+        }
+        .view-switch-btn.mapbox-active {
+            border-color: #22c55e;
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.35), rgba(22, 163, 74, 0.2));
+            color: #dcfce7;
+        }
+
+        .section-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #94a3b8;
+            margin-bottom: 6px;
+        }
+
+        /* Tree Variety Cards */
+        .tree-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .tree-card {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.15s;
+            text-align: center;
+        }
+        .tree-card:hover {
+            background: rgba(51, 65, 85, 0.8);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        .tree-card.active {
+            border-color: #4ade80;
+            background: rgba(34, 197, 94, 0.18);
+            box-shadow: 0 0 12px rgba(34, 197, 94, 0.25);
+        }
+        .tree-card-icon { font-size: 24px; margin-bottom: 4px; }
+        .tree-card-name { font-size: 12px; font-weight: 600; color: #f8fafc; }
+        .tree-card-desc { font-size: 10px; color: #94a3b8; }
+
+        /* Scale Selector */
+        .scale-selector {
+            display: flex;
+            gap: 6px;
+        }
+        .scale-chip {
+            flex: 1;
+            padding: 6px;
+            border-radius: 6px;
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #cbd5e1;
+            font-size: 11px;
+            font-weight: 600;
+            text-align: center;
+            cursor: pointer;
+        }
+        .scale-chip:hover { background: rgba(51, 65, 85, 0.8); }
+        .scale-chip.active {
+            background: #22c55e;
+            color: #052e16;
+            border-color: #22c55e;
+            font-weight: 700;
+        }
+
+        /* Action Buttons */
+        .action-btn {
+            width: 100%;
+            padding: 11px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .btn-save {
+            background: #22c55e;
+            color: #052e16;
+        }
+        .btn-save:hover { background: #16a34a; }
+        .btn-copy {
+            background: #3b82f6;
+            color: #eff6ff;
+        }
+        .btn-copy:hover { background: #2563eb; }
+        .btn-row {
+            display: flex;
+            gap: 8px;
+        }
+        .btn-sub {
+            flex: 1;
+            padding: 8px;
+            background: rgba(51, 65, 85, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #cbd5e1;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-sub:hover { background: rgba(71, 85, 105, 0.9); }
+        .btn-sub.danger:hover { background: #dc2626; color: white; border-color: #dc2626; }
+
+        /* Stats Bar */
+        .stats-box {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 11px;
+            color: #94a3b8;
+            display: flex;
+            justify-content: space-between;
+        }
+        .stats-box strong { color: #f8fafc; }
+
+        .hint-text {
+            font-size: 11px;
+            color: #94a3b8;
+            line-height: 1.4;
+            background: rgba(30, 41, 59, 0.4);
+            padding: 8px 10px;
+            border-radius: 6px;
+            border-left: 3px solid #22c55e;
+            margin: 0;
+        }
+
+        /* 2D Satellite Planting Marker Badge */
+        .tree-pin {
+            cursor: pointer;
+            width: 26px;
+            height: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            border-radius: 50%;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1.5px solid #4ade80;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
+            transition: transform 0.15s;
+        }
+        .tree-pin:hover {
+            transform: scale(1.35);
+            border-color: #fbbf24;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <div class="planter-panel">
+        <div class="panel-header">
+            <h3 class="panel-title">🌳 Tree Planter</h3>
+            <span class="tree-badge" id="tree-count-badge">0 Trees</span>
+        </div>
+
+        <!-- Mode Switcher -->
+        <button class="view-switch-btn" id="btn-toggle-view" onclick="togglePlanterMapMode()">
+            <span id="view-icon">🗺️</span>
+            <span id="view-text">Switch to Mapbox 3D Preview</span>
+        </button>
+
+        <p class="hint-text">
+            <strong>How to Plant:</strong> Click on the satellite map to drop a tree. Click any existing tree icon to remove it. Switch to <strong>Mapbox 3D</strong> anytime to inspect your real 3D models with lighting!
+        </p>
+
+        <!-- Variety Palette -->
+        <div>
+            <div class="section-label">Select 3D Tree Type</div>
+            <div class="tree-grid">
+                <div class="tree-card active" id="card-tree_mango" onclick="selectTreeType('tree_mango')">
+                    <div class="tree-card-icon">🌳</div>
+                    <div class="tree-card-name">Mango / Shade</div>
+                    <div class="tree-card-desc">Broadleaf Canopy</div>
+                </div>
+                <div class="tree-card" id="card-tree_palm" onclick="selectTreeType('tree_palm')">
+                    <div class="tree-card-icon">🌴</div>
+                    <div class="tree-card-name">Coconut Palm</div>
+                    <div class="tree-card-desc">Tropical Palm</div>
+                </div>
+                <div class="tree-card" id="card-tree_pine" onclick="selectTreeType('tree_pine')">
+                    <div class="tree-card-icon">🌲</div>
+                    <div class="tree-card-name">Pine Tree</div>
+                    <div class="tree-card-desc">Conical Evergreen</div>
+                </div>
+                <div class="tree-card" id="card-tree_bush" onclick="selectTreeType('tree_bush')">
+                    <div class="tree-card-icon">🌿</div>
+                    <div class="tree-card-name">Fruit / Bush</div>
+                    <div class="tree-card-desc">Low Orchard Shrub</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scale Presets -->
+        <div>
+            <div class="section-label">Tree Height / Scale</div>
+            <div class="scale-selector">
+                <div class="scale-chip" onclick="setScale(0.75, this)">0.75x</div>
+                <div class="scale-chip active" onclick="setScale(1.0, this)">1.0x</div>
+                <div class="scale-chip" onclick="setScale(1.35, this)">1.35x</div>
+                <div class="scale-chip" onclick="setScale(1.7, this)">1.7x</div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <button class="action-btn btn-save" id="btn-save-trees" onclick="saveTreesDirectly()">
+            💾 Save Directly to Map (trees.json)
+        </button>
+        <button class="action-btn btn-copy" onclick="copyTreesGeoJSON()">
+            📋 Copy Trees GeoJSON
+        </button>
+
+        <div class="btn-row">
+            <button class="btn-sub" onclick="undoLastTree()">↩️ Undo Last</button>
+            <button class="btn-sub danger" onclick="clearAllTrees()">🗑️ Clear All</button>
+        </div>
+
+        <!-- Breakdown Stats -->
+        <div class="stats-box" id="stats-box">
+            <span>Planted: <strong id="stat-total">0</strong></span>
+            <span id="stat-breakdown">🌳 0 | 🌴 0 | 🌲 0 | 🌿 0</span>
+        </div>
+    </div>
+
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1IjoiZWFydGgwMzA3IiwiYSI6ImNtdWFqNTR5czAxNmEyd29lMm42YjZlMDkifQ.xdPOP5RVPdn6YNka-ZdwoQ';
+
+        // Planter state
+        let currentMode = 'google'; // 'google' (Satellite tracing) or 'mapbox' (3D Preview)
+        let selectedTreeType = 'tree_mango';
+        let selectedScale = 1.0;
+        let treeFeatures = [];
+        let mapMarkers = [];
+
+        const TREE_CONFIGS = {
+            'tree_mango': { name: 'Mango / Broadleaf', icon: '🌳', file: 'models/tree_mango.glb' },
+            'tree_palm':  { name: 'Coconut Palm',      icon: '🌴', file: 'models/tree_palm.glb' },
+            'tree_pine':  { name: 'Pine Tree',         icon: '🌲', file: 'models/tree_pine.glb' },
+            'tree_bush':  { name: 'Fruit Bush',        icon: '🌿', file: 'models/tree_bush.glb' }
+        };
+
+        // Initialize Map directly in Mapbox Standard so the style is stable,
+        // but with Google Satellite layer in slot: 'bottom' and Mapbox generic trees TURNED OFF!
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/standard',
+            center: [121.1664, 13.9586],
+            zoom: 18.2,
+            pitch: 0,
+            bearing: -28,
+            antialias: true
+        });
+
+        map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+        map.on('style.load', () => {
+            // 1. Configure Mapbox basemap (disable generic trees, landmarks, POI clutter, and exterior building colors)
+            try {
+                map.setConfigProperty('basemap', 'show3dTrees', false);
+                map.setConfigProperty('basemap', 'show3dBuildings', false);
+                map.setConfigProperty('basemap', 'show3dLandmarks', false);
+                map.setConfigProperty('basemap', 'colorBuildings', 'rgba(0,0,0,0)');
+                map.setConfigProperty('basemap', 'showPointOfInterestLabels', false);
+                map.setConfigProperty('basemap', 'showTransitLabels', false);
+                map.setConfigProperty('basemap', 'lightPreset', 'day');
+                map.setFog({
+                    'range': [0.8, 12],
+                    'color': '#e0f2fe',
+                    'high-color': '#0284c7',
+                    'horizon-blend': 0.15,
+                    'space-color': '#0369a1',
+                    'star-intensity': 0.0
+                });
+            } catch (e) { console.warn('Config properties error:', e); }
+
+            // 2. Add Google Satellite raster source & layer in slot: 'top'
+            // Using slot: 'top' ensures pure, unobstructed Google Satellite imagery with NO Mapbox roads or beige footprints drawn over it!
+            if (!map.getSource('google-satellite')) {
+                map.addSource('google-satellite', {
+                    type: 'raster',
+                    tiles: ['https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'],
+                    tileSize: 256,
+                    maxzoom: 22
+                });
+            }
+            if (!map.getLayer('google-satellite-layer')) {
+                map.addLayer({
+                    id: 'google-satellite-layer',
+                    type: 'raster',
+                    source: 'google-satellite',
+                    slot: 'top',
+                    layout: {
+                        visibility: 'visible' // Visible in 2D Satellite mode, hidden in 3D Preview
+                    }
+                });
+            }
+
+            // 3. DA-LARES Compound 3D Buildings (drawings.json) in slot 'middle'
+            if (!map.getSource('lares-drawings-source')) {
+                map.addSource('lares-drawings-source', {
+                    type: 'geojson',
+                    data: 'drawings.json'
+                });
+            }
+            if (!map.getLayer('3d-drawings-extrusion')) {
+                map.addLayer({
+                    id: '3d-drawings-extrusion',
+                    source: 'lares-drawings-source',
+                    type: 'fill-extrusion',
+                    slot: 'middle',
+                    layout: {
+                        'visibility': 'none' // Hidden in satellite mode, visible in 3D preview
+                    },
+                    paint: {
+                        'fill-extrusion-color': '#f0ece4',
+                        'fill-extrusion-height': ['get', 'height'],
+                        'fill-extrusion-base': ['get', 'min_height'],
+                        'fill-extrusion-opacity': 0.95,
+                        'fill-extrusion-emissive-strength': 0.25
+                    }
+                });
+            }
+
+            // 4. Register the 4 real low-poly 3D models
+            Object.keys(TREE_CONFIGS).forEach(key => {
+                if (!map.hasModel(key)) {
+                    map.addModel(key, TREE_CONFIGS[key].file);
+                }
+            });
+
+            // 4. Source & Model Layer for your custom 3D trees
+            if (!map.getSource('custom-trees-source')) {
+                map.addSource('custom-trees-source', {
+                    type: 'geojson',
+                    data: {
+                        type: 'FeatureCollection',
+                        features: treeFeatures
+                    }
+                });
+            }
+
+            if (!map.getLayer('3d-tree-models-layer')) {
+                map.addLayer({
+                    id: '3d-tree-models-layer',
+                    type: 'model',
+                    source: 'custom-trees-source',
+                    slot: 'middle',
+                    layout: {
+                        'model-id': ['coalesce', ['get', 'model'], 'tree_mango'],
+                        'visibility': 'none' // Hidden in 2D Satellite mode, shown in 3D Preview
+                    },
+                    paint: {
+                        'model-scale': [
+                            'case',
+                            ['==', ['get', 'scale'], 0.75], [0.75, 0.75, 0.75],
+                            ['==', ['get', 'scale'], 1.35], [1.35, 1.35, 1.35],
+                            ['==', ['get', 'scale'], 1.7],  [1.7, 1.7, 1.7],
+                            [1.0, 1.0, 1.0]
+                        ],
+                        'model-rotation': [0, 0, ['coalesce', ['get', 'rotation'], 0]]
+                    }
+                });
+            }
+
+            // 5. Load trees from trees.json on server
+            loadTreesFromServer();
+        });
+
+        function loadTreesFromServer() {
+            fetch('/api/trees')
+                .then(r => r.json())
+                .then(data => {
+                    if (data && Array.isArray(data.features)) {
+                        treeFeatures = data.features;
+                        updateUI();
+                        syncTreeSources();
+                    }
+                })
+                .catch(e => console.log('Starting with clean tree state:', e));
+        }
+
+        // Click on map to plant a tree
+        map.on('click', (e) => {
+            const coords = [parseFloat(e.lngLat.lng.toFixed(7)), parseFloat(e.lngLat.lat.toFixed(7))];
+            const newTree = {
+                type: 'Feature',
+                id: 'tree_' + Date.now(),
+                geometry: {
+                    type: 'Point',
+                    coordinates: coords
+                },
+                properties: {
+                    model: selectedTreeType,
+                    scale: selectedScale,
+                    rotation: Math.floor(Math.random() * 360)
+                }
+            };
+            treeFeatures.push(newTree);
+            updateUI();
+            syncTreeSources();
+        });
+
+        function selectTreeType(type) {
+            selectedTreeType = type;
+            document.querySelectorAll('.tree-card').forEach(c => c.classList.remove('active'));
+            const card = document.getElementById(`card-${type}`);
+            if (card) card.classList.add('active');
+        }
+
+        function setScale(scale, el) {
+            selectedScale = scale;
+            document.querySelectorAll('.scale-chip').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        // Synchronize both 2D Pins and 3D Model Source
+        function syncTreeSources() {
+            // 1. Update 3D GeoJSON source
+            if (map.getSource('custom-trees-source')) {
+                map.getSource('custom-trees-source').setData({
+                    type: 'FeatureCollection',
+                    features: treeFeatures
+                });
+            }
+
+            // 2. Update 2D Pins
+            mapMarkers.forEach(m => m.remove());
+            mapMarkers = [];
+
+            treeFeatures.forEach((t, index) => {
+                const cfg = TREE_CONFIGS[t.properties.model] || TREE_CONFIGS['tree_mango'];
+                const el = document.createElement('div');
+                el.className = 'tree-pin';
+                el.textContent = cfg.icon;
+                el.title = `${cfg.name} (${t.properties.scale || 1}x)\nClick to remove`;
+
+                // Click marker to remove tree
+                el.onclick = (evt) => {
+                    evt.stopPropagation();
+                    treeFeatures.splice(index, 1);
+                    updateUI();
+                    syncTreeSources();
+                };
+
+                const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
+                    .setLngLat(t.geometry.coordinates)
+                    .addTo(map);
+
+                // Control visibility based on current mode
+                if (currentMode === 'mapbox') {
+                    marker.getElement().style.display = 'none';
+                }
+
+                mapMarkers.push(marker);
+            });
+        }
+
+        // Instant, smooth toggle between Google Satellite & Mapbox 3D Preview (NO map.setStyle reload!)
+        function togglePlanterMapMode() {
+            const btn = document.getElementById('btn-toggle-view');
+            const icon = document.getElementById('view-icon');
+            const txt = document.getElementById('view-text');
+
+            if (currentMode === 'google') {
+                // Switch to Mapbox 3D Preview
+                currentMode = 'mapbox';
+                btn.classList.add('mapbox-active');
+                icon.textContent = '🛰️';
+                txt.textContent = 'Switch to Google Satellite';
+
+                // Hide Google Satellite raster layer & hide 2D pins
+                if (map.getLayer('google-satellite-layer')) {
+                    map.setLayoutProperty('google-satellite-layer', 'visibility', 'none');
+                }
+                mapMarkers.forEach(m => {
+                    if (m.getElement()) m.getElement().style.display = 'none';
+                });
+
+                // Show 3D models & 3D buildings layer
+                if (map.getLayer('3d-tree-models-layer')) {
+                    map.setLayoutProperty('3d-tree-models-layer', 'visibility', 'visible');
+                }
+                if (map.getLayer('3d-drawings-extrusion')) {
+                    map.setLayoutProperty('3d-drawings-extrusion', 'visibility', 'visible');
+                }
+
+                // Tilt into 3D view
+                map.easeTo({ pitch: 55, duration: 800 });
+            } else {
+                // Switch back to Google Satellite
+                currentMode = 'google';
+                btn.classList.remove('mapbox-active');
+                icon.textContent = '🗺️';
+                txt.textContent = 'Switch to Mapbox 3D Preview';
+
+                // Show Google Satellite raster & show 2D pins
+                if (map.getLayer('google-satellite-layer')) {
+                    map.setLayoutProperty('google-satellite-layer', 'visibility', 'visible');
+                }
+                mapMarkers.forEach(m => {
+                    if (m.getElement()) m.getElement().style.display = '';
+                });
+
+                // Hide 3D models and buildings in top-down mode
+                if (map.getLayer('3d-tree-models-layer')) {
+                    map.setLayoutProperty('3d-tree-models-layer', 'visibility', 'none');
+                }
+                if (map.getLayer('3d-drawings-extrusion')) {
+                    map.setLayoutProperty('3d-drawings-extrusion', 'visibility', 'none');
+                }
+
+                // Top-down 2D view
+                map.easeTo({ pitch: 0, duration: 600 });
+            }
+        }
+
+        function updateUI() {
+            const count = treeFeatures.length;
+            document.getElementById('tree-count-badge').textContent = `${count} Trees`;
+            document.getElementById('stat-total').textContent = count;
+
+            const counts = { tree_mango: 0, tree_palm: 0, tree_pine: 0, tree_bush: 0 };
+            treeFeatures.forEach(t => {
+                const m = t.properties.model || 'tree_mango';
+                if (counts[m] !== undefined) counts[m]++;
+            });
+
+            document.getElementById('stat-breakdown').textContent = 
+                `🌳 ${counts.tree_mango} | 🌴 ${counts.tree_palm} | 🌲 ${counts.tree_pine} | 🌿 ${counts.tree_bush}`;
+        }
+
+        function undoLastTree() {
+            if (treeFeatures.length > 0) {
+                treeFeatures.pop();
+                updateUI();
+                syncTreeSources();
+            }
+        }
+
+        function clearAllTrees() {
+            if (treeFeatures.length === 0) return;
+            if (confirm(`Are you sure you want to clear all ${treeFeatures.length} planted trees?`)) {
+                treeFeatures = [];
+                updateUI();
+                syncTreeSources();
+            }
+        }
+
+        function saveTreesDirectly() {
+            const btn = document.getElementById('btn-save-trees');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            const payload = {
+                type: 'FeatureCollection',
+                features: treeFeatures
+            };
+
+            fetch('/api/trees', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) {
+                    btn.textContent = `✅ Saved ${res.count} Trees to trees.json!`;
+                    btn.style.background = '#10b981';
+                    setTimeout(() => {
+                        btn.textContent = '💾 Save Directly to Map (trees.json)';
+                        btn.style.background = '#22c55e';
+                        btn.disabled = false;
+                    }, 3000);
+                } else {
+                    alert('Save failed: ' + (res.error || 'Unknown error'));
+                    btn.textContent = '❌ Error Saving';
+                    btn.disabled = false;
+                }
+            })
+            .catch(err => {
+                alert('Network error saving trees: ' + err.message);
+                btn.textContent = '❌ Error Saving';
+                btn.disabled = false;
+            });
+        }
+
+        function copyTreesGeoJSON() {
+            const geojsonStr = JSON.stringify({
+                type: 'FeatureCollection',
+                features: treeFeatures
+            }, null, 2);
+
+            navigator.clipboard.writeText(geojsonStr).then(() => {
+                alert(`Copied ${treeFeatures.length} trees GeoJSON to clipboard!`);
+            }).catch(e => {
+                prompt('Copy GeoJSON below:', geojsonStr);
+            });
+        }
+    </script>
+</body>
+</html>

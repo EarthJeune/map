@@ -1,51 +1,419 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<title>DA-LARES Building Drawer</title>
+<title>DA-LARES Interactive Building Footprint Drawer</title>
 <meta name="viewport" content="initial-scale=1,maximum-scale=1">
 <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
 <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
 <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.js"></script>
 <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.css" type="text/css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  body { margin: 0; padding: 0; background: #111; color: white; font-family: sans-serif; }
-  #map { position: absolute; top: 0; bottom: 0; width: 100%; }
-  .panel { 
-      position: absolute; top: 15px; left: 15px; z-index: 10; 
-      background: rgba(20,20,20,0.95); padding: 20px; border-radius: 8px; 
-      box-shadow: 0 4px 15px rgba(0,0,0,0.5); border: 1px solid #333;
-      width: 320px;
+  * { box-sizing: border-box; }
+  body { 
+    margin: 0; padding: 0; 
+    background: #0f172a; 
+    color: #e2e8f0; 
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
+    overflow: hidden;
   }
-  h3 { margin-top: 0; color: #4ade80; }
-  p { font-size: 13px; color: #ccc; line-height: 1.4; }
-  textarea { 
-      width: 100%; height: 200px; margin-top: 15px; font-family: monospace; 
-      font-size: 11px; background: #000; color: #4ade80; border: 1px solid #444; 
-      padding: 10px; box-sizing: border-box; border-radius: 4px;
+  #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+
+  /* Floating UI Control Panel */
+  .panel { 
+    position: absolute; top: 16px; left: 16px; z-index: 10; 
+    background: rgba(15, 23, 42, 0.92); 
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 18px 20px; 
+    border-radius: 12px; 
+    box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1); 
+    width: 360px;
+    max-height: calc(100vh - 32px);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .panel::-webkit-scrollbar { width: 6px; }
+  .panel::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+
+  .header-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    width: fit-content;
+  }
+  h3 { 
+    margin: 0 0 4px 0; 
+    font-size: 18px; 
+    font-weight: 700;
+    color: #f8fafc; 
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .subtitle { 
+    font-size: 12px; 
+    color: #94a3b8; 
+    margin-bottom: 14px; 
+    line-height: 1.4;
+  }
+
+  .instructions {
+    background: rgba(30, 41, 59, 0.7);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 10px 12px;
+    font-size: 11.5px;
+    line-height: 1.5;
+    color: #cbd5e1;
+    margin-bottom: 14px;
+  }
+  .instructions ol { margin: 0; padding-left: 18px; }
+  .instructions li { margin-bottom: 4px; }
+  .instructions li:last-child { margin-bottom: 0; }
+  .instructions strong { color: #38bdf8; }
+
+  /* Selection Info Card */
+  .selection-card {
+    background: rgba(30, 41, 59, 0.9);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .selection-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #38bdf8;
+    font-weight: 600;
+  }
+  .selection-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #f1f5f9;
+  }
+  .selection-meta {
+    font-size: 11.5px;
+    color: #94a3b8;
+    display: flex;
+    gap: 12px;
+  }
+
+  /* Control Checkboxes */
+  .toggles {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 14px;
+    font-size: 12px;
+    color: #cbd5e1;
+  }
+  .toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .toggle-label input {
+    cursor: pointer;
+    accent-color: #22c55e;
+    width: 15px;
+    height: 15px;
+  }
+
+  /* Buttons */
+  .btn-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 14px;
   }
   button { 
-      margin-top: 15px; width: 100%; padding: 10px; cursor: pointer; 
-      background: #22c55e; color: white; border: none; border-radius: 6px; 
-      font-weight: bold;
+    width: 100%; 
+    padding: 10px 14px; 
+    cursor: pointer; 
+    font-size: 12.5px;
+    font-weight: 600;
+    border-radius: 8px; 
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
   }
-  button:hover { background: #16a34a; }
+  .btn-save { 
+    background: #22c55e; 
+    color: #052e16; 
+  }
+  .btn-save:hover { background: #16a34a; color: #fff; }
+  .btn-copy { 
+    background: #0284c7; 
+    color: white; 
+  }
+  .btn-copy:hover { background: #0369a1; }
+  .btn-edit {
+    background: #eab308;
+    color: #422006;
+  }
+  .btn-edit:hover { background: #ca8a04; color: #fff; }
+  .btn-secondary {
+    background: #1e293b;
+    color: #cbd5e1;
+    border: 1px solid #334155;
+  }
+  .btn-secondary:hover { background: #334155; color: white; }
+
+  /* Output Codearea */
+  .textarea-container {
+    margin-top: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .textarea-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #64748b;
+  }
+  textarea { 
+    width: 100%; 
+    height: 120px; 
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; 
+    font-size: 10.5px; 
+    background: #020617; 
+    color: #4ade80; 
+    border: 1px solid #1e293b; 
+    padding: 8px; 
+    border-radius: 6px;
+    resize: vertical;
+  }
+  textarea:focus { outline: 1px solid #22c55e; }
+
+  /* Building Properties Modal */
+  .modal-overlay {
+    display: none; 
+    position: fixed; 
+    top: 0; left: 0; 
+    width: 100%; height: 100%; 
+    background: rgba(0, 0, 0, 0.75); 
+    backdrop-filter: blur(4px);
+    z-index: 1000; 
+    align-items: center; 
+    justify-content: center;
+  }
+  .modal-box {
+    background: #1e293b; 
+    padding: 24px; 
+    border-radius: 12px; 
+    border: 1px solid #334155; 
+    width: 380px; 
+    color: #f8fafc;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.7);
+  }
+  .modal-box h3 { margin: 0 0 6px 0; color: #38bdf8; }
+  .modal-box p { font-size: 12px; color: #94a3b8; margin: 0 0 16px 0; }
+  .form-group { margin-bottom: 14px; }
+  .form-group label {
+    display: block;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #cbd5e1;
+    margin-bottom: 6px;
+  }
+  .form-group select, 
+  .form-group input[type="text"],
+  .form-group input[type="number"] {
+    width: 100%;
+    padding: 9px 12px;
+    background: #0f172a;
+    color: white;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+  }
+  .form-group select:focus, 
+  .form-group input:focus {
+    border-color: #38bdf8;
+    outline: none;
+  }
+  .checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    color: #e2e8f0;
+    margin-bottom: 18px;
+    cursor: pointer;
+  }
+  .checkbox-group input { width: 16px; height: 16px; accent-color: #38bdf8; }
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  /* Status Toast */
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    padding: 10px 18px;
+    background: #0f172a;
+    border: 1px solid #22c55e;
+    color: #4ade80;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 500;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    display: none;
+    z-index: 10000;
+    animation: fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 </head>
 <body>
 <div id="map"></div>
+
+<!-- Top-Left Drawer Dashboard -->
 <div class="panel">
-  <h3>🏗️ Building Drawer Tool</h3>
-  <p>1. Use the polygon tool in the top right to trace buildings over the new Google Maps satellite imagery.</p>
-  <p>2. Double-click to finish a shape.</p>
-  <p>3. Click "Generate GeoJSON" when done, and copy the code to replace <code>LARES_BUILDINGS</code> in your <code>index.html</code>.</p>
-  <button onclick="exportData()">Generate GeoJSON</button>
-  <textarea id="output" readonly placeholder="Your GeoJSON code will appear here..."></textarea>
+  <div class="header-badge">DA-LARES Lipa Campus</div>
+  <h3>🏢 Building Drawer</h3>
+  <div class="subtitle">Accurate architectural polygon footprint editor over Google Satellite imagery.</div>
+
+  <div class="instructions">
+    <ol>
+      <li>Click the <strong>Polygon Tool</strong> (top-right) to trace walls.</li>
+      <li>Double-click to finish. Select the <strong>Building</strong> in the popup.</li>
+      <li>Click any building to drag vertices or click <strong>Edit Properties</strong>.</li>
+      <li>Use the <strong>Trash Tool</strong> to delete selected footprint.</li>
+    </ol>
+  </div>
+
+  <!-- Dynamic Selected Feature Info -->
+  <div id="selectionCard" class="selection-card" style="display:none;">
+    <div class="selection-card-header">
+      <span>Active Selection</span>
+      <span id="selectionIdBadge" style="font-family:monospace; font-size:10px;">ID</span>
+    </div>
+    <div id="selectionName" class="selection-name">Building Name</div>
+    <div class="selection-meta">
+      <span id="selectionHeight">Height: 5m</span>
+      <span id="selection3D">3D Model: No</span>
+    </div>
+    <button id="editPropsBtn" class="btn-edit" onclick="openModalForSelected()" style="margin-top:4px; padding:6px 10px;">
+      ✏️ Edit Building Properties
+    </button>
+  </div>
+
+  <!-- Layer Toggles -->
+  <div class="toggles">
+    <label class="toggle-label">
+      <input type="checkbox" id="toggleLabels" checked onchange="toggleLabelsLayer(this.checked)">
+      🏷️ Show Building Labels
+    </label>
+    <label class="toggle-label">
+      <input type="checkbox" id="toggleRoads" checked onchange="toggleRoadsLayer(this.checked)">
+      🛣️ Show Roads & Entrances Reference (roads.json)
+    </label>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="btn-group">
+    <button id="saveDirectBtn" class="btn-save" onclick="saveDirectlyToMap()">
+      💾 Save Directly to Map (buildings.js)
+    </button>
+    <button class="btn-copy" onclick="exportData()">
+      📋 Copy Building GeoJSON to Clipboard
+    </button>
+    <button class="btn-secondary" onclick="reloadFromCodebase()">
+      🔄 Reload from Codebase
+    </button>
+  </div>
+
+  <div class="textarea-container">
+    <div class="textarea-header">
+      <span id="featureCountLabel">Buildings: 0</span>
+      <span>GeoJSON Output</span>
+    </div>
+    <textarea id="output" readonly placeholder="Your GeoJSON code will automatically appear here..."></textarea>
+  </div>
 </div>
-<script>
+
+<!-- Modal for Building Properties Assignment -->
+<div id="buildingModal" class="modal-overlay">
+  <div class="modal-box">
+    <h3 id="modalTitle">Select Building</h3>
+    <p id="modalSubtitle">Choose which campus facility corresponds to this footprint.</p>
+    
+    <div class="form-group">
+      <label for="buildingSelect">Campus Facility / Office</label>
+      <select id="buildingSelect" onchange="onBuildingSelectChange(this.value)">
+        <!-- Populated dynamically from KNOWN_BUILDING_NAMES -->
+      </select>
+    </div>
+
+    <div id="customIdGroup" class="form-group" style="display:none;">
+      <label for="customIdInput">Custom Building ID (lowercase_with_underscores)</label>
+      <input type="text" id="customIdInput" placeholder="e.g. storage_facility">
+    </div>
+
+    <div class="form-group" style="display:flex; gap:12px;">
+      <div style="flex:1;">
+        <label for="buildingHeight">Height (Meters)</label>
+        <input type="number" id="buildingHeight" value="5" min="1" max="50" step="0.5">
+      </div>
+      <div style="flex:1;">
+        <label for="buildingMinHeight">Min Height (Meters)</label>
+        <input type="number" id="buildingMinHeight" value="0" min="0" max="50" step="0.5">
+      </div>
+    </div>
+
+    <label class="checkbox-group">
+      <input type="checkbox" id="buildingHas3D">
+      <span>Has Authentic 3D GLB Model</span>
+    </label>
+
+    <div class="modal-actions">
+      <button onclick="cancelModal()" class="btn-secondary" style="width:auto; padding:8px 16px;">Cancel</button>
+      <button onclick="confirmModal()" class="btn-save" style="width:auto; padding:8px 18px;">Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast notification -->
+<div id="toast">✅ Notification</div>
+
+<script type="module">
+import { KNOWN_BUILDING_NAMES, CUSTOM_3D_BUILDINGS } from './js/data/buildings.js?v=47';
+
 mapboxgl.accessToken = 'pk.eyJ1IjoiZWFydGgwMzA3IiwiYSI6ImNtdWFqNTR5czAxNmEyd29lMm42YjZlMDkifQ.xdPOP5RVPdn6YNka-ZdwoQ';
 
-// Initialize map with Google Satellite style so you can trace accurately
+// Initialize map with Google Satellite style for ground-truth alignment
 const map = new mapboxgl.Map({
     container: 'map',
     style: {
@@ -64,7 +432,7 @@ const map = new mapboxgl.Map({
     zoom: 17.5
 });
 
-// Add drawing plugin
+// Configure Mapbox GL Draw for Polygons
 const draw = new MapboxDraw({
     displayControlsDefault: false,
     controls: {
@@ -74,37 +442,461 @@ const draw = new MapboxDraw({
 });
 map.addControl(draw, 'top-right');
 
-async function exportData() {
-    const data = draw.getAll();
-    const btn = document.querySelector('button');
-    btn.textContent = "Generating...";
-    btn.disabled = true;
+// State trackers
+let pendingFeatureId = null;
+let isEditingExisting = false;
+let selectedFeature = null;
+
+// Populate building dropdown cleanly
+const selectElem = document.getElementById('buildingSelect');
+function populateBuildingDropdown() {
+    selectElem.innerHTML = '';
     
-    // Automatically add height data for 3D extrusion
+    // Sort keys alphabetically by friendly name
+    const sortedIds = Object.keys(KNOWN_BUILDING_NAMES).sort((a, b) => {
+        return KNOWN_BUILDING_NAMES[a].localeCompare(KNOWN_BUILDING_NAMES[b]);
+    });
+
+    sortedIds.forEach(id => {
+        const opt = document.createElement('option');
+        opt.value = id;
+        const has3D = (id in CUSTOM_3D_BUILDINGS);
+        opt.textContent = `${KNOWN_BUILDING_NAMES[id]} (${id})${has3D ? ' [3D Model]' : ''}`;
+        selectElem.appendChild(opt);
+    });
+
+    // Custom option
+    const customOpt = document.createElement('option');
+    customOpt.value = '__custom__';
+    customOpt.textContent = '➕ Enter Custom Building ID...';
+    selectElem.appendChild(customOpt);
+}
+populateBuildingDropdown();
+
+window.onBuildingSelectChange = function(val) {
+    const customGroup = document.getElementById('customIdGroup');
+    if (val === '__custom__') {
+        customGroup.style.display = 'block';
+        document.getElementById('customIdInput').focus();
+    } else {
+        customGroup.style.display = 'none';
+        // Auto-toggle 3D checkbox if known 3D building
+        document.getElementById('buildingHas3D').checked = (val in CUSTOM_3D_BUILDINGS);
+    }
+};
+
+// Calculate centroid of polygon coordinates
+function getPolygonCentroid(coords) {
+    let pts = coords;
+    if (Array.isArray(coords[0][0])) {
+        pts = coords[0];
+    }
+    let lngSum = 0, latSum = 0, count = 0;
+    pts.forEach(p => {
+        lngSum += p[0];
+        latSum += p[1];
+        count++;
+    });
+    return [lngSum / count, latSum / count];
+}
+
+// Show Toast message
+function showToast(msg, duration = 3000) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.style.display = 'block';
+    setTimeout(() => { toast.style.display = 'none'; }, duration);
+}
+
+// Update floating building labels and sync UI
+function updateMapLabels() {
+    const data = draw.getAll();
+    const count = data.features.length;
+    document.getElementById('featureCountLabel').textContent = `Buildings: ${count}`;
+
+    // Update Output Textarea
+    const outputField = document.getElementById('output');
+    outputField.value = JSON.stringify(data, null, 2);
+
+    // Compute Centroid Points for Symbol Labels
+    const labelPoints = {
+        type: 'FeatureCollection',
+        features: []
+    };
+
+    data.features.forEach(f => {
+        if (f.geometry && f.geometry.type === 'Polygon' && f.geometry.coordinates) {
+            const centroid = getPolygonCentroid(f.geometry.coordinates);
+            const bId = f.properties.id || '';
+            const bName = KNOWN_BUILDING_NAMES[bId] || f.properties.name || bId || 'Unnamed Building';
+            const has3D = f.properties.has_3d_model ? ' [3D]' : '';
+
+            labelPoints.features.push({
+                type: 'Feature',
+                geometry: {
+                    type: 'Point',
+                    coordinates: centroid
+                },
+                properties: {
+                    title: `${bName}${has3D}`,
+                    id: bId
+                }
+            });
+        }
+    });
+
+    if (map.getSource('building-labels')) {
+        map.getSource('building-labels').setData(labelPoints);
+    }
+
+    // Save automatically to localStorage
+    localStorage.setItem('building_draw_autosave', JSON.stringify(data));
+}
+
+// Handle Feature Selection
+map.on('draw.selectionchange', function(e) {
+    const card = document.getElementById('selectionCard');
+    if (e.features && e.features.length > 0) {
+        selectedFeature = e.features[0];
+        const bId = selectedFeature.properties.id || 'unassigned';
+        const bName = KNOWN_BUILDING_NAMES[bId] || selectedFeature.properties.name || bId;
+        const bHeight = selectedFeature.properties.height || 5;
+        const b3D = selectedFeature.properties.has_3d_model ? '✅ Yes' : '❌ No';
+
+        document.getElementById('selectionIdBadge').textContent = bId;
+        document.getElementById('selectionName').textContent = bName;
+        document.getElementById('selectionHeight').textContent = `Height: ${bHeight}m`;
+        document.getElementById('selection3D').textContent = `3D Model: ${b3D}`;
+        card.style.display = 'flex';
+    } else {
+        selectedFeature = null;
+        card.style.display = 'none';
+    }
+});
+
+// When user creates a new polygon shape
+map.on('draw.create', function(e) {
+    if (e.features[0].geometry.type === 'Polygon') {
+        pendingFeatureId = e.features[0].id;
+        isEditingExisting = false;
+        openModalForFeature(e.features[0]);
+    }
+    updateMapLabels();
+});
+
+map.on('draw.update', updateMapLabels);
+map.on('draw.delete', function() {
+    document.getElementById('selectionCard').style.display = 'none';
+    selectedFeature = null;
+    updateMapLabels();
+});
+
+// Open modal for a feature
+function openModalForFeature(f) {
+    const modal = document.getElementById('buildingModal');
+    const title = document.getElementById('modalTitle');
+    const subtitle = document.getElementById('modalSubtitle');
+    const select = document.getElementById('buildingSelect');
+    const customGroup = document.getElementById('customIdGroup');
+    const customInput = document.getElementById('customIdInput');
+    const heightInput = document.getElementById('buildingHeight');
+    const minHeightInput = document.getElementById('buildingMinHeight');
+    const has3DInput = document.getElementById('buildingHas3D');
+
+    if (isEditingExisting) {
+        title.textContent = '✏️ Edit Building Properties';
+        subtitle.textContent = 'Modify attributes for this building polygon.';
+    } else {
+        title.textContent = '🏢 New Building Footprint';
+        subtitle.textContent = 'Select which campus facility this drawn footprint represents.';
+    }
+
+    const currentId = f.properties.id || '';
+    if (currentId && currentId in KNOWN_BUILDING_NAMES) {
+        select.value = currentId;
+        customGroup.style.display = 'none';
+    } else if (currentId) {
+        select.value = '__custom__';
+        customGroup.style.display = 'block';
+        customInput.value = currentId;
+    } else {
+        select.value = 'admin_building';
+        customGroup.style.display = 'none';
+    }
+
+    heightInput.value = f.properties.height !== undefined ? f.properties.height : 5;
+    minHeightInput.value = f.properties.min_height !== undefined ? f.properties.min_height : 0;
+    has3DInput.checked = f.properties.has_3d_model || (currentId in CUSTOM_3D_BUILDINGS);
+
+    modal.style.display = 'flex';
+}
+
+window.openModalForSelected = function() {
+    if (selectedFeature) {
+        pendingFeatureId = selectedFeature.id;
+        isEditingExisting = true;
+        openModalForFeature(selectedFeature);
+    }
+};
+
+window.confirmModal = function() {
+    const select = document.getElementById('buildingSelect');
+    let buildingId = select.value;
+    if (buildingId === '__custom__') {
+        const customVal = document.getElementById('customIdInput').value.trim();
+        buildingId = customVal.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+    }
+
+    if (!buildingId) {
+        alert('Please select or specify a Building ID.');
+        return;
+    }
+
+    const height = parseFloat(document.getElementById('buildingHeight').value) || 5;
+    const minHeight = parseFloat(document.getElementById('buildingMinHeight').value) || 0;
+    const has3D = document.getElementById('buildingHas3D').checked;
+
+    if (pendingFeatureId) {
+        draw.setFeatureProperty(pendingFeatureId, 'id', buildingId);
+        draw.setFeatureProperty(pendingFeatureId, 'height', height);
+        draw.setFeatureProperty(pendingFeatureId, 'min_height', minHeight);
+        draw.setFeatureProperty(pendingFeatureId, 'has_3d_model', has3D);
+
+        // Update selectedFeature if it's the one modified
+        if (selectedFeature && selectedFeature.id === pendingFeatureId) {
+            selectedFeature.properties.id = buildingId;
+            selectedFeature.properties.height = height;
+            selectedFeature.properties.min_height = minHeight;
+            selectedFeature.properties.has_3d_model = has3D;
+
+            document.getElementById('selectionIdBadge').textContent = buildingId;
+            document.getElementById('selectionName').textContent = KNOWN_BUILDING_NAMES[buildingId] || buildingId;
+            document.getElementById('selectionHeight').textContent = `Height: ${height}m`;
+            document.getElementById('selection3D').textContent = `3D Model: ${has3D ? '✅ Yes' : '❌ No'}`;
+        }
+
+        pendingFeatureId = null;
+    }
+
+    document.getElementById('buildingModal').style.display = 'none';
+    updateMapLabels();
+    showToast(`Saved properties for ${KNOWN_BUILDING_NAMES[buildingId] || buildingId}!`);
+};
+
+window.cancelModal = function() {
+    if (!isEditingExisting && pendingFeatureId) {
+        // If it was a newly drawn polygon and user cancelled, discard it
+        draw.delete(pendingFeatureId);
+        pendingFeatureId = null;
+    }
+    document.getElementById('buildingModal').style.display = 'none';
+    updateMapLabels();
+};
+
+// Map Layer Toggles
+window.toggleLabelsLayer = function(visible) {
+    if (map.getLayer('building-labels-layer')) {
+        map.setLayoutProperty('building-labels-layer', 'visibility', visible ? 'visible' : 'none');
+    }
+};
+
+window.toggleRoadsLayer = function(visible) {
+    const val = visible ? 'visible' : 'none';
+    if (map.getLayer('ref-roads-layer')) map.setLayoutProperty('ref-roads-layer', 'visibility', val);
+    if (map.getLayer('ref-entrances-circle')) map.setLayoutProperty('ref-entrances-circle', 'visibility', val);
+    if (map.getLayer('ref-entrances-label')) map.setLayoutProperty('ref-entrances-label', 'visibility', val);
+};
+
+// Direct Save to Backend (updates js/data/buildings.js & buildings.json)
+window.saveDirectlyToMap = function() {
+    const data = draw.getAll();
+    const btn = document.getElementById('saveDirectBtn');
+    btn.textContent = "Saving to buildings.js...";
+    btn.disabled = true;
+
+    // Validate features
+    let unassignedCounter = 1;
     for (const f of data.features) {
         if (!f.properties.id) {
-            try {
-                const res = await fetch('/api/next-drawing-id');
-                const json = await res.json();
-                f.properties.id = "custom_" + json.id;
-            } catch (err) {
-                console.error("Failed to fetch drawing ID:", err);
-                f.properties.id = "custom_" + Date.now(); // Fallback if server is down
-            }
+            f.properties.id = `building_${unassignedCounter++}`;
         }
-        f.properties.height = 5;       // 5 meters tall
-        f.properties.min_height = 0;   // Starts from ground
+        if (f.properties.height === undefined) f.properties.height = 5;
+        if (f.properties.min_height === undefined) f.properties.min_height = 0;
+        const b3d = ['mis_rafis_building', 'tanco_hall_building', 'argosino_hall', 'canteen', 'raed_building', 'guard_house', 'amad_building', 'pgrc_building', 'prdp_building', 'ored_building', 'admin_building', 'lares_building', 'laboratory_building', 'f2c2_building', 'ild_building', 'seaguard_building', 'corn/casava_building', 'rsbsa_building', 'tissue_culture_building', 'rcpc_building', 'motorpool_barracks'];
+        if (b3d.includes(f.properties.id)) {
+            f.properties.has_3d_model = true;
+        }
     }
-    
+
+    fetch('/api/buildings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res.success) {
+            btn.textContent = `✅ Saved ${res.count} buildings to buildings.js!`;
+            btn.style.background = "#10b981";
+            showToast(`✅ Successfully saved ${res.count} building footprints!`);
+            setTimeout(() => {
+                btn.textContent = "💾 Save Directly to Map (buildings.js)";
+                btn.style.background = "#22c55e";
+                btn.disabled = false;
+            }, 3000);
+        } else {
+            alert('Failed to save: ' + (res.error || 'Unknown error'));
+            btn.textContent = "❌ Error Saving";
+            btn.disabled = false;
+        }
+    })
+    .catch(err => {
+        alert('Network error saving buildings: ' + err.message);
+        btn.textContent = "❌ Error Saving";
+        btn.disabled = false;
+    });
+};
+
+// Copy GeoJSON to clipboard
+window.exportData = function() {
+    const data = draw.getAll();
     const outputField = document.getElementById('output');
-    outputField.value = JSON.stringify(data);
+    outputField.value = JSON.stringify(data, null, 2);
     outputField.select();
     document.execCommand('copy');
-    
-    btn.textContent = "Generate GeoJSON";
-    btn.disabled = false;
-    alert("GeoJSON generated and copied to clipboard!");
+    showToast('📋 GeoJSON copied to clipboard!');
+};
+
+// Reload from codebase
+window.reloadFromCodebase = function() {
+    if (confirm('Discard any unsaved local edits and reload the original building footprints from the codebase?')) {
+        localStorage.removeItem('building_draw_autosave');
+        draw.deleteAll();
+        loadBuildingsFromBackend();
+    }
+};
+
+// Fetch buildings from backend and load into Draw canvas
+function loadBuildingsFromBackend() {
+    fetch('/api/buildings')
+        .then(res => res.json())
+        .then(data => {
+            if (data && data.features && data.features.length > 0) {
+                draw.add(data);
+                updateMapLabels();
+                showToast(`Loaded ${data.features.length} buildings from codebase.`);
+            }
+        })
+        .catch(err => {
+            console.error('Failed to load buildings from API:', err);
+            showToast('⚠️ Could not fetch buildings from API.');
+        });
 }
+
+// Setup layers upon map load
+map.on('load', () => {
+    // 1. Reference Roads & Entrances Layer from roads.json
+    fetch('roads.json')
+        .then(res => res.json())
+        .then(roadsData => {
+            map.addSource('roads-reference', {
+                type: 'geojson',
+                data: roadsData
+            });
+
+            // Road Lines
+            map.addLayer({
+                id: 'ref-roads-layer',
+                type: 'line',
+                source: 'roads-reference',
+                filter: ['==', '$type', 'LineString'],
+                paint: {
+                    'line-color': '#38bdf8',
+                    'line-width': 2.5,
+                    'line-opacity': 0.65,
+                    'line-dasharray': [2, 2]
+                }
+            });
+
+            // Entrance Circles
+            map.addLayer({
+                id: 'ref-entrances-circle',
+                type: 'circle',
+                source: 'roads-reference',
+                filter: ['==', '$type', 'Point'],
+                paint: {
+                    'circle-radius': 4.5,
+                    'circle-color': '#f59e0b',
+                    'circle-stroke-width': 1.5,
+                    'circle-stroke-color': '#ffffff'
+                }
+            });
+
+            // Entrance Labels
+            map.addLayer({
+                id: 'ref-entrances-label',
+                type: 'symbol',
+                source: 'roads-reference',
+                filter: ['==', '$type', 'Point'],
+                layout: {
+                    'text-field': ['get', 'name'],
+                    'text-size': 9.5,
+                    'text-offset': [0, 1.2],
+                    'text-justify': 'center'
+                },
+                paint: {
+                    'text-color': '#fbbf24',
+                    'text-halo-color': '#000000',
+                    'text-halo-width': 1.5
+                }
+            });
+        })
+        .catch(err => console.log('Could not load roads.json reference layer:', err));
+
+    // 2. Dynamic Floating Building Labels Layer
+    map.addSource('building-labels', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
+    });
+
+    map.addLayer({
+        'id': 'building-labels-layer',
+        'type': 'symbol',
+        'source': 'building-labels',
+        'layout': {
+            'text-field': ['get', 'title'],
+            'text-size': 11.5,
+            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+            'text-variable-anchor': ['center', 'top', 'bottom'],
+            'text-justify': 'center',
+            'text-allow-overlap': true
+        },
+        'paint': {
+            'text-color': '#ffffff',
+            'text-halo-color': '#0f172a',
+            'text-halo-width': 2.5
+        }
+    });
+
+    // 3. Load Data: Try LocalStorage Autosave first, fallback to /api/buildings
+    const autosave = localStorage.getItem('building_draw_autosave');
+    if (autosave) {
+        try {
+            const data = JSON.parse(autosave);
+            if (data && data.features && data.features.length > 0) {
+                draw.add(data);
+                updateMapLabels();
+                showToast(`Restored ${data.features.length} buildings from autosave.`);
+                return;
+            }
+        } catch (e) {
+            console.error('Failed to parse autosave data:', e);
+        }
+    }
+
+    // Fallback: load fresh from backend
+    loadBuildingsFromBackend();
+});
 </script>
 </body>
 </html>

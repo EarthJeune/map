@@ -63,23 +63,7 @@ export const BUILDING_OFFICES = {
         'FMR',
         'MIS Data Center',
         'BAC Extension Office'
-    ],
-    'mis_rafis_building': [
-        'Management Information Systems (MIS)',
-        'Regional Agriculture and Fisheries Information Section (RAFIS)'
-    ],
-    'mis_building': [
-        'Management Information Systems (MIS)',
-        'Regional Agriculture and Fisheries Information Section (RAFIS)'
-    ],
-    'rafis_building': [
-        'Management Information Systems (MIS)',
-        'Regional Agriculture and Fisheries Information Section (RAFIS)'
-    ],
-    'rnd_building': {
-        status: 'pending',
-        message: 'Offices information pending update'
-    }
+    ]
 };
 
 /**
@@ -104,6 +88,28 @@ export function getFlatBuildingOffices(buildingId) {
 }
 
 /**
+ * Determines if an office name matches the target or search query
+ */
+export function isOfficeMatched(officeName, targetOrQuery) {
+    if (!officeName || !targetOrQuery) return false;
+    const normOffice = String(officeName).trim().toLowerCase();
+    const normQuery = String(targetOrQuery).trim().toLowerCase();
+    if (!normQuery) return false;
+
+    // 1. Exact match (case-insensitive)
+    if (normOffice === normQuery) return true;
+
+    // 2. Query is at least 2 characters and is contained in office name
+    if (normQuery.length >= 2 && normOffice.includes(normQuery)) return true;
+
+    // 3. Word starts with query (e.g. acronyms or words)
+    const words = normOffice.split(/[\s/,\-_()]+/);
+    if (words.some(w => w.startsWith(normQuery))) return true;
+
+    return false;
+}
+
+/**
  * Checks if a building has any registered offices
  */
 export function hasBuildingOffices(buildingId) {
@@ -117,7 +123,7 @@ export function hasBuildingOffices(buildingId) {
 /**
  * Generates semantic HTML for office listing in Kiosk and Mobile drawers
  */
-export function renderBuildingOfficesHTML(buildingId) {
+export function renderBuildingOfficesHTML(buildingId, highlightQuery = '') {
     const data = BUILDING_OFFICES[buildingId];
     if (!data) return '';
 
@@ -138,6 +144,18 @@ export function renderBuildingOfficesHTML(buildingId) {
 
     if (!Array.isArray(data) || data.length === 0) return '';
 
+    // Determine effective search query if not explicitly passed
+    let activeQuery = (highlightQuery || '').trim();
+    if (!activeQuery && typeof document !== 'undefined') {
+        const inputVal = (document.getElementById('search-input')?.value || document.getElementById('phone-search-input')?.value || '').trim();
+        if (inputVal) {
+            const flat = getFlatBuildingOffices(buildingId);
+            if (flat.some(off => isOfficeMatched(off, inputVal))) {
+                activeQuery = inputVal;
+            }
+        }
+    }
+
     let contentHTML = '';
 
     // Check if offices are partitioned by floors
@@ -153,7 +171,10 @@ export function renderBuildingOfficesHTML(buildingId) {
                             <span class="bldg-floor-count">${group.offices.length} offices</span>
                         </div>
                         <div class="bldg-offices-pills">
-                            ${group.offices.map(off => `<div class="office-pill"><span class="op-dot"></span><span class="op-name">${off}</span></div>`).join('')}
+                            ${group.offices.map(off => {
+                                const isMatched = activeQuery && isOfficeMatched(off, activeQuery);
+                                return `<div class="office-pill ${isMatched ? 'highlighted' : ''}"><span class="op-dot"></span><span class="op-name">${off}</span></div>`;
+                            }).join('')}
                         </div>
                     </div>
                 `;
@@ -162,7 +183,10 @@ export function renderBuildingOfficesHTML(buildingId) {
     } else {
         contentHTML = `
             <div class="bldg-offices-pills">
-                ${data.map(off => `<div class="office-pill"><span class="op-dot"></span><span class="op-name">${off}</span></div>`).join('')}
+                ${data.map(off => {
+                    const isMatched = activeQuery && isOfficeMatched(off, activeQuery);
+                    return `<div class="office-pill ${isMatched ? 'highlighted' : ''}"><span class="op-dot"></span><span class="op-name">${off}</span></div>`;
+                }).join('')}
             </div>
         `;
     }

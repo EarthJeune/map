@@ -23,3 +23,24 @@ read_*.js
 Thumbs.db
 *.log
 
+# === Documentation & Reports ===
+docs/
+
+# === Scratch & Verification Renders ===
+renders/
+archive/
+scratch/
+
+# === Python Cache & Blender Files ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.blend
+*.blend1
+
+# === Raw Field Source Photos (500MB+; web drawer images are optimized in images/) ===
+Building Images/
+
+# === Temporary Render Outputs & Media Storage ===
+.tempmediaStorage/
+temp/

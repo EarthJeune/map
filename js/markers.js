@@ -1,35 +1,12 @@
 // DA-LARES Markers Module
 // Google Maps-style numbered pins, section badges, and compound entrance arrow.
 
-import { BUILDING_DIRECTORY } from './data/buildings.js';
+import { BUILDING_DIRECTORY } from './data/buildings.js?v=60';
 import { state } from './data/state.js';
 
 export function renderSectionBadges() {
     removeSectionBadges();
-    if (state.currentMapStyleMode !== 'mapbox') return;
-    const boundaryBtn = document.getElementById('chip-boundary');
-    const isBoundaryOn = (state.boundaryVisible !== undefined)
-        ? state.boundaryVisible
-        : (boundaryBtn ? boundaryBtn.classList.contains('active') : true);
-
-    const secDefs = [
-        { id: 1, coords: [121.17110, 13.96060], dotClass: 'sec-dot-blue' },
-        { id: 2, coords: [121.16940, 13.95980], dotClass: 'sec-dot-orange' },
-        { id: 3, coords: [121.16680, 13.95895], dotClass: 'sec-dot-green' }
-    ];
-    secDefs.forEach(s => {
-        const el = document.createElement('div');
-        el.className = 'sec-custom-badge';
-        if (!isBoundaryOn) el.style.display = 'none';
-        el.innerHTML = `
-            <span class="sec-badge-circle ${s.dotClass}"></span>
-            <span class="sec-text-part">Section ${s.id}</span>
-        `;
-        const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
-            .setLngLat(s.coords)
-            .addTo(state.map);
-        state.sectionBadges.push(marker);
-    });
+    // Section 1-3 badges permanently removed per unified single compound boundary
 }
 
 export function removeSectionBadges() {
@@ -57,13 +34,19 @@ export function createEntranceArrowMarker() {
         .addTo(state.map);
 }
 
+let lastZoomedOutState = null;
+
 export function updateMarkerZoomState() {
     if (!state.map) return;
     const z = state.map.getZoom();
-    const container = state.map.getContainer();
-    if (!container) return;
     const isZoomedOut = z < 17.8;
-    container.classList.toggle('map-zoomed-out', isZoomedOut);
+    if (isZoomedOut === lastZoomedOutState) return;
+    lastZoomedOutState = isZoomedOut;
+
+    const container = state.map.getContainer();
+    if (container) {
+        container.classList.toggle('map-zoomed-out', isZoomedOut);
+    }
     if (document.body) {
         document.body.classList.toggle('map-zoomed-out', isZoomedOut);
     }
@@ -75,7 +58,11 @@ export function createMarkers() {
         ? state.markersVisible
         : (numbersBtn ? numbersBtn.classList.contains('active') : true);
 
-    BUILDING_DIRECTORY.forEach((b, index) => {
+    const dirList = (typeof window !== 'undefined' && window.BUILDING_DIRECTORY && window.BUILDING_DIRECTORY.length > 0)
+        ? window.BUILDING_DIRECTORY
+        : BUILDING_DIRECTORY;
+
+    dirList.forEach((b, index) => {
         const num = index + 1;
         const el = document.createElement('div');
         el.className = 'bldg-map-marker';
@@ -83,8 +70,9 @@ export function createMarkers() {
         if (!areMarkersVisible) {
             el.style.display = 'none';
         }
+        const bColor = b.color || (state.savedBuildingColors && state.savedBuildingColors[b.id] && state.savedBuildingColors[b.id].icon) || '#3b82f6';
         el.innerHTML = `
-            <div class="bldg-map-badge" style="background:${b.color};">${num}</div>
+            <div class="bldg-map-badge" style="background:${bColor};">${num}</div>
             <span class="bldg-map-name">${b.name}</span>
         `;
         let markerTouchStartX = 0;

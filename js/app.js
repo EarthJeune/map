@@ -2,7 +2,7 @@
 // Native ES Module Application Shell
 
 import { MAPBOX_ACCESS_TOKEN, DEFAULT_MAP_VIEW } from './data/config.js';
-import { BUILDING_DIRECTORY } from './data/buildings.js';
+import { BUILDING_DIRECTORY } from './data/buildings.js?v=60';
 import { state } from './data/state.js';
 import { createMarkers, removeMarkers } from './markers.js';
 import { 
@@ -11,12 +11,17 @@ import {
     syncLightingWithTime, 
     getRoofColorCaseStyle,
     toggleBuildings,
-    toggleTrees,
     toggleMapboxView,
+    toggleMapLayerMenu,
+    openMapLayerModal,
+    closeMapLayerModal,
+    closeMapLayerFlyout,
+    selectMapStyle,
     toggleBoundary,
     toggleTerrain,
     toggleMarkers,
-    flyToView
+    flyToView,
+    stopIntroAnimation
 } from './map-setup.js';
 
 import { 
@@ -24,6 +29,7 @@ import {
     filterDirectory, 
     toggleSidebarMenu, 
     collapseSidebarMenu, 
+    updateSidebarToggleIcon,
     toggleSettingChip 
 } from './sidebar.js';
 
@@ -31,6 +37,7 @@ import {
     navigateTo, 
     setRouteSpeed, 
     setRouteCameraMode, 
+    resetCameraModeToDefault,
     exitRouteMode, 
     initWalkerCameraListeners 
 } from './walker.js';
@@ -102,6 +109,17 @@ import {
     updateBuildingQR 
 } from './qr.js';
 
+import { 
+    initOrbitControl, 
+    toggleOneFingerOrbitMode 
+} from './orbit-control.js';
+
+import { 
+    ensureOcclusionLayers, 
+    updateOcclusion, 
+    resetOcclusion 
+} from './occlusion.js';
+
 mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
 
 // Global references for pathfinding & entrance points
@@ -151,11 +169,19 @@ fetch('/api/colors')
         state.savedBuildingColors = data || {};
         window.savedBuildingColors = state.savedBuildingColors;
 
-        BUILDING_DIRECTORY.forEach(b => {
-            if (state.savedBuildingColors[b.id] && state.savedBuildingColors[b.id].icon) {
-                b.color = state.savedBuildingColors[b.id].icon;
+        const updateList = (list) => {
+            if (Array.isArray(list)) {
+                list.forEach(b => {
+                    if (state.savedBuildingColors[b.id] && state.savedBuildingColors[b.id].icon) {
+                        b.color = state.savedBuildingColors[b.id].icon;
+                    }
+                });
             }
-        });
+        };
+        updateList(BUILDING_DIRECTORY);
+        if (typeof window !== 'undefined' && window.BUILDING_DIRECTORY) {
+            updateList(window.BUILDING_DIRECTORY);
+        }
 
         removeMarkers();
         createMarkers();
@@ -192,13 +218,52 @@ fetch('/api/pin')
     .catch(err => console.error("Could not fetch pin location", err));
 
 // Initial Map load sequence
+function initViewportTelemetry() {
+    const coordsEl = document.getElementById('coords-text');
+    const zoomEl = document.getElementById('zoom-text');
+    const fpsEl = document.getElementById('fps-badge');
+    if (!map) return;
+
+    let lastPosUpdate = 0;
+    const updateCoords = () => {
+        const now = (typeof performance !== 'undefined') ? performance.now() : Date.now();
+        if (now - lastPosUpdate < 150) return;
+        lastPosUpdate = now;
+        const center = map.getCenter();
+        const zoom = map.getZoom();
+        if (coordsEl) coordsEl.textContent = `${center.lat.toFixed(4)}° N, ${center.lng.toFixed(4)}° E`;
+        if (zoomEl) zoomEl.textContent = `Zoom ${zoom.toFixed(1)}`;
+    };
+    map.on('move', updateCoords);
+    updateCoords();
+
+    let frameCount = 0;
+    let lastFpsCalc = (typeof performance !== 'undefined') ? performance.now() : Date.now();
+    function fpsLoop(now) {
+        frameCount++;
+        if (now - lastFpsCalc >= 500) {
+            const fps = Math.round((frameCount * 1000) / (now - lastFpsCalc));
+            frameCount = 0;
+            lastFpsCalc = now;
+            if (fpsEl) {
+                fpsEl.textContent = `${fps} FPS`;
+                fpsEl.style.color = fps >= 45 ? '#22c55e' : (fps >= 28 ? '#eab308' : '#ef4444');
+            }
+        }
+        requestAnimationFrame(fpsLoop);
+    }
+    requestAnimationFrame(fpsLoop);
+}
+
 map.on('load', () => {
     setTimeout(() => {
         revealMap();
+        ensureOcclusionLayers();
         createKioskMarker();
         buildDirectory();
         resetIdle();
         syncLightingWithTime();
+        initViewportTelemetry();
     }, 300);
 });
 
@@ -221,11 +286,14 @@ export function handleUrlParameters() {
         const interval = setInterval(() => {
             if (state.mapReady && typeof BUILDING_DIRECTORY !== 'undefined' && BUILDING_DIRECTORY.length > 0 && window.roadGraph && window.roadGraph.size > 0) {
                 clearInterval(interval);
-                const bldg = BUILDING_DIRECTORY.find(b => b.id.toLowerCase() === destParam.toLowerCase());
+                const bldg = BUILDING_DIRECTORY.find(b => 
+                    b.id.toLowerCase() === destParam.toLowerCase() ||
+                    b.id.toLowerCase().includes(destParam.toLowerCase()) ||
+                    (!isNaN(destParam) && BUILDING_DIRECTORY[parseInt(destParam, 10) - 1]?.id === b.id)
+                );
                 if (bldg) {
                     if (isPhoneMode()) {
-                        state.isIntroAnimating = false;
-                        map.stop();
+                        stopIntroAnimation();
                         state.selectedBuildingId = bldg.id;
                         showPhoneBuildingDetails(bldg.id);
                         try {
@@ -237,7 +305,7 @@ export function handleUrlParameters() {
                     }
                 }
             }
-        }, 250);
+        }, 150);
     }
 
     // On phone mode: Show Welcome / Onboarding modal if not seen in session
@@ -248,11 +316,13 @@ export function handleUrlParameters() {
 
 // Initialize mode, gesture, and event listeners
 applyAppModeToDOM();
+updateSidebarToggleIcon();
 window.addEventListener('resize', applyAppModeToDOM);
 initPhoneSheetGestures();
 initIdleListeners();
 initGPSMapListeners();
 initWalkerCameraListeners();
+initOrbitControl();
 handleUrlParameters();
 
 // ============================================================
@@ -280,6 +350,7 @@ window.replayFromArrivalPopup = replayFromArrivalPopup;
 window.replayPhoneRoute = replayPhoneRoute;
 window.replayRoute = replayRoute;
 window.resetIdle = resetIdle;
+window.resetCameraModeToDefault = resetCameraModeToDefault;
 window.saveColorPicker = saveColorPicker;
 window.setRouteCameraMode = setRouteCameraMode;
 window.setRouteSpeed = setRouteSpeed;
@@ -291,13 +362,23 @@ window.startPhoneLiveGPS = startPhoneLiveGPS;
 window.toggleBoundary = toggleBoundary;
 window.toggleBuildings = toggleBuildings;
 window.toggleMapboxView = toggleMapboxView;
+window.toggleMapLayerMenu = toggleMapLayerMenu;
+window.openMapLayerModal = openMapLayerModal;
+window.closeMapLayerModal = closeMapLayerModal;
+window.closeMapLayerFlyout = closeMapLayerFlyout;
+window.selectMapStyle = selectMapStyle;
 window.toggleMarkers = toggleMarkers;
 window.togglePhoneRouteSheet = togglePhoneRouteSheet;
 window.toggleSettingChip = toggleSettingChip;
 window.toggleSidebarMenu = toggleSidebarMenu;
+window.updateSidebarToggleIcon = updateSidebarToggleIcon;
 window.toggleTerrain = toggleTerrain;
 window.toggleTrees = toggleTrees;
+window.toggleOneFingerOrbitMode = toggleOneFingerOrbitMode;
 window.useEyeDropper = useEyeDropper;
+window.ensureOcclusionLayers = ensureOcclusionLayers;
+window.updateOcclusion = updateOcclusion;
+window.resetOcclusion = resetOcclusion;
 
 // Sync Admin Mode state to DOM
 if (typeof document !== 'undefined') {

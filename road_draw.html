@@ -84,6 +84,8 @@
             <option value="guard_house">Guard House</option>
             <option value="ored_building">Ored Building</option>
             <option value="argosino_hall">Argosino Hall</option>
+            <option value="multi_purpose_administrative_building">Multi-Purpose Administrative Building</option>
+            <option value="mushroom_laboratory">Mushroom Laboratory</option>
             <option value="exit_guard_house_1">Exit Guard House 1</option>
             <option value="exit_guard_house_2">Exit Guard House 2</option>
         </select>
@@ -124,6 +126,26 @@ const draw = new MapboxDraw({
     }
 });
 map.addControl(draw, 'top-right');
+
+// Dynamically populate building dropdown from buildings.json if any extra buildings exist
+fetch('buildings.json')
+    .then(r => r.json())
+    .then(data => {
+        if (!data || !data.features) return;
+        const select = document.getElementById('buildingSelect');
+        const existing = new Set(Array.from(select.options).map(o => o.value));
+        data.features.forEach(f => {
+            const bId = f.properties && f.properties.id;
+            if (bId && !existing.has(bId)) {
+                const opt = document.createElement('option');
+                opt.value = bId;
+                opt.textContent = bId.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                select.appendChild(opt);
+                existing.add(bId);
+            }
+        });
+    })
+    .catch(err => console.log('Notice: Could not load buildings.json for dynamic options', err));
 
 let pendingEntranceId = null;
 
