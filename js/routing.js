@@ -1,7 +1,7 @@
 // DA-LARES Routing & Graph Pathfinding Module
 // A* / Dijkstra shortest path, road network graph, route drawing, and smoothing.
 
-import { BUILDING_DIRECTORY, BUILDING_ENTRANCES } from './data/buildings.js?v=60';
+import { BUILDING_DIRECTORY, BUILDING_ENTRANCES } from './data/buildings.js?v=72';
 import { SAVED_MAIN_KIOSK_COORDS } from './data/config.js';
 import { state } from './data/state.js';
 import { map } from './map-setup.js';
@@ -13,6 +13,7 @@ import {
     setRouteSpeed,
     setRouteCameraMode,
     resetCameraModeToDefault,
+    updateCameraControlsUI,
     resetCameraControlsTimer
 } from './walker.js';
 import { closeBuildingPanel } from './building-panel.js';
@@ -25,8 +26,8 @@ import {
 import { updatePhoneRouteUI, updatePhoneLiveNavUI } from './phone-nav.js';
 import { stopPhoneLiveGPS } from './gps.js';
 import { stopOrbit } from './idle.js';
-import { updateRouteQR } from './qr.js';
-import { updateOcclusion, resetOcclusion } from './occlusion.js';
+import { updateRouteQR, closeQRZoomModal } from './qr.js';
+import { updateOcclusion, resetOcclusion } from './occlusion.js?v=81';
 
 function safeClearArrivedCountdown() {
     if (typeof clearArrivedCountdown === 'function') clearArrivedCountdown();
@@ -62,6 +63,7 @@ function launchWalkerLoop(coords, walkerEl, totalDistance, routeLine) {
     let currentDistance = 0;
     const baseSpeedMps = 6.0;
     let lastTimestamp = null;
+    let lastSliceDistance = 0;
 
     function animateWalking(timestamp) {
         if (!lastTimestamp) lastTimestamp = timestamp;
@@ -118,8 +120,12 @@ function launchWalkerLoop(coords, walkerEl, totalDistance, routeLine) {
 
         try {
             if (currentDistance > 0.05 && map.getSource('route-source')) {
-                const slicedLine = turf.lineSliceAlong(routeLine, 0, currentDistance, { units: 'meters' });
-                map.getSource('route-source').setData(slicedLine);
+                // Throttle line slice buffer re-upload to avoid GPU bus saturation on low-end Intel HD Graphics
+                if (!lastSliceDistance || (currentDistance - lastSliceDistance >= 0.45) || (totalDistance - currentDistance < 0.2)) {
+                    lastSliceDistance = currentDistance;
+                    const slicedLine = turf.lineSliceAlong(routeLine, 0, currentDistance, { units: 'meters' });
+                    map.getSource('route-source').setData(slicedLine);
+                }
             }
         } catch (err) {
             console.warn('Line slice notice:', err);
@@ -157,9 +163,18 @@ function launchWalkerLoop(coords, walkerEl, totalDistance, routeLine) {
         }
 
         // Smart 3D building occlusion: fade buildings blocking sightline to frosted glass
-        updateOcclusion(currentCoord, state.selectedBuildingId);
+        try {
+            updateOcclusion(currentCoord, state.activeRoute || state.selectedBuildingId);
+        } catch (occErr) {
+            console.warn('[Occlusion non-fatal]:', occErr);
+        }
 
-        updateLiveNavigation(currentDistance, totalDistance);
+        try {
+            updateLiveNavigation(currentDistance, totalDistance);
+        } catch (navErr) {
+            console.warn('[Nav update non-fatal]:', navErr);
+        }
+
         state.walkAnimFrame = requestAnimationFrame(animateWalking);
     }
 
@@ -273,11 +288,16 @@ export function drawRoute(coords, options = {}) {
     } else {
         resetCameraModeToDefault();
         setRouteCameraMode('follow', true);
-        // Show bottom floating camera controls on kiosk
+        // Show bottom floating camera controls and speed controls on kiosk
         const fcc = document.getElementById('floating-camera-controls');
+        const fsc = document.getElementById('floating-speed-controls');
         if (fcc) {
             fcc.classList.add('active');
             fcc.classList.remove('dimmed');
+        }
+        if (fsc) {
+            fsc.classList.add('active');
+            fsc.classList.remove('dimmed');
         }
         resetCameraControlsTimer();
         // Give active route 100% of the sidebar space
@@ -398,53 +418,181 @@ export function drawRoute(coords, options = {}) {
             <span class="speed-lines">⚡</span>
             <div class="clay-svg-wrap">
                 <svg class="clay-svg" viewBox="0 0 60 76">
-                    <!-- Contact Shadow under feet -->
+                    <defs>
+                        <!-- Rice straw linear gradient for Salakot cone -->
+                        <linearGradient id="salakotGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#fef08a" />
+                            <stop offset="35%" stop-color="#fde047" />
+                            <stop offset="70%" stop-color="#eab308" />
+                            <stop offset="100%" stop-color="#ca8a04" />
+                        </linearGradient>
+                        <!-- Salakot underside deep shadow -->
+                        <linearGradient id="salakotUnder" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#92400e" />
+                            <stop offset="100%" stop-color="#451a03" />
+                        </linearGradient>
+                        <!-- Denim overalls gradient -->
+                        <linearGradient id="denimGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#3b82f6" />
+                            <stop offset="55%" stop-color="#1d4ed8" />
+                            <stop offset="100%" stop-color="#1e3a8a" />
+                        </linearGradient>
+                        <!-- Yellow Farmer Rubber Gumboots -->
+                        <linearGradient id="bootGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#fde047" />
+                            <stop offset="60%" stop-color="#eab308" />
+                            <stop offset="100%" stop-color="#a16207" />
+                        </linearGradient>
+                    </defs>
+
+                    <!-- Contact Shadow under feet (pivot 30, 72) -->
                     <ellipse class="clay-shadow" cx="30" cy="72" rx="16" ry="4.5" fill="#000" />
                     
-                    <!-- BACK ARM (thick, rounded clay) -->
+                    <!-- BACK ARM (pivot 30, 29) -->
                     <g class="clay-limb-back-arm">
+                        <!-- Upper sleeve (DA Green) -->
                         <path d="M 30 29 C 24 37, 20 44, 20 48" stroke="#15803d" stroke-width="8" stroke-linecap="round" fill="none" />
-                        <circle cx="20" cy="48" r="4.5" fill="#f8fafc" />
+                        <!-- Rolled sleeve cuff -->
+                        <circle cx="21" cy="46" r="4.5" fill="#166534" />
+                        <!-- Forearm & Hand in friendly warm clay skin tone -->
+                        <circle cx="19.5" cy="49" r="4.2" fill="#fde68a" />
+                        <circle cx="21.5" cy="48" r="1.8" fill="#fcd34d" />
                     </g>
 
-                    <!-- BACK LEG (thick chunky clay) -->
+                    <!-- BACK LEG (pivot 30, 48) -->
                     <g class="clay-limb-back-leg">
-                        <path d="M 30 48 C 26 56, 24 64, 24 70" stroke="#0f172a" stroke-width="9" stroke-linecap="round" fill="none" />
-                        <path d="M 20 71 C 20 67, 30 67, 30 71 Z" fill="#ef4444" />
-                        <rect x="18" y="70.5" width="13" height="3" rx="1.5" fill="#f8fafc" />
+                        <!-- Dark Denim Trousers -->
+                        <path d="M 30 48 C 26 56, 24 64, 24 68" stroke="#1e3a8a" stroke-width="9" stroke-linecap="round" fill="none" />
+                        <!-- Rolled pant cuff -->
+                        <rect x="18.5" y="65.5" width="10" height="3" rx="1.5" fill="#60a5fa" />
+                        <!-- Yellow Farmer Rubber Mud Boot (Bota) -->
+                        <path d="M 18 67 C 18 64, 28 64, 29 67 L 30 71.5 L 17 71.5 Z" fill="url(#bootGrad)" />
+                        <!-- Mud-grip black rubber sole -->
+                        <rect x="16.5" y="70.5" width="14" height="3" rx="1.5" fill="#0f172a" />
                     </g>
 
-                    <!-- BODY GROUP (Torso + Head with Squash & Stretch) -->
+                    <!-- BODY GROUP (Torso + Overalls + Bandana + Head with Squash & Stretch, pivot 30, 48) -->
                     <g class="clay-body-group">
-                        <!-- Clay Torso (Plump, Kiosk Green) -->
+                        <!-- DA Green Under-Shirt -->
                         <path d="M 23 26 C 21 34, 21 44, 25 49 C 29 51, 33 51, 36 48 C 39 42, 39 33, 37 26 Z" fill="#22c55e" />
-                        <!-- Torso Highlight -->
-                        <path d="M 25 28 C 23 34, 23 42, 26 46" stroke="rgba(255,255,255,0.4)" stroke-width="2.5" stroke-linecap="round" fill="none" />
+                        
+                        <!-- Denim Dungarees / Overalls -->
+                        <path d="M 22.5 33.5 C 22 41, 22.5 47, 25.5 49.5 C 28.5 51.5, 33 51.5, 35.5 49 C 37.5 45, 38 40, 37.5 33.5 Z" fill="url(#denimGrad)" />
+                        
+                        <!-- Overalls Straps -->
+                        <path d="M 24 27 L 25 35" stroke="#1d4ed8" stroke-width="2.6" stroke-linecap="round" />
+                        <path d="M 36 27 L 35 35" stroke="#1d4ed8" stroke-width="2.6" stroke-linecap="round" />
+                        
+                        <!-- Golden Brass Buckles -->
+                        <circle cx="25" cy="35" r="1.3" fill="#fbbf24" stroke="#78350f" stroke-width="0.5" />
+                        <circle cx="35" cy="35" r="1.3" fill="#fbbf24" stroke="#78350f" stroke-width="0.5" />
 
-                        <!-- Head Group with Looking Around capability -->
+                        <!-- Center Chest Pocket with Golden Stalk of Rice / Palay -->
+                        <path d="M 26.5 38.5 H 33.5 V 43.5 C 33.5 44.8, 26.5 44.8, 26.5 43.5 Z" fill="#1e40af" stroke="#60a5fa" stroke-width="0.7" />
+                        <!-- Rice / Palay Grain Stalk sticking out of pocket -->
+                        <path d="M 31 38 Q 32.5 33.5 34.5 32" stroke="#eab308" stroke-width="1.3" stroke-linecap="round" fill="none" />
+                        <ellipse cx="34.5" cy="32" rx="1.4" ry="0.8" transform="rotate(-30 34.5 32)" fill="#fef08a" />
+                        <ellipse cx="33" cy="33.8" rx="1.2" ry="0.7" transform="rotate(-40 33 33.8)" fill="#facc15" />
+
+                        <!-- Traditional Red Farmer Neck Bandana / Panyo sa Leeg -->
+                        <path d="M 22 25 Q 30 29 38 25 Q 35 28 30 28.5 Q 25 28 22 25 Z" fill="#ef4444" stroke="#b91c1c" stroke-width="0.6" />
+                        <!-- Bandana Knot -->
+                        <polygon points="28.5,28 31.5,28 32.5,32.5 29,31.5" fill="#dc2626" />
+
+                        <!-- HEAD GROUP (Head + Expressive Full Face + Salakot, pivot 30, 15) -->
                         <g class="clay-head-group">
-                            <!-- Chunky Clay Head -->
-                            <ellipse cx="30" cy="15" rx="11" ry="11" fill="#f8fafc" />
-                            <!-- Soft shaded underside of head -->
-                            <path d="M 21 18 C 24 25, 36 25, 39 18 Z" fill="#cbd5e1" opacity="0.6" />
-                            <!-- Clay Green Cap / Visor -->
-                            <path d="M 19 14 C 20 7, 38 6, 41 12 C 43 14, 45 15, 46 16 C 43 18, 38 18, 36 17 C 32 16, 21 16, 19 14 Z" fill="#16a34a" />
-                            <!-- Handmade thumbprint / seam detail -->
-                            <path d="M 26 12 C 28 10, 31 11, 33 13" stroke="rgba(0,0,0,0.18)" stroke-width="1.2" stroke-linecap="round" fill="none" />
+                            <!-- Friendly Rounded Clay Head -->
+                            <ellipse cx="30" cy="18.5" rx="10" ry="9.5" fill="#fde68a" />
+                            
+                            <!-- Soft chin shading -->
+                            <path d="M 23 22 C 25 27, 35 27, 37 22 Z" fill="#f59e0b" opacity="0.3" />
+
+                            <!-- Cute Clay Ears -->
+                            <circle cx="20" cy="19" r="2.2" fill="#fcd34d" />
+                            <circle cx="40" cy="19" r="2.2" fill="#fcd34d" />
+
+                            <!-- FULL ON EXPRESSIVE FACE (Clear, Bright & Cheerful) -->
+                            <!-- Friendly Dark Chibi/Anime Eyes with Highlights -->
+                            <!-- Left Eye -->
+                            <ellipse cx="26" cy="18.2" rx="1.8" ry="2.4" fill="#0f172a" />
+                            <circle cx="25.2" cy="17.2" r="0.9" fill="#ffffff" />
+                            <circle cx="26.7" cy="19.3" r="0.45" fill="#ffffff" opacity="0.8" />
+
+                            <!-- Right Eye -->
+                            <ellipse cx="34" cy="18.2" rx="1.8" ry="2.4" fill="#0f172a" />
+                            <circle cx="33.2" cy="17.2" r="0.9" fill="#ffffff" />
+                            <circle cx="34.7" cy="19.3" r="0.45" fill="#ffffff" opacity="0.8" />
+
+                            <!-- Playful Cheerful Eyebrows -->
+                            <path d="M 23.8 14.5 Q 26.2 13 28.5 14.5" stroke="#78350f" stroke-width="1.3" stroke-linecap="round" fill="none" />
+                            <path d="M 31.5 14.5 Q 33.8 13 36.2 14.5" stroke="#78350f" stroke-width="1.3" stroke-linecap="round" fill="none" />
+
+                            <!-- Rosy Cheeks (Sun-warmed farmer glow) -->
+                            <ellipse cx="23" cy="20.2" rx="2.3" ry="1.4" fill="#f43f5e" opacity="0.55" />
+                            <ellipse cx="37" cy="20.2" rx="2.3" ry="1.4" fill="#f43f5e" opacity="0.55" />
+
+                            <!-- Cute Button Nose -->
+                            <circle cx="30" cy="19.4" r="0.95" fill="#f59e0b" />
+
+                            <!-- Cheerful Open Smile with Rosy Tongue -->
+                            <path d="M 27 21.5 Q 30 25.2 33 21.5 Z" fill="#991b1b" stroke="#78350f" stroke-width="0.8" stroke-linejoin="round" />
+                            <path d="M 28.4 23.6 Q 30 25.2 31.6 23.6 Z" fill="#fb7185" />
+
+                            <!-- SALAKOT (Authentic Filipino Conical Straw Rice Hat) -->
+                            <!-- Chin tie strap (Tali ng Salakot) passing under chin -->
+                            <path d="M 18 15 Q 23 25.5 30 26 Q 37 25.5 42 15" stroke="#78350f" stroke-width="1.1" fill="none" stroke-linecap="round" opacity="0.85" />
+                            <!-- Wood bead cinch on chin strap -->
+                            <circle cx="30" cy="25.8" r="1.2" fill="#b45309" />
+
+                            <!-- Forehead shadow cast by the wide brim -->
+                            <ellipse cx="30" cy="16.5" rx="8.5" ry="2.2" fill="#78350f" opacity="0.32" />
+
+                            <!-- Salakot Underside Dark Rattan Rim & Shading -->
+                            <path d="M 8.5 14.5 C 16 17.5 44 17.5 51.5 14.5 C 47 18.5 13 18.5 8.5 14.5 Z" fill="url(#salakotUnder)" />
+
+                            <!-- Salakot Conical Hat Dome -->
+                            <path d="M 30 1.5 C 30 1.5, 41 7.8, 51.5 14.5 C 44 16.8, 16 16.8, 8.5 14.5 C 19 7.8, 30 1.5, 30 1.5 Z" fill="url(#salakotGrad)" stroke="#854d0e" stroke-width="1.2" stroke-linejoin="round" />
+
+                            <!-- Woven Bamboo Ribs & Straw Texture Lines -->
+                            <!-- Radial Bamboo Spoke Ribs -->
+                            <line x1="30" y1="1.8" x2="30" y2="16" stroke="#78350f" stroke-width="0.9" opacity="0.45" />
+                            <line x1="30" y1="1.8" x2="19" y2="15" stroke="#78350f" stroke-width="0.8" opacity="0.4" />
+                            <line x1="30" y1="1.8" x2="41" y2="15" stroke="#78350f" stroke-width="0.8" opacity="0.4" />
+                            <line x1="30" y1="1.8" x2="13" y2="14.2" stroke="#78350f" stroke-width="0.7" opacity="0.35" />
+                            <line x1="30" y1="1.8" x2="47" y2="14.2" stroke="#78350f" stroke-width="0.7" opacity="0.35" />
+
+                            <!-- Circular Woven Ring Wefts -->
+                            <path d="M 23 6.2 Q 30 8.2 37 6.2" stroke="#92400e" stroke-width="0.8" fill="none" opacity="0.5" />
+                            <path d="M 17 10.2 Q 30 12.8 43 10.2" stroke="#92400e" stroke-width="0.9" fill="none" opacity="0.55" />
+                            <path d="M 11 13.8 Q 30 16.5 49 13.8" stroke="#92400e" stroke-width="1.0" fill="none" opacity="0.6" />
+
+                            <!-- Top Crown Finial / Wood Cap -->
+                            <ellipse cx="30" cy="1.8" rx="2.4" ry="1.5" fill="#78350f" stroke="#451a03" stroke-width="0.6" />
+                            <circle cx="30" cy="1.0" r="1.1" fill="#b45309" />
                         </g>
                     </g>
 
-                    <!-- FRONT LEG -->
+                    <!-- FRONT LEG (pivot 30, 48) -->
                     <g class="clay-limb-front-leg">
-                        <path d="M 30 48 C 34 56, 36 64, 36 70" stroke="#1e293b" stroke-width="9" stroke-linecap="round" fill="none" />
-                        <path d="M 32 71 C 32 67, 42 67, 42 71 Z" fill="#ef4444" />
-                        <rect x="30" y="70.5" width="13" height="3" rx="1.5" fill="#f8fafc" />
+                        <!-- Bright Denim Trousers -->
+                        <path d="M 30 48 C 34 56, 36 64, 36 68" stroke="#2563eb" stroke-width="9" stroke-linecap="round" fill="none" />
+                        <!-- Rolled pant cuff -->
+                        <rect x="31" y="65.5" width="10" height="3" rx="1.5" fill="#93c5fd" />
+                        <!-- Yellow Farmer Rubber Mud Boot (Bota) -->
+                        <path d="M 30 67 C 30 64, 40 64, 41 67 L 42 71.5 L 29 71.5 Z" fill="url(#bootGrad)" />
+                        <!-- Mud-grip black rubber sole -->
+                        <rect x="28.5" y="70.5" width="14" height="3" rx="1.5" fill="#0f172a" />
                     </g>
 
-                    <!-- FRONT ARM -->
+                    <!-- FRONT ARM (pivot 30, 29) -->
                     <g class="clay-limb-front-arm">
+                        <!-- Upper sleeve (DA Green) -->
                         <path d="M 30 29 C 36 37, 40 44, 40 48" stroke="#22c55e" stroke-width="8" stroke-linecap="round" fill="none" />
-                        <circle cx="40" cy="48" r="4.5" fill="#f8fafc" />
+                        <!-- Rolled sleeve cuff -->
+                        <circle cx="39" cy="46" r="4.5" fill="#15803d" />
+                        <!-- Forearm & Hand in friendly warm clay skin tone -->
+                        <circle cx="40.5" cy="49" r="4.2" fill="#fde68a" />
+                        <circle cx="38.5" cy="48" r="1.8" fill="#fcd34d" />
                     </g>
                 </svg>
             </div>
@@ -491,6 +639,11 @@ export function drawRoute(coords, options = {}) {
 }
 
 export function clearRoute() {
+    if (typeof closeQRZoomModal === 'function') {
+        closeQRZoomModal();
+    } else if (typeof window.closeQRZoomModal === 'function') {
+        window.closeQRZoomModal();
+    }
     if (typeof stopPhoneLiveGPS === 'function') stopPhoneLiveGPS();
     if (state.walkStartTimer) {
         clearTimeout(state.walkStartTimer);
@@ -546,8 +699,12 @@ export function clearRoute() {
         banner.classList.remove('active', 'arrived');
     }
     const fcc = document.getElementById('floating-camera-controls');
+    const fsc = document.getElementById('floating-speed-controls');
     if (fcc) {
         fcc.classList.remove('active', 'dimmed');
+    }
+    if (fsc) {
+        fsc.classList.remove('active', 'dimmed');
     }
     resetCameraModeToDefault();
     if (state.cameraControlsDimTimer) {
@@ -568,6 +725,8 @@ export function clearRoute() {
 
     document.getElementById('route-info')?.classList.remove('active');
     document.getElementById('sidebar')?.classList.remove('route-active');
+    document.body.classList.remove('has-active-route');
+    document.getElementById('kiosk-arrival-action-bar')?.classList.remove('active');
     state.activeRoute = null;
     state.activeRouteCoords = null;
     state.activeFullRouteCoords = null;
@@ -584,6 +743,7 @@ export function clearRoute() {
     if (sheet) sheet.classList.remove('route-active');
     state.routeSpeedMultiplier = 2;
     setRouteSpeed(2);
+    updateCameraControlsUI();
 
     if (isPhoneMode()) {
         setPhoneSheetView('dir');
@@ -592,6 +752,11 @@ export function clearRoute() {
 }
 
 export function closeRouteAndReset() {
+    if (typeof closeQRZoomModal === 'function') {
+        closeQRZoomModal();
+    } else if (typeof window.closeQRZoomModal === 'function') {
+        window.closeQRZoomModal();
+    }
     clearRoute();
     closeBuildingPanel();
 }
@@ -800,6 +965,11 @@ export function getDirections() {
     const routeWalkTime = Math.ceil(routeDistance / 80) || 1;
 
     // Draw route on map first (which clears previous route and adds route-active to sidebar)
+    state.currentRouteDestId = targetId;
+    state.currentRouteDestName = building.name;
+    document.body.classList.remove('has-active-bldg-panel');
+    document.body.classList.add('has-active-route');
+
     drawRoute(routeCoords);
     state.activeRoute = targetId;
 
@@ -881,13 +1051,7 @@ export function replayRoute() {
         state.cameraTransition = null;
         state.isTransitioningToFollow = false;
 
-        const curPersp = state.routeCameraPerspective || 'follow';
-        const fccFollow = document.getElementById('fcc-follow');
-        const fccOverview = document.getElementById('fcc-overview');
-        const fccTopdown = document.getElementById('fcc-topdown');
-        if (fccFollow) fccFollow.classList.toggle('active', curPersp === 'follow');
-        if (fccOverview) fccOverview.classList.toggle('active', curPersp === 'overview');
-        if (fccTopdown) fccTopdown.classList.toggle('active', curPersp === 'topdown');
+        updateCameraControlsUI();
 
         launchWalkerLoop(coords, walkerEl, totalDistance, routeLine);
         return;
@@ -906,17 +1070,19 @@ let isKioskDraggable = false;
 window.toggleKioskLock = function (e) {
     if (!state.isAdmin) return;
     if (e) e.stopPropagation();
-    isKioskDraggable = !isKioskDraggable;
+    isKioskDraggable = (state.isKioskDraggable === false);
     state.isKioskDraggable = isKioskDraggable;
+    const isQares = (state.currentStationId === 'qares');
+    const prefix = isQares ? 'QARES • ' : '';
     const label = document.querySelector('.kiosk-marker-label');
     if (label) {
         if (isKioskDraggable) {
-            label.innerHTML = '📍 You Are Here 🔓 (Drag to move)';
+            label.innerHTML = `📍 ${prefix}You Are Here 🔓 (Drag to move)`;
             label.style.background = '#eab308';
             label.style.color = '#000';
             label.style.border = '1px solid #ca8a04';
         } else {
-            label.innerHTML = '📍 You Are Here 🔒 (Admin)';
+            label.innerHTML = `📍 ${prefix}You Are Here 🔒 (Admin)`;
             label.style.background = 'rgba(15, 23, 42, .9)';
             label.style.color = '#22c55e';
             label.style.border = '1px solid rgba(34, 197, 94, .3)';
@@ -925,6 +1091,10 @@ window.toggleKioskLock = function (e) {
     const marker = state.kioskMarkerInstance || kioskMarkerInstance;
     if (marker) {
         marker.setDraggable(isKioskDraggable);
+        const markerEl = marker.getElement();
+        if (markerEl) {
+            markerEl.style.cursor = isKioskDraggable ? 'grab' : 'pointer';
+        }
     }
 }
 

@@ -2,13 +2,14 @@
 // Animated walking person marker, camera follow modes, speed control, and arrival countdown.
 
 import { DEFAULT_MAP_VIEW, SAVED_MAIN_KIOSK_COORDS } from './data/config.js';
-import { BUILDING_DIRECTORY } from './data/buildings.js?v=60';
+import { getActiveStationDefaultView } from './data/stations.js';
+import { BUILDING_DIRECTORY } from './data/buildings.js?v=72';
 import { state } from './data/state.js';
 import { map } from './map-setup.js';
 import { resetIdle, stopIdleRotation, stopOrbit, orbitBuilding } from './idle.js';
 import { clearRoute, closeRouteAndReset } from './routing.js';
 import { showMobileToast, showPhoneBuildingDetails, getResponsiveMapPadding, isPhoneMode } from './phone-ui.js';
-import { resetOcclusion, updateOcclusion } from './occlusion.js';
+import { resetOcclusion, updateOcclusion } from './occlusion.js?v=81';
 
 // ==========================================
 
@@ -141,6 +142,31 @@ const PERSPECTIVE_CONFIGS = {
     topdown: { zoom: 19.5, pitch: 0, bearing: 0 }
 };
 
+export function updateCameraControlsUI() {
+    const fccFollow = document.getElementById('fcc-follow');
+    const fccOverview = document.getElementById('fcc-overview');
+    const fccTopdown = document.getElementById('fcc-topdown');
+
+    // 1. Lock/Unlock Button state (tracks state.isFollowing)
+    if (fccFollow) {
+        const isLocked = !!state.isFollowing;
+        fccFollow.classList.toggle('active', isLocked);
+        fccFollow.innerHTML = isLocked ? '🔒 Locked' : '🔓 Unlocked';
+        fccFollow.title = isLocked
+            ? 'Camera locked to walker (Click to unlock free-form view)'
+            : 'Camera unlocked (free form - click to lock onto walker)';
+    }
+
+    // 2. Perspective buttons (Side View & Top View)
+    const persp = state.routeCameraPerspective || 'follow';
+    if (fccOverview) {
+        fccOverview.classList.toggle('active', persp === 'overview');
+    }
+    if (fccTopdown) {
+        fccTopdown.classList.toggle('active', persp === 'topdown');
+    }
+}
+
 export function setRouteCameraMode(mode, force = false) {
     state.isIntroAnimating = false;
     if (transitionFollowTimer) {
@@ -148,34 +174,38 @@ export function setRouteCameraMode(mode, force = false) {
         transitionFollowTimer = null;
     }
 
-    const fccFollow = document.getElementById('fcc-follow');
-    const fccOverview = document.getElementById('fcc-overview');
-    const fccTopdown = document.getElementById('fcc-topdown');
-
-    // If clicking the ALREADY active perspective while following, toggle to Free Look
-    if (!force && state.isFollowing && state.routeCameraPerspective === mode) {
-        state.isFollowing = false;
-        state.cameraTransition = null;
-        state.isTransitioningToFollow = false;
-        isTransitioningToFollow = false;
-        if (fccFollow) fccFollow.classList.remove('active');
-        if (fccOverview) fccOverview.classList.remove('active');
-        if (fccTopdown) fccTopdown.classList.remove('active');
-        return;
+    // A. Lock / Unlock toggle (Follow button clicked)
+    if (mode === 'follow' || mode === 'lock' || mode === 'toggle-lock') {
+        if (force) {
+            state.isFollowing = true;
+            state.routeCameraPerspective = 'follow';
+        } else {
+            // Toggling Locked / Unlocked
+            state.isFollowing = !state.isFollowing;
+            if (!state.isFollowing) {
+                state.cameraTransition = null;
+                state.isTransitioningToFollow = false;
+                isTransitioningToFollow = false;
+            }
+        }
+    } else {
+        // B. Perspective switches: 'overview' (Side View) or 'topdown' (Top View)
+        if (!force && state.routeCameraPerspective === mode) {
+            // Clicking already active perspective toggles back to standard 3D follow perspective
+            state.routeCameraPerspective = 'follow';
+        } else {
+            state.routeCameraPerspective = mode;
+        }
+        // As requested: switching perspective guarantees camera is LOCKED and follow remains highlighted!
+        state.isFollowing = true;
     }
 
-    // Activate selected mode
-    state.isFollowing = true;
-    state.routeCameraPerspective = mode;
-    state.routeCameraMode = mode;
-    routeCameraMode = mode;
+    state.routeCameraMode = state.routeCameraPerspective;
+    routeCameraMode = state.routeCameraPerspective;
 
-    // Mutually exclusive button highlight (strictly ONE button active at a time)
-    if (fccFollow) fccFollow.classList.toggle('active', mode === 'follow');
-    if (fccOverview) fccOverview.classList.toggle('active', mode === 'overview');
-    if (fccTopdown) fccTopdown.classList.toggle('active', mode === 'topdown');
+    updateCameraControlsUI();
 
-    transitionToPerspective(mode);
+    transitionToPerspective(state.routeCameraPerspective);
 }
 
 export function resetCameraModeToDefault() {
@@ -183,12 +213,7 @@ export function resetCameraModeToDefault() {
     state.routeCameraPerspective = 'follow';
     state.routeCameraMode = 'follow';
     routeCameraMode = 'follow';
-    const fccFollow = document.getElementById('fcc-follow');
-    const fccOverview = document.getElementById('fcc-overview');
-    const fccTopdown = document.getElementById('fcc-topdown');
-    if (fccFollow) fccFollow.classList.add('active');
-    if (fccOverview) fccOverview.classList.remove('active');
-    if (fccTopdown) fccTopdown.classList.remove('active');
+    updateCameraControlsUI();
 }
 
 function transitionToPerspective(mode) {
@@ -273,8 +298,10 @@ function transitionToPerspective(mode) {
 let cameraControlsDimTimer = null;
 export function resetCameraControlsTimer() {
     const fcc = document.getElementById('floating-camera-controls');
+    const fsc = document.getElementById('floating-speed-controls');
     if (!fcc) return;
     fcc.classList.remove('dimmed');
+    if (fsc) fsc.classList.remove('dimmed');
     if (cameraControlsDimTimer) {
         clearTimeout(cameraControlsDimTimer);
         cameraControlsDimTimer = null;
@@ -283,6 +310,7 @@ export function resetCameraControlsTimer() {
         cameraControlsDimTimer = setTimeout(() => {
             if (state.activeRoute && fcc.classList.contains('active')) {
                 fcc.classList.add('dimmed');
+                if (fsc) fsc.classList.add('dimmed');
             }
         }, 5000);
     }
@@ -306,10 +334,28 @@ export function startArrivedCountdown() {
     if (arrivedDesc) arrivedDesc.textContent = `You have reached ${dName}.`;
     if (countdownText) countdownText.textContent = `Returning to overview in ${arrivedCountdownSeconds}s`;
 
+    // Dedicated Kiosk Arrival Action Bar
+    const kaaBar = document.getElementById('kiosk-arrival-action-bar');
+    const kaaName = document.getElementById('kaa-dest-name');
+    const kaaCountdown = document.getElementById('kaa-countdown-text');
+    const fsc = document.getElementById('floating-speed-controls');
+    if (fsc) fsc.classList.remove('active');
+    const fcc = document.getElementById('floating-camera-controls');
+    if (fcc) fcc.classList.remove('active');
+
+    if (kaaBar) {
+        if (kaaName) kaaName.textContent = dName;
+        if (kaaCountdown) kaaCountdown.textContent = `Returning to campus overview in ${arrivedCountdownSeconds}s`;
+        kaaBar.classList.add('active');
+    }
+
     arrivedCountdownTimer = setInterval(() => {
         arrivedCountdownSeconds--;
         if (countdownText) {
             countdownText.textContent = `Returning to overview in ${arrivedCountdownSeconds}s`;
+        }
+        if (kaaCountdown) {
+            kaaCountdown.textContent = `Returning to campus overview in ${arrivedCountdownSeconds}s`;
         }
         if (arrivedCountdownSeconds <= 0) {
             clearArrivedCountdown();
@@ -325,16 +371,39 @@ export function clearArrivedCountdown() {
     }
     const card = document.getElementById('route-arrived-card');
     if (card) card.style.display = 'none';
+
+    const kaaBar = document.getElementById('kiosk-arrival-action-bar');
+    if (kaaBar) kaaBar.classList.remove('active');
+}
+
+export function viewArrivedBuildingDetails() {
+    clearArrivedCountdown();
+    const destId = state.currentRouteDestId || state.selectedBuildingId || window.selectedBuildingId;
+    if (destId) {
+        exitRouteMode();
+        setTimeout(() => {
+            if (typeof window.showBuildingPanel === 'function') {
+                window.showBuildingPanel(destId);
+            }
+            const b = BUILDING_DIRECTORY.find(item => item.id === destId);
+            if (b && typeof window.orbitBuilding === 'function') {
+                window.orbitBuilding(b.coords);
+            }
+        }, 120);
+    } else {
+        exitRouteMode();
+    }
 }
 
 export function returnToOverviewFromArrival() {
     resetOcclusion();
     closeRouteAndReset();
+    const defaultView = getActiveStationDefaultView();
     map.flyTo({
-        center: DEFAULT_MAP_VIEW.center,
-        zoom: DEFAULT_MAP_VIEW.zoom,
-        pitch: DEFAULT_MAP_VIEW.pitch,
-        bearing: DEFAULT_MAP_VIEW.bearing,
+        center: defaultView.center,
+        zoom: defaultView.zoom,
+        pitch: defaultView.pitch,
+        bearing: defaultView.bearing,
         duration: 1600
     });
 }
@@ -345,8 +414,16 @@ export function exitRouteMode() {
 
 // User touch or interaction immediately pauses auto-return
 ['pointerdown', 'touchstart', 'keydown'].forEach(evt => {
-    window.addEventListener(evt, () => {
+    window.addEventListener(evt, (e) => {
         if (arrivedCountdownTimer) {
+            // If interacting directly with arrival buttons, pause timer without hiding the bar
+            if (e.target && e.target.closest && e.target.closest('.kiosk-arrival-action-bar')) {
+                clearInterval(arrivedCountdownTimer);
+                arrivedCountdownTimer = null;
+                const kaaCountdown = document.getElementById('kaa-countdown-text');
+                if (kaaCountdown) kaaCountdown.textContent = 'Auto-return paused';
+                return;
+            }
             clearArrivedCountdown();
             const countdownText = document.getElementById('arrived-countdown-text');
             if (countdownText) countdownText.textContent = 'Auto-return paused';
@@ -431,12 +508,8 @@ export function initWalkerCameraListeners() {
                     state.isFollowing = false;
                     state.cameraTransition = null;
                     state.isTransitioningToFollow = false;
-                    const fccFollow = document.getElementById('fcc-follow');
-                    const fccOverview = document.getElementById('fcc-overview');
-                    const fccTopdown = document.getElementById('fcc-topdown');
-                    if (fccFollow) fccFollow.classList.remove('active');
-                    if (fccOverview) fccOverview.classList.remove('active');
-                    if (fccTopdown) fccTopdown.classList.remove('active');
+                    isTransitioningToFollow = false;
+                    updateCameraControlsUI();
                 }
             });
         }
@@ -450,9 +523,11 @@ if (typeof window !== 'undefined') {
 window.navigateTo = navigateTo;
 window.setRouteSpeed = setRouteSpeed;
 window.setRouteCameraMode = setRouteCameraMode;
+window.updateCameraControlsUI = updateCameraControlsUI;
 window.resetCameraControlsTimer = resetCameraControlsTimer;
 window.startArrivedCountdown = startArrivedCountdown;
 window.clearArrivedCountdown = clearArrivedCountdown;
+window.viewArrivedBuildingDetails = viewArrivedBuildingDetails;
 window.returnToOverviewFromArrival = returnToOverviewFromArrival;
 window.exitRouteMode = exitRouteMode;
 window.resetCameraModeToDefault = resetCameraModeToDefault;

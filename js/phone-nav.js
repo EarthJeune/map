@@ -1,7 +1,8 @@
 // DA-LARES Wayfinding — Phone Navigation & Arrival Controller
 
-import { BUILDING_DIRECTORY } from './data/buildings.js?v=60';
+import { BUILDING_DIRECTORY } from './data/buildings.js?v=72';
 import { DEFAULT_MAP_VIEW } from './data/config.js';
+import { getActiveStationDefaultView } from './data/stations.js';
 import { state } from './data/state.js';
 import { map } from './map-setup.js';
 import { computeRouteFromKiosk, drawRoute, clearRoute } from './routing.js';
@@ -225,7 +226,10 @@ export function showPhoneArrival(buildingOrId) {
     const descEl = document.getElementById('pam-desc');
     if (titleEl) titleEl.textContent = `Arrived at ${name}!`;
     if (descEl) descEl.textContent = 'You have reached your destination.';
-    if (modal) modal.classList.add('active');
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.add('active');
+    }
 
     setPhoneSheetView('dir');
     setPhoneSheetSnap('peek');
@@ -244,16 +248,20 @@ export function showPhoneArrival(buildingOrId) {
 
 export function closePhoneArrivalPopup() {
     const modal = document.getElementById('phone-arrived-modal');
-    if (modal) modal.classList.remove('active');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('active');
+    }
     state.selectedBuildingId = null;
     clearRoute();
     setPhoneSheetView('dir');
     setPhoneSheetSnap('peek');
+    const defaultView = getActiveStationDefaultView();
     map.flyTo({
-        center: DEFAULT_MAP_VIEW.center,
-        zoom: DEFAULT_MAP_VIEW.zoom,
-        pitch: DEFAULT_MAP_VIEW.pitch,
-        bearing: DEFAULT_MAP_VIEW.bearing,
+        center: defaultView.center,
+        zoom: defaultView.zoom,
+        pitch: defaultView.pitch,
+        bearing: defaultView.bearing,
         duration: 1500
     });
 }

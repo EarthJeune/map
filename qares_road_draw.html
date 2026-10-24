@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DA-QARES Road & Walkway Editor — Tiaong, Quezon</title>
+<meta name="viewport" content="initial-scale=1,maximum-scale=1">
+<link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+<script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.js"></script>
+<link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.css" type="text/css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 0; background: #0b1120; color: #f8fafc; font-family: 'Inter', -apple-system, sans-serif; overflow: hidden; }
+  #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+
+  .panel { 
+      position: absolute; top: 16px; left: 16px; z-index: 10; 
+      background: rgba(15, 23, 42, 0.94); 
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      padding: 18px; border-radius: 14px; 
+      box-shadow: 0 16px 40px rgba(0,0,0,0.65), 0 0 20px rgba(34, 197, 94, 0.15); 
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      width: 360px;
+      max-height: calc(100vh - 32px);
+      overflow-y: auto;
+  }
+  .panel::-webkit-scrollbar { width: 4px; }
+  .panel::-webkit-scrollbar-thumb { background: rgba(34, 197, 94, 0.3); border-radius: 9999px; }
+  .panel::-webkit-scrollbar-button { display: none !important; }
+
+  .panel-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .panel-icon { font-size: 24px; }
+  .panel-title { margin: 0; font-size: 15px; font-weight: 800; color: #38bdf8; letter-spacing: 0.3px; }
+  .panel-sub { font-size: 11px; color: #94a3b8; margin: 2px 0 0 0; }
+
+  .section-label {
+      font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.2px; color: #4ade80; margin: 12px 0 6px 0;
+  }
+
+  /* Tool grid */
+  .tool-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 8px;
+  }
+  .tool-btn {
+      padding: 9px 8px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(30, 41, 59, 0.7);
+      color: #cbd5e1;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.18s ease;
+  }
+  .tool-btn:hover {
+      background: rgba(255,255,255,0.1);
+      color: #ffffff;
+      border-color: rgba(255,255,255,0.25);
+  }
+  .tool-btn.active {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #ffffff;
+      border-color: #34d399;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+      font-weight: 700;
+  }
+  .tool-btn-danger {
+      color: #f87171;
+      border-color: rgba(239, 68, 68, 0.3);
+  }
+  .tool-btn-danger:hover {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ffffff;
+  }
+
+  /* Mode status badge */
+  .mode-badge {
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 11.5px;
+      line-height: 1.4;
+      font-weight: 600;
+      margin-bottom: 12px;
+      border: 1px solid transparent;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+  }
+  .mode-badge-line {
+      background: rgba(245, 158, 11, 0.15);
+      border-color: rgba(245, 158, 11, 0.4);
+      color: #fbbf24;
+  }
+  .mode-badge-point {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: rgba(56, 189, 248, 0.4);
+      color: #38bdf8;
+  }
+  .mode-badge-select {
+      background: rgba(148, 163, 184, 0.12);
+      border-color: rgba(148, 163, 184, 0.25);
+      color: #cbd5e1;
+  }
+
+  /* Layer switcher */
+  .layer-switcher {
+      display: flex;
+      background: rgba(30, 41, 59, 0.7);
+      padding: 3px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.08);
+      gap: 3px;
+      margin-bottom: 10px;
+  }
+  .layer-btn {
+      flex: 1;
+      padding: 6px 8px;
+      border: none;
+      background: transparent;
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: all 0.2s ease;
+  }
+  .layer-btn:hover { color: #f8fafc; background: rgba(255,255,255,0.06); }
+  .layer-btn.active {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #ffffff;
+      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+  }
+
+  .slider-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #cbd5e1;
+      margin-bottom: 4px;
+  }
+  .slider-num { font-family: monospace; color: #38bdf8; font-weight: 700; }
+  .range-input {
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(255,255,255,0.12);
+      outline: none;
+      cursor: pointer;
+      accent-color: #38bdf8;
+      margin-bottom: 10px;
+  }
+
+  /* Guide box */
+  .guide-box {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 11px;
+      color: #94a3b8;
+      line-height: 1.45;
+      margin-bottom: 12px;
+  }
+  .guide-box strong { color: #f1f5f9; }
+
+  /* Action Buttons */
+  .btn-primary { 
+      width: 100%; padding: 10px; cursor: pointer; 
+      background: linear-gradient(135deg, #10b981, #059669); 
+      color: white; border: 1px solid #34d399; border-radius: 8px; 
+      font-size: 12.5px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+      transition: all 0.2s ease;
+      margin-bottom: 8px;
+  }
+  .btn-primary:hover { 
+      background: linear-gradient(135deg, #059669, #047857); 
+      transform: translateY(-1px);
+  }
+
+  .btn-secondary {
+      width: 100%; padding: 8px; cursor: pointer;
+      background: rgba(255,255,255,0.06);
+      color: #cbd5e1; border: 1px solid rgba(255,255,255,0.12); border-radius: 8px;
+      font-size: 11.5px; font-weight: 600;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      transition: all 0.2s ease;
+      margin-bottom: 6px;
+  }
+  .btn-secondary:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+  .btn-danger {
+      width: 100%; padding: 7px; cursor: pointer;
+      background: rgba(239, 68, 68, 0.1);
+      color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px;
+      font-size: 11px; font-weight: 600;
+      transition: all 0.2s ease;
+      margin-bottom: 8px;
+  }
+  .btn-danger:hover { background: rgba(239, 68, 68, 0.2); }
+
+  textarea { 
+      width: 100%; height: 90px; margin-top: 8px; font-family: monospace; 
+      font-size: 10px; background: rgba(0,0,0,0.6); color: #38bdf8; border: 1px solid #334155; 
+      padding: 8px; box-sizing: border-box; border-radius: 6px; resize: vertical;
+  }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    z-index: 100; display: none; align-items: center; justify-content: center;
+  }
+  .modal-box {
+    background: #0f172a; border: 1px solid rgba(56, 189, 248, 0.3);
+    border-radius: 16px; padding: 22px; width: 340px; max-width: 90vw;
+  }
+  .modal-box h3 { margin: 0 0 6px; font-size: 16px; color: #f8fafc; }
+  .modal-box input {
+    width: 100%; padding: 8px 10px; background: rgba(2, 6, 23, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 8px;
+    color: #f8fafc; font-size: 12px; margin-top: 8px; margin-bottom: 14px;
+  }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<div class="panel">
+  <div class="panel-header">
+      <span class="panel-icon">🌱</span>
+      <div>
+          <h3 class="panel-title">QARES Road & Walkway Editor</h3>
+          <p class="panel-sub">Tiaong, Quezon Research Grounds</p>
+      </div>
+  </div>
+
+  <div class="section-label">Drawing Tools</div>
+  <div class="tool-grid">
+      <button class="tool-btn active" id="btn-tool-select" onclick="activateTool('simple_select')">
+          <span>✋</span> Select / Move
+      </button>
+      <button class="tool-btn" id="btn-tool-line" onclick="activateTool('draw_line_string')">
+          <span>🛣️</span> Draw Road
+      </button>
+      <button class="tool-btn" id="btn-tool-point" onclick="activateTool('draw_point')">
+          <span>📍</span> Add Entrance
+      </button>
+      <button class="tool-btn tool-btn-danger" id="btn-tool-trash" onclick="trashSelected()">
+          <span>🗑️</span> Delete
+      </button>
+  </div>
+
+  <div id="modeStatusBadge" class="mode-badge mode-badge-select">
+      ✋ Select Mode: Click any road or point to edit vertices.
+  </div>
+
+  <div class="section-label">Aerial Background</div>
+  <div class="layer-switcher">
+      <button class="layer-btn active" id="btn-layer-drone" onclick="setBaseLayer('drone')">
+          <span>🚁 Drone Shot</span>
+      </button>
+      <button class="layer-btn" id="btn-layer-google" onclick="setBaseLayer('google')">
+          <span>🛰️ Google Satellite</span>
+      </button>
+  </div>
+
+  <div class="slider-row">
+      <span>Drone Imagery Opacity</span>
+      <span id="drone-opacity-val" class="slider-num">100%</span>
+  </div>
+  <input type="range" id="drone-opacity-slider" class="range-input" min="0" max="1" step="0.05" value="1.0" oninput="setDroneOpacity(this.value)">
+
+  <div class="guide-box">
+      • <strong>Draw Road (Key '2'):</strong> Click on map to place road points. Double-click or press Enter to finish.<br>
+      • <strong>Entrance Node (Key '1'):</strong> Click on doors/gates to connect buildings to paths.<br>
+      • <strong>PNR Crossing:</strong> Connect the South admin road across the railway to the North fields.
+  </div>
+
+  <button class="btn-primary" id="saveDirectBtn" onclick="saveDirectlyToMap()">
+      💾 Save Directly to Map (qares_roads.json)
+  </button>
+  <button class="btn-secondary" onclick="exportData()">
+      📋 Copy Road GeoJSON to Clipboard
+  </button>
+  <button class="btn-danger" onclick="reloadFromOriginalBaseline()">
+      🔄 Discard & Reload Original Baseline
+  </button>
+
+  <div style="margin-top: 10px; font-size: 11px; color: #94a3b8; display: flex; justify-content: space-between;">
+      <span id="featuresCountLabel">Features: 0</span>
+      <span>GeoJSON</span>
+  </div>
+  <textarea id="output" readonly></textarea>
+</div>
+
+<!-- Modal for Entrance Node Assignment -->
+<div id="buildingModal" class="modal-overlay">
+  <div class="modal-box">
+    <h3>Assign Entrance Node</h3>
+    <p style="font-size: 11px; color: #94a3b8; margin: 0;">Specify which building or gate this entrance node connects to:</p>
+    <input type="text" id="entranceBuildingId" placeholder="e.g. qares_admin_building">
+    <div class="modal-actions">
+      <button class="btn-secondary" style="width:auto; padding:6px 12px;" onclick="cancelEntrance()">Cancel</button>
+      <button class="btn-primary" style="width:auto; padding:6px 14px;" onclick="confirmEntrance()">Save Node</button>
+    </div>
+  </div>
+</div>
+
+<script>
+mapboxgl.accessToken = 'pk.eyJ1IjoiZWFydGgwMzA3IiwiYSI6ImNtdWFqNTR5czAxNmEyd29lMm42YjZlMDkifQ.xdPOP5RVPdn6YNka-ZdwoQ';
+
+const QARES_CENTER = [121.37178, 13.94658];
+
+const map = new mapboxgl.Map({
+    container: 'map',
+    style: {
+        'version': 8,
+        'sources': {
+            'google-satellite': {
+                'type': 'raster',
+                'tiles': ['https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'],
+                'tileSize': 256,
+                'maxzoom': 22
+            },
+            'qares-drone-source': {
+                'type': 'raster',
+                'tiles': ['/api/tiles/qares/{z}/{x}/{y}.png'],
+                'tileSize': 256,
+                'minzoom': 14,
+                'maxzoom': 21,
+                'bounds': [121.366888, 13.941220, 121.376150, 13.950960]
+            }
+        },
+        'layers': [
+            {
+                'id': 'google-satellite-layer',
+                'type': 'raster',
+                'source': 'google-satellite'
+            },
+            {
+                'id': 'qares-ortho-layer',
+                'type': 'raster',
+                'source': 'qares-drone-source',
+                'paint': {
+                    'raster-opacity': 1.0,
+                    'raster-fade-duration': 0
+                }
+            }
+        ]
+    },
+    center: QARES_CENTER,
+    zoom: 18.0,
+    maxZoom: 23
+});
+
+// Comprehensive MapboxDraw styles ensuring ALL active drawing, vertex, and midpoint layers exist
+const drawStyles = [
+    // 1. ACTIVE LINE CASING (Dark navy casing under active rubberband line)
+    {
+        'id': 'gl-draw-line-active-casing',
+        'type': 'line',
+        'filter': ['all', ['==', '$type', 'LineString'], ['==', 'active', 'true']],
+        'layout': { 'line-cap': 'round', 'line-join': 'round' },
+        'paint': {
+            'line-color': '#0f172a',
+            'line-width': 8,
+            'line-opacity': 0.95
+        }
+    },
+    // 2. ACTIVE LINE STRING (Solid bright gold rubberband line)
+    {
+        'id': 'gl-draw-line-active',
+        'type': 'line',
+        'filter': ['all', ['==', '$type', 'LineString'], ['==', 'active', 'true']],
+        'layout': { 'line-cap': 'round', 'line-join': 'round' },
+        'paint': {
+            'line-color': '#fbbf24',
+            'line-width': 4.5
+        }
+    },
+    // 3. INACTIVE LINE CASING / HALO (Dark forest-green casing under completed road)
+    {
+        'id': 'gl-draw-line-casing-inactive',
+        'type': 'line',
+        'filter': ['all', ['==', 'active', 'false'], ['==', '$type', 'LineString'], ['!=', 'mode', 'static']],
+        'layout': { 'line-cap': 'round', 'line-join': 'round' },
+        'paint': {
+            'line-color': '#064e3b',
+            'line-width': 8,
+            'line-opacity': 0.9
+        }
+    },
+    // 4. INACTIVE LINE (Completed road in vibrant emerald green)
+    {
+        'id': 'gl-draw-line-inactive',
+        'type': 'line',
+        'filter': ['all', ['==', 'active', 'false'], ['==', '$type', 'LineString'], ['!=', 'mode', 'static']],
+        'layout': { 'line-cap': 'round', 'line-join': 'round' },
+        'paint': {
+            'line-color': '#10b981',
+            'line-width': 4.5
+        }
+    },
+    // 5. VERTEX OUTER RING (Line & Polygon vertices)
+    {
+        'id': 'gl-draw-polygon-and-line-vertex-stroke-inactive',
+        'type': 'circle',
+        'filter': ['all', ['==', 'meta', 'vertex'], ['==', '$type', 'Point'], ['!=', 'mode', 'static']],
+        'paint': {
+            'circle-radius': 7,
+            'circle-color': '#ffffff'
+        }
+    },
+    // 6. VERTEX INNER CORE (Line & Polygon vertices)
+    {
+        'id': 'gl-draw-polygon-and-line-vertex-inactive',
+        'type': 'circle',
+        'filter': ['all', ['==', 'meta', 'vertex'], ['==', '$type', 'Point'], ['!=', 'mode', 'static']],
+        'paint': {
+            'circle-radius': 4.5,
+            'circle-color': '#0284c7'
+        }
+    },
+    // 7. VERTEX ACTIVE (Currently clicked / dragged vertex)
+    {
+        'id': 'gl-draw-polygon-and-line-vertex-active',
+        'type': 'circle',
+        'filter': ['all', ['==', 'meta', 'vertex'], ['==', '$type', 'Point'], ['==', 'active', 'true']],
+        'paint': {
+            'circle-radius': 8,
+            'circle-color': '#f59e0b',
+            'circle-stroke-width': 2.5,
+            'circle-stroke-color': '#ffffff'
+        }
+    },
+    // 8. MIDPOINT (Interactive handle to add new curve/bend to road)
+    {
+        'id': 'gl-draw-polygon-midpoint',
+        'type': 'circle',
+        'filter': ['all', ['==', '$type', 'Point'], ['==', 'meta', 'midpoint']],
+        'paint': {
+            'circle-radius': 5,
+            'circle-color': '#f59e0b',
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#ffffff'
+        }
+    },
+    // 9. POINT / ENTRANCE NODE HALO (Inactive)
+    {
+        'id': 'gl-draw-point-point-stroke-inactive',
+        'type': 'circle',
+        'filter': ['all', ['==', 'active', 'false'], ['==', '$type', 'Point'], ['==', 'meta', 'feature'], ['!=', 'mode', 'static']],
+        'paint': {
+            'circle-radius': 9,
+            'circle-opacity': 0.95,
+            'circle-color': '#ffffff'
+        }
+    },
+    // 10. POINT / ENTRANCE NODE CORE (Inactive - Bright Amber Gold)
+    {
+        'id': 'gl-draw-point-inactive',
+        'type': 'circle',
+        'filter': ['all', ['==', 'active', 'false'], ['==', '$type', 'Point'], ['==', 'meta', 'feature'], ['!=', 'mode', 'static']],
+        'paint': {
+            'circle-radius': 6.5,
+            'circle-color': '#f59e0b'
+        }
+    },
+    // 11. POINT ACTIVE STROKE (Selected entrance node)
+    {
+        'id': 'gl-draw-point-stroke-active',
+        'type': 'circle',
+        'filter': ['all', ['==', '$type', 'Point'], ['==', 'active', 'true'], ['!=', 'meta', 'midpoint']],
+        'paint': {
+            'circle-radius': 11,
+            'circle-color': '#ffffff'
+        }
+    },
+    // 12. POINT ACTIVE CORE (Selected entrance node)
+    {
+        'id': 'gl-draw-point-active',
+        'type': 'circle',
+        'filter': ['all', ['==', '$type', 'Point'], ['!=', 'meta', 'midpoint'], ['==', 'active', 'true']],
+        'paint': {
+            'circle-radius': 7.5,
+            'circle-color': '#ef4444'
+        }
+    },
+    // 13. STATIC LINE
+    {
+        'id': 'gl-draw-line-static',
+        'type': 'line',
+        'filter': ['all', ['==', 'mode', 'static'], ['==', '$type', 'LineString']],
+        'layout': { 'line-cap': 'round', 'line-join': 'round' },
+        'paint': { 'line-color': '#10b981', 'line-width': 4 }
+    },
+    // 14. STATIC POINT
+    {
+        'id': 'gl-draw-point-static',
+        'type': 'circle',
+        'filter': ['all', ['==', 'mode', 'static'], ['==', '$type', 'Point']],
+        'paint': { 'circle-radius': 6, 'circle-color': '#f59e0b' }
+    }
+];
+
+const draw = new MapboxDraw({
+    displayControlsDefault: false,
+    controls: {
+        line_string: true,
+        point: true,
+        trash: true
+    },
+    styles: drawStyles
+});
+map.addControl(draw, 'top-right');
+
+let pendingEntranceId = null;
+
+// UI Tool Switcher
+window.activateTool = function(mode) {
+    draw.changeMode(mode);
+    updateActiveToolUI(mode);
+};
+
+window.trashSelected = function() {
+    draw.trash();
+    updateOutput();
+};
+
+function updateActiveToolUI(mode) {
+    document.getElementById('btn-tool-select').classList.toggle('active', mode === 'simple_select' || mode === 'direct_select');
+    document.getElementById('btn-tool-line').classList.toggle('active', mode === 'draw_line_string');
+    document.getElementById('btn-tool-point').classList.toggle('active', mode === 'draw_point');
+
+    const badge = document.getElementById('modeStatusBadge');
+    badge.className = 'mode-badge';
+
+    if (mode === 'draw_line_string') {
+        badge.classList.add('mode-badge-line');
+        badge.innerHTML = '<span>🛣️</span> <strong>Tracing Road:</strong> Click to add points. Double-click or press Enter to finish.';
+    } else if (mode === 'draw_point') {
+        badge.classList.add('mode-badge-point');
+        badge.innerHTML = '<span>📍</span> <strong>Entrance Node:</strong> Click on building doors or gates to place node.';
+    } else {
+        badge.classList.add('mode-badge-select');
+        badge.innerHTML = '<span>✋</span> <strong>Select Mode:</strong> Click any road or point to edit vertices or delete.';
+    }
+}
+
+map.on('draw.modechange', (e) => {
+    updateActiveToolUI(e.mode);
+});
+
+// Keyboard Shortcuts
+window.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.key === '2' || e.key === 'r' || e.key === 'R') {
+        activateTool('draw_line_string');
+    } else if (e.key === '1' || e.key === 'p' || e.key === 'P') {
+        activateTool('draw_point');
+    } else if (e.key === 'Escape' || e.key === 's' || e.key === 'S') {
+        activateTool('simple_select');
+    } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        trashSelected();
+    }
+});
+
+// Layer toggle functions
+window.setBaseLayer = function(mode) {
+    const isDrone = (mode === 'drone');
+    document.getElementById('btn-layer-drone').classList.toggle('active', isDrone);
+    document.getElementById('btn-layer-google').classList.toggle('active', !isDrone);
+    
+    if (map.getLayer('qares-ortho-layer')) {
+        map.setLayoutProperty('qares-ortho-layer', 'visibility', isDrone ? 'visible' : 'none');
+    }
+};
+
+window.setDroneOpacity = function(val) {
+    const opacity = parseFloat(val);
+    document.getElementById('drone-opacity-val').textContent = `${Math.round(opacity * 100)}%`;
+    if (map.getLayer('qares-ortho-layer')) {
+        map.setPaintProperty('qares-ortho-layer', 'raster-opacity', opacity);
+    }
+};
+
+function updateOutput() {
+    const data = draw.getAll();
+    document.getElementById('featuresCountLabel').textContent = `Features: ${data.features.length}`;
+    document.getElementById('output').value = JSON.stringify(data, null, 2);
+    localStorage.setItem('qares_roads_autosave', JSON.stringify(data));
+}
+
+map.on('draw.create', function(e) {
+    if (e.features && e.features[0].geometry.type === 'Point') {
+        pendingEntranceId = e.features[0].id;
+        document.getElementById('entranceBuildingId').value = '';
+        document.getElementById('buildingModal').style.display = 'flex';
+        document.getElementById('entranceBuildingId').focus();
+    } else {
+        updateOutput();
+    }
+});
+
+map.on('draw.update', updateOutput);
+map.on('draw.delete', updateOutput);
+
+window.confirmEntrance = function() {
+    const bId = document.getElementById('entranceBuildingId').value.trim() || 'qares_facility';
+    if (pendingEntranceId) {
+        draw.setFeatureProperty(pendingEntranceId, 'type', 'entrance');
+        draw.setFeatureProperty(pendingEntranceId, 'buildingId', bId);
+        draw.setFeatureProperty(pendingEntranceId, 'name', `Entrance: ${bId}`);
+        draw.setFeatureProperty(pendingEntranceId, 'station', 'qares');
+        pendingEntranceId = null;
+    }
+    document.getElementById('buildingModal').style.display = 'none';
+    updateOutput();
+};
+
+window.cancelEntrance = function() {
+    if (pendingEntranceId) {
+        draw.delete(pendingEntranceId);
+        pendingEntranceId = null;
+    }
+    document.getElementById('buildingModal').style.display = 'none';
+    updateOutput();
+};
+
+window.saveDirectlyToMap = function() {
+    const data = draw.getAll();
+    const btn = document.getElementById('saveDirectBtn');
+    btn.textContent = "Saving to qares_roads.json...";
+    btn.disabled = true;
+
+    // Auto-generate IDs
+    let roadCounter = 1;
+    let entranceCounter = 1;
+    for (const f of data.features) {
+        if (!f.properties.id) {
+            if (f.geometry.type === 'Point') {
+                f.properties.id = "qares_entrance_" + entranceCounter++;
+            } else {
+                f.properties.id = "qares_road_" + roadCounter++;
+            }
+        }
+        f.properties.station = 'qares';
+    }
+
+    fetch('/api/qares/roads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res.success) {
+            btn.textContent = `✅ Saved ${res.count} features!`;
+            btn.style.background = "#10b981";
+            setTimeout(() => {
+                btn.textContent = "💾 Save Directly to Map (qares_roads.json)";
+                btn.style.background = "linear-gradient(135deg, #10b981, #059669)";
+                btn.disabled = false;
+            }, 3000);
+        } else {
+            alert('Failed to save: ' + (res.error || 'Unknown error'));
+            btn.textContent = "❌ Error Saving";
+            btn.disabled = false;
+        }
+    })
+    .catch(err => {
+        alert('Network error: ' + err.message);
+        btn.textContent = "❌ Error Saving";
+        btn.disabled = false;
+    });
+};
+
+window.exportData = function() {
+    const data = draw.getAll();
+    document.getElementById('output').value = JSON.stringify(data, null, 2);
+    document.getElementById('output').select();
+    document.execCommand('copy');
+    alert('Copied QARES Road GeoJSON to clipboard!');
+};
+
+window.reloadFromOriginalBaseline = function() {
+    if (!confirm('Discard unsaved local edits and reload from qares_roads.json?')) return;
+    localStorage.removeItem('qares_roads_autosave');
+    draw.deleteAll();
+    fetch('/api/qares/roads?t=' + Date.now())
+        .then(r => r.json())
+        .then(data => {
+            if (data && data.features && data.features.length > 0) {
+                draw.add(data);
+            }
+            updateOutput();
+        });
+};
+
+map.on('load', () => {
+    const beforeDrawLayer = map.getLayer('gl-draw-line-casing-inactive') ? 'gl-draw-line-casing-inactive' : undefined;
+
+    // 1. Official QARES Compound Boundary
+    map.addSource('qares-boundary-source', {
+        type: 'geojson',
+        data: 'qares_boundary.json'
+    });
+    map.addLayer({
+        id: 'qares-boundary-fill',
+        type: 'fill',
+        source: 'qares-boundary-source',
+        paint: {
+            'fill-color': '#10b981',
+            'fill-opacity': 0.08
+        }
+    }, beforeDrawLayer);
+    map.addLayer({
+        id: 'qares-boundary-line',
+        type: 'line',
+        source: 'qares-boundary-source',
+        paint: {
+            'line-color': '#10b981',
+            'line-width': 2.5,
+            'line-dasharray': [3, 1]
+        }
+    }, beforeDrawLayer);
+
+    // 3. Overlay building footprints if they exist
+    fetch('/api/qares/buildings?t=' + Date.now())
+        .then(r => r.json())
+        .then(data => {
+            if (data && data.features && data.features.length > 0) {
+                map.addSource('qares-footprints-source', { type: 'geojson', data: data });
+                map.addLayer({
+                    id: 'qares-footprints-fill',
+                    type: 'fill',
+                    source: 'qares-footprints-source',
+                    paint: { 'fill-color': '#0284c7', 'fill-opacity': 0.25 }
+                }, beforeDrawLayer);
+                map.addLayer({
+                    id: 'qares-footprints-line',
+                    type: 'line',
+                    source: 'qares-footprints-source',
+                    paint: { 'line-color': '#38bdf8', 'line-width': 2, 'line-dasharray': [3, 2] }
+                }, beforeDrawLayer);
+            }
+        })
+        .catch(e => {});
+
+    // 4. Initial load: try autosave or fallback to qares_roads.json
+    const autosave = localStorage.getItem('qares_roads_autosave');
+    if (autosave) {
+        try {
+            const data = JSON.parse(autosave);
+            if (data && data.features && data.features.length > 0) {
+                draw.add(data);
+                updateOutput();
+                console.log('Restored QARES road drawing from autosave.');
+                return;
+            }
+        } catch (e) {}
+    }
+
+    fetch('/api/qares/roads?t=' + Date.now())
+        .then(r => r.json())
+        .then(data => {
+            if (data && data.features && data.features.length > 0) {
+                draw.add(data);
+                updateOutput();
+            }
+        })
+        .catch(e => {});
+});
+</script>
+</body>
+</html>

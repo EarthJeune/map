@@ -1,7 +1,7 @@
 // DA-LARES Markers Module
 // Google Maps-style numbered pins, section badges, and compound entrance arrow.
 
-import { BUILDING_DIRECTORY } from './data/buildings.js?v=60';
+import { BUILDING_DIRECTORY } from './data/buildings.js?v=72';
 import { state } from './data/state.js';
 
 export function renderSectionBadges() {
@@ -20,6 +20,10 @@ export function createEntranceArrowMarker() {
     if (state.entranceArrowMarker) {
         state.entranceArrowMarker.remove();
         state.entranceArrowMarker = null;
+    }
+    // Only render LARES entrance arrow if current station is LARES
+    if (state.currentStationId && state.currentStationId !== 'lares') {
+        return;
     }
     const el = document.createElement('div');
     el.className = 'entrance-arrow-marker';
@@ -53,6 +57,13 @@ export function updateMarkerZoomState() {
 }
 
 export function createMarkers() {
+    // Only render LARES building markers if current station is LARES
+    if (state.currentStationId && state.currentStationId !== 'lares') {
+        removeMarkers();
+        return;
+    }
+    removeMarkers();
+
     const numbersBtn = document.getElementById('chip-numbers');
     const areMarkersVisible = (state.markersVisible !== undefined)
         ? state.markersVisible
@@ -125,4 +136,47 @@ export function removeMarkers() {
         state.markers.forEach(m => m.remove());
     }
     state.markers = [];
+}
+
+export function declutterMarkersForOrbit(selectedBuildingId) {
+    if (!selectedBuildingId) return;
+    const dirList = (typeof window !== 'undefined' && window.BUILDING_DIRECTORY && window.BUILDING_DIRECTORY.length > 0)
+        ? window.BUILDING_DIRECTORY
+        : BUILDING_DIRECTORY;
+    const selectedBldg = dirList.find(b => b.id === selectedBuildingId);
+    if (!selectedBldg) return;
+
+    document.querySelectorAll('.bldg-map-marker').forEach(el => {
+        const id = el.dataset.id;
+        if (id === selectedBuildingId) {
+            el.classList.add('decluttered-highlight', 'decluttered-dest');
+            el.classList.remove('decluttered-dim', 'decluttered-hide');
+            el.style.display = '';
+        } else {
+            const bldg = dirList.find(b => b.id === id);
+            if (bldg) {
+                const dist = Math.hypot(
+                    (bldg.coords[0] - selectedBldg.coords[0]) * 111000 * Math.cos(selectedBldg.coords[1] * Math.PI / 180),
+                    (bldg.coords[1] - selectedBldg.coords[1]) * 111000
+                );
+                // Hide distant markers (>50m) during 3D inspection orbit so browser doesn't transform 33 DOM elements per frame
+                if (dist > 50) {
+                    el.classList.add('decluttered-hide');
+                    el.classList.remove('decluttered-dim');
+                } else {
+                    el.classList.add('decluttered-dim');
+                    el.classList.remove('decluttered-hide');
+                }
+            }
+        }
+    });
+}
+
+export function restoreMarkersAfterOrbit() {
+    document.querySelectorAll('.bldg-map-marker').forEach(el => {
+        el.classList.remove('decluttered-dim', 'decluttered-hide', 'decluttered-highlight', 'decluttered-dest');
+        if (state.markersVisible !== false) {
+            el.style.display = '';
+        }
+    });
 }

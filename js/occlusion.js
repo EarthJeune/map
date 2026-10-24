@@ -3,7 +3,7 @@
 
 import { map, getRoofColorCaseStyle } from './map-setup.js';
 import { state } from './data/state.js';
-import { LARES_DRAWINGS } from './data/buildings.js?v=60';
+import { LARES_DRAWINGS } from './data/buildings.js?v=72';
 
 let cachedBuildings = null;
 let lastOccludedIds = [];
@@ -11,6 +11,15 @@ let lastCheckTime = 0;
 let lastCheckCoord = null;
 
 const BASE_NO_3D_MODEL_FILTER = ['!=', ['get', 'has_3d_model'], true];
+const getBaseFilter = () => BASE_NO_3D_MODEL_FILTER;
+
+// Fast zero-allocation Euclidean distance in meters calibrated for Batangas (~13.96° N)
+export function fastMetersDistance(c1, c2) {
+    if (!c1 || !c2) return 999;
+    const dx = (c2[0] - c1[0]) * 108040;
+    const dy = (c2[1] - c1[1]) * 110540;
+    return Math.sqrt(dx * dx + dy * dy);
+}
 
 // Initialize spatial cache of buildings for fast bounding box & collision tests
 export function initBuildingSpatialIndex() {
@@ -64,7 +73,7 @@ export function ensureOcclusionLayers() {
                 'fill-extrusion-emissive-strength': 0.35,
                 'fill-extrusion-cast-shadows': false
             },
-            filter: ['all', BASE_NO_3D_MODEL_FILTER, ['in', ['get', 'id'], ['literal', []]]]
+            filter: ['all', getBaseFilter(), ['in', ['get', 'id'], ['literal', []]]]
         };
         map.addLayer(layerConfig);
     }
@@ -86,40 +95,38 @@ export function ensureOcclusionLayers() {
                 'fill-extrusion-emissive-strength': 0.35,
                 'fill-extrusion-cast-shadows': false
             },
-            filter: ['all', BASE_NO_3D_MODEL_FILTER, ['in', ['get', 'id'], ['literal', []]]]
+            filter: ['all', getBaseFilter(), ['in', ['get', 'id'], ['literal', []]]]
         };
         map.addLayer(roofLayerConfig);
     }
 
-    // 2. Custom 3D GLB Models companion translucent layer (X-Ray frosted glass 0.25 opacity)
-    if (map.getLayer('3d-buildings-models-layer') && !map.getLayer('3d-buildings-models-transparent')) {
-        const origModelDef = map.getStyle().layers.find(l => l.id === '3d-buildings-models-layer');
-        if (origModelDef) {
-            const transModelDef = {
-                id: '3d-buildings-models-transparent',
-                type: 'model',
-                source: origModelDef.source,
-                minzoom: origModelDef.minzoom || 13,
-                layout: {
-                    'model-id': ['get', 'model'],
-                    'visibility': state.buildingsVisible ? 'visible' : 'none'
-                },
-                paint: {
-                    'model-scale': [1.0, 1.0, 1.0],
-                    'model-rotation': [0, 0, ['coalesce', ['get', 'rotation'], 0]],
-                    'model-opacity': 0.25,
-                    'model-opacity-transition': { duration: 250, delay: 0 },
-                    'model-cast-shadows': false,
-                    'model-receive-shadows': false,
-                    'model-emissive-strength': 0.8
-                },
-                filter: ['in', ['get', 'id'], ['literal', []]]
-            };
-            if (origModelDef.slot) {
-                transModelDef.slot = origModelDef.slot;
-            }
-            map.addLayer(transModelDef);
+    // 2. Custom 3D GLB models transparent companion layer
+    const origModelDef = map.getStyle().layers ? map.getStyle().layers.find(l => l.id === '3d-buildings-models-layer') : null;
+    if (origModelDef && !map.getLayer('3d-buildings-models-transparent')) {
+        const transModelDef = {
+            id: '3d-buildings-models-transparent',
+            type: 'model',
+            source: origModelDef.source,
+            minzoom: origModelDef.minzoom || 14.5,
+            layout: {
+                'model-id': ['get', 'model'],
+                'visibility': state.buildingsVisible ? 'visible' : 'none'
+            },
+            paint: {
+                'model-scale': [1.0, 1.0, 1.0],
+                'model-rotation': [0, 0, ['coalesce', ['get', 'rotation'], 0]],
+                'model-opacity': 0.25,
+                'model-opacity-transition': { duration: 250, delay: 0 },
+                'model-cast-shadows': false,
+                'model-receive-shadows': false,
+                'model-emissive-strength': 0.8
+            },
+            filter: ['in', ['get', 'id'], ['literal', []]]
+        };
+        if (origModelDef.slot) {
+            transModelDef.slot = origModelDef.slot;
         }
+        map.addLayer(transModelDef);
     }
 
     return true;
@@ -167,8 +174,8 @@ export function computeOccludedBuildingIds(targetCoord, destinationId) {
 
         let distToWalker = 999;
         if (b.center) {
-            distToWalker = turf.distance(targetPt, turf.point(b.center), { units: 'meters' });
-            if (distToWalker > 65) continue; // Far away, skip
+            distToWalker = fastMetersDistance(targetCoord, b.center);
+            if (distToWalker > 65) continue; // Far away, skip immediately
         }
 
         let isOccluded = false;
@@ -234,13 +241,14 @@ export function applyOcclusionFilters(occludedIds) {
     try {
         if (occludedIds.length === 0) {
             // A. All solid procedural buildings
-            if (map.getLayer('3d-drawings')) map.setFilter('3d-drawings', BASE_NO_3D_MODEL_FILTER);
-            if (map.getLayer('3d-drawings-roofs')) map.setFilter('3d-drawings-roofs', BASE_NO_3D_MODEL_FILTER);
+            const baseFilter = getBaseFilter();
+            if (map.getLayer('3d-drawings')) map.setFilter('3d-drawings', baseFilter);
+            if (map.getLayer('3d-drawings-roofs')) map.setFilter('3d-drawings-roofs', baseFilter);
             if (map.getLayer('3d-drawings-transparent')) {
-                map.setFilter('3d-drawings-transparent', ['all', BASE_NO_3D_MODEL_FILTER, ['in', ['get', 'id'], ['literal', []]]]);
+                map.setFilter('3d-drawings-transparent', ['all', baseFilter, ['in', ['get', 'id'], ['literal', []]]]);
             }
             if (map.getLayer('3d-drawings-roofs-transparent')) {
-                map.setFilter('3d-drawings-roofs-transparent', ['all', BASE_NO_3D_MODEL_FILTER, ['in', ['get', 'id'], ['literal', []]]]);
+                map.setFilter('3d-drawings-roofs-transparent', ['all', baseFilter, ['in', ['get', 'id'], ['literal', []]]]);
             }
 
             // B. All solid custom 3D models (show all on solid layer, hide on transparent layer)
@@ -252,23 +260,21 @@ export function applyOcclusionFilters(occludedIds) {
             }
         } else {
             // A. Procedural buildings
-            const solidFilter = ['all', BASE_NO_3D_MODEL_FILTER, ['!', ['in', ['get', 'id'], ['literal', occludedIds]]]];
-            const transFilter = ['all', BASE_NO_3D_MODEL_FILTER, ['in', ['get', 'id'], ['literal', occludedIds]]];
+            const baseFilter = getBaseFilter();
+            const solidFilter = ['all', baseFilter, ['!', ['in', ['get', 'id'], ['literal', occludedIds]]]];
+            const transFilter = ['all', baseFilter, ['in', ['get', 'id'], ['literal', occludedIds]]];
 
             if (map.getLayer('3d-drawings')) map.setFilter('3d-drawings', solidFilter);
             if (map.getLayer('3d-drawings-roofs')) map.setFilter('3d-drawings-roofs', solidFilter);
             if (map.getLayer('3d-drawings-transparent')) map.setFilter('3d-drawings-transparent', transFilter);
             if (map.getLayer('3d-drawings-roofs-transparent')) map.setFilter('3d-drawings-roofs-transparent', transFilter);
 
-            // B. Custom 3D models: exclude occluded from solid layer, include occluded on transparent 0.25 layer
-            const modelSolidFilter = ['!', ['in', ['get', 'id'], ['literal', occludedIds]]];
-            const modelTransFilter = ['in', ['get', 'id'], ['literal', occludedIds]];
-
+            // B. Custom 3D models: Solid layer excludes occludedIds, translucent layer displays occludedIds
             if (map.getLayer('3d-buildings-models-layer')) {
-                map.setFilter('3d-buildings-models-layer', modelSolidFilter);
+                map.setFilter('3d-buildings-models-layer', ['!', ['in', ['get', 'id'], ['literal', occludedIds]]]);
             }
             if (map.getLayer('3d-buildings-models-transparent')) {
-                map.setFilter('3d-buildings-models-transparent', modelTransFilter);
+                map.setFilter('3d-buildings-models-transparent', ['in', ['get', 'id'], ['literal', occludedIds]]);
             }
         }
     } catch (e) {
@@ -281,8 +287,8 @@ export function updateOcclusion(targetCoord, destinationId) {
     const now = Date.now();
     // Run at most every 90ms (~11 checks/sec) to preserve 60fps budget
     if (now - lastCheckTime < 90 && lastCheckCoord) {
-        if (targetCoord && typeof turf !== 'undefined') {
-            const distMoved = turf.distance(turf.point(lastCheckCoord), turf.point(targetCoord), { units: 'meters' });
+        if (targetCoord) {
+            const distMoved = fastMetersDistance(lastCheckCoord, targetCoord);
             if (distMoved < 1.0) return;
         } else {
             return;
@@ -305,13 +311,14 @@ export function resetOcclusion() {
     if (!map || !map.getStyle()) return;
 
     try {
-        if (map.getLayer('3d-drawings')) map.setFilter('3d-drawings', BASE_NO_3D_MODEL_FILTER);
-        if (map.getLayer('3d-drawings-roofs')) map.setFilter('3d-drawings-roofs', BASE_NO_3D_MODEL_FILTER);
+        const baseFilter = getBaseFilter();
+        if (map.getLayer('3d-drawings')) map.setFilter('3d-drawings', baseFilter);
+        if (map.getLayer('3d-drawings-roofs')) map.setFilter('3d-drawings-roofs', baseFilter);
         if (map.getLayer('3d-drawings-transparent')) {
-            map.setFilter('3d-drawings-transparent', ['all', BASE_NO_3D_MODEL_FILTER, ['in', ['get', 'id'], ['literal', []]]]);
+            map.setFilter('3d-drawings-transparent', ['all', baseFilter, ['in', ['get', 'id'], ['literal', []]]]);
         }
         if (map.getLayer('3d-drawings-roofs-transparent')) {
-            map.setFilter('3d-drawings-roofs-transparent', ['all', BASE_NO_3D_MODEL_FILTER, ['in', ['get', 'id'], ['literal', []]]]);
+            map.setFilter('3d-drawings-roofs-transparent', ['all', baseFilter, ['in', ['get', 'id'], ['literal', []]]]);
         }
         if (map.getLayer('3d-buildings-models-layer')) {
             map.setFilter('3d-buildings-models-layer', null);
@@ -326,6 +333,7 @@ export function resetOcclusion() {
 
 // Attach to window for debug & console inspection
 if (typeof window !== 'undefined') {
+    window.fastMetersDistance = fastMetersDistance;
     window.updateOcclusion = updateOcclusion;
     window.resetOcclusion = resetOcclusion;
     window.ensureOcclusionLayers = ensureOcclusionLayers;
@@ -337,14 +345,29 @@ if (typeof window !== 'undefined') {
     };
 
     // Keep occlusion dynamically updated if user rotates/pitches the camera during active navigation
-    if (map && map.on) {
-        const handleCameraMotion = () => {
-            if (state.activeRoute && state.currentWalkerCoord) {
-                updateOcclusion(state.currentWalkerCoord, state.selectedBuildingId);
-            }
-        };
-        map.on('rotate', handleCameraMotion);
-        map.on('pitch', handleCameraMotion);
+    window.initOcclusionListeners = function initOcclusionListeners() {
+        const currentMap = (typeof state !== 'undefined' && state.map) || (typeof window !== 'undefined' && window.map);
+        if (currentMap && currentMap.on && !currentMap._occlusionListenersAttached) {
+            currentMap._occlusionListenersAttached = true;
+            const handleCameraMotion = () => {
+                if (state.activeRoute && state.currentWalkerCoord) {
+                    updateOcclusion(state.currentWalkerCoord, state.selectedBuildingId);
+                }
+            };
+            currentMap.on('rotate', handleCameraMotion);
+            currentMap.on('pitch', handleCameraMotion);
+        }
+    };
+    if (typeof setTimeout !== 'undefined') {
+        setTimeout(() => {
+            try { window.initOcclusionListeners(); } catch (e) {}
+        }, 300);
+    }
+}
+
+export function initOcclusionListeners() {
+    if (typeof window !== 'undefined' && typeof window.initOcclusionListeners === 'function') {
+        window.initOcclusionListeners();
     }
 }
 

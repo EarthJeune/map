@@ -5,15 +5,24 @@ import { state } from './data/state.js';
 let currentQRCodeInstance = null;
 let currentZoomQRCodeInstance = null;
 
+export function isPublicDomainUrl(url) {
+    if (!url || typeof url !== 'string') return false;
+    if (url.includes('localhost') || url.includes('127.0.0.1')) return false;
+    // Disallow RFC 1918 private IPv4 addresses
+    if (/^https?:\/\/(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/.test(url)) return false;
+    // Must be a valid HTTPS public tunnel or domain
+    return url.startsWith('https://');
+}
+
 export function fetchTunnelInfo() {
     if (typeof window === 'undefined' || window.location.protocol === 'file:') return Promise.resolve(null);
     return fetch('/api/tunnel')
         .then(res => res.json())
         .then(data => {
             if (data) {
-                if (data.tunnelUrl && !data.tunnelUrl.includes('localhost') && !data.tunnelUrl.includes('127.0.0.1')) {
+                if (isPublicDomainUrl(data.tunnelUrl)) {
                     state.PUBLIC_TUNNEL_URL = data.tunnelUrl;
-                } else if (data.url && !data.url.includes('localhost') && !data.url.includes('127.0.0.1')) {
+                } else if (isPublicDomainUrl(data.url)) {
                     state.PUBLIC_TUNNEL_URL = data.url;
                 } else {
                     state.PUBLIC_TUNNEL_URL = null;
@@ -40,26 +49,25 @@ export function getMobileNavigationUrl(buildingId) {
 
     let baseOrigin = '';
 
-    // Prefer public tunnel so mobile data phones can access from anywhere
+    // Prefer public tunnel so mobile data phones (4G/5G) can access from anywhere
     if (state.PUBLIC_TUNNEL_URL) {
         baseOrigin = state.PUBLIC_TUNNEL_URL.replace(/\/$/, '');
+    } else if (!isLocal && !/^192\.168\.|^10\.|^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(host)) {
+        baseOrigin = window.location.origin;
     } else if (state.LOCAL_IP_URL) {
         baseOrigin = state.LOCAL_IP_URL.replace(/\/$/, '');
-    } else if (!isLocal) {
-        baseOrigin = window.location.origin;
     } else {
         baseOrigin = window.location.origin;
     }
 
-    let path = '/';
-    if (window.location.protocol !== 'file:' && window.location.pathname && window.location.pathname !== '/') {
-        path = window.location.pathname;
-    }
-    if (!path.startsWith('/')) path = '/' + path;
+    // STRICT: Mobile navigation QR codes MUST ALWAYS open the new upgraded 3D map (index.html)
+    // Never propagate legacy.html or previous version pages to phone users!
+    const path = '/index.html';
 
     const currentMode = state.currentMapStyleMode || 'google';
     const viewMode = (currentMode === 'mapbox') ? 'mapbox' : 'google';
-    return `${baseOrigin}${path}?dest=${encodeURIComponent(buildingId)}&mode=phone&view=${viewMode}`;
+    const destParam = (buildingId && buildingId !== '1') ? `dest=${encodeURIComponent(buildingId)}&` : '';
+    return `${baseOrigin}${path}?${destParam}mode=phone&view=${viewMode}&v=73`;
 }
 
 export function updateBuildingQR(buildingId) {
@@ -120,6 +128,59 @@ export function updateRouteQR(buildingId) {
     });
 }
 
+let qrCountdownInterval = null;
+let qrRemainingSeconds = 25;
+const QR_AUTO_EXIT_SECONDS = 25;
+
+export function startQRAutoExitCountdown() {
+    clearQRAutoExitCountdown();
+    qrRemainingSeconds = QR_AUTO_EXIT_SECONDS;
+    updateQRCountdownDisplay(qrRemainingSeconds);
+
+    qrCountdownInterval = setInterval(() => {
+        qrRemainingSeconds--;
+        updateQRCountdownDisplay(qrRemainingSeconds);
+        if (qrRemainingSeconds <= 0) {
+            clearQRAutoExitCountdown();
+            handleQRAutoExitTimeout();
+        }
+    }, 1000);
+}
+
+export function clearQRAutoExitCountdown() {
+    if (qrCountdownInterval) {
+        clearInterval(qrCountdownInterval);
+        qrCountdownInterval = null;
+    }
+}
+
+export function resetQRAutoExitCountdown() {
+    const modal = document.getElementById('qr-zoom-modal');
+    if (modal && modal.style.display === 'flex') {
+        qrRemainingSeconds = QR_AUTO_EXIT_SECONDS;
+        updateQRCountdownDisplay(qrRemainingSeconds);
+    }
+}
+
+function updateQRCountdownDisplay(seconds) {
+    const el = document.getElementById('qr-countdown-num');
+    if (el) el.textContent = seconds;
+}
+
+function handleQRAutoExitTimeout() {
+    const modal = document.getElementById('qr-zoom-modal');
+    if (!modal || modal.style.display === 'none') return;
+
+    if (typeof window.triggerAutoExitToIdle === 'function') {
+        window.triggerAutoExitToIdle('qr_timeout');
+    } else {
+        closeQRZoomModal();
+        if (typeof window.exitRouteMode === 'function') window.exitRouteMode();
+        if (typeof window.closeBuildingPanel === 'function') window.closeBuildingPanel();
+        if (typeof window.startIdleRotation === 'function') window.startIdleRotation();
+    }
+}
+
 export function openQRZoomModal(buildingId) {
     const targetBuilding = buildingId || state.selectedBuildingId || '1';
     const modal = document.getElementById('qr-zoom-modal');
@@ -127,6 +188,7 @@ export function openQRZoomModal(buildingId) {
     if (!modal || !zoomBox) return;
 
     modal.style.display = 'flex';
+    startQRAutoExitCountdown();
 
     fetchTunnelInfo().then(() => {
         const url = getMobileNavigationUrl(targetBuilding);
@@ -152,6 +214,7 @@ export function openQRZoomModal(buildingId) {
 
 export function closeQRZoomModal(event) {
     if (event) event.stopPropagation();
+    clearQRAutoExitCountdown();
     const modal = document.getElementById('qr-zoom-modal');
     if (modal) modal.style.display = 'none';
 }
@@ -168,3 +231,6 @@ window.updateBuildingQR = updateBuildingQR;
 window.updateRouteQR = updateRouteQR;
 window.openQRZoomModal = openQRZoomModal;
 window.closeQRZoomModal = closeQRZoomModal;
+window.startQRAutoExitCountdown = startQRAutoExitCountdown;
+window.clearQRAutoExitCountdown = clearQRAutoExitCountdown;
+window.resetQRAutoExitCountdown = resetQRAutoExitCountdown;

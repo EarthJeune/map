@@ -35,7 +35,7 @@ export const INTRO_TARGET_2D_VIEW = {
 export const VIEWS = {
     overview: { center: DEFAULT_MAP_VIEW.center, zoom: DEFAULT_MAP_VIEW.zoom, pitch: DEFAULT_MAP_VIEW.pitch, bearing: DEFAULT_MAP_VIEW.bearing, duration: 2000 },
     closeup: { center: [121.1664, 13.9590], zoom: 19.5, pitch: 65, bearing: -10, duration: 2000 },
-    topdown: { center: DEFAULT_MAP_VIEW.center, zoom: DEFAULT_MAP_VIEW.zoom, pitch: 0, bearing: 0, duration: 2000 },
+    topdown: { center: DEFAULT_MAP_VIEW.center, zoom: 19.6, pitch: 0, bearing: 0, duration: 2000 },
     cinematic: { center: DEFAULT_MAP_VIEW.center, zoom: DEFAULT_MAP_VIEW.zoom, pitch: 70, bearing: -45, duration: 2500 }
 };
 

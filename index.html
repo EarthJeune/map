@@ -3,9 +3,9 @@
 
 <head>
     <meta charset="utf-8">
-    <title>3D Interactive Map — DA-LARES, Lipa City</title>
+    <title>DASH — Department of Agriculture Spatial Hub | 3D Interactive Map</title>
     <meta name="description"
-        content="Interactive 3D map of DA-LARES with Mapbox Standard 3D buildings, trees, and terrain.">
+        content="Department of Agriculture Spatial Hub (DASH) — Interactive 3D campus wayfinding and masterplan connecting Department of Agriculture research stations.">
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0a0f1c">
@@ -22,7 +22,15 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/main.css?v=53">
+    <link rel="stylesheet" href="css/main.css?v=93">
+    <script>
+        try {
+            if (new URLSearchParams(window.location.search).get('admin') === '1' || localStorage.getItem('da_admin_mode') === 'true') {
+                document.documentElement.classList.add('admin-mode');
+                document.addEventListener('DOMContentLoaded', () => document.body.classList.add('admin-mode'));
+            }
+        } catch (e) { }
+    </script>
 </head>
 
 <body>
@@ -32,16 +40,33 @@
     </div>
     <div id="map"></div>
 
+    <!-- Phone Floating Top Bar: DASH Logo + Station Switcher Pill (Active in Mobile View) -->
+    <header class="phone-top-bar" id="phone-top-bar">
+        <div class="phone-top-badge" onclick="showDashWelcomeModal()" title="About DASH"
+            aria-label="Open DASH System Guide">
+            <img src="Main Icon/DASH_Logo_animated.svg" alt="DASH Logo" class="phone-top-logo">
+        </div>
+        <button type="button" class="phone-station-pill" id="phone-station-pill" onclick="openPhoneStationModal()"
+            title="Change Research Station">
+            <span class="phone-station-pill-dot">●</span>
+            <span class="phone-station-pill-name" id="phone-station-pill-name">DA-LARES</span>
+            <span class="phone-station-pill-chevron">▾</span>
+        </button>
+    </header>
+
     <!-- Floating Map View Mode Switcher Widget (Expandable on Desktop/Kiosk, Pop-up on Mobile) -->
-    <div class="map-layer-widget" id="map-layer-widget" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()">
+    <div class="map-layer-widget" id="map-layer-widget" onmousedown="event.stopPropagation()"
+        ontouchstart="event.stopPropagation()">
         <!-- Flyout Panel (expands to the left on desktop / kiosk) -->
         <div class="map-layer-flyout" id="map-layer-flyout">
-            <button class="map-layer-option active" id="layer-opt-google" onclick="selectMapStyle('google')" title="Switch to Aerial Drone View">
+            <button class="map-layer-option active" id="layer-opt-google" onclick="selectMapStyle('google')"
+                title="Switch to Aerial Drone View">
                 <span class="mlo-icon">🚁</span>
                 <span class="mlo-name">Aerial Drone View</span>
                 <span class="mlo-check">✓</span>
             </button>
-            <button class="map-layer-option" id="layer-opt-mapbox" onclick="selectMapStyle('mapbox')" title="Switch to Mapbox 3D View">
+            <button class="map-layer-option" id="layer-opt-mapbox" onclick="selectMapStyle('mapbox')"
+                title="Switch to Mapbox 3D View">
                 <span class="mlo-icon">🗺️</span>
                 <span class="mlo-name">Mapbox View</span>
                 <span class="mlo-check">✓</span>
@@ -49,14 +74,223 @@
         </div>
 
         <!-- Main Icon Trigger Button -->
-        <button class="map-layer-trigger-btn" id="map-layer-trigger-btn" onclick="toggleMapLayerMenu()" title="Map View Options" aria-label="Toggle map view options">
+        <button class="map-layer-trigger-btn" id="map-layer-trigger-btn" onclick="toggleMapLayerMenu()"
+            title="Map View Options" aria-label="Toggle map view options">
             <span class="mlt-icon" id="mlt-current-icon">🚁</span>
         </button>
     </div>
 
+    <!-- Floating Map Display Settings Widget (Right-Hand Toolbar Stack) -->
+    <div class="map-settings-widget" id="map-settings-widget" onmousedown="event.stopPropagation()"
+        ontouchstart="event.stopPropagation()">
+        <button class="map-settings-trigger-btn" id="map-settings-trigger-btn" onclick="toggleMapSettingsPanel(event)"
+            title="Map Display Settings" aria-label="Toggle map display settings">
+            <span class="mst-icon">⚙️</span>
+        </button>
+    </div>
+
+    <!-- Admin Drone Calibration Widget (Right-Hand Toolbar Stack, Admin Only) -->
+    <div class="admin-drone-calib-widget" id="admin-drone-calib-widget" onmousedown="event.stopPropagation()"
+        ontouchstart="event.stopPropagation()">
+        <button class="admin-drone-calib-trigger-btn" id="admin-drone-calib-trigger-btn"
+            onclick="toggleDroneCalibrationHUD(event)"
+            title="🛰️ Drone Imagery Calibration (Admin Mode: Alt + Shift + D)"
+            aria-label="Open Drone Calibration Tool">
+            <span class="adcb-icon">🛰️</span>
+        </button>
+    </div>
+
+    <!-- Consolidated Map Settings Control Panel Popover / Modal -->
+    <div class="map-settings-backdrop" id="map-settings-backdrop" onclick="closeMapSettingsPanel()"></div>
+    <div class="map-settings-panel" id="map-settings-panel" onmousedown="event.stopPropagation()"
+        ontouchstart="event.stopPropagation()">
+        <div class="msp-header">
+            <div class="msp-header-title">
+                <span class="msp-icon">⚙️</span>
+                <div>
+                    <h3>Map Display Settings</h3>
+                    <p>Customize layers, label style & lighting</p>
+                </div>
+            </div>
+            <button class="msp-close-btn" onclick="closeMapSettingsPanel()" title="Close Settings">✕</button>
+        </div>
+
+        <div class="msp-body">
+            <!-- 1. Layer Visibility Toggles (Boolean Switches) -->
+            <div class="msp-section">
+                <div class="msp-section-header">
+                    <span class="msp-section-tag">LAYERS</span>
+                    <h4>Layer Visibility</h4>
+                </div>
+                <div class="msp-toggle-list">
+                    <!-- 3D Buildings -->
+                    <div class="msp-toggle-row">
+                        <div class="msp-toggle-info">
+                            <span class="msp-toggle-icon">🏢</span>
+                            <div>
+                                <span class="msp-toggle-label">3D Buildings</span>
+                                <span class="msp-toggle-desc">Architectural models & extrusions</span>
+                            </div>
+                        </div>
+                        <label class="msp-switch">
+                            <input type="checkbox" id="msp-toggle-buildings" checked
+                                onchange="handleLayerToggle('buildings', this.checked)">
+                            <span class="msp-slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- Building Labels -->
+                    <div class="msp-toggle-row">
+                        <div class="msp-toggle-info">
+                            <span class="msp-toggle-icon">🏷️</span>
+                            <div>
+                                <span class="msp-toggle-label">Building Labels</span>
+                                <span class="msp-toggle-desc">Campus numbered pin markers</span>
+                            </div>
+                        </div>
+                        <label class="msp-switch">
+                            <input type="checkbox" id="msp-toggle-markers" checked
+                                onchange="handleLayerToggle('numbers', this.checked)">
+                            <span class="msp-slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- Perimeter Boundary -->
+                    <div class="msp-toggle-row">
+                        <div class="msp-toggle-info">
+                            <span class="msp-toggle-icon">📐</span>
+                            <div>
+                                <span class="msp-toggle-label">Perimeter Boundary</span>
+                                <span class="msp-toggle-desc">Compound fence & property outline</span>
+                            </div>
+                        </div>
+                        <label class="msp-switch">
+                            <input type="checkbox" id="msp-toggle-boundary" checked
+                                onchange="handleLayerToggle('boundary', this.checked)">
+                            <span class="msp-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Label Display Mode (Segmented Control) -->
+            <div class="msp-section">
+                <div class="msp-section-header">
+                    <span class="msp-section-tag">LABELS</span>
+                    <h4>Label Display Mode</h4>
+                </div>
+                <div class="msp-segmented-control">
+                    <button class="msp-seg-btn active" id="msp-seg-full" onclick="setLabelDisplayMode('full')"
+                        type="button">
+                        <span class="msp-seg-icon">🏷️</span>
+                        <div class="msp-seg-labels">
+                            <span class="msp-seg-text">Full Pill View</span>
+                            <span class="msp-seg-sub">(1) Guard House</span>
+                        </div>
+                    </button>
+                    <button class="msp-seg-btn" id="msp-seg-compact" onclick="setLabelDisplayMode('compact')"
+                        type="button">
+                        <span class="msp-seg-icon">🔢</span>
+                        <div class="msp-seg-labels">
+                            <span class="msp-seg-text">Compact Number</span>
+                            <span class="msp-seg-sub">(1) Hover for Name</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 3. Environment Lighting / Time-of-Day Preset -->
+            <div class="msp-section">
+                <div class="msp-section-header">
+                    <span class="msp-section-tag">LIGHTING</span>
+                    <h4>Time-of-Day Lighting</h4>
+                </div>
+                <div class="msp-lighting-grid">
+                    <button class="msp-light-btn" data-preset="dawn" onclick="setEnvironmentLighting('dawn')"
+                        type="button">
+                        <span class="msp-light-icon">🌅</span>
+                        <span class="msp-light-name">Dawn</span>
+                        <span class="msp-light-sub">Sunrise</span>
+                    </button>
+                    <button class="msp-light-btn" data-preset="day" onclick="setEnvironmentLighting('day')"
+                        type="button">
+                        <span class="msp-light-icon">☀️</span>
+                        <span class="msp-light-name">Day</span>
+                        <span class="msp-light-sub">Daylight</span>
+                    </button>
+                    <button class="msp-light-btn" data-preset="dusk" onclick="setEnvironmentLighting('dusk')"
+                        type="button">
+                        <span class="msp-light-icon">🌇</span>
+                        <span class="msp-light-name">Dusk</span>
+                        <span class="msp-light-sub">Sunset</span>
+                    </button>
+                    <button class="msp-light-btn" data-preset="night" onclick="setEnvironmentLighting('night')"
+                        type="button">
+                        <span class="msp-light-icon">🌙</span>
+                        <span class="msp-light-name">Night</span>
+                        <span class="msp-light-sub">Dark Sky</span>
+                    </button>
+                    <button class="msp-light-btn active" data-preset="auto" onclick="setEnvironmentLighting('auto')"
+                        type="button">
+                        <span class="msp-light-icon">⏱️</span>
+                        <span class="msp-light-name">Auto</span>
+                        <span class="msp-light-sub">Clock Sync</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 4. Kiosk Hardware & Performance Profile -->
+            <div class="msp-section">
+                <div class="msp-section-header">
+                    <span class="msp-section-tag"
+                        style="background:rgba(16,185,129,0.15);color:#10b981;border-color:rgba(16,185,129,0.3);">HARDWARE</span>
+                    <h4>Kiosk Performance Profile</h4>
+                </div>
+                <div class="msp-perf-grid" id="msp-perf-control">
+                    <button class="msp-perf-btn active" id="perf-btn-auto" onclick="setPerformanceProfile('auto')"
+                        type="button" title="Automatically calibrate rendering based on GPU detection">
+                        <span class="msp-perf-icon">⚡</span>
+                        <span class="msp-perf-name">Auto</span>
+                        <span class="msp-perf-sub">Adaptive</span>
+                    </button>
+                    <button class="msp-perf-btn" id="perf-btn-eco" onclick="setPerformanceProfile('eco')" type="button"
+                        title="Low-power mode optimized for Intel Core i3 / i5 Integrated Graphics">
+                        <span class="msp-perf-icon">🌿</span>
+                        <span class="msp-perf-name">Kiosk Eco</span>
+                        <span class="msp-perf-sub">i3 / i5 GPU</span>
+                    </button>
+                    <button class="msp-perf-btn" id="perf-btn-high" onclick="setPerformanceProfile('high')"
+                        type="button" title="Native retina resolution with full anti-aliasing">
+                        <span class="msp-perf-icon">💎</span>
+                        <span class="msp-perf-name">High</span>
+                        <span class="msp-perf-sub">Native DPI</span>
+                    </button>
+                </div>
+                <div class="msp-perf-status" id="msp-perf-status">
+                    <span id="perf-status-desc">Detecting hardware profile...</span>
+                </div>
+            </div>
+
+            <!-- 5. Admin Only: Drone Alignment Calibration -->
+            <div class="msp-section msp-admin-only">
+                <div class="msp-section-header">
+                    <span class="msp-section-tag"
+                        style="background:rgba(56,189,248,0.15);color:#38bdf8;border-color:rgba(56,189,248,0.3);">ADMIN</span>
+                    <h4>Drone Alignment</h4>
+                </div>
+                <button class="msp-admin-action-btn" onclick="closeMapSettingsPanel(); toggleDroneCalibrationHUD();"
+                    type="button">
+                    <span>🛰️ Open Drone Calibration Controls</span>
+                    <span class="msp-admin-action-arrow">➔</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Mobile Map View Pop-up Modal (Phone Mode) -->
     <div class="map-layer-modal-backdrop" id="map-layer-modal-backdrop" onclick="closeMapLayerModal()"></div>
-    <div class="map-layer-modal" id="map-layer-modal" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()">
+    <div class="map-layer-modal" id="map-layer-modal" onmousedown="event.stopPropagation()"
+        ontouchstart="event.stopPropagation()">
         <div class="mlm-header">
             <div class="mlm-title-wrap">
                 <span class="mlm-badge">MAP LAYER</span>
@@ -99,11 +333,53 @@
         ontouchstart="event.stopPropagation()">
         <span class="fcc-label">CAMERA</span>
         <button class="fcc-btn active" id="fcc-follow" onclick="setRouteCameraMode('follow')"
-            title="Follow walking camera (Click to toggle follow / free look)">🚶 Follow</button>
+            title="Camera locked to walker (Click to unlock free-form view)">🔒 Locked</button>
         <button class="fcc-btn" id="fcc-overview" onclick="setRouteCameraMode('overview')"
             title="Side View perspective (follows walker)">🧭 Side View</button>
         <button class="fcc-btn" id="fcc-topdown" onclick="setRouteCameraMode('topdown')"
             title="Top View perspective (follows walker)">🗺️ Top View</button>
+    </div>
+
+    <!-- Floating Route Speed Controls (Under Camera View in portrait/mobile when menu is popped down) -->
+    <div class="floating-speed-controls" id="floating-speed-controls" onmousedown="event.stopPropagation()"
+        ontouchstart="event.stopPropagation()">
+        <span class="fsc-label">SPEED</span>
+        <div class="fsc-pills">
+            <button class="speed-pill" onclick="setRouteSpeed(1)" data-speed="1" title="1x Normal speed">1x</button>
+            <button class="speed-pill active" onclick="setRouteSpeed(2)" data-speed="2"
+                title="2x Fast speed">2x</button>
+            <button class="speed-pill" onclick="setRouteSpeed(4)" data-speed="4" title="4x Very fast speed">4x</button>
+            <button class="speed-pill" onclick="setRouteSpeed(6)" data-speed="6" title="6x Ultra speed">6x</button>
+        </div>
+    </div>
+
+    <!-- Dedicated Post-Arrival Action Bar for Kiosk Touchscreen (Comfort Reach Zone) -->
+    <div class="kiosk-arrival-action-bar" id="kiosk-arrival-action-bar" onmousedown="event.stopPropagation()"
+        ontouchstart="event.stopPropagation()">
+        <div class="kaa-header">
+            <span class="kaa-icon">🎉</span>
+            <div class="kaa-text-group">
+                <div class="kaa-title">You have arrived at <span id="kaa-dest-name">Destination</span></div>
+                <div class="kaa-subtitle" id="kaa-countdown-text">Returning to campus overview in 30s</div>
+            </div>
+        </div>
+        <div class="kaa-buttons">
+            <button type="button" class="kaa-btn kaa-btn-primary" id="kaa-btn-details"
+                onclick="window.viewArrivedBuildingDetails()" title="View offices and facility information">
+                <span class="kaa-btn-icon">🏢</span>
+                <span>View Building Offices & Details</span>
+            </button>
+            <button type="button" class="kaa-btn kaa-btn-secondary" onclick="window.replayRoute()"
+                title="Replay walking route animation">
+                <span class="kaa-btn-icon">🔁</span>
+                <span>Replay Walk</span>
+            </button>
+            <button type="button" class="kaa-btn kaa-btn-tertiary" onclick="window.exitRouteMode()"
+                title="Return to main directory and campus map">
+                <span class="kaa-btn-icon">🗺️</span>
+                <span>Campus Overview</span>
+            </button>
+        </div>
     </div>
 
     <!-- Color Picker Modal -->
@@ -138,15 +414,55 @@
         <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" onclick="toggleSidebarMenu()" title="Close menu"
             aria-label="Toggle Menu">
             <span class="sidebar-toggle-icon" id="sidebar-toggle-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:auto;"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:auto;">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
             </span>
         </button>
 
         <div class="sidebar-header">
-            <div class="sidebar-logo">🌾</div>
-            <div class="sidebar-title">
-                <h1>DA-LARES</h1>
-                <p>Interactive Wayfinding Kiosk</p>
+            <div class="dash-header-badge" id="dash-header-logo" onclick="showDashWelcomeModal()"
+                title="About DASH (Department of Agriculture Spatial Hub)" aria-label="Open DASH System Guide">
+                <img src="Main Icon/DASH_Logo_animated.svg" alt="DASH Logo" class="dash-badge-img">
+            </div>
+            <div class="station-dropdown-container">
+                <button type="button" class="station-dropdown-btn" id="station-dropdown-btn"
+                    onclick="toggleStationDropdown(event)" aria-haspopup="true" aria-expanded="false"
+                    title="Switch Research Station">
+                    <div class="station-btn-text">
+                        <h1 id="station-current-label">DA-LARES (Lipa)</h1>
+                        <p id="station-subtitle">DASH Wayfinding Map</p>
+                    </div>
+                    <svg class="station-chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </button>
+
+                <!-- Station Selector Flyout -->
+                <div class="station-dropdown-flyout" id="station-dropdown-flyout">
+                    <div class="station-flyout-header">
+                        <span>SELECT RESEARCH STATION</span>
+                    </div>
+                    <div class="station-dropdown-item active" data-station="lares"
+                        onclick="switchResearchStation('lares')">
+                        <div class="station-item-icon">🌾</div>
+                        <div class="station-item-info">
+                            <div class="station-item-title">DA-LARES</div>
+                            <div class="station-item-sub">Lipa City, Batangas (Main Compound)</div>
+                        </div>
+                        <span class="station-item-status active-badge">Active</span>
+                    </div>
+                    <div class="station-dropdown-item" data-station="qares" onclick="switchResearchStation('qares')">
+                        <div class="station-item-icon">🌱</div>
+                        <div class="station-item-info">
+                            <div class="station-item-title">DA-QARES</div>
+                            <div class="station-item-sub">Tiaong, Quezon (Experiment Station)</div>
+                        </div>
+                        <span class="station-item-status">Select</span>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -156,14 +472,8 @@
                 <input type="text" id="search-input" placeholder="Search for a building or place…"
                     oninput="filterDirectory()">
             </div>
-            <!-- Category Filter Chips -->
-            <div class="kiosk-categories-bar" id="kiosk-categories-bar">
-                <button class="cat-chip active" data-cat="all" onclick="filterByCategory('all')">🌐 All</button>
-                <button class="cat-chip" data-cat="office" onclick="filterByCategory('office')">🏛️ Offices</button>
-                <button class="cat-chip" data-cat="lab" onclick="filterByCategory('lab')">🔬 Labs & R&D</button>
-                <button class="cat-chip" data-cat="hall" onclick="filterByCategory('hall')">🎓 Halls & Dorm</button>
-                <button class="cat-chip" data-cat="service" onclick="filterByCategory('service')">🚻 Facilities</button>
-            </div>
+            <!-- Category Filter Chips (Active only for QARES standalone) -->
+            <div class="kiosk-categories-bar" id="kiosk-categories-bar" style="display: none;"></div>
             <!-- Quick Search Suggestion Tags -->
             <div class="kiosk-quick-tags" id="kiosk-quick-tags">
                 <span class="quick-tag-label">Popular:</span>
@@ -211,7 +521,13 @@
             </div>
 
             <div class="route-steps-container" id="route-steps-container">
-                <div class="route-steps-header">Turn-by-Turn Directions</div>
+                <div class="route-steps-header-row">
+                    <div class="route-steps-header">Turn-by-Turn Directions</div>
+                    <button type="button" class="route-steps-toggle-btn" id="route-steps-toggle-btn"
+                        onclick="window.toggleRouteStepsExpansion()" title="Expand or collapse step list">
+                        <span id="rst-btn-text">All Steps (6)</span> <span class="rst-icon" id="rst-icon">▾</span>
+                    </button>
+                </div>
                 <div class="route-steps-list" id="route-steps-list"></div>
             </div>
 
@@ -230,16 +546,22 @@
             </div>
 
             <div class="route-actions">
-                <button class="route-replay-btn" onclick="replayRoute()" title="Replay walking route">🔄 Replay Walk</button>
-                <button class="route-close-btn" onclick="exitRouteMode()" title="Exit route navigation">✕ Exit Route</button>
+                <button class="route-replay-btn" onclick="replayRoute()" title="Replay walking route">🔄 Replay
+                    Walk</button>
+                <button class="route-close-btn" onclick="exitRouteMode()" title="Exit route navigation">✕ Exit
+                    Route</button>
             </div>
         </div>
 
-        <div class="settings-bar">
-            <button class="setting-chip active" id="chip-trees" onclick="toggleSettingChip(this, 'trees')" title="Toggle 3D Trees" style="display:none;">🌲 3D Trees</button>
-            <button class="setting-chip active" id="chip-buildings" onclick="toggleSettingChip(this, 'buildings')">🏢 Buildings</button>
-            <button class="setting-chip active" id="chip-numbers" onclick="toggleSettingChip(this, 'numbers')">🏷️ Building Names</button>
-            <button class="setting-chip active" id="chip-boundary" onclick="toggleSettingChip(this, 'boundary')">📐 Boundary</button>
+        <div class="settings-bar" style="display: none;">
+            <button class="setting-chip active" id="chip-trees" onclick="toggleSettingChip(this, 'trees')"
+                title="Toggle 3D Trees" style="display:none;">🌲 3D Trees</button>
+            <button class="setting-chip active" id="chip-buildings" onclick="toggleSettingChip(this, 'buildings')">🏢
+                Buildings</button>
+            <button class="setting-chip active" id="chip-numbers" onclick="toggleSettingChip(this, 'numbers')">🏷️
+                Building Names</button>
+            <button class="setting-chip active" id="chip-boundary" onclick="toggleSettingChip(this, 'boundary')">📐
+                Boundary</button>
         </div>
     </div>
 
@@ -251,10 +573,14 @@
         <div class="bp-drag-handle"></div>
         <div class="bp-header">
             <div class="bp-header-left">
+                <button type="button" class="bp-back-to-dir-btn" onclick="closeBuildingPanel()" title="Back to Directory">
+                    <span class="bp-back-arrow">←</span>
+                    <span class="bp-back-text">Directory</span>
+                </button>
                 <div class="bp-number" id="bp-number">1</div>
                 <div>
                     <div class="bp-title" id="bp-title">Building Name</div>
-                    <div class="bp-subtitle" id="bp-subtitle">DA-LARES Facility</div>
+                    <div class="bp-subtitle" id="bp-subtitle">Research Facility</div>
                 </div>
             </div>
             <button class="bp-close" onclick="closeBuildingPanel()" title="Close">✕</button>
@@ -332,12 +658,28 @@
 
         <!-- 1. DIRECTORY / SEARCH VIEW -->
         <div class="sheet-view active" id="phone-view-dir">
+            <!-- Active Station Selector Banner -->
+            <div class="phone-station-banner" onclick="openPhoneStationModal()" title="Tap to switch research station">
+                <div class="phone-station-banner-left">
+                    <span class="phone-station-banner-tag">ACTIVE RESEARCH STATION</span>
+                    <div class="phone-station-banner-name" id="phone-station-banner-name">DA-LARES (Lipa)</div>
+                </div>
+                <button type="button" class="phone-station-change-btn" tabindex="-1">
+                    <span>Change</span>
+                    <span class="pscb-arrow">▾</span>
+                </button>
+            </div>
             <div class="phone-search-wrap">
                 <span class="phone-search-icon">🔍</span>
-                <input type="text" id="phone-search-input" placeholder="Search DA-LARES places…" autocomplete="off" oninput="filterPhoneDirectory()">
-                <button class="phone-search-clear" id="phone-search-clear" onclick="clearPhoneSearch()" title="Clear search">✕</button>
-                <button class="phone-info-guide-btn" onclick="showPhoneWelcomeModal()" title="About DA-LARES Map & Location">ℹ️</button>
+                <input type="text" id="phone-search-input" placeholder="Search places, buildings & offices…"
+                    autocomplete="off" oninput="filterPhoneDirectory()">
+                <button class="phone-search-clear" id="phone-search-clear" onclick="clearPhoneSearch()"
+                    title="Clear search">✕</button>
+                <button class="phone-info-guide-btn" onclick="showDashWelcomeModal()"
+                    title="About DASH (Department of Agriculture Spatial Hub)">ℹ️</button>
             </div>
+            <!-- Category Filter Chips for Phone View -->
+            <div class="phone-categories-bar" id="phone-categories-bar"></div>
             <div class="phone-directory-content">
                 <div class="phone-directory-list" id="phone-directory-list">
                     <!-- Populated dynamically by renderPhoneDirectory() -->
@@ -352,10 +694,11 @@
                     <div class="phone-bldg-badge" id="phone-bldg-badge">1</div>
                     <div style="min-width: 0;">
                         <div class="phone-bldg-title" id="phone-bldg-title">Building Name</div>
-                        <div class="phone-bldg-desc" id="phone-bldg-desc">DA-LARES Facility</div>
+                        <div class="phone-bldg-desc" id="phone-bldg-desc">Research Facility</div>
                     </div>
                 </div>
-                <button class="phone-sheet-close-btn" onclick="showPhoneDirectoryView()" title="Back to directory">✕</button>
+                <button class="phone-sheet-close-btn" onclick="showPhoneDirectoryView()"
+                    title="Back to directory">✕</button>
             </div>
             <div class="phone-bldg-scrollable">
                 <!-- 1. Google Maps Photo Mosaic / Gallery Form First -->
@@ -365,10 +708,12 @@
 
                 <!-- 2. Action Buttons Right Beneath Pictures -->
                 <div class="phone-bldg-actions-inline">
-                    <button class="phone-btn primary kiosk-btn" id="phone-route-btn" onclick="startPhoneAnimatedRoute()" title="Start walking route from Argosino Kiosk">
+                    <button class="phone-btn primary kiosk-btn" id="phone-route-btn" onclick="startPhoneAnimatedRoute()"
+                        title="Start walking route from Argosino Kiosk">
                         <span>🏛️</span> Use the Kiosk
                     </button>
-                    <button class="phone-btn secondary gps-btn" id="phone-gps-btn" onclick="startPhoneLiveGPS()" title="Live GPS turn-by-turn navigation">
+                    <button class="phone-btn secondary gps-btn" id="phone-gps-btn" onclick="startPhoneLiveGPS()"
+                        title="Live GPS turn-by-turn navigation">
                         <span>📍</span> Guide me live (GPS)
                     </button>
                 </div>
@@ -418,17 +763,23 @@
                     <div class="phone-speed-bar" id="phone-speed-bar">
                         <span class="phone-speed-label">Speed</span>
                         <div class="phone-speed-pills">
-                            <button class="speed-pill active" onclick="setRouteSpeed(1)" data-speed="1" title="1x Normal speed">1x</button>
-                            <button class="speed-pill" onclick="setRouteSpeed(2)" data-speed="2" title="2x Fast speed">2x</button>
-                            <button class="speed-pill" onclick="setRouteSpeed(4)" data-speed="4" title="4x Very fast speed">4x</button>
-                            <button class="speed-pill" onclick="setRouteSpeed(6)" data-speed="6" title="6x Ultra speed">6x</button>
+                            <button class="speed-pill active" onclick="setRouteSpeed(1)" data-speed="1"
+                                title="1x Normal speed">1x</button>
+                            <button class="speed-pill" onclick="setRouteSpeed(2)" data-speed="2"
+                                title="2x Fast speed">2x</button>
+                            <button class="speed-pill" onclick="setRouteSpeed(4)" data-speed="4"
+                                title="4x Very fast speed">4x</button>
+                            <button class="speed-pill" onclick="setRouteSpeed(6)" data-speed="6"
+                                title="6x Ultra speed">6x</button>
                         </div>
                     </div>
                     <div class="phone-peek-action-btns">
-                        <button class="phone-btn-mini subtle" id="phone-repeat-btn" onclick="replayPhoneRoute()" title="Repeat route">
+                        <button class="phone-btn-mini subtle" id="phone-repeat-btn" onclick="replayPhoneRoute()"
+                            title="Repeat route">
                             <span>🔄</span> Repeat
                         </button>
-                        <button class="phone-btn-mini danger" id="phone-cancel-btn" onclick="cancelPhoneRoute()" title="Cancel route">
+                        <button class="phone-btn-mini danger" id="phone-cancel-btn" onclick="cancelPhoneRoute()"
+                            title="Cancel route">
                             <span>✕</span> Cancel
                         </button>
                     </div>
@@ -442,10 +793,12 @@
                         <span class="phone-gps-eta-dist" id="phone-gps-eta-dist">-- m remaining</span>
                     </div>
                     <div class="phone-peek-action-btns">
-                        <button class="phone-btn-mini primary" id="phone-gps-center-btn" onclick="recenterOnUserGPS()" title="Center on My Location">
+                        <button class="phone-btn-mini primary" id="phone-gps-center-btn" onclick="recenterOnUserGPS()"
+                            title="Center on My Location">
                             <span>🎯</span> Center
                         </button>
-                        <button class="phone-btn-mini danger" id="phone-gps-exit-btn" onclick="cancelPhoneRoute()" title="Exit Navigation">
+                        <button class="phone-btn-mini danger" id="phone-gps-exit-btn" onclick="cancelPhoneRoute()"
+                            title="Exit Navigation">
                             <span>✕</span> Exit
                         </button>
                     </div>
@@ -466,7 +819,7 @@
         title="Re-center on My Location">🎯</button>
 
     <!-- Floating Top Turn-by-Turn Navigation HUD (Google Maps Style) -->
-    <div class="phone-top-nav-hud" id="phone-top-nav-hud">
+    <div class="phone-top-nav-hud" id="phone-top-nav-hud" style="display: none;">
         <div class="ptnh-icon-wrap" id="ptnh-maneuver-icon">⬆️</div>
         <div class="ptnh-text-wrap">
             <div class="ptnh-primary-step" id="ptnh-primary-step">Follow the walkway</div>
@@ -481,7 +834,7 @@
     </div>
 
     <!-- Centered Phone Arrival Pop-up Modal -->
-    <div class="phone-arrived-modal-backdrop" id="phone-arrived-modal">
+    <div class="phone-arrived-modal-backdrop" id="phone-arrived-modal" style="display: none;">
         <div class="phone-arrived-modal-card">
             <div class="pam-confetti">🎉</div>
             <div class="pam-title" id="pam-title">Arrived at Destination!</div>
@@ -497,50 +850,106 @@
         </div>
     </div>
 
-    <!-- Mobile Welcome & Onboarding Modal (Shown on First Mobile Visit / QR Scan) -->
-    <div class="phone-welcome-modal-backdrop" id="phone-welcome-modal" style="display: none;">
-        <div class="phone-welcome-modal-card">
-            <div class="pwm-badge-row">
-                <span class="pwm-logo-badge">🏛️ DA-LARES</span>
-                <span class="pwm-status-pill">Interactive Campus Map</span>
-            </div>
-            <h2 class="pwm-title">Welcome to the Station</h2>
-            <p class="pwm-subtitle">Lipa Agricultural Research and Experiment Station</p>
-
-            <div class="pwm-cards-list">
-                <div class="pwm-info-card">
-                    <div class="pwm-card-icon">🗺️</div>
-                    <div class="pwm-card-content">
-                        <div class="pwm-card-title">What is our map?</div>
-                        <div class="pwm-card-desc">An interactive 3D digital campus map of the DA-LARES research station and facility compound.</div>
-                    </div>
-                </div>
-
-                <div class="pwm-info-card">
-                    <div class="pwm-card-icon">🧭</div>
-                    <div class="pwm-card-content">
-                        <div class="pwm-card-title">What does our map do?</div>
-                        <div class="pwm-card-desc">It helps you explore buildings, locate research labs and offices, and view walkway routes across campus.</div>
-                    </div>
-                </div>
-
-                <div class="pwm-info-card highlighted">
-                    <div class="pwm-card-icon">📍</div>
-                    <div class="pwm-card-content">
-                        <div class="pwm-card-title">Live GPS & Compass Navigation</div>
-                        <div class="pwm-card-desc">Allows the map to locate your position on campus and orient your live walking direction in real time. Your location stays private on your phone.</div>
-                    </div>
-                </div>
+    <!-- DASH System Intro & Welcome Modal (Shown on First Load or via DASH Badge / Info Click) -->
+    <div class="dash-welcome-modal-backdrop" id="dash-welcome-modal" style="display: none;"
+        onclick="closeDashWelcomeModal(event)">
+        <div class="dash-welcome-modal-card" onclick="event.stopPropagation()">
+            <!-- Top Animated DASH Logo Emblem -->
+            <div class="dash-welcome-emblem-wrap" title="Department of Agriculture Spatial Hub">
+                <img src="Main Icon/DASH_Logo_animated.svg" alt="DASH Animated Logo" class="dash-welcome-emblem-img">
             </div>
 
-            <div class="pwm-actions">
-                <button class="pwm-btn-continue" id="pwm-continue-btn" onclick="handleWelcomeContinue()">
-                    <span>Accept & Continue</span>
-                    <span class="pwm-btn-arrow">→</span>
+            <div class="dash-welcome-badge-row">
+                <span class="dash-welcome-agency-badge">🏛️ Department of Agriculture</span>
+                <span class="dash-welcome-status-pill">3D Spatial Hub</span>
+            </div>
+
+            <h2 class="dash-welcome-title">Welcome to DASH</h2>
+            <p class="dash-welcome-subtitle">Department of Agriculture Spatial Hub</p>
+
+            <div class="dash-welcome-cards-list">
+                <div class="dash-welcome-card">
+                    <div class="dash-card-icon">🗺️</div>
+                    <div class="dash-card-content">
+                        <div class="dash-card-title">What is DASH?</div>
+                        <div class="dash-card-desc">The official interactive 3D digital campus map and geospatial
+                            masterplan connecting Department of Agriculture research stations.</div>
+                    </div>
+                </div>
+
+                <div class="dash-welcome-card">
+                    <div class="dash-card-icon">🧭</div>
+                    <div class="dash-card-content">
+                        <div class="dash-card-title">What does our map do?</div>
+                        <div class="dash-card-desc">Explores authentic 3D campus architecture, locates research
+                            divisions, laboratories, and offices, and calculates real-time turn-by-turn walking routes.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dash-welcome-card highlighted">
+                    <div class="dash-card-icon">📲</div>
+                    <div class="dash-card-content">
+                        <div class="dash-card-title">Touch Kiosk & Mobile QR Navigation</div>
+                        <div class="dash-card-desc">Touch the screen to explore directly, or scan the on-screen QR code
+                            with your phone camera to take live GPS walking guidance with you across campus.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dash-welcome-actions">
+                <button class="dash-btn-proceed" id="dash-proceed-btn" onclick="handleDashWelcomeProceed()">
+                    <span>Proceed to Campus Map</span>
+                    <span class="dash-btn-arrow">➔</span>
                 </button>
-                <button class="pwm-btn-skip" onclick="handleWelcomeSkip()">
-                    Explore without GPS (Use Kiosk)
-                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Station Switcher Modal (Slide-up Action Sheet) -->
+    <div class="phone-station-modal-backdrop" id="phone-station-modal" style="display: none;"
+        onclick="closePhoneStationModal(event)">
+        <div class="phone-station-modal-sheet" onclick="event.stopPropagation()">
+            <div class="phone-station-modal-drag"></div>
+            <div class="phone-station-modal-header">
+                <div>
+                    <span class="phone-station-modal-badge">🏛️ DEPARTMENT OF AGRICULTURE</span>
+                    <h3 class="phone-station-modal-title">Select Research Station</h3>
+                    <p class="phone-station-modal-sub">Department of Agriculture Spatial Hub (DASH)</p>
+                </div>
+                <button class="phone-station-modal-close" onclick="closePhoneStationModal(event)"
+                    title="Close">✕</button>
+            </div>
+            <div class="phone-station-list">
+                <div class="phone-station-card active" data-station="lares" onclick="handlePhoneSelectStation('lares')">
+                    <div class="psc-icon-wrap">
+                        <span class="psc-icon">🌾</span>
+                    </div>
+                    <div class="psc-info">
+                        <div class="psc-title-row">
+                            <span class="psc-title">DA-LARES</span>
+                            <span class="psc-province">Lipa City, Batangas</span>
+                        </div>
+                        <div class="psc-desc">Southern Tagalog Integrated Agricultural Research Center • Main Campus
+                        </div>
+                    </div>
+                    <span class="psc-status active">Active</span>
+                </div>
+
+                <div class="phone-station-card" data-station="qares" onclick="handlePhoneSelectStation('qares')">
+                    <div class="psc-icon-wrap">
+                        <span class="psc-icon">🌱</span>
+                    </div>
+                    <div class="psc-info">
+                        <div class="psc-title-row">
+                            <span class="psc-title">DA-QARES</span>
+                            <span class="psc-province">Tiaong, Quezon</span>
+                        </div>
+                        <div class="psc-desc">Quezon Agricultural Research & Experiment Station • High-Res Drone Ortho
+                        </div>
+                    </div>
+                    <span class="psc-status">Select</span>
+                </div>
             </div>
         </div>
     </div>
@@ -559,12 +968,17 @@
             </div>
             <div class="qr-zoom-footer">
                 <span>💡 Tip: Hold phone camera close to screen</span>
+                <div class="qr-zoom-auto-exit" id="qr-zoom-auto-exit">
+                    <span class="qr-auto-exit-icon">⏱️</span>
+                    <span>Auto-exit in <strong id="qr-countdown-num">25</strong>s if unattended</span>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Fullscreen Photo Lightbox Modal -->
-    <div class="photo-lightbox-modal" id="photo-lightbox-modal" style="display: none;" onclick="closePhotoLightbox(event)">
+    <div class="photo-lightbox-modal" id="photo-lightbox-modal" style="display: none;"
+        onclick="closePhotoLightbox(event)">
         <button class="lightbox-close-btn" onclick="closePhotoLightbox(event)" title="Close photo">✕</button>
         <div class="lightbox-content" onclick="event.stopPropagation()">
             <img id="lightbox-img" src="" alt="Building Photo">
@@ -572,14 +986,31 @@
         </div>
     </div>
 
+    <!-- Kiosk Auto-Exit Floating Notification Toast -->
+    <div class="kiosk-auto-exit-toast" id="kiosk-auto-exit-toast" style="display: none;">
+        <span class="toast-icon">👋</span>
+        <span id="kiosk-auto-exit-text">Auto-exiting session • Returning to You Are Here</span>
+    </div>
+
     <!-- 1-Finger Orbit Mode Active Floating Toast Indicator -->
-    <div class="orbit-toast-badge" id="orbit-toast-badge" style="display: none;" onclick="toggleOneFingerOrbitMode(false)">
+    <div class="orbit-toast-badge" id="orbit-toast-badge" style="display: none;"
+        onclick="toggleOneFingerOrbitMode(false)">
         <span class="orbit-toast-icon">🕹️</span>
         <div class="orbit-toast-text">
             <span class="orbit-toast-title">1-Finger Orbit Active</span>
             <span class="orbit-toast-sub">Drag 1 finger to rotate & tilt • Tap to exit</span>
         </div>
         <button class="orbit-toast-close" title="Exit 1-Finger Orbit Mode">✕</button>
+    </div>
+
+    <!-- Station Transition Curtain (Seamless Cross-Fade) -->
+    <div class="station-transition-curtain" id="station-transition-curtain" aria-hidden="true">
+        <div class="stc-card">
+            <div class="stc-icon-badge" id="stc-icon">🌱</div>
+            <div class="stc-title" id="stc-title">Connecting to DA-QARES</div>
+            <div class="stc-sub" id="stc-sub">Quezon Agricultural Research & Experiment Station • Tiaong, Quezon</div>
+            <div class="stc-shimmer-bar"></div>
+        </div>
     </div>
 
     <div class="coords-badge" id="coords-badge">
@@ -591,7 +1022,7 @@
         <span id="fps-badge" style="font-weight:700;color:#22c55e;">60 FPS</span>
     </div>
 
-    <script type="module" src="js/app.js?v=60"></script>
+    <script type="module" src="js/app.js?v=108"></script>
 </body>
 
 </html>

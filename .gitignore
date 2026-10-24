@@ -23,8 +23,8 @@ read_*.js
 Thumbs.db
 *.log
 
-# === Documentation & Reports ===
-docs/
+# === Large Geospatial Tiles (>100MB) ===
+*.mbtiles
 
 # === Scratch & Verification Renders ===
 renders/

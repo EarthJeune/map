@@ -1,7 +1,7 @@
 // DA-LARES Turn-by-Turn Directions Steps Module
 // Build step instructions, step list rendering, and active step highlighting.
 
-import { BUILDING_DIRECTORY } from './data/buildings.js?v=60';
+import { BUILDING_DIRECTORY } from './data/buildings.js?v=72';
 import { state } from './data/state.js';
 import { map } from './map-setup.js';
 import { startArrivedCountdown } from './walker.js';
@@ -238,6 +238,13 @@ export function buildSteps(coords, directory, destId) {
 export function renderStepsList(steps) {
     const list = document.getElementById('route-steps-list');
     if (!list) return;
+    const btnText = document.getElementById('rst-btn-text');
+    if (btnText) btnText.textContent = `All Steps (${steps.length})`;
+    const container = document.getElementById('route-steps-container');
+    if (container) container.classList.remove('expanded');
+    const icon = document.getElementById('rst-icon');
+    if (icon) icon.textContent = '▾';
+
     let html = '';
     steps.forEach((s, idx) => {
         const prevAt = idx > 0 ? steps[idx - 1].at : 0;
@@ -372,9 +379,19 @@ export function updateLiveNavigation(currentDist, totalDist) {
 let activeFullRouteCoords = null;
 
 
+export function toggleRouteStepsExpansion() {
+    const container = document.getElementById('route-steps-container');
+    const icon = document.getElementById('rst-icon');
+    if (!container) return;
+    container.classList.toggle('expanded');
+    const isExpanded = container.classList.contains('expanded');
+    if (icon) icon.textContent = isExpanded ? '▴' : '▾';
+}
+
 window.buildSteps = buildSteps;
 window.renderStepsList = renderStepsList;
 window.focusRouteStep = focusRouteStep;
 window.highlightActiveStep = highlightActiveStep;
 window.updateLiveNavigation = updateLiveNavigation;
+window.toggleRouteStepsExpansion = toggleRouteStepsExpansion;
 

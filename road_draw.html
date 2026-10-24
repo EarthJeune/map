@@ -1,103 +1,369 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<title>DA-LARES Road Drawer</title>
+<title>DA-LARES Road & Walkway Editor — Drone Orthomosaic</title>
 <meta name="viewport" content="initial-scale=1,maximum-scale=1">
 <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
 <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
 <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.js"></script>
 <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.css" type="text/css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  body { margin: 0; padding: 0; background: #111; color: white; font-family: sans-serif; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 0; background: #0b1120; color: #f8fafc; font-family: 'Inter', -apple-system, sans-serif; overflow: hidden; }
   #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+
   .panel { 
-      position: absolute; top: 15px; left: 15px; z-index: 10; 
-      background: rgba(20,20,20,0.95); padding: 20px; border-radius: 8px; 
-      box-shadow: 0 4px 15px rgba(0,0,0,0.5); border: 1px solid #333;
-      width: 320px;
+      position: absolute; top: 16px; left: 16px; z-index: 10; 
+      background: rgba(15, 23, 42, 0.94); 
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      padding: 18px; border-radius: 14px; 
+      box-shadow: 0 16px 40px rgba(0,0,0,0.65), 0 0 20px rgba(34, 197, 94, 0.15); 
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      width: 340px;
+      max-height: calc(100vh - 32px);
+      overflow-y: auto;
   }
-  h3 { margin-top: 0; color: #3b82f6; }
-  p { font-size: 13px; color: #ccc; line-height: 1.4; }
+
+  .panel-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .panel-icon { font-size: 22px; }
+  .panel-title { margin: 0; font-size: 15px; font-weight: 800; color: #38bdf8; letter-spacing: 0.3px; }
+  .panel-sub { font-size: 11px; color: #94a3b8; margin: 2px 0 0 0; }
+
+  .section-label {
+      font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.2px; color: #4ade80; margin: 12px 0 6px 0;
+  }
+
+  /* Segmented Layer Mode Switcher */
+  .layer-switcher {
+      display: flex;
+      background: rgba(30, 41, 59, 0.7);
+      padding: 3px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.08);
+      gap: 3px;
+      margin-bottom: 10px;
+  }
+  .layer-btn {
+      flex: 1;
+      padding: 6px 8px;
+      border: none;
+      background: transparent;
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: all 0.2s ease;
+  }
+  .layer-btn:hover { color: #f8fafc; background: rgba(255,255,255,0.06); }
+  .layer-btn.active {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #ffffff;
+      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+  }
+
+  /* Slider controls */
+  .slider-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #cbd5e1;
+      margin-bottom: 4px;
+  }
+  .slider-num { font-family: monospace; color: #38bdf8; font-weight: 700; }
+  .range-input {
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(255,255,255,0.12);
+      outline: none;
+      cursor: pointer;
+      accent-color: #38bdf8;
+      margin-bottom: 10px;
+  }
+
+  /* Checkbox toggle */
+  .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11.5px;
+      color: #cbd5e1;
+      cursor: pointer;
+      margin-bottom: 12px;
+  }
+  .checkbox-label input { accent-color: #38bdf8; cursor: pointer; }
+
+  /* Guide box */
+  .guide-box {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 11px;
+      color: #94a3b8;
+      line-height: 1.45;
+      margin-bottom: 12px;
+  }
+  .guide-box strong { color: #f1f5f9; }
+
+  /* Action Buttons */
+  .btn-primary { 
+      width: 100%; padding: 10px; cursor: pointer; 
+      background: linear-gradient(135deg, #10b981, #059669); 
+      color: white; border: 1px solid #34d399; border-radius: 8px; 
+      font-size: 12.5px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+      transition: all 0.2s ease;
+      margin-bottom: 8px;
+  }
+  .btn-primary:hover { 
+      background: linear-gradient(135deg, #059669, #047857); 
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45);
+  }
+
+  .btn-secondary {
+      width: 100%; padding: 8px; cursor: pointer;
+      background: rgba(255,255,255,0.06);
+      color: #cbd5e1; border: 1px solid rgba(255,255,255,0.12); border-radius: 8px;
+      font-size: 11.5px; font-weight: 600;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      transition: all 0.2s ease;
+      margin-bottom: 6px;
+  }
+  .btn-secondary:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+  .btn-danger {
+      width: 100%; padding: 7px; cursor: pointer;
+      background: rgba(239, 68, 68, 0.1);
+      color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px;
+      font-size: 11px; font-weight: 600;
+      transition: all 0.2s ease;
+      margin-bottom: 8px;
+  }
+  .btn-danger:hover { background: rgba(239, 68, 68, 0.2); }
+
   textarea { 
-      width: 100%; height: 200px; margin-top: 15px; font-family: monospace; 
-      font-size: 11px; background: #000; color: #3b82f6; border: 1px solid #444; 
-      padding: 10px; box-sizing: border-box; border-radius: 4px;
+      width: 100%; height: 90px; margin-top: 8px; font-family: monospace; 
+      font-size: 10px; background: rgba(0,0,0,0.6); color: #38bdf8; border: 1px solid #334155; 
+      padding: 8px; box-sizing: border-box; border-radius: 6px; resize: vertical;
   }
-  button { 
-      margin-top: 15px; width: 100%; padding: 10px; cursor: pointer; 
-      background: #3b82f6; color: white; border: none; border-radius: 6px; 
-      font-weight: bold;
+
+  /* Badge indicator */
+  .badge-drone {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35);
+      color: #34d399; font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 9999px;
   }
-  button:hover { background: #2563eb; }
+
+  /* Tool grid */
+  .tool-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 8px;
+  }
+  .tool-btn {
+      padding: 9px 8px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(30, 41, 59, 0.7);
+      color: #cbd5e1;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.18s ease;
+  }
+  .tool-btn:hover {
+      background: rgba(255,255,255,0.1);
+      color: #ffffff;
+      border-color: rgba(255,255,255,0.25);
+  }
+  .tool-btn.active {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #ffffff;
+      border-color: #34d399;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+      font-weight: 700;
+  }
+  .tool-btn-danger {
+      color: #f87171;
+      border-color: rgba(239, 68, 68, 0.3);
+  }
+  .tool-btn-danger:hover {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ffffff;
+  }
+
+  /* Mode status badge */
+  .mode-badge {
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 11.5px;
+      line-height: 1.4;
+      font-weight: 600;
+      margin-bottom: 12px;
+      border: 1px solid transparent;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+  }
+  .mode-badge-line {
+      background: rgba(245, 158, 11, 0.15);
+      border-color: rgba(245, 158, 11, 0.4);
+      color: #fbbf24;
+  }
+  .mode-badge-point {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: rgba(56, 189, 248, 0.4);
+      color: #38bdf8;
+  }
+  .mode-badge-select {
+      background: rgba(148, 163, 184, 0.12);
+      border-color: rgba(148, 163, 184, 0.25);
+      color: #cbd5e1;
+  }
 </style>
 </head>
 <body>
 <div id="map"></div>
+
 <div class="panel">
-  <h3>🛣️ Road Drawer Tool</h3>
-  <p>1. Use the line tool in the top right to trace walkways/roads.</p>
-  <p>2. Double-click to finish a road segment.</p>
-  <p>3. Use the point/marker tool to place entrances, and enter the Building ID when prompted.</p>
-  <button id="saveDirectBtn" onclick="saveDirectlyToMap()" style="background:#22c55e; margin-bottom:8px;">💾 Save Directly to Map (roads.json)</button>
-  <button onclick="exportData()" style="background:#3b82f6;">📋 Copy Road GeoJSON to Clipboard</button>
-  <textarea id="output" readonly placeholder="Your GeoJSON code will appear here..."></textarea>
+  <div class="panel-header">
+      <span class="panel-icon">🛣️</span>
+      <div>
+          <h3 class="panel-title">Road & Walkway Editor</h3>
+          <p class="panel-sub">Trace paved roads & entrance nodes</p>
+      </div>
+  </div>
+
+  <div class="section-label">Campus Station</div>
+  <div class="layer-switcher" style="margin-bottom: 12px;">
+      <button class="layer-btn active" id="btn-station-lares" onclick="switchStation('lares')">
+          <span>🌾 DA-LARES (Lipa)</span>
+      </button>
+      <button class="layer-btn" id="btn-station-qares" onclick="switchStation('qares')">
+          <span>🌱 DA-QARES (Tiaong)</span>
+      </button>
+  </div>
+
+  <div class="section-label">Aerial Map Background</div>
+  <div class="layer-switcher">
+      <button class="layer-btn active" id="btn-layer-drone" onclick="setBaseLayer('drone')">
+          <span>🚁 Drone Shot</span>
+      </button>
+      <button class="layer-btn" id="btn-layer-google" onclick="setBaseLayer('google')">
+          <span>🛰️ Old Google</span>
+      </button>
+  </div>
+
+  <div class="slider-row">
+      <span>Drone Imagery Opacity</span>
+      <span id="drone-opacity-val" class="slider-num">100%</span>
+  </div>
+  <input type="range" id="drone-opacity-slider" class="range-input" min="0" max="1" step="0.05" value="1.0" oninput="setDroneOpacity(this.value)">
+
+  <label class="checkbox-label">
+      <input type="checkbox" id="cb-buildings" checked onchange="toggleBuildingOutlines(this.checked)">
+      <span>Show Building Footprints (Cyan outlines)</span>
+  </label>
+
+  <div class="section-label">Drawing Tools</div>
+  <div class="tool-grid">
+      <button class="tool-btn active" id="btn-tool-select" onclick="activateTool('simple_select')">
+          <span>✋</span> Select / Move
+      </button>
+      <button class="tool-btn" id="btn-tool-line" onclick="activateTool('draw_line_string')">
+          <span>🛣️</span> Draw Road
+      </button>
+      <button class="tool-btn" id="btn-tool-point" onclick="activateTool('draw_point')">
+          <span>📍</span> Add Entrance
+      </button>
+      <button class="tool-btn tool-btn-danger" id="btn-tool-trash" onclick="trashSelected()">
+          <span>🗑️</span> Delete
+      </button>
+  </div>
+
+  <div id="modeStatusBadge" class="mode-badge mode-badge-select">
+      ✋ Select Mode: Click any road or point to edit vertices.
+  </div>
+
+  <div class="guide-box">
+      • <strong>Draw Road (Key '2'):</strong> Click on map to place walkway points. Double-click or press Enter to finish.<br>
+      • <strong>Entrance Node (Key '1'):</strong> Click to place a building entrance node.<br>
+      • <strong>Select & drag:</strong> Click any line or node to nudge it precisely into the center of the asphalt/concrete path.
+  </div>
+
+  <button id="saveDirectBtn" class="btn-primary" onclick="saveDirectlyToMap()">💾 Save Directly to Map (roads.json)</button>
+  <button class="btn-secondary" onclick="exportData()">📋 Copy Road GeoJSON to Clipboard</button>
+  <button class="btn-danger" onclick="reloadFromOriginalBaseline()">🔄 Discard & Reload Original Baseline</button>
+  <textarea id="output" readonly placeholder="GeoJSON export will appear here..."></textarea>
 </div>
 
-<!-- Modal for building selection -->
+<!-- Modal for building entrance selection -->
 <div id="buildingModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; align-items:center; justify-content:center;">
-    <div style="background:#222; padding:30px; border-radius:10px; border:1px solid #444; width:300px; color:white;">
-        <h3 style="margin-top:0;">Select Building</h3>
-        <p>Which building is this entrance for?</p>
-        <select id="buildingSelect" style="width:100%; padding:10px; margin-bottom:20px; background:#111; color:white; border:1px solid #555; border-radius:4px;">
-            <option value="admin_building">Admin Building</option>
-            <option value="amad_building">Amad Building</option>
-            <option value="fod_building">Fod Building</option>
-            <option value="lares_building">Lares Building</option>
-            <option value="ild_building">Ild Building</option>
-            <option value="f2c2_building">F2c2 Building</option>
-            <option value="seaguard_building">Cguard Building</option>
-            <option value="raed_building">Raed Building</option>
-            <option value="canteen">Canteen</option>
-            <option value="pmed_building">Pmed Building</option>
-            <option value="amia_building">Amia Building</option>
-            <option value="bac_building">Bac Building</option>
-            <option value="clinic">Clinic</option>
-            <option value="avrc_building">Avrc Building</option>
-            <option value="mis_rafis_building">MIS / RAFIS Building</option>
-            <option value="stiarc_building">Stiarc Building</option>
-            <option value="rnd_building">Rnd Building</option>
-            <option value="laboratory_building">Post Harvest Laboratory Building</option>
-            <option value="prdp_building">Prdp Building</option>
-            <option value="fmr">Fmr</option>
-            <option value="mis_data_center">Mis Data Center</option>
-            <option value="vacant">Vacant</option>
-            <option value="dorm">Dorm</option>
-            <option value="pgrc_building">Pgrc Building</option>
-            <option value="corn/casava_building">Corn/casava Building</option>
-            <option value="rsbsa_building">Rsbsa Building</option>
-            <option value="tissue_culture_building">Tissue Culture Building</option>
-            <option value="rsl_building">Rsl Building</option>
-            <option value="rcpc_building">Rcpc Building</option>
-            <option value="motorpool_barracks">Motorpool Barracks</option>
-            <option value="guest_house">Guest House</option>
-            <option value="guard_house">Guard House</option>
-            <option value="ored_building">Ored Building</option>
-            <option value="argosino_hall">Argosino Hall</option>
-            <option value="multi_purpose_administrative_building">Multi-Purpose Administrative Building</option>
-            <option value="mushroom_laboratory">Mushroom Laboratory</option>
-            <option value="exit_guard_house_1">Exit Guard House 1</option>
-            <option value="exit_guard_house_2">Exit Guard House 2</option>
-        </select>
-        <div style="display:flex; justify-content:flex-end; gap:10px;">
-            <button onclick="cancelEntrance()" style="background:#555; margin-top:0; width:auto; padding:8px 15px;">Cancel</button>
-            <button onclick="confirmEntrance()" style="margin-top:0; width:auto; padding:8px 15px;">OK</button>
+    <div style="background:#0f172a; padding:24px; border-radius:14px; border:1px solid rgba(255,255,255,0.15); width:320px; color:white; box-shadow:0 20px 40px rgba(0,0,0,0.8);">
+        <h3 style="margin-top:0; font-size:16px; color:#38bdf8;">📍 Building Entrance Node</h3>
+        <p style="font-size:12px; color:#94a3b8; margin-bottom:12px;">Which building is this entrance connected to?</p>
+        <select id="buildingSelect" style="width:100%; padding:9px; margin-bottom:18px; background:#1e293b; color:white; border:1px solid #475569; border-radius:6px; font-size:13px;"></select>
+        <div style="display:flex; justify-content:flex-end; gap:8px;">
+            <button onclick="cancelEntrance()" style="background:#334155; border:none; color:#cbd5e1; padding:8px 14px; border-radius:6px; cursor:pointer; font-weight:600;">Cancel</button>
+            <button onclick="confirmEntrance()" style="background:#10b981; border:none; color:white; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:700;">OK</button>
         </div>
     </div>
 </div>
 
 <script>
 mapboxgl.accessToken = 'pk.eyJ1IjoiZWFydGgwMzA3IiwiYSI6ImNtdWFqNTR5czAxNmEyd29lMm42YjZlMDkifQ.xdPOP5RVPdn6YNka-ZdwoQ';
+
+// Check URL query param for default station
+const urlParams = new URLSearchParams(window.location.search);
+let currentStation = (urlParams.get('station') === 'qares') ? 'qares' : 'lares';
+
+const STATION_CONFIG = {
+    lares: {
+        center: [121.1666, 13.9587],
+        zoom: 18.2,
+        name: 'DA-LARES (Lipa City, Batangas)',
+        roadsEndpoint: 'roads.json',
+        roadsSaveApi: '/api/roads',
+        roadsFile: 'roads.json',
+        buildingsFile: 'buildings.json',
+        prefix: ''
+    },
+    qares: {
+        center: [121.37178, 13.94658],
+        zoom: 18.2,
+        name: 'DA-QARES (Tiaong, Quezon)',
+        roadsEndpoint: '/api/qares/roads',
+        roadsSaveApi: '/api/qares/roads',
+        roadsFile: 'qares_roads.json',
+        buildingsFile: '/api/qares/buildings',
+        prefix: 'qares_'
+    }
+};
 
 const map = new mapboxgl.Map({
     container: 'map',
@@ -109,13 +375,217 @@ const map = new mapboxgl.Map({
                 'tiles': ['https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'],
                 'tileSize': 256,
                 'maxzoom': 22
+            },
+            'lares-drone-source': {
+                'type': 'raster',
+                'tiles': ['/api/tiles/lares/{z}/{x}/{y}.png'],
+                'tileSize': 256,
+                'minzoom': 14,
+                'maxzoom': 24,
+                'bounds': [121.165052, 13.956537, 121.173221, 13.963068]
+            },
+            'qares-drone-source': {
+                'type': 'raster',
+                'tiles': ['/api/tiles/qares/{z}/{x}/{y}.png'],
+                'tileSize': 256,
+                'minzoom': 14,
+                'maxzoom': 21,
+                'bounds': [121.366888, 13.941220, 121.376150, 13.950960]
             }
         },
-        'layers': [{ 'id': 'google-satellite-layer', 'type': 'raster', 'source': 'google-satellite' }]
+        'layers': [
+            {
+                'id': 'google-satellite-layer',
+                'type': 'raster',
+                'source': 'google-satellite'
+            },
+            {
+                'id': 'lares-drone-layer',
+                'type': 'raster',
+                'source': 'lares-drone-source',
+                'layout': {
+                    'visibility': (currentStation === 'lares') ? 'visible' : 'none'
+                },
+                'paint': {
+                    'raster-opacity': 1.0,
+                    'raster-fade-duration': 0
+                }
+            },
+            {
+                'id': 'qares-drone-layer',
+                'type': 'raster',
+                'source': 'qares-drone-source',
+                'layout': {
+                    'visibility': (currentStation === 'qares') ? 'visible' : 'none'
+                },
+                'paint': {
+                    'raster-opacity': 1.0,
+                    'raster-fade-duration': 0
+                }
+            }
+        ]
     },
-    center: [121.1666, 13.9592],
-    zoom: 17.5
+    center: STATION_CONFIG[currentStation].center,
+    zoom: STATION_CONFIG[currentStation].zoom,
+    maxZoom: 23
 });
+
+// Sync initial UI state
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('btn-station-lares').classList.toggle('active', currentStation === 'lares');
+    document.getElementById('btn-station-qares').classList.toggle('active', currentStation === 'qares');
+    document.getElementById('saveDirectBtn').textContent = `💾 Save Directly to Map (${STATION_CONFIG[currentStation].roadsFile})`;
+});
+
+// Robust, high-contrast MapboxDraw styles that are 100% visible over aerial drone orthomosaic
+const drawStyles = [
+    // 1. ACTIVE LINE CASING (Dark navy casing under active rubberband line)
+    {
+        'id': 'gl-draw-line-active-casing',
+        'type': 'line',
+        'filter': ['all', ['==', '$type', 'LineString'], ['==', 'active', 'true']],
+        'layout': { 'line-cap': 'round', 'line-join': 'round' },
+        'paint': {
+            'line-color': '#0f172a',
+            'line-width': 8,
+            'line-opacity': 0.95
+        }
+    },
+    // 2. ACTIVE LINE (Solid, bright golden-yellow rubberband line while actively drawing or selected)
+    {
+        'id': 'gl-draw-line-active',
+        'type': 'line',
+        'filter': ['all', ['==', '$type', 'LineString'], ['==', 'active', 'true']],
+        'layout': { 'line-cap': 'round', 'line-join': 'round' },
+        'paint': {
+            'line-color': '#fbbf24',
+            'line-width': 4.5
+        }
+    },
+    // 3. INACTIVE LINE CASING / HALO (Dark forest-green casing under completed road)
+    {
+        'id': 'gl-draw-line-casing-inactive',
+        'type': 'line',
+        'filter': ['all', ['==', 'active', 'false'], ['==', '$type', 'LineString'], ['!=', 'mode', 'static']],
+        'layout': { 'line-cap': 'round', 'line-join': 'round' },
+        'paint': {
+            'line-color': '#064e3b',
+            'line-width': 8,
+            'line-opacity': 0.9
+        }
+    },
+    // 4. INACTIVE LINE (Completed road in vibrant emerald green)
+    {
+        'id': 'gl-draw-line-inactive',
+        'type': 'line',
+        'filter': ['all', ['==', 'active', 'false'], ['==', '$type', 'LineString'], ['!=', 'mode', 'static']],
+        'layout': { 'line-cap': 'round', 'line-join': 'round' },
+        'paint': {
+            'line-color': '#10b981',
+            'line-width': 4.5
+        }
+    },
+    // 5. VERTEX OUTER RING (Line & Polygon vertices)
+    {
+        'id': 'gl-draw-polygon-and-line-vertex-stroke-inactive',
+        'type': 'circle',
+        'filter': ['all', ['==', 'meta', 'vertex'], ['==', '$type', 'Point'], ['!=', 'mode', 'static']],
+        'paint': {
+            'circle-radius': 7,
+            'circle-color': '#ffffff'
+        }
+    },
+    // 6. VERTEX INNER CORE (Line & Polygon vertices)
+    {
+        'id': 'gl-draw-polygon-and-line-vertex-inactive',
+        'type': 'circle',
+        'filter': ['all', ['==', 'meta', 'vertex'], ['==', '$type', 'Point'], ['!=', 'mode', 'static']],
+        'paint': {
+            'circle-radius': 4.5,
+            'circle-color': '#0284c7'
+        }
+    },
+    // 7. VERTEX ACTIVE (Currently clicked / dragged vertex)
+    {
+        'id': 'gl-draw-polygon-and-line-vertex-active',
+        'type': 'circle',
+        'filter': ['all', ['==', 'meta', 'vertex'], ['==', '$type', 'Point'], ['==', 'active', 'true']],
+        'paint': {
+            'circle-radius': 8,
+            'circle-color': '#f59e0b',
+            'circle-stroke-width': 2.5,
+            'circle-stroke-color': '#ffffff'
+        }
+    },
+    // 8. MIDPOINT (Interactive handle to add new curve/bend to road)
+    {
+        'id': 'gl-draw-polygon-midpoint',
+        'type': 'circle',
+        'filter': ['all', ['==', '$type', 'Point'], ['==', 'meta', 'midpoint']],
+        'paint': {
+            'circle-radius': 5,
+            'circle-color': '#f59e0b',
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#ffffff'
+        }
+    },
+    // 9. POINT / ENTRANCE NODE HALO (Inactive)
+    {
+        'id': 'gl-draw-point-point-stroke-inactive',
+        'type': 'circle',
+        'filter': ['all', ['==', 'active', 'false'], ['==', '$type', 'Point'], ['==', 'meta', 'feature'], ['!=', 'mode', 'static']],
+        'paint': {
+            'circle-radius': 9,
+            'circle-opacity': 0.95,
+            'circle-color': '#ffffff'
+        }
+    },
+    // 10. POINT / ENTRANCE NODE CORE (Inactive - Bright Amber Gold)
+    {
+        'id': 'gl-draw-point-inactive',
+        'type': 'circle',
+        'filter': ['all', ['==', 'active', 'false'], ['==', '$type', 'Point'], ['==', 'meta', 'feature'], ['!=', 'mode', 'static']],
+        'paint': {
+            'circle-radius': 6.5,
+            'circle-color': '#f59e0b'
+        }
+    },
+    // 11. POINT ACTIVE STROKE (Selected entrance node)
+    {
+        'id': 'gl-draw-point-stroke-active',
+        'type': 'circle',
+        'filter': ['all', ['==', '$type', 'Point'], ['==', 'active', 'true'], ['!=', 'meta', 'midpoint']],
+        'paint': {
+            'circle-radius': 11,
+            'circle-color': '#ffffff'
+        }
+    },
+    // 12. POINT ACTIVE CORE (Selected entrance node)
+    {
+        'id': 'gl-draw-point-active',
+        'type': 'circle',
+        'filter': ['all', ['==', '$type', 'Point'], ['!=', 'meta', 'midpoint'], ['==', 'active', 'true']],
+        'paint': {
+            'circle-radius': 7.5,
+            'circle-color': '#ef4444'
+        }
+    },
+    // 13. STATIC LINE
+    {
+        'id': 'gl-draw-line-static',
+        'type': 'line',
+        'filter': ['all', ['==', 'mode', 'static'], ['==', '$type', 'LineString']],
+        'layout': { 'line-cap': 'round', 'line-join': 'round' },
+        'paint': { 'line-color': '#10b981', 'line-width': 4 }
+    },
+    // 14. STATIC POINT
+    {
+        'id': 'gl-draw-point-static',
+        'type': 'circle',
+        'filter': ['all', ['==', 'mode', 'static'], ['==', '$type', 'Point']],
+        'paint': { 'circle-radius': 6, 'circle-color': '#f59e0b' }
+    }
+];
 
 const draw = new MapboxDraw({
     displayControlsDefault: false,
@@ -123,34 +593,127 @@ const draw = new MapboxDraw({
         line_string: true,
         point: true,
         trash: true
-    }
+    },
+    styles: drawStyles
 });
 map.addControl(draw, 'top-right');
 
-// Dynamically populate building dropdown from buildings.json if any extra buildings exist
-fetch('buildings.json')
-    .then(r => r.json())
-    .then(data => {
-        if (!data || !data.features) return;
-        const select = document.getElementById('buildingSelect');
-        const existing = new Set(Array.from(select.options).map(o => o.value));
-        data.features.forEach(f => {
-            const bId = f.properties && f.properties.id;
-            if (bId && !existing.has(bId)) {
-                const opt = document.createElement('option');
-                opt.value = bId;
-                opt.textContent = bId.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-                select.appendChild(opt);
-                existing.add(bId);
-            }
-        });
-    })
-    .catch(err => console.log('Notice: Could not load buildings.json for dynamic options', err));
+// UI Tool Switcher
+window.activateTool = function(mode) {
+    draw.changeMode(mode);
+    updateActiveToolUI(mode);
+};
+
+window.trashSelected = function() {
+    draw.trash();
+    map.fire('draw.update');
+};
+
+function updateActiveToolUI(mode) {
+    const btnSel = document.getElementById('btn-tool-select');
+    const btnLine = document.getElementById('btn-tool-line');
+    const btnPt = document.getElementById('btn-tool-point');
+    if (btnSel) btnSel.classList.toggle('active', mode === 'simple_select' || mode === 'direct_select');
+    if (btnLine) btnLine.classList.toggle('active', mode === 'draw_line_string');
+    if (btnPt) btnPt.classList.toggle('active', mode === 'draw_point');
+
+    const badge = document.getElementById('modeStatusBadge');
+    if (badge) {
+        badge.className = 'mode-badge';
+        if (mode === 'draw_line_string') {
+            badge.classList.add('mode-badge-line');
+            badge.innerHTML = '<span>🛣️</span> <strong>Tracing Road:</strong> Click to place road vertices. Double-click or press Enter to finish.';
+        } else if (mode === 'draw_point') {
+            badge.classList.add('mode-badge-point');
+            badge.innerHTML = '<span>📍</span> <strong>Entrance Node:</strong> Click on building doors or gates to place entrance.';
+        } else {
+            badge.classList.add('mode-badge-select');
+            badge.innerHTML = '<span>✋</span> <strong>Select Mode:</strong> Click any road or point to nudge vertices or delete.';
+        }
+    }
+}
+
+map.on('draw.modechange', (e) => {
+    updateActiveToolUI(e.mode);
+});
+
+// Keyboard Shortcuts
+window.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+    if (e.key === '2' || e.key === 'r' || e.key === 'R') {
+        activateTool('draw_line_string');
+    } else if (e.key === '1' || e.key === 'p' || e.key === 'P') {
+        activateTool('draw_point');
+    } else if (e.key === 'Escape' || e.key === 's' || e.key === 'S') {
+        activateTool('simple_select');
+    } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        trashSelected();
+    }
+});
+
+// Populate building dropdown based on active station
+function updateBuildingDropdown(station) {
+    const select = document.getElementById('buildingSelect');
+    if (!select) return;
+    select.innerHTML = '<option value="">-- Select or Type Building ID --</option>';
+
+    if (station === 'lares') {
+        fetch('buildings.json')
+            .then(r => r.json())
+            .then(data => {
+                if (!data || !data.features) return;
+                data.features.forEach(f => {
+                    const bId = f.properties && f.properties.id;
+                    if (bId) {
+                        const opt = document.createElement('option');
+                        opt.value = bId;
+                        opt.textContent = bId.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                        select.appendChild(opt);
+                    }
+                });
+            })
+            .catch(e => console.log('Notice: Could not load buildings.json:', e));
+    } else {
+        fetch('/api/qares/buildings')
+            .then(r => r.json())
+            .then(data => {
+                if (data && data.features && data.features.length > 0) {
+                    data.features.forEach(f => {
+                        const bId = f.properties && f.properties.id;
+                        if (bId) {
+                            const opt = document.createElement('option');
+                            opt.value = bId;
+                            opt.textContent = bId.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                            select.appendChild(opt);
+                        }
+                    });
+                } else {
+                    // Default QARES facility entries if buildings file is not yet populated
+                    const qaresDefaults = [
+                        'qares_admin_building',
+                        'qares_crop_research_lab',
+                        'qares_motorpool_barracks',
+                        'qares_guard_house_main',
+                        'qares_railway_crossing_gate',
+                        'qares_nursery_facility',
+                        'qares_dormitory'
+                    ];
+                    qaresDefaults.forEach(bId => {
+                        const opt = document.createElement('option');
+                        opt.value = bId;
+                        opt.textContent = bId.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                        select.appendChild(opt);
+                    });
+                }
+            })
+            .catch(e => {});
+    }
+}
 
 let pendingEntranceId = null;
 
 map.on('draw.create', function(e) {
-    if (e.features[0].geometry.type === 'Point') {
+    if (e.features && e.features[0].geometry.type === 'Point') {
         pendingEntranceId = e.features[0].id;
         document.getElementById('buildingModal').style.display = 'flex';
     }
@@ -158,18 +721,16 @@ map.on('draw.create', function(e) {
 
 function confirmEntrance() {
     const select = document.getElementById('buildingSelect');
-    const buildingId = select.value;
+    const buildingId = select.value || `${currentStation}_facility`;
     
     if (pendingEntranceId) {
         draw.setFeatureProperty(pendingEntranceId, 'type', 'entrance');
         draw.setFeatureProperty(pendingEntranceId, 'buildingId', buildingId);
         draw.setFeatureProperty(pendingEntranceId, 'name', `Entrance: ${buildingId}`);
+        draw.setFeatureProperty(pendingEntranceId, 'station', currentStation);
         pendingEntranceId = null;
     }
     document.getElementById('buildingModal').style.display = 'none';
-    
-    // We can dispatch a custom event or just trigger an update directly if it's available globally.
-    // However, updateLabels is inside map.on('load'), so we can just trigger a dummy draw event:
     map.fire('draw.update');
 }
 
@@ -181,8 +742,296 @@ function cancelEntrance() {
     document.getElementById('buildingModal').style.display = 'none';
 }
 
+// Station Switcher
+window.switchStation = function(st) {
+    if (st === currentStation) return;
+    
+    // Autosave edits of previous station
+    const curData = draw.getAll();
+    localStorage.setItem('road_draw_autosave_' + currentStation, JSON.stringify(curData));
+
+    currentStation = st;
+
+    // Update URL query parameter without reload
+    const newUrl = new URL(window.location);
+    newUrl.searchParams.set('station', st);
+    window.history.replaceState({}, '', newUrl);
+
+    document.getElementById('btn-station-lares').classList.toggle('active', st === 'lares');
+    document.getElementById('btn-station-qares').classList.toggle('active', st === 'qares');
+
+    const isQARES = (st === 'qares');
+    document.getElementById('saveDirectBtn').textContent = `💾 Save Directly to Map (${STATION_CONFIG[st].roadsFile})`;
+
+    // Toggle Drone layers
+    if (map.getLayer('lares-drone-layer')) {
+        map.setLayoutProperty('lares-drone-layer', 'visibility', isQARES ? 'none' : 'visible');
+    }
+    if (map.getLayer('qares-drone-layer')) {
+        map.setLayoutProperty('qares-drone-layer', 'visibility', isQARES ? 'visible' : 'none');
+    }
+
+    // Toggle Boundaries & Footprints
+    if (map.getLayer('qares-boundary-line')) {
+        map.setLayoutProperty('qares-boundary-line', 'visibility', isQARES ? 'visible' : 'none');
+    }
+    if (map.getLayer('qares-boundary-fill')) {
+        map.setLayoutProperty('qares-boundary-fill', 'visibility', isQARES ? 'visible' : 'none');
+    }
+    if (map.getLayer('buildings-footprints-fill')) {
+        map.setLayoutProperty('buildings-footprints-fill', 'visibility', isQARES ? 'none' : 'visible');
+    }
+    if (map.getLayer('buildings-footprints-line')) {
+        map.setLayoutProperty('buildings-footprints-line', 'visibility', isQARES ? 'none' : 'visible');
+    }
+    if (map.getLayer('buildings-names-layer')) {
+        map.setLayoutProperty('buildings-names-layer', 'visibility', isQARES ? 'none' : 'visible');
+    }
+    if (map.getLayer('qares-footprints-fill')) {
+        map.setLayoutProperty('qares-footprints-fill', 'visibility', isQARES ? 'visible' : 'none');
+    }
+    if (map.getLayer('qares-footprints-line')) {
+        map.setLayoutProperty('qares-footprints-line', 'visibility', isQARES ? 'visible' : 'none');
+    }
+
+    updateBuildingDropdown(st);
+
+    map.flyTo({
+        center: STATION_CONFIG[st].center,
+        zoom: STATION_CONFIG[st].zoom,
+        pitch: 0,
+        bearing: 0,
+        duration: 1200
+    });
+
+    loadStationRoads(st);
+};
+
+// Base layer toggle (Drone vs Google)
+window.setBaseLayer = function(mode) {
+    const isDrone = (mode === 'drone');
+    document.getElementById('btn-layer-drone').classList.toggle('active', isDrone);
+    document.getElementById('btn-layer-google').classList.toggle('active', !isDrone);
+    
+    const activeDroneLayer = (currentStation === 'qares') ? 'qares-drone-layer' : 'lares-drone-layer';
+    const inactiveDroneLayer = (currentStation === 'qares') ? 'lares-drone-layer' : 'qares-drone-layer';
+
+    if (map.getLayer(inactiveDroneLayer)) {
+        map.setLayoutProperty(inactiveDroneLayer, 'visibility', 'none');
+    }
+    if (map.getLayer(activeDroneLayer)) {
+        map.setLayoutProperty(activeDroneLayer, 'visibility', isDrone ? 'visible' : 'none');
+    }
+};
+
+window.setDroneOpacity = function(val) {
+    const opacity = parseFloat(val);
+    document.getElementById('drone-opacity-val').textContent = `${Math.round(opacity * 100)}%`;
+    const activeDroneLayer = (currentStation === 'qares') ? 'qares-drone-layer' : 'lares-drone-layer';
+    if (map.getLayer(activeDroneLayer)) {
+        map.setPaintProperty(activeDroneLayer, 'raster-opacity', opacity);
+    }
+};
+
+window.toggleBuildingOutlines = function(visible) {
+    const vis = visible ? 'visible' : 'none';
+    const layers = [
+        'buildings-footprints-line', 'buildings-footprints-fill', 'buildings-names-layer',
+        'qares-footprints-line', 'qares-footprints-fill'
+    ];
+    layers.forEach(l => {
+        if (map.getLayer(l)) map.setLayoutProperty(l, 'visibility', vis);
+    });
+};
+
+// Road loader
+window.loadStationRoads = function(station) {
+    draw.deleteAll();
+    if (map.getSource('draw-labels')) {
+        map.getSource('draw-labels').setData({ type: 'FeatureCollection', features: [] });
+    }
+
+    const storageKey = 'road_draw_autosave_' + station;
+    const autosave = localStorage.getItem(storageKey);
+    if (autosave) {
+        try {
+            const data = JSON.parse(autosave);
+            if (data && data.features && data.features.length > 0) {
+                draw.add(data);
+                updateLabels();
+                console.log(`[${station.toUpperCase()}] Restored roads from local autosave.`);
+                return;
+            }
+        } catch (e) {}
+    }
+
+    const endpoint = (station === 'qares') ? '/api/qares/roads?t=' + Date.now() : 'roads.json?t=' + Date.now();
+    fetch(endpoint)
+        .then(res => res.json())
+        .then(data => {
+            if (data && data.features && data.features.length > 0) {
+                draw.add(data);
+                updateLabels();
+                console.log(`[${station.toUpperCase()}] Loaded ${data.features.length} road features from server.`);
+            } else {
+                updateLabels();
+            }
+        })
+        .catch(err => {
+            console.log(`Notice: Could not load initial ${station} roads:`, err);
+            updateLabels();
+        });
+};
+
+function updateLabels() {
+    const data = draw.getAll();
+    const points = {
+        type: 'FeatureCollection',
+        features: data.features.filter(f => f.geometry.type === 'Point' && f.properties.name)
+    };
+    if (map.getSource('draw-labels')) {
+        map.getSource('draw-labels').setData(points);
+    }
+    
+    // Autosave per station
+    localStorage.setItem('road_draw_autosave_' + currentStation, JSON.stringify(data));
+
+    // Update Output
+    const outputField = document.getElementById('output');
+    if (outputField) outputField.value = JSON.stringify(data, null, 2);
+}
+
+map.on('draw.create', updateLabels);
+map.on('draw.delete', updateLabels);
+map.on('draw.update', updateLabels);
+
 map.on('load', () => {
-    // Add a custom layer to show text labels for our entrances
+    // Helper to find the first draw layer so all auxiliary layers sit UNDER MapboxDraw
+    function getBeforeDrawId() {
+        if (map.getLayer('gl-draw-line-active-casing')) return 'gl-draw-line-active-casing';
+        if (map.getLayer('gl-draw-line-casing-inactive')) return 'gl-draw-line-casing-inactive';
+        if (map.getLayer('gl-draw-line-inactive')) return 'gl-draw-line-inactive';
+        const layers = map.getStyle().layers || [];
+        for (const l of layers) {
+            if (l.id.startsWith('gl-draw-')) return l.id;
+        }
+        return undefined;
+    }
+
+    const beforeDraw = getBeforeDrawId();
+
+    // 1. QARES Compound Boundary
+    map.addSource('qares-boundary-source', {
+        type: 'geojson',
+        data: 'qares_boundary.json'
+    });
+    map.addLayer({
+        id: 'qares-boundary-fill',
+        type: 'fill',
+        source: 'qares-boundary-source',
+        layout: { 'visibility': (currentStation === 'qares') ? 'visible' : 'none' },
+        paint: {
+            'fill-color': '#10b981',
+            'fill-opacity': 0.08
+        }
+    }, beforeDraw);
+    map.addLayer({
+        id: 'qares-boundary-line',
+        type: 'line',
+        source: 'qares-boundary-source',
+        layout: { 'visibility': (currentStation === 'qares') ? 'visible' : 'none' },
+        paint: {
+            'line-color': '#10b981',
+            'line-width': 2.5,
+            'line-dasharray': [3, 1]
+        }
+    }, beforeDraw);
+
+    // 2. LARES Building Footprints
+    fetch('buildings.json')
+        .then(res => res.json())
+        .then(data => {
+            if (!map.getSource('buildings-footprints-source')) {
+                map.addSource('buildings-footprints-source', {
+                    type: 'geojson',
+                    data: data
+                });
+            }
+
+            const targetBefore = getBeforeDrawId();
+
+            map.addLayer({
+                id: 'buildings-footprints-fill',
+                type: 'fill',
+                source: 'buildings-footprints-source',
+                layout: { 'visibility': (currentStation === 'lares') ? 'visible' : 'none' },
+                paint: {
+                    'fill-color': '#0284c7',
+                    'fill-opacity': 0.18
+                }
+            }, targetBefore);
+
+            map.addLayer({
+                id: 'buildings-footprints-line',
+                type: 'line',
+                source: 'buildings-footprints-source',
+                layout: { 'visibility': (currentStation === 'lares') ? 'visible' : 'none' },
+                paint: {
+                    'line-color': '#38bdf8',
+                    'line-width': 1.5,
+                    'line-dasharray': [3, 2]
+                }
+            }, targetBefore);
+
+            map.addLayer({
+                id: 'buildings-names-layer',
+                type: 'symbol',
+                source: 'buildings-footprints-source',
+                layout: {
+                    'visibility': (currentStation === 'lares') ? 'visible' : 'none',
+                    'text-field': ['get', 'id'],
+                    'text-size': 10,
+                    'text-transform': 'uppercase',
+                    'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold']
+                },
+                paint: {
+                    'text-color': '#38bdf8',
+                    'text-halo-color': '#0f172a',
+                    'text-halo-width': 1.5
+                }
+            }, targetBefore);
+        })
+        .catch(e => console.warn('Could not load buildings.json overlay:', e));
+
+    // 3. QARES Building Footprints (if available)
+    fetch('/api/qares/buildings?t=' + Date.now())
+        .then(res => res.json())
+        .then(data => {
+            if (data && data.features && data.features.length > 0) {
+                map.addSource('qares-footprints-source', {
+                    type: 'geojson',
+                    data: data
+                });
+                const targetBefore = getBeforeDrawId();
+                map.addLayer({
+                    id: 'qares-footprints-fill',
+                    type: 'fill',
+                    source: 'qares-footprints-source',
+                    layout: { 'visibility': (currentStation === 'qares') ? 'visible' : 'none' },
+                    paint: { 'fill-color': '#0284c7', 'fill-opacity': 0.25 }
+                }, targetBefore);
+                map.addLayer({
+                    id: 'qares-footprints-line',
+                    type: 'line',
+                    source: 'qares-footprints-source',
+                    layout: { 'visibility': (currentStation === 'qares') ? 'visible' : 'none' },
+                    paint: { 'line-color': '#38bdf8', 'line-width': 2, 'line-dasharray': [3, 2] }
+                }, targetBefore);
+            }
+        })
+        .catch(e => {});
+
+    // 4. Entrance labels layer
     map.addSource('draw-labels', {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] }
@@ -195,80 +1044,69 @@ map.on('load', () => {
         'layout': {
             'text-field': ['get', 'name'],
             'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
-            'text-radial-offset': 1,
+            'text-radial-offset': 1.2,
             'text-justify': 'center',
-            'text-size': 12
+            'text-size': 11
         },
         'paint': {
-            'text-color': '#fff',
-            'text-halo-color': '#000',
+            'text-color': '#fbbf24',
+            'text-halo-color': '#0f172a',
             'text-halo-width': 2
         }
     });
 
-    // Update labels whenever draw changes
-    function updateLabels() {
-        const data = draw.getAll();
-        const points = {
-            type: 'FeatureCollection',
-            features: data.features.filter(f => f.geometry.type === 'Point' && f.properties.name)
-        };
-        map.getSource('draw-labels').setData(points);
-        
-        // AUTOSAVE to localStorage so work isn't lost on refresh
-        localStorage.setItem('road_draw_autosave', JSON.stringify(data));
-    }
+    updateBuildingDropdown(currentStation);
+    loadStationRoads(currentStation);
+});
+
+window.reloadFromOriginalBaseline = function() {
+    const isQARES = (currentStation === 'qares');
+    const targetFile = isQARES ? 'qares_roads.json' : 'roads.json';
+    if (!confirm(`Discard all unsaved edits and reload original ${targetFile}?`)) return;
     
-    map.on('draw.create', updateLabels);
-    map.on('draw.delete', updateLabels);
-    map.on('draw.update', updateLabels);
-
-    // Try to load from autosave first, then fallback to roads.json
-    const autosave = localStorage.getItem('road_draw_autosave');
-    if (autosave) {
-        try {
-            const data = JSON.parse(autosave);
-            if (data && data.features && data.features.length > 0) {
-                draw.add(data);
-                updateLabels();
-                console.log('Restored from autosave.');
-                return;
-            }
-        } catch (e) {
-            console.error('Failed to parse autosave data.');
-        }
+    localStorage.removeItem('road_draw_autosave_' + currentStation);
+    draw.deleteAll();
+    if (map.getSource('draw-labels')) {
+        map.getSource('draw-labels').setData({ type: 'FeatureCollection', features: [] });
     }
 
-    fetch('roads.json')
+    const endpoint = isQARES ? '/api/qares/roads?t=' + Date.now() : 'roads.json?t=' + Date.now();
+    fetch(endpoint)
         .then(res => res.json())
         .then(data => {
             if (data && data.features && data.features.length > 0) {
                 draw.add(data);
                 updateLabels();
             }
-        })
-        .catch(err => console.log('No existing roads found, starting fresh.'));
-});
+        });
+};
+
 function saveDirectlyToMap() {
     const data = draw.getAll();
     const btn = document.getElementById('saveDirectBtn');
-    btn.textContent = "Saving to roads.json...";
+    const isQARES = (currentStation === 'qares');
+    const targetFile = isQARES ? 'qares_roads.json' : 'roads.json';
+    const targetEndpoint = isQARES ? '/api/qares/roads' : '/api/roads';
+
+    btn.textContent = `Saving to ${targetFile}...`;
     btn.disabled = true;
     
-    // Auto-generate IDs for roads
+    // Auto-generate IDs
     let roadCounter = 1;
     let entranceCounter = 1;
     for (const f of data.features) {
+        if (!f.properties) f.properties = {};
         if (!f.properties.id) {
             if (f.geometry.type === 'Point') {
-                f.properties.id = "entrance_" + entranceCounter++;
+                f.properties.id = (isQARES ? 'qares_entrance_' : 'entrance_') + entranceCounter++;
             } else {
-                f.properties.id = "road_" + roadCounter++;
+                f.properties.id = (isQARES ? 'qares_road_' : 'road_') + roadCounter++;
             }
         }
+        f.properties.station = currentStation;
     }
     
-    fetch('/api/roads', {
+    fetch(targetEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -276,11 +1114,11 @@ function saveDirectlyToMap() {
     .then(r => r.json())
     .then(res => {
         if (res.success) {
-            btn.textContent = `✅ Saved ${res.count} features to roads.json!`;
+            btn.textContent = `✅ Saved ${res.count} features to ${targetFile}!`;
             btn.style.background = "#10b981";
             setTimeout(() => {
-                btn.textContent = "💾 Save Directly to Map (roads.json)";
-                btn.style.background = "#22c55e";
+                btn.textContent = `💾 Save Directly to Map (${targetFile})`;
+                btn.style.background = "linear-gradient(135deg, #10b981, #059669)";
                 btn.disabled = false;
             }, 3000);
         } else {
@@ -298,29 +1136,11 @@ function saveDirectlyToMap() {
 
 function exportData() {
     const data = draw.getAll();
-    const btn = document.querySelector('button');
-    btn.textContent = "Generated!";
-    
-    // Auto-generate IDs for roads
-    let roadCounter = 1;
-    let entranceCounter = 1;
-    for (const f of data.features) {
-        if (!f.properties.id) {
-            if (f.geometry.type === 'Point') {
-                f.properties.id = "entrance_" + entranceCounter++;
-            } else {
-                f.properties.id = "road_" + roadCounter++;
-            }
-        }
-    }
-    
     const outputField = document.getElementById('output');
     outputField.value = JSON.stringify(data, null, 2);
     outputField.select();
     document.execCommand('copy');
-    
-    setTimeout(() => { btn.textContent = "Copied to clipboard!"; }, 500);
-    setTimeout(() => { btn.textContent = "Generate Road GeoJSON"; }, 3000);
+    alert(`Copied ${currentStation.toUpperCase()} Road GeoJSON to clipboard!`);
 }
 </script>
 </body>

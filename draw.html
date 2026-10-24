@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>DA-LARES Interactive Building Footprint Drawer</title>
+<title>Interactive Building Footprint Drawer — DA-LARES & DA-QARES</title>
 <meta name="viewport" content="initial-scale=1,maximum-scale=1">
 <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
 <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
@@ -10,13 +10,13 @@
 <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.css" type="text/css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; }
   body { 
     margin: 0; padding: 0; 
-    background: #0f172a; 
-    color: #e2e8f0; 
+    background: #0b1120; 
+    color: #f8fafc; 
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
     overflow: hidden;
   }
@@ -25,20 +25,21 @@
   /* Floating UI Control Panel */
   .panel { 
     position: absolute; top: 16px; left: 16px; z-index: 10; 
-    background: rgba(15, 23, 42, 0.92); 
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: rgba(15, 23, 42, 0.94); 
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     padding: 18px 20px; 
-    border-radius: 12px; 
-    box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1); 
+    border-radius: 14px; 
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65), 0 0 20px rgba(56, 189, 248, 0.15); 
+    border: 1px solid rgba(255, 255, 255, 0.12); 
     width: 360px;
     max-height: calc(100vh - 32px);
     display: flex;
     flex-direction: column;
     overflow-y: auto;
   }
-  .panel::-webkit-scrollbar { width: 6px; }
-  .panel::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+  .panel::-webkit-scrollbar { width: 5px; }
+  .panel::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
 
   .header-badge {
     display: inline-flex;
@@ -50,48 +51,224 @@
     padding: 4px 10px;
     border-radius: 20px;
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 700;
     margin-bottom: 8px;
     width: fit-content;
+    letter-spacing: 0.3px;
+  }
+  .header-badge.qares-badge {
+    background: rgba(56, 189, 248, 0.15);
+    color: #38bdf8;
+    border-color: rgba(56, 189, 248, 0.35);
   }
   h3 { 
     margin: 0 0 4px 0; 
-    font-size: 18px; 
-    font-weight: 700;
+    font-size: 17px; 
+    font-weight: 800;
     color: #f8fafc; 
     display: flex;
     align-items: center;
     gap: 8px;
   }
   .subtitle { 
-    font-size: 12px; 
+    font-size: 11.5px; 
     color: #94a3b8; 
-    margin-bottom: 14px; 
-    line-height: 1.4;
+    margin-bottom: 12px; 
+    line-height: 1.45;
+  }
+
+  .section-label {
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1.1px;
+    color: #4ade80;
+    margin: 10px 0 6px 0;
+  }
+  .section-label.qares-label {
+    color: #38bdf8;
+  }
+
+  /* Segmented Layer Switchers */
+  .layer-switcher {
+    display: flex;
+    background: rgba(30, 41, 59, 0.7);
+    padding: 3px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    gap: 4px;
+    margin-bottom: 10px;
+  }
+  .layer-btn {
+    flex: 1;
+    padding: 7px 8px;
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+  }
+  .layer-btn:hover { color: #f8fafc; background: rgba(255, 255, 255, 0.06); }
+  .layer-btn.active {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #ffffff;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+  }
+  .layer-btn.active.qares-btn {
+    background: linear-gradient(135deg, #0284c7, #0369a1);
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35);
+  }
+
+  /* Slider controls */
+  .slider-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #cbd5e1;
+    margin-bottom: 4px;
+  }
+  .slider-num { font-family: monospace; color: #38bdf8; font-weight: 700; }
+  .range-input {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.12);
+    outline: none;
+    cursor: pointer;
+    accent-color: #38bdf8;
+    margin-bottom: 12px;
   }
 
   .instructions {
-    background: rgba(30, 41, 59, 0.7);
+    background: rgba(30, 41, 59, 0.65);
     border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     padding: 10px 12px;
-    font-size: 11.5px;
+    font-size: 11px;
     line-height: 1.5;
     color: #cbd5e1;
-    margin-bottom: 14px;
+    margin-bottom: 12px;
   }
   .instructions ol { margin: 0; padding-left: 18px; }
   .instructions li { margin-bottom: 4px; }
   .instructions li:last-child { margin-bottom: 0; }
   .instructions strong { color: #38bdf8; }
 
+  /* QARES Filter Types & Color Coding Controls */
+  .qares-control-card {
+    background: rgba(15, 23, 42, 0.88);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  }
+  .qares-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #38bdf8;
+  }
+  .qares-filter-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .qares-filter-btn {
+    padding: 8px 6px;
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    transition: all 0.15s ease;
+  }
+  .qares-filter-btn:hover {
+    background: rgba(56, 189, 248, 0.12);
+    color: #f1f5f9;
+    border-color: rgba(56, 189, 248, 0.35);
+  }
+  .qares-filter-btn.active {
+    background: rgba(56, 189, 248, 0.22);
+    color: #38bdf8;
+    border-color: #38bdf8;
+    font-weight: 700;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+  }
+  .qares-swatches-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .qares-swatch-btn {
+    padding: 6px 7px;
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    color: #cbd5e1;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    transition: all 0.15s ease;
+  }
+  .qares-swatch-btn:hover {
+    border-color: rgba(255, 255, 255, 0.35);
+    transform: translateY(-1px);
+  }
+  .qares-swatch-btn.active {
+    border-color: #ffffff;
+    color: #ffffff;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.25);
+  }
+  .swatch-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+  .swatch-count {
+    font-size: 9.5px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.12);
+    color: #e2e8f0;
+  }
+
   /* Selection Info Card */
   .selection-card {
     background: rgba(30, 41, 59, 0.9);
-    border: 1px solid rgba(56, 189, 248, 0.3);
+    border: 1px solid rgba(56, 189, 248, 0.35);
     border-radius: 8px;
     padding: 10px 12px;
-    margin-bottom: 14px;
+    margin-bottom: 12px;
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -100,19 +277,19 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 11px;
+    font-size: 10.5px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     color: #38bdf8;
-    font-weight: 600;
+    font-weight: 700;
   }
   .selection-name {
-    font-size: 14px;
-    font-weight: 600;
+    font-size: 13.5px;
+    font-weight: 700;
     color: #f1f5f9;
   }
   .selection-meta {
-    font-size: 11.5px;
+    font-size: 11px;
     color: #94a3b8;
     display: flex;
     gap: 12px;
@@ -122,9 +299,9 @@
   .toggles {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    margin-bottom: 14px;
-    font-size: 12px;
+    gap: 7px;
+    margin-bottom: 12px;
+    font-size: 11.5px;
     color: #cbd5e1;
   }
   .toggle-label {
@@ -136,24 +313,24 @@
   }
   .toggle-label input {
     cursor: pointer;
-    accent-color: #22c55e;
+    accent-color: #10b981;
     width: 15px;
     height: 15px;
   }
 
-  /* Buttons */
+  /* Action Buttons */
   .btn-group {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    margin-bottom: 14px;
+    margin-bottom: 12px;
   }
   button { 
     width: 100%; 
     padding: 10px 14px; 
     cursor: pointer; 
-    font-size: 12.5px;
-    font-weight: 600;
+    font-size: 12px;
+    font-weight: 700;
     border-radius: 8px; 
     border: 1px solid transparent;
     transition: all 0.2s ease;
@@ -163,15 +340,30 @@
     gap: 8px;
   }
   .btn-save { 
-    background: #22c55e; 
-    color: #052e16; 
+    background: linear-gradient(135deg, #10b981, #059669); 
+    color: #ffffff; 
+    border-color: rgba(52, 211, 153, 0.4);
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
   }
-  .btn-save:hover { background: #16a34a; color: #fff; }
+  .btn-save:hover { 
+    background: linear-gradient(135deg, #059669, #047857); 
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45);
+  }
+  .btn-save.qares-save {
+    background: linear-gradient(135deg, #0284c7, #0369a1);
+    border-color: rgba(56, 189, 248, 0.4);
+    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+  }
+  .btn-save.qares-save:hover {
+    background: linear-gradient(135deg, #0369a1, #075985);
+  }
   .btn-copy { 
-    background: #0284c7; 
-    color: white; 
+    background: rgba(255, 255, 255, 0.06); 
+    color: #cbd5e1; 
+    border: 1px solid rgba(255, 255, 255, 0.12);
   }
-  .btn-copy:hover { background: #0369a1; }
+  .btn-copy:hover { background: rgba(255, 255, 255, 0.12); color: #fff; }
   .btn-edit {
     background: #eab308;
     color: #422006;
@@ -181,6 +373,8 @@
     background: #1e293b;
     color: #cbd5e1;
     border: 1px solid #334155;
+    font-size: 11px;
+    padding: 8px;
   }
   .btn-secondary:hover { background: #334155; color: white; }
 
@@ -194,22 +388,23 @@
   .textarea-header {
     display: flex;
     justify-content: space-between;
-    font-size: 11px;
+    font-size: 10.5px;
     color: #64748b;
+    font-weight: 600;
   }
   textarea { 
     width: 100%; 
-    height: 120px; 
+    height: 100px; 
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; 
-    font-size: 10.5px; 
+    font-size: 10px; 
     background: #020617; 
-    color: #4ade80; 
-    border: 1px solid #1e293b; 
+    color: #38bdf8; 
+    border: 1px solid rgba(255, 255, 255, 0.1); 
     padding: 8px; 
     border-radius: 6px;
     resize: vertical;
   }
-  textarea:focus { outline: 1px solid #22c55e; }
+  textarea:focus { outline: 1px solid #38bdf8; }
 
   /* Building Properties Modal */
   .modal-overlay {
@@ -217,83 +412,87 @@
     position: fixed; 
     top: 0; left: 0; 
     width: 100%; height: 100%; 
-    background: rgba(0, 0, 0, 0.75); 
-    backdrop-filter: blur(4px);
-    z-index: 1000; 
-    align-items: center; 
+    background: rgba(0, 0, 0, 0.78); 
+    backdrop-filter: blur(8px);
+    z-index: 10000;
+    align-items: center;
     justify-content: center;
   }
   .modal-box {
-    background: #1e293b; 
-    padding: 24px; 
-    border-radius: 12px; 
-    border: 1px solid #334155; 
-    width: 380px; 
-    color: #f8fafc;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.7);
+    background: #0f172a;
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    border-radius: 16px;
+    padding: 22px;
+    width: 380px;
+    max-width: 90vw;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.8), 0 0 30px rgba(56, 189, 248, 0.2);
   }
-  .modal-box h3 { margin: 0 0 6px 0; color: #38bdf8; }
-  .modal-box p { font-size: 12px; color: #94a3b8; margin: 0 0 16px 0; }
-  .form-group { margin-bottom: 14px; }
+  .modal-box h3 { margin: 0 0 4px 0; font-size: 16px; color: #f8fafc; }
+  .modal-box p { margin: 0 0 14px 0; font-size: 11.5px; color: #94a3b8; line-height: 1.4; }
+  
+  .form-group {
+    margin-bottom: 12px;
+  }
   .form-group label {
     display: block;
-    font-size: 11.5px;
-    font-weight: 600;
+    font-size: 11px;
+    font-weight: 700;
     color: #cbd5e1;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
   }
   .form-group select, 
-  .form-group input[type="text"],
-  .form-group input[type="number"] {
+  .form-group input {
     width: 100%;
-    padding: 9px 12px;
-    background: #0f172a;
+    padding: 8px 10px;
+    background: #020617;
     color: white;
-    border: 1px solid #334155;
-    border-radius: 6px;
-    font-size: 13px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    font-size: 12px;
     font-family: inherit;
+    outline: none;
   }
   .form-group select:focus, 
   .form-group input:focus {
     border-color: #38bdf8;
-    outline: none;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
   }
   .checkbox-group {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 12.5px;
+    font-size: 12px;
     color: #e2e8f0;
-    margin-bottom: 18px;
+    margin-bottom: 14px;
     cursor: pointer;
   }
   .checkbox-group input { width: 16px; height: 16px; accent-color: #38bdf8; }
   .modal-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 10px;
-    margin-top: 20px;
+    gap: 8px;
+    margin-top: 18px;
   }
 
   /* Status Toast */
   #toast {
     position: fixed;
     bottom: 24px;
-    right: 24px;
-    padding: 10px 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px 20px;
     background: #0f172a;
-    border: 1px solid #22c55e;
+    border: 1px solid #10b981;
     color: #4ade80;
-    border-radius: 8px;
-    font-size: 12.5px;
-    font-weight: 500;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    border-radius: 30px;
+    font-size: 12px;
+    font-weight: 700;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.6), 0 0 20px rgba(16, 185, 129, 0.3);
     display: none;
-    z-index: 10000;
+    z-index: 100000;
     animation: fadeIn 0.3s ease;
   }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeIn { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
 </style>
 </head>
 <body>
@@ -301,15 +500,75 @@
 
 <!-- Top-Left Drawer Dashboard -->
 <div class="panel">
-  <div class="header-badge">DA-LARES Lipa Campus</div>
-  <h3>🏢 Building Drawer</h3>
-  <div class="subtitle">Accurate architectural polygon footprint editor over Google Satellite imagery.</div>
+  <div id="headerBadge" class="header-badge">🌾 DA-LARES Lipa Campus</div>
+  <h3 id="panelTitle">🏢 Building Drawer</h3>
+  <div id="panelSubtitle" class="subtitle">Accurate architectural polygon footprint editor over Drone & Satellite imagery.</div>
+
+  <!-- Campus Station Switcher -->
+  <div class="section-label" id="stationSectionLabel">Campus Station</div>
+  <div class="layer-switcher" style="margin-bottom: 12px;">
+    <button class="layer-btn active" id="btn-station-lares" onclick="switchStation('lares')">
+      <span>🌾 DA-LARES (Lipa)</span>
+    </button>
+    <button class="layer-btn" id="btn-station-qares" onclick="switchStation('qares')">
+      <span>🌱 DA-QARES (Tiaong)</span>
+    </button>
+  </div>
+
+  <!-- Aerial Background Switcher -->
+  <div class="section-label" id="aerialSectionLabel">Aerial Map Background</div>
+  <div class="layer-switcher">
+    <button class="layer-btn active" id="btn-layer-drone" onclick="setBaseLayer('drone')">
+      <span>🚁 Drone Shot</span>
+    </button>
+    <button class="layer-btn" id="btn-layer-google" onclick="setBaseLayer('google')">
+      <span>🛰️ Old Google</span>
+    </button>
+  </div>
+  <div class="slider-row">
+    <span>Drone Imagery Opacity</span>
+    <span id="drone-opacity-val" class="slider-num">100%</span>
+  </div>
+  <input type="range" id="drone-opacity-slider" class="range-input" min="0" max="1" step="0.05" value="1.0" oninput="setDroneOpacity(this.value)">
+
+  <!-- QARES Filter Types & Color Coding Panel (Visible for QARES Campus) -->
+  <div id="qaresControlPanel" class="qares-control-card" style="display:none;">
+    <div class="qares-section-header">
+      <span>🏷️ QARES Filter Type</span>
+      <span id="activeFilterBadge" style="font-size:10px; color:#38bdf8; font-weight:700;">🏢 Buildings</span>
+    </div>
+    <div class="qares-filter-grid" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px;">
+      <button type="button" class="qares-filter-btn active" data-filter="Buildings" onclick="setQaresActiveFilter('Buildings')">
+        🏢 Buildings
+      </button>
+      <button type="button" class="qares-filter-btn" data-filter="Misc Buildings" onclick="setQaresActiveFilter('Misc Buildings')">
+        🏠 Misc Buildings
+      </button>
+      <button type="button" class="qares-filter-btn" data-filter="Utilities" onclick="setQaresActiveFilter('Utilities')">
+        ⚡ Utilities
+      </button>
+    </div>
+
+    <!-- Building Color Coding -->
+    <div id="qaresColorSection">
+      <div class="qares-section-header" style="margin-top:2px;">
+        <span>🎨 Color Coding</span>
+        <span id="activeColorBadge" style="font-size:10px; font-weight:700; padding:2px 8px; border-radius:12px; background:rgba(239,68,68,0.2); color:#ef4444; border:1px solid #ef4444;">🔴 Red (Active)</span>
+      </div>
+      <div class="qares-swatches-grid" id="qaresSwatchesGrid" style="margin-top:6px;">
+        <!-- Populated dynamically by updateQaresPaletteUI() -->
+      </div>
+      <div style="font-size:10px; color:#94a3b8; margin-top:6px; line-height:1.4;">
+        💡 Click a color to set default for new buildings, or click a building and click a color to instantly recolor it!
+      </div>
+    </div>
+  </div>
 
   <div class="instructions">
     <ol>
       <li>Click the <strong>Polygon Tool</strong> (top-right) to trace walls.</li>
-      <li>Double-click to finish. Select the <strong>Building</strong> in the popup.</li>
-      <li>Click any building to drag vertices or click <strong>Edit Properties</strong>.</li>
+      <li>Double-click to finish. Specify the building properties in popup.</li>
+      <li>Click any footprint to drag vertices or click <strong>Edit Properties</strong>.</li>
       <li>Use the <strong>Trash Tool</strong> to delete selected footprint.</li>
     </ol>
   </div>
@@ -323,8 +582,26 @@
     <div id="selectionName" class="selection-name">Building Name</div>
     <div class="selection-meta">
       <span id="selectionHeight">Height: 5m</span>
+      <span id="selectionCategory" style="display:none;">Category: Office</span>
       <span id="selection3D">3D Model: No</span>
     </div>
+
+    <!-- QARES Quick Recolor Swatches Bar -->
+    <div id="qaresQuickColorRow" style="display:none; flex-direction:column; gap:5px; margin-top:4px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.1);">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:10.5px; font-weight:700; color:#38bdf8;">Recolor Selected:</span>
+        <span id="selectedColorNameBadge" style="font-size:10px; font-weight:700; color:#ef4444;">🔴 Red</span>
+      </div>
+      <div id="qaresQuickColorSwatches" style="display:grid; grid-template-columns:repeat(6, 1fr); gap:4px;">
+        <button type="button" onclick="quickSetSelectedColor('red')" title="Red" style="padding:5px 0; font-size:11px; border-radius:4px; background:#ef4444; border:none; cursor:pointer; color:#fff; display:flex; align-items:center; justify-content:center;">🔴</button>
+        <button type="button" onclick="quickSetSelectedColor('blue')" title="Blue" style="padding:5px 0; font-size:11px; border-radius:4px; background:#3b82f6; border:none; cursor:pointer; color:#fff; display:flex; align-items:center; justify-content:center;">🔵</button>
+        <button type="button" onclick="quickSetSelectedColor('green')" title="Green" style="padding:5px 0; font-size:11px; border-radius:4px; background:#22c55e; border:none; cursor:pointer; color:#fff; display:flex; align-items:center; justify-content:center;">🟢</button>
+        <button type="button" onclick="quickSetSelectedColor('yellow')" title="Yellow" style="padding:5px 0; font-size:11px; border-radius:4px; background:#eab308; border:none; cursor:pointer; color:#fff; display:flex; align-items:center; justify-content:center;">🟡</button>
+        <button type="button" onclick="quickSetSelectedColor('light_grey')" title="Light Grey" style="padding:5px 0; font-size:11px; border-radius:4px; background:#94a3b8; border:none; cursor:pointer; color:#fff; display:flex; align-items:center; justify-content:center;">⚪</button>
+        <button type="button" onclick="quickSetSelectedColor('pink')" title="Pink" style="padding:5px 0; font-size:11px; border-radius:4px; background:#ec4899; border:none; cursor:pointer; color:#fff; display:flex; align-items:center; justify-content:center;">🌸</button>
+      </div>
+    </div>
+
     <button id="editPropsBtn" class="btn-edit" onclick="openModalForSelected()" style="margin-top:4px; padding:6px 10px;">
       ✏️ Edit Building Properties
     </button>
@@ -334,11 +611,15 @@
   <div class="toggles">
     <label class="toggle-label">
       <input type="checkbox" id="toggleLabels" checked onchange="toggleLabelsLayer(this.checked)">
-      🏷️ Show Building Labels
+      <span>🏷️ Show Building Labels</span>
     </label>
     <label class="toggle-label">
       <input type="checkbox" id="toggleRoads" checked onchange="toggleRoadsLayer(this.checked)">
-      🛣️ Show Roads & Entrances Reference (roads.json)
+      <span id="roadsToggleLabel">🛣️ Show Roads Reference (roads.json)</span>
+    </label>
+    <label class="toggle-label" id="boundaryToggleContainer" style="display:none;">
+      <input type="checkbox" id="toggleBoundary" checked onchange="toggleBoundaryLayer(this.checked)">
+      <span>🟩 Show Compound Survey Boundary</span>
     </label>
   </div>
 
@@ -370,16 +651,63 @@
     <h3 id="modalTitle">Select Building</h3>
     <p id="modalSubtitle">Choose which campus facility corresponds to this footprint.</p>
     
-    <div class="form-group">
-      <label for="buildingSelect">Campus Facility / Office</label>
-      <select id="buildingSelect" onchange="onBuildingSelectChange(this.value)">
-        <!-- Populated dynamically from KNOWN_BUILDING_NAMES -->
-      </select>
+    <!-- LARES Facility Fields -->
+    <div id="laresFacilityGroup">
+      <div class="form-group">
+        <label for="buildingSelect">Campus Facility / Office</label>
+        <select id="buildingSelect" onchange="onBuildingSelectChange(this.value)">
+          <!-- Populated dynamically from KNOWN_BUILDING_NAMES -->
+        </select>
+      </div>
+
+      <div id="customIdGroup" class="form-group" style="display:none;">
+        <label for="customIdInput">Custom Building ID (lowercase_with_underscores)</label>
+        <input type="text" id="customIdInput" placeholder="e.g. storage_facility">
+      </div>
     </div>
 
-    <div id="customIdGroup" class="form-group" style="display:none;">
-      <label for="customIdInput">Custom Building ID (lowercase_with_underscores)</label>
-      <input type="text" id="customIdInput" placeholder="e.g. storage_facility">
+    <!-- QARES Facility Fields -->
+    <div id="qaresFacilityGroup" style="display:none;">
+      <div class="form-group">
+        <label for="qaresBuildingId">Facility ID (lowercase_with_underscores)</label>
+        <input type="text" id="qaresBuildingId" placeholder="e.g. qares_admin_building">
+      </div>
+      <div class="form-group">
+        <label for="qaresBuildingName">Official Facility Name</label>
+        <input type="text" id="qaresBuildingName" placeholder="e.g. Administration Building">
+      </div>
+      <div class="form-group">
+        <label for="qaresCategory">Filter Type</label>
+        <select id="qaresCategory" onchange="if(window.onQaresCategoryChanged) window.onQaresCategoryChanged(this.value)">
+          <option value="Buildings">🏢 Buildings</option>
+          <option value="Misc Buildings">🏠 Misc Buildings</option>
+          <option value="Utilities">⚡ Utilities</option>
+        </select>
+      </div>
+      <div class="form-group" id="qaresColorGroup">
+        <label>Color Code <span id="qaresColorGroupName" style="font-weight:normal; color:#94a3b8;">(Buildings)</span></label>
+        <div class="color-palette-grid" id="qaresColorPaletteGrid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:6px;">
+          <button type="button" class="color-swatch-btn active" data-color="red" style="padding:6px; background:#020617; border:1px solid #ef4444; border-radius:6px; color:#fff; font-size:11px; cursor:pointer; display:flex; align-items:center; gap:6px;" onclick="window.selectQaresColorCode('red')">
+            <span style="width:10px; height:10px; border-radius:50%; background:#ef4444; display:inline-block;"></span> Red
+          </button>
+          <button type="button" class="color-swatch-btn" data-color="blue" style="padding:6px; background:#020617; border:1px solid rgba(255,255,255,0.15); border-radius:6px; color:#cbd5e1; font-size:11px; cursor:pointer; display:flex; align-items:center; gap:6px;" onclick="window.selectQaresColorCode('blue')">
+            <span style="width:10px; height:10px; border-radius:50%; background:#3b82f6; display:inline-block;"></span> Blue
+          </button>
+          <button type="button" class="color-swatch-btn" data-color="green" style="padding:6px; background:#020617; border:1px solid rgba(255,255,255,0.15); border-radius:6px; color:#cbd5e1; font-size:11px; cursor:pointer; display:flex; align-items:center; gap:6px;" onclick="window.selectQaresColorCode('green')">
+            <span style="width:10px; height:10px; border-radius:50%; background:#22c55e; display:inline-block;"></span> Green
+          </button>
+          <button type="button" class="color-swatch-btn" data-color="yellow" style="padding:6px; background:#020617; border:1px solid rgba(255,255,255,0.15); border-radius:6px; color:#cbd5e1; font-size:11px; cursor:pointer; display:flex; align-items:center; gap:6px;" onclick="window.selectQaresColorCode('yellow')">
+            <span style="width:10px; height:10px; border-radius:50%; background:#eab308; display:inline-block;"></span> Yellow
+          </button>
+          <button type="button" class="color-swatch-btn" data-color="light_grey" style="padding:6px; background:#020617; border:1px solid rgba(255,255,255,0.15); border-radius:6px; color:#cbd5e1; font-size:11px; cursor:pointer; display:flex; align-items:center; gap:6px;" onclick="window.selectQaresColorCode('light_grey')">
+            <span style="width:10px; height:10px; border-radius:50%; background:#94a3b8; display:inline-block;"></span> Light Grey
+          </button>
+          <button type="button" class="color-swatch-btn" data-color="pink" style="padding:6px; background:#020617; border:1px solid rgba(255,255,255,0.15); border-radius:6px; color:#cbd5e1; font-size:11px; cursor:pointer; display:flex; align-items:center; gap:6px;" onclick="window.selectQaresColorCode('pink')">
+            <span style="width:10px; height:10px; border-radius:50%; background:#ec4899; display:inline-block;"></span> Pink
+          </button>
+        </div>
+        <input type="hidden" id="qaresColorCode" value="red">
+      </div>
     </div>
 
     <div class="form-group" style="display:flex; gap:12px;">
@@ -393,14 +721,14 @@
       </div>
     </div>
 
-    <label class="checkbox-group">
+    <label class="checkbox-group" id="has3DGroup">
       <input type="checkbox" id="buildingHas3D">
       <span>Has Authentic 3D GLB Model</span>
     </label>
 
     <div class="modal-actions">
       <button onclick="cancelModal()" class="btn-secondary" style="width:auto; padding:8px 16px;">Cancel</button>
-      <button onclick="confirmModal()" class="btn-save" style="width:auto; padding:8px 18px;">Apply</button>
+      <button onclick="confirmModal()" class="btn-save" id="modalApplyBtn" style="width:auto; padding:8px 18px;">Apply</button>
     </div>
   </div>
 </div>
@@ -409,11 +737,329 @@
 <div id="toast">✅ Notification</div>
 
 <script type="module">
-import { KNOWN_BUILDING_NAMES, CUSTOM_3D_BUILDINGS } from './js/data/buildings.js?v=47';
+import { KNOWN_BUILDING_NAMES, CUSTOM_3D_BUILDINGS } from './js/data/buildings.js?v=72';
 
 mapboxgl.accessToken = 'pk.eyJ1IjoiZWFydGgwMzA3IiwiYSI6ImNtdWFqNTR5czAxNmEyd29lMm42YjZlMDkifQ.xdPOP5RVPdn6YNka-ZdwoQ';
 
-// Initialize map with Google Satellite style for ground-truth alignment
+// Detect Station from URL Query Param
+const urlParams = new URLSearchParams(window.location.search);
+let currentStation = (urlParams.get('station') === 'qares') ? 'qares' : 'lares';
+let activeBaseLayer = 'drone';
+
+const STATION_CONFIG = {
+    lares: {
+        center: [121.1666, 13.9587],
+        zoom: 18.0,
+        name: 'DA-LARES (Lipa Campus)',
+        badge: '🌾 DA-LARES Lipa Campus',
+        title: '🏢 Building Drawer',
+        subtitle: 'Accurate architectural polygon footprint editor over Drone & Satellite imagery.',
+        roadsFile: 'roads.json',
+        roadsEndpoint: 'roads.json',
+        buildingsFile: 'buildings.js & buildings.json',
+        buildingsApi: '/api/buildings',
+        saveBtnText: '💾 Save Directly to Map (buildings.js)',
+        hasBoundary: false
+    },
+    qares: {
+        center: [121.37178, 13.94658],
+        zoom: 17.5,
+        name: 'DA-QARES (Tiaong Campus)',
+        badge: '🌱 DA-QARES Tiaong Campus',
+        title: '🏢 QARES Building Drawer',
+        subtitle: 'Trace building footprints & facility blocks for Quezon Agricultural Research & Experiment Station.',
+        roadsFile: 'qares_roads.json',
+        roadsEndpoint: '/api/qares/roads',
+        buildingsFile: 'qares_buildings.json',
+        buildingsApi: '/api/qares/buildings',
+        saveBtnText: '💾 Save Directly to Map (qares_buildings.json)',
+        hasBoundary: true
+    }
+};
+
+// QARES Category Color Palette & Configurations
+const QARES_COLORS = {
+    red: { name: 'Red', hex: '#ef4444', roof: '#dc2626', icon: '🔴' },
+    blue: { name: 'Blue', hex: '#3b82f6', roof: '#2563eb', icon: '🔵' },
+    green: { name: 'Green', hex: '#22c55e', roof: '#16a34a', icon: '🟢' },
+    yellow: { name: 'Yellow', hex: '#eab308', roof: '#ca8a04', icon: '🟡' },
+    light_grey: { name: 'Light Grey', hex: '#94a3b8', roof: '#64748b', icon: '⚪' },
+    pink: { name: 'Pink', hex: '#ec4899', roof: '#db2777', icon: '🌸' },
+    brown: { name: 'Brown', hex: '#92400e', roof: '#78350f', icon: '🟤' }
+};
+
+const FILTER_COLOR_SETS = {
+    'Buildings': ['red', 'blue', 'green', 'yellow', 'light_grey', 'pink'],
+    'Misc Buildings': ['red', 'blue', 'yellow', 'brown'],
+    'Utilities': ['yellow', 'brown']
+};
+
+let qaresActiveFilter = 'Buildings';
+let qaresActiveColor = 'red';
+
+// QARES Master In-Memory Store for all features across all categories
+window.qaresMasterFeatures = new Map();
+
+// Synchronize all features currently on the Draw canvas into master store
+function syncCurrentDrawToMaster() {
+    if (currentStation !== 'qares' || !window.draw) return;
+    try {
+        const currentData = draw.getAll();
+        (currentData.features || []).forEach(f => {
+            if (!f.id) f.id = (f.properties && f.properties.id) || ('feat_' + Math.random().toString(36).substr(2, 9));
+            f.properties = f.properties || {};
+            if (!f.properties.category) f.properties.category = qaresActiveFilter;
+            if (!f.properties.filter_type) f.properties.filter_type = f.properties.category;
+            window.qaresMasterFeatures.set(f.id, f);
+        });
+    } catch (e) {
+        console.warn('syncCurrentDrawToMaster error:', e);
+    }
+}
+
+// Render only drawings belonging to the active QARES filter, hiding all other categories!
+window.renderQaresActiveDrawings = function() {
+    if (currentStation !== 'qares' || !window.draw) return;
+
+    // Deselect any currently active feature
+    if (draw.changeMode) {
+        try { draw.changeMode('simple_select', { featureIds: [] }); } catch (e) {}
+    }
+    selectedFeature = null;
+    const card = document.getElementById('selectionCard');
+    if (card) card.style.display = 'none';
+
+    // Clear all drawings from the canvas
+    draw.deleteAll();
+
+    // Filter master features to ONLY the active category
+    const targetCat = qaresActiveFilter || 'Buildings';
+    const matching = [];
+    for (const f of window.qaresMasterFeatures.values()) {
+        const cat = (f.properties && (f.properties.category || f.properties.filter_type)) || 'Buildings';
+        if (cat === targetCat) {
+            matching.push(f);
+        }
+    }
+
+    if (matching.length > 0) {
+        draw.add({
+            type: 'FeatureCollection',
+            features: matching
+        });
+    }
+
+    // Refresh floating labels (labels will only show for visible drawings!)
+    updateMapLabels();
+    updateQaresPaletteUI();
+};
+
+window.applyQaresCategoryFilter = function(filterName) {
+    if (currentStation === 'qares') {
+        renderQaresActiveDrawings();
+    }
+};
+
+window.applyQaresMapLowlighting = window.applyQaresCategoryFilter;
+
+window.setQaresActiveFilter = function(filterName) {
+    if (currentStation === 'qares') {
+        syncCurrentDrawToMaster();
+    }
+
+    qaresActiveFilter = filterName;
+    document.querySelectorAll('.qares-filter-btn').forEach(btn => {
+        const isMatch = (btn.dataset.filter === filterName);
+        btn.classList.toggle('active', isMatch);
+    });
+    const badge = document.getElementById('activeFilterBadge');
+    if (badge) {
+        const icons = {
+            'Buildings': '🏢 Buildings',
+            'Misc Buildings': '🏠 Misc Buildings',
+            'Utilities': '⚡ Utilities'
+        };
+        badge.textContent = icons[filterName] || filterName;
+    }
+
+    // Always keep the color coding section visible so user sees category swatches
+    const colorSec = document.getElementById('qaresColorSection');
+    if (colorSec) {
+        colorSec.style.display = 'block';
+    }
+
+    const catSelect = document.getElementById('qaresCategory');
+    if (catSelect) catSelect.value = filterName;
+    if (window.onQaresCategoryChanged) window.onQaresCategoryChanged(filterName);
+
+    // Update color swatches
+    updateQaresPaletteUI();
+
+    // Deselect any currently active feature so it cleanly returns to inactive state
+    if (draw && draw.changeMode) {
+        try {
+            draw.changeMode('simple_select', { featureIds: [] });
+        } catch (e) {}
+    }
+    selectedFeature = null;
+    const card = document.getElementById('selectionCard');
+    if (card) card.style.display = 'none';
+
+    // Strictly hide drawings from other filter types and show only the selected category
+    if (currentStation === 'qares') {
+        renderQaresActiveDrawings();
+    }
+    showToast(`Active Category: ${filterName}`);
+};
+
+window.setQaresActiveColor = function(colorKey) {
+    if (!QARES_COLORS[colorKey]) return;
+    qaresActiveColor = colorKey;
+    updateQaresPaletteUI();
+
+    const input = document.getElementById('qaresColorCode');
+    if (input) input.value = colorKey;
+
+    // If a building is selected, immediately recolor it!
+    if (selectedFeature && currentStation === 'qares') {
+        quickSetSelectedColor(colorKey);
+    } else {
+        showToast(`Active Drawing Color: ${QARES_COLORS[colorKey].icon} ${QARES_COLORS[colorKey].name}`);
+    }
+};
+
+window.quickSetSelectedColor = function(colorKey) {
+    if (!selectedFeature || !QARES_COLORS[colorKey]) return;
+    const def = QARES_COLORS[colorKey];
+    qaresActiveColor = colorKey;
+
+    draw.setFeatureProperty(selectedFeature.id, 'color_code', colorKey);
+    draw.setFeatureProperty(selectedFeature.id, 'color', def.hex);
+    draw.setFeatureProperty(selectedFeature.id, 'roof_color', def.roof);
+    draw.setFeatureProperty(selectedFeature.id, 'user_color', def.hex);
+    draw.setFeatureProperty(selectedFeature.id, 'user_roof_color', def.roof);
+    draw.setFeatureProperty(selectedFeature.id, 'user_color_code', colorKey);
+
+    selectedFeature.properties.color_code = colorKey;
+    selectedFeature.properties.color = def.hex;
+    selectedFeature.properties.roof_color = def.roof;
+    selectedFeature.properties.user_color = def.hex;
+    selectedFeature.properties.user_roof_color = def.roof;
+    selectedFeature.properties.user_color_code = colorKey;
+
+    if (currentStation === 'qares' && window.qaresMasterFeatures) {
+        window.qaresMasterFeatures.set(selectedFeature.id, selectedFeature);
+    }
+
+    updateSelectionCardUI();
+    updateQaresPaletteUI();
+    updateMapLabels();
+    showToast(`Recolored ${selectedFeature.properties.name || selectedFeature.properties.id} to ${def.icon} ${def.name}!`);
+};
+
+window.selectQaresColorCode = function(colorKey) {
+    setQaresActiveColor(colorKey);
+};
+
+window.onQaresCategoryChanged = function(cat) {
+    const lbl = document.getElementById('qaresColorGroupName');
+    if (lbl) lbl.textContent = `(${cat})`;
+
+    const allowedColors = FILTER_COLOR_SETS[cat] || FILTER_COLOR_SETS.Buildings;
+    const input = document.getElementById('qaresColorCode');
+    const curColor = input ? input.value : qaresActiveColor;
+    const targetColor = !allowedColors.includes(curColor) ? allowedColors[0] : curColor;
+
+    const paletteGrid = document.getElementById('qaresColorPaletteGrid');
+    if (paletteGrid) {
+        paletteGrid.style.gridTemplateColumns = (allowedColors.length === 2 || allowedColors.length === 4) ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)';
+        paletteGrid.innerHTML = allowedColors.map(k => {
+            const def = QARES_COLORS[k] || QARES_COLORS.red;
+            const isMatch = (k === targetColor);
+            return `
+                <button type="button" class="color-swatch-btn ${isMatch ? 'active' : ''}" data-color="${k}"
+                    style="padding:6px; background:#020617; border:1px solid ${isMatch ? def.hex : 'rgba(255,255,255,0.15)'}; border-radius:6px; color:${isMatch ? '#ffffff' : '#cbd5e1'}; font-size:11px; cursor:pointer; display:flex; align-items:center; gap:6px;"
+                    onclick="window.selectQaresColorCode('${k}')">
+                    <span style="width:10px; height:10px; border-radius:50%; background:${def.hex}; display:inline-block;"></span> ${def.name}
+                </button>
+            `;
+        }).join('');
+    }
+
+    selectQaresColorCode(targetColor);
+};
+
+window.updateQaresPaletteUI = function() {
+    const allowedColors = FILTER_COLOR_SETS[qaresActiveFilter] || FILTER_COLOR_SETS.Buildings;
+    if (!allowedColors.includes(qaresActiveColor)) {
+        qaresActiveColor = allowedColors[0];
+    }
+
+    const counts = {};
+    allowedColors.forEach(c => counts[c] = 0);
+    if (typeof draw !== 'undefined' && draw) {
+        try {
+            const allFeats = (currentStation === 'qares' && window.qaresMasterFeatures && window.qaresMasterFeatures.size > 0)
+                ? Array.from(window.qaresMasterFeatures.values())
+                : (draw.getAll().features || []);
+            allFeats.forEach(f => {
+                const cat = (f.properties && (f.properties.category || f.properties.filter_type)) || 'Buildings';
+                if (cat === qaresActiveFilter) {
+                    const c = (f.properties && f.properties.color_code) || 'red';
+                    if (counts[c] !== undefined) counts[c]++;
+                }
+            });
+        } catch(e) {}
+    }
+
+    // Populate Sidebar Swatches for Active Category
+    const swatchesGrid = document.getElementById('qaresSwatchesGrid');
+    if (swatchesGrid) {
+        swatchesGrid.style.gridTemplateColumns = (allowedColors.length === 2 || allowedColors.length === 4) ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)';
+        swatchesGrid.innerHTML = allowedColors.map(k => {
+            const def = QARES_COLORS[k] || QARES_COLORS.red;
+            const isMatch = (k === qaresActiveColor);
+            return `
+                <button type="button" class="qares-swatch-btn ${isMatch ? 'active' : ''}" data-color="${k}" onclick="setQaresActiveColor('${k}')"
+                    style="${isMatch ? `border-color:${def.hex}; background:rgba(255,255,255,0.14);` : `border-color:rgba(255,255,255,0.12); background:rgba(15,23,42,0.75);`}">
+                    <span style="display:flex; align-items:center; gap:5px;">
+                        <span class="swatch-dot" style="background:${def.hex};"></span> ${def.name}
+                    </span>
+                    <span class="swatch-count" id="count-badge-${k}">${counts[k] || 0}</span>
+                </button>
+            `;
+        }).join('');
+    }
+
+    // Populate Modal Palette Grid for Active Category
+    const paletteGrid = document.getElementById('qaresColorPaletteGrid');
+    if (paletteGrid) {
+        paletteGrid.style.gridTemplateColumns = (allowedColors.length === 2 || allowedColors.length === 4) ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)';
+        paletteGrid.innerHTML = allowedColors.map(k => {
+            const def = QARES_COLORS[k] || QARES_COLORS.red;
+            const isMatch = (k === qaresActiveColor);
+            return `
+                <button type="button" class="color-swatch-btn ${isMatch ? 'active' : ''}" data-color="${k}"
+                    style="padding:6px; background:#020617; border:1px solid ${isMatch ? def.hex : 'rgba(255,255,255,0.15)'}; border-radius:6px; color:${isMatch ? '#ffffff' : '#cbd5e1'}; font-size:11px; cursor:pointer; display:flex; align-items:center; gap:6px;"
+                    onclick="window.selectQaresColorCode('${k}')">
+                    <span style="width:10px; height:10px; border-radius:50%; background:${def.hex}; display:inline-block;"></span> ${def.name}
+                </button>
+            `;
+        }).join('');
+    }
+
+    // Update active color badge
+    const badge = document.getElementById('activeColorBadge');
+    if (badge && QARES_COLORS[qaresActiveColor]) {
+        const def = QARES_COLORS[qaresActiveColor];
+        badge.innerHTML = `${def.icon} ${def.name} (Active)`;
+        badge.style.color = def.hex;
+        badge.style.borderColor = def.hex;
+        badge.style.background = `${def.hex}25`;
+    }
+};
+
+// Map Instance with Google Satellite and Drone Orthomosaics for both stations
 const map = new mapboxgl.Map({
     container: 'map',
     style: {
@@ -424,13 +1070,194 @@ const map = new mapboxgl.Map({
                 'tiles': ['https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'],
                 'tileSize': 256,
                 'maxzoom': 22
+            },
+            'lares-drone-source': {
+                'type': 'raster',
+                'tiles': ['/api/tiles/lares/{z}/{x}/{y}.png'],
+                'tileSize': 256,
+                'minzoom': 14,
+                'maxzoom': 24,
+                'bounds': [121.165052, 13.956537, 121.173221, 13.963068]
+            },
+            'qares-drone-source': {
+                'type': 'raster',
+                'tiles': ['/api/tiles/qares/{z}/{x}/{y}.png'],
+                'tileSize': 256,
+                'minzoom': 14,
+                'maxzoom': 22,
+                'bounds': [121.366888, 13.941220, 121.376150, 13.950960]
             }
         },
-        'layers': [{ 'id': 'google-satellite-layer', 'type': 'raster', 'source': 'google-satellite' }]
+        'layers': [
+            {
+                'id': 'google-satellite-layer',
+                'type': 'raster',
+                'source': 'google-satellite'
+            },
+            {
+                'id': 'lares-drone-layer',
+                'type': 'raster',
+                'source': 'lares-drone-source',
+                'layout': {
+                    'visibility': (currentStation === 'lares') ? 'visible' : 'none'
+                },
+                'paint': {
+                    'raster-opacity': 1.0,
+                    'raster-fade-duration': 0
+                }
+            },
+            {
+                'id': 'qares-drone-layer',
+                'type': 'raster',
+                'source': 'qares-drone-source',
+                'layout': {
+                    'visibility': (currentStation === 'qares') ? 'visible' : 'none'
+                },
+                'paint': {
+                    'raster-opacity': 1.0,
+                    'raster-fade-duration': 0
+                }
+            }
+        ]
     },
-    center: [121.1666, 13.9592],
-    zoom: 17.5
+    center: STATION_CONFIG[currentStation].center,
+    zoom: STATION_CONFIG[currentStation].zoom,
+    maxZoom: 23
 });
+window.map = map;
+
+// Robust, high-contrast MapboxDraw styles that are 100% visible over aerial drone orthomosaic
+const drawStyles = [
+    // 1. ACTIVE POLYGON CASING (Dark outline for rubberband drawing)
+    {
+        'id': 'gl-draw-polygon-stroke-active-casing',
+        'type': 'line',
+        'filter': ['all', ['==', '$type', 'Polygon'], ['==', 'active', 'true']],
+        'layout': { 'line-cap': 'round', 'line-join': 'round' },
+        'paint': {
+            'line-color': '#0284c7',
+            'line-width': 6,
+            'line-opacity': 0.95
+        }
+    },
+    // 2. ACTIVE POLYGON STROKE (Bright cyan line while drawing)
+    {
+        'id': 'gl-draw-polygon-stroke-active',
+        'type': 'line',
+        'filter': ['all', ['==', '$type', 'Polygon'], ['==', 'active', 'true']],
+        'layout': { 'line-cap': 'round', 'line-join': 'round' },
+        'paint': {
+            'line-color': '#38bdf8',
+            'line-width': 3
+        }
+    },
+    // 3. ACTIVE POLYGON FILL
+    {
+        'id': 'gl-draw-polygon-fill-active',
+        'type': 'fill',
+        'filter': ['all', ['==', '$type', 'Polygon'], ['==', 'active', 'true']],
+        'paint': {
+            'fill-color': '#38bdf8',
+            'fill-opacity': 0.35
+        }
+    },
+    // 4. INACTIVE POLYGON CASING (Dark outline halo)
+    {
+        'id': 'gl-draw-polygon-stroke-inactive-casing',
+        'type': 'line',
+        'filter': ['all', ['==', '$type', 'Polygon'], ['==', 'active', 'false']],
+        'layout': { 'line-cap': 'round', 'line-join': 'round' },
+        'paint': {
+            'line-color': [
+                'case',
+                ['==', ['coalesce', ['get', 'user_color_code'], ''], 'red'], '#7f1d1d',
+                ['==', ['coalesce', ['get', 'user_color_code'], ''], 'blue'], '#1e3a8a',
+                ['==', ['coalesce', ['get', 'user_color_code'], ''], 'green'], '#14532d',
+                ['==', ['coalesce', ['get', 'user_color_code'], ''], 'yellow'], '#713f12',
+                ['==', ['coalesce', ['get', 'user_color_code'], ''], 'pink'], '#831843',
+                ['==', ['coalesce', ['get', 'user_color_code'], ''], 'light_grey'], '#334155',
+                ['==', ['coalesce', ['get', 'user_color_code'], ''], 'brown'], '#451a03',
+                ['==', ['coalesce', ['get', 'user_station'], ['get', 'station'], ''], 'qares'], '#7f1d1d',
+                '#064e3b'
+            ],
+            'line-width': 5,
+            'line-opacity': 0.85
+        }
+    },
+    // 5. INACTIVE POLYGON STROKE (Dynamic per building color)
+    {
+        'id': 'gl-draw-polygon-stroke-inactive',
+        'type': 'line',
+        'filter': ['all', ['==', '$type', 'Polygon'], ['==', 'active', 'false']],
+        'layout': { 'line-cap': 'round', 'line-join': 'round' },
+        'paint': {
+            'line-color': [
+                'coalesce',
+                ['get', 'user_roof_color'],
+                ['get', 'roof_color'],
+                ['case', ['==', ['coalesce', ['get', 'user_station'], ['get', 'station'], ''], 'qares'], '#dc2626', '#34d399']
+            ],
+            'line-width': 2.8
+        }
+    },
+    // 6. INACTIVE POLYGON FILL (Dynamic per building color)
+    {
+        'id': 'gl-draw-polygon-fill-inactive',
+        'type': 'fill',
+        'filter': ['all', ['==', '$type', 'Polygon'], ['==', 'active', 'false']],
+        'paint': {
+            'fill-color': [
+                'coalesce',
+                ['get', 'user_color'],
+                ['get', 'color'],
+                ['case', ['==', ['coalesce', ['get', 'user_station'], ['get', 'station'], ''], 'qares'], '#ef4444', '#10b981']
+            ],
+            'fill-opacity': 0.65
+        }
+    },
+    // 7. VERTICES
+    {
+        'id': 'gl-draw-polygon-and-line-vertex-stroke-inactive',
+        'type': 'circle',
+        'filter': ['all', ['==', 'meta', 'vertex'], ['==', '$type', 'Point'], ['!=', 'mode', 'static']],
+        'paint': {
+            'circle-radius': 7,
+            'circle-color': '#ffffff'
+        }
+    },
+    {
+        'id': 'gl-draw-polygon-and-line-vertex-inactive',
+        'type': 'circle',
+        'filter': ['all', ['==', 'meta', 'vertex'], ['==', '$type', 'Point'], ['!=', 'mode', 'static']],
+        'paint': {
+            'circle-radius': 4.5,
+            'circle-color': '#0284c7'
+        }
+    },
+    {
+        'id': 'gl-draw-polygon-and-line-vertex-active',
+        'type': 'circle',
+        'filter': ['all', ['==', 'meta', 'vertex'], ['==', '$type', 'Point'], ['==', 'active', 'true']],
+        'paint': {
+            'circle-radius': 8,
+            'circle-color': '#f59e0b',
+            'circle-stroke-width': 2.5,
+            'circle-stroke-color': '#ffffff'
+        }
+    },
+    // 8. MIDPOINTS
+    {
+        'id': 'gl-draw-polygon-midpoint',
+        'type': 'circle',
+        'filter': ['all', ['==', 'meta', 'midpoint'], ['==', '$type', 'Point']],
+        'paint': {
+            'circle-radius': 5,
+            'circle-color': '#38bdf8',
+            'circle-stroke-width': 1.5,
+            'circle-stroke-color': '#ffffff'
+        }
+    }
+];
 
 // Configure Mapbox GL Draw for Polygons
 const draw = new MapboxDraw({
@@ -438,21 +1265,22 @@ const draw = new MapboxDraw({
     controls: {
         polygon: true,
         trash: true
-    }
+    },
+    userProperties: true,
+    styles: drawStyles
 });
 map.addControl(draw, 'top-right');
+window.draw = draw;
 
 // State trackers
 let pendingFeatureId = null;
 let isEditingExisting = false;
 let selectedFeature = null;
 
-// Populate building dropdown cleanly
+// Populate LARES building dropdown cleanly
 const selectElem = document.getElementById('buildingSelect');
 function populateBuildingDropdown() {
     selectElem.innerHTML = '';
-    
-    // Sort keys alphabetically by friendly name
     const sortedIds = Object.keys(KNOWN_BUILDING_NAMES).sort((a, b) => {
         return KNOWN_BUILDING_NAMES[a].localeCompare(KNOWN_BUILDING_NAMES[b]);
     });
@@ -465,7 +1293,6 @@ function populateBuildingDropdown() {
         selectElem.appendChild(opt);
     });
 
-    // Custom option
     const customOpt = document.createElement('option');
     customOpt.value = '__custom__';
     customOpt.textContent = '➕ Enter Custom Building ID...';
@@ -480,7 +1307,6 @@ window.onBuildingSelectChange = function(val) {
         document.getElementById('customIdInput').focus();
     } else {
         customGroup.style.display = 'none';
-        // Auto-toggle 3D checkbox if known 3D building
         document.getElementById('buildingHas3D').checked = (val in CUSTOM_3D_BUILDINGS);
     }
 };
@@ -508,17 +1334,82 @@ function showToast(msg, duration = 3000) {
     setTimeout(() => { toast.style.display = 'none'; }, duration);
 }
 
+// Update UI State for Active Station
+function updateStationUIState() {
+    const isQares = (currentStation === 'qares');
+    const cfg = STATION_CONFIG[currentStation];
+
+    // Buttons
+    document.getElementById('btn-station-lares').classList.toggle('active', !isQares);
+    document.getElementById('btn-station-qares').classList.toggle('active', isQares);
+    document.getElementById('btn-station-qares').classList.toggle('qares-btn', isQares);
+
+    // Badges & Labels
+    const badge = document.getElementById('headerBadge');
+    badge.textContent = cfg.badge;
+    badge.classList.toggle('qares-badge', isQares);
+
+    document.getElementById('panelTitle').textContent = cfg.title;
+    document.getElementById('panelSubtitle').textContent = cfg.subtitle;
+
+    const sLabel = document.getElementById('stationSectionLabel');
+    if (sLabel) sLabel.classList.toggle('qares-label', isQares);
+    const aLabel = document.getElementById('aerialSectionLabel');
+    if (aLabel) aLabel.classList.toggle('qares-label', isQares);
+
+    // Save button styling and text
+    const saveBtn = document.getElementById('saveDirectBtn');
+    saveBtn.textContent = cfg.saveBtnText;
+    saveBtn.classList.toggle('qares-save', isQares);
+
+    // Roads toggle label
+    document.getElementById('roadsToggleLabel').textContent = `🛣️ Show Roads Reference (${cfg.roadsFile})`;
+
+    // Boundary toggle container
+    const bToggle = document.getElementById('boundaryToggleContainer');
+    if (bToggle) bToggle.style.display = isQares ? 'flex' : 'none';
+
+    // QARES filter & color control panel
+    const qPanel = document.getElementById('qaresControlPanel');
+    if (qPanel) qPanel.style.display = isQares ? 'flex' : 'none';
+
+    // Modal fields
+    document.getElementById('laresFacilityGroup').style.display = isQares ? 'none' : 'block';
+    document.getElementById('qaresFacilityGroup').style.display = isQares ? 'block' : 'none';
+    document.getElementById('has3DGroup').style.display = isQares ? 'none' : 'flex';
+
+    if (isQares) {
+        updateQaresPaletteUI();
+        applyQaresMapLowlighting(qaresActiveFilter);
+    } else {
+        applyQaresMapLowlighting('all');
+    }
+}
+
 // Update floating building labels and sync UI
 function updateMapLabels() {
     const data = draw.getAll();
     const count = data.features.length;
-    document.getElementById('featureCountLabel').textContent = `Buildings: ${count}`;
+    if (currentStation === 'qares') {
+        const totalCount = window.qaresMasterFeatures ? window.qaresMasterFeatures.size : count;
+        document.getElementById('featureCountLabel').textContent = `${qaresActiveFilter}: ${count} (${totalCount} total)`;
+    } else {
+        document.getElementById('featureCountLabel').textContent = `Buildings: ${count}`;
+    }
 
     // Update Output Textarea
     const outputField = document.getElementById('output');
-    outputField.value = JSON.stringify(data, null, 2);
+    if (currentStation === 'qares' && window.qaresMasterFeatures && window.qaresMasterFeatures.size > 0) {
+        outputField.value = JSON.stringify({
+            type: 'FeatureCollection',
+            name: 'QARES Buildings',
+            features: Array.from(window.qaresMasterFeatures.values())
+        }, null, 2);
+    } else {
+        outputField.value = JSON.stringify(data, null, 2);
+    }
 
-    // Compute Centroid Points for Symbol Labels
+    // Compute Centroid Points for Symbol Labels (ONLY for visible features on canvas!)
     const labelPoints = {
         type: 'FeatureCollection',
         features: []
@@ -528,7 +1419,9 @@ function updateMapLabels() {
         if (f.geometry && f.geometry.type === 'Polygon' && f.geometry.coordinates) {
             const centroid = getPolygonCentroid(f.geometry.coordinates);
             const bId = f.properties.id || '';
-            const bName = KNOWN_BUILDING_NAMES[bId] || f.properties.name || bId || 'Unnamed Building';
+            const bName = (currentStation === 'lares')
+                ? (KNOWN_BUILDING_NAMES[bId] || f.properties.name || bId || 'Unnamed Building')
+                : (f.properties.name || bId || 'QARES Facility');
             const has3D = f.properties.has_3d_model ? ' [3D]' : '';
 
             labelPoints.features.push({
@@ -539,7 +1432,8 @@ function updateMapLabels() {
                 },
                 properties: {
                     title: `${bName}${has3D}`,
-                    id: bId
+                    id: bId,
+                    category: (f.properties && (f.properties.user_category || f.properties.category || f.properties.filter_type)) || 'Buildings'
                 }
             });
         }
@@ -549,46 +1443,154 @@ function updateMapLabels() {
         map.getSource('building-labels').setData(labelPoints);
     }
 
-    // Save automatically to localStorage
-    localStorage.setItem('building_draw_autosave', JSON.stringify(data));
+    // Save automatically to localStorage per station
+    if (currentStation === 'qares') {
+        const fullData = {
+            type: 'FeatureCollection',
+            name: 'QARES Buildings',
+            features: Array.from(window.qaresMasterFeatures.values())
+        };
+        localStorage.setItem('building_draw_autosave_' + currentStation, JSON.stringify(fullData));
+    } else {
+        localStorage.setItem('building_draw_autosave_' + currentStation, JSON.stringify(data));
+    }
+
+    if (currentStation === 'qares') {
+        updateQaresPaletteUI();
+    }
+}
+
+// Synchronize Selection Card with current selected feature
+function updateSelectionCardUI() {
+    const card = document.getElementById('selectionCard');
+    if (!selectedFeature) {
+        if (card) card.style.display = 'none';
+        return;
+    }
+    const bId = selectedFeature.properties.id || 'unassigned';
+    const isQares = (currentStation === 'qares');
+    const bName = isQares
+        ? (selectedFeature.properties.name || bId)
+        : (KNOWN_BUILDING_NAMES[bId] || selectedFeature.properties.name || bId);
+    const bHeight = selectedFeature.properties.height || 5;
+    const b3D = selectedFeature.properties.has_3d_model ? '✅ Yes' : '❌ No';
+
+    document.getElementById('selectionIdBadge').textContent = bId;
+    document.getElementById('selectionName').textContent = bName;
+    document.getElementById('selectionHeight').textContent = `Height: ${bHeight}m`;
+
+    const catEl = document.getElementById('selectionCategory');
+    if (isQares && (selectedFeature.properties.category || selectedFeature.properties.filter_type)) {
+        catEl.textContent = `Category: ${selectedFeature.properties.category || selectedFeature.properties.filter_type}`;
+        catEl.style.display = 'inline';
+    } else {
+        catEl.style.display = 'none';
+    }
+
+    const modelEl = document.getElementById('selection3D');
+    modelEl.style.display = isQares ? 'none' : 'inline';
+    modelEl.textContent = `3D Model: ${b3D}`;
+
+    // QARES Quick Recolor Row (dynamically restricted to the building's category allowed colors)
+    const qRow = document.getElementById('qaresQuickColorRow');
+    if (qRow) {
+        qRow.style.display = isQares ? 'flex' : 'none';
+        if (isQares) {
+            const curCat = selectedFeature.properties.category || selectedFeature.properties.filter_type || qaresActiveFilter;
+            const allowedColors = FILTER_COLOR_SETS[curCat] || FILTER_COLOR_SETS.Buildings;
+            let cKey = selectedFeature.properties.color_code || 'red';
+            if (!allowedColors.includes(cKey)) {
+                cKey = allowedColors[0];
+            }
+            const cDef = QARES_COLORS[cKey] || QARES_COLORS.red;
+            const badge = document.getElementById('selectedColorNameBadge');
+            if (badge) {
+                badge.textContent = `${cDef.icon} ${cDef.name}`;
+                badge.style.color = cDef.hex;
+            }
+
+            const swatchesEl = document.getElementById('qaresQuickColorSwatches');
+            if (swatchesEl) {
+                swatchesEl.style.gridTemplateColumns = `repeat(${allowedColors.length}, 1fr)`;
+                swatchesEl.innerHTML = allowedColors.map(k => {
+                    const def = QARES_COLORS[k] || QARES_COLORS.red;
+                    return `<button type="button" onclick="quickSetSelectedColor('${k}')" title="${def.name}" style="padding:5px 0; font-size:11px; border-radius:4px; background:${def.hex}; border:none; cursor:pointer; color:#fff; display:flex; align-items:center; justify-content:center;">${def.icon}</button>`;
+                }).join('');
+            }
+        }
+    }
+
+    if (card) card.style.display = 'flex';
 }
 
 // Handle Feature Selection
 map.on('draw.selectionchange', function(e) {
-    const card = document.getElementById('selectionCard');
     if (e.features && e.features.length > 0) {
         selectedFeature = e.features[0];
-        const bId = selectedFeature.properties.id || 'unassigned';
-        const bName = KNOWN_BUILDING_NAMES[bId] || selectedFeature.properties.name || bId;
-        const bHeight = selectedFeature.properties.height || 5;
-        const b3D = selectedFeature.properties.has_3d_model ? '✅ Yes' : '❌ No';
-
-        document.getElementById('selectionIdBadge').textContent = bId;
-        document.getElementById('selectionName').textContent = bName;
-        document.getElementById('selectionHeight').textContent = `Height: ${bHeight}m`;
-        document.getElementById('selection3D').textContent = `3D Model: ${b3D}`;
-        card.style.display = 'flex';
+        updateSelectionCardUI();
     } else {
         selectedFeature = null;
-        card.style.display = 'none';
+        updateSelectionCardUI();
     }
 });
 
 // When user creates a new polygon shape
 map.on('draw.create', function(e) {
-    if (e.features[0].geometry.type === 'Polygon') {
-        pendingFeatureId = e.features[0].id;
+    if (e.features && e.features[0] && e.features[0].geometry.type === 'Polygon') {
+        const feat = e.features[0];
+        pendingFeatureId = feat.id;
         isEditingExisting = false;
-        openModalForFeature(e.features[0]);
+
+        if (currentStation === 'qares') {
+            const def = QARES_COLORS[qaresActiveColor] || QARES_COLORS.red;
+            draw.setFeatureProperty(feat.id, 'category', qaresActiveFilter);
+            draw.setFeatureProperty(feat.id, 'filter_type', qaresActiveFilter);
+            draw.setFeatureProperty(feat.id, 'color_code', qaresActiveColor);
+            draw.setFeatureProperty(feat.id, 'color', def.hex);
+            draw.setFeatureProperty(feat.id, 'roof_color', def.roof);
+            draw.setFeatureProperty(feat.id, 'user_color', def.hex);
+            draw.setFeatureProperty(feat.id, 'user_roof_color', def.roof);
+            draw.setFeatureProperty(feat.id, 'user_color_code', qaresActiveColor);
+            draw.setFeatureProperty(feat.id, 'user_category', qaresActiveFilter);
+            draw.setFeatureProperty(feat.id, 'station', 'qares');
+
+            feat.properties = feat.properties || {};
+            feat.properties.category = qaresActiveFilter;
+            feat.properties.filter_type = qaresActiveFilter;
+            feat.properties.color_code = qaresActiveColor;
+            feat.properties.color = def.hex;
+            feat.properties.roof_color = def.roof;
+            feat.properties.user_color = def.hex;
+            feat.properties.user_roof_color = def.roof;
+            feat.properties.user_color_code = qaresActiveColor;
+            feat.properties.user_category = qaresActiveFilter;
+            feat.properties.station = 'qares';
+            if (!feat.id) feat.id = 'feat_' + Math.random().toString(36).substr(2, 9);
+            window.qaresMasterFeatures.set(feat.id, feat);
+        }
+
+        openModalForFeature(feat);
     }
     updateMapLabels();
+    if (currentStation === 'qares') updateQaresPaletteUI();
 });
 
-map.on('draw.update', updateMapLabels);
-map.on('draw.delete', function() {
+map.on('draw.update', function() {
+    syncCurrentDrawToMaster();
+    updateMapLabels();
+    if (currentStation === 'qares') updateQaresPaletteUI();
+});
+
+map.on('draw.delete', function(e) {
+    if (currentStation === 'qares' && e.features) {
+        e.features.forEach(f => {
+            window.qaresMasterFeatures.delete(f.id);
+        });
+    }
     document.getElementById('selectionCard').style.display = 'none';
     selectedFeature = null;
     updateMapLabels();
+    if (currentStation === 'qares') updateQaresPaletteUI();
 });
 
 // Open modal for a feature
@@ -596,37 +1598,46 @@ function openModalForFeature(f) {
     const modal = document.getElementById('buildingModal');
     const title = document.getElementById('modalTitle');
     const subtitle = document.getElementById('modalSubtitle');
-    const select = document.getElementById('buildingSelect');
-    const customGroup = document.getElementById('customIdGroup');
-    const customInput = document.getElementById('customIdInput');
-    const heightInput = document.getElementById('buildingHeight');
-    const minHeightInput = document.getElementById('buildingMinHeight');
-    const has3DInput = document.getElementById('buildingHas3D');
+    const isQares = (currentStation === 'qares');
 
     if (isEditingExisting) {
         title.textContent = '✏️ Edit Building Properties';
-        subtitle.textContent = 'Modify attributes for this building polygon.';
+        subtitle.textContent = `Modify attributes for this ${isQares ? 'QARES' : 'LARES'} building polygon.`;
     } else {
         title.textContent = '🏢 New Building Footprint';
-        subtitle.textContent = 'Select which campus facility this drawn footprint represents.';
+        subtitle.textContent = `Specify attributes for this drawn ${isQares ? 'QARES' : 'LARES'} campus facility.`;
     }
 
     const currentId = f.properties.id || '';
-    if (currentId && currentId in KNOWN_BUILDING_NAMES) {
-        select.value = currentId;
-        customGroup.style.display = 'none';
-    } else if (currentId) {
-        select.value = '__custom__';
-        customGroup.style.display = 'block';
-        customInput.value = currentId;
+    const currentName = f.properties.name || '';
+
+    if (isQares) {
+        document.getElementById('qaresBuildingId').value = currentId || `qares_facility_${Date.now() % 1000}`;
+        document.getElementById('qaresBuildingName').value = currentName || '';
+        document.getElementById('qaresCategory').value = f.properties.category || f.properties.filter_type || qaresActiveFilter;
+        window.onQaresCategoryChanged(document.getElementById('qaresCategory').value);
+        window.selectQaresColorCode(f.properties.color_code || qaresActiveColor);
     } else {
-        select.value = 'admin_building';
-        customGroup.style.display = 'none';
+        const select = document.getElementById('buildingSelect');
+        const customGroup = document.getElementById('customIdGroup');
+        const customInput = document.getElementById('customIdInput');
+
+        if (currentId && currentId in KNOWN_BUILDING_NAMES) {
+            select.value = currentId;
+            customGroup.style.display = 'none';
+        } else if (currentId) {
+            select.value = '__custom__';
+            customGroup.style.display = 'block';
+            customInput.value = currentId;
+        } else {
+            select.value = 'admin_building';
+            customGroup.style.display = 'none';
+        }
+        document.getElementById('buildingHas3D').checked = f.properties.has_3d_model || (currentId in CUSTOM_3D_BUILDINGS);
     }
 
-    heightInput.value = f.properties.height !== undefined ? f.properties.height : 5;
-    minHeightInput.value = f.properties.min_height !== undefined ? f.properties.min_height : 0;
-    has3DInput.checked = f.properties.has_3d_model || (currentId in CUSTOM_3D_BUILDINGS);
+    document.getElementById('buildingHeight').value = f.properties.height !== undefined ? f.properties.height : 5;
+    document.getElementById('buildingMinHeight').value = f.properties.min_height !== undefined ? f.properties.min_height : 0;
 
     modal.style.display = 'flex';
 }
@@ -640,57 +1651,185 @@ window.openModalForSelected = function() {
 };
 
 window.confirmModal = function() {
-    const select = document.getElementById('buildingSelect');
-    let buildingId = select.value;
-    if (buildingId === '__custom__') {
-        const customVal = document.getElementById('customIdInput').value.trim();
-        buildingId = customVal.toLowerCase().replace(/[^a-z0-9_]/g, '_');
-    }
+    try {
+        const isQares = (currentStation === 'qares');
+        let buildingId = '';
+        let buildingName = '';
+        let category = 'office';
+        let has3D = false;
+        let colorKey = 'red';
+        let colorDef = QARES_COLORS.red;
 
-    if (!buildingId) {
-        alert('Please select or specify a Building ID.');
-        return;
-    }
+        if (isQares) {
+            buildingId = document.getElementById('qaresBuildingId').value.trim() || `qares_facility_${Date.now() % 1000}`;
+            buildingName = document.getElementById('qaresBuildingName').value.trim() || buildingId;
+            category = document.getElementById('qaresCategory').value;
+            colorKey = document.getElementById('qaresColorCode').value || qaresActiveColor || 'red';
+            colorDef = QARES_COLORS[colorKey] || QARES_COLORS.red;
 
-    const height = parseFloat(document.getElementById('buildingHeight').value) || 5;
-    const minHeight = parseFloat(document.getElementById('buildingMinHeight').value) || 0;
-    const has3D = document.getElementById('buildingHas3D').checked;
-
-    if (pendingFeatureId) {
-        draw.setFeatureProperty(pendingFeatureId, 'id', buildingId);
-        draw.setFeatureProperty(pendingFeatureId, 'height', height);
-        draw.setFeatureProperty(pendingFeatureId, 'min_height', minHeight);
-        draw.setFeatureProperty(pendingFeatureId, 'has_3d_model', has3D);
-
-        // Update selectedFeature if it's the one modified
-        if (selectedFeature && selectedFeature.id === pendingFeatureId) {
-            selectedFeature.properties.id = buildingId;
-            selectedFeature.properties.height = height;
-            selectedFeature.properties.min_height = minHeight;
-            selectedFeature.properties.has_3d_model = has3D;
-
-            document.getElementById('selectionIdBadge').textContent = buildingId;
-            document.getElementById('selectionName').textContent = KNOWN_BUILDING_NAMES[buildingId] || buildingId;
-            document.getElementById('selectionHeight').textContent = `Height: ${height}m`;
-            document.getElementById('selection3D').textContent = `3D Model: ${has3D ? '✅ Yes' : '❌ No'}`;
+            if (pendingFeatureId) {
+                draw.setFeatureProperty(pendingFeatureId, 'category', category);
+                draw.setFeatureProperty(pendingFeatureId, 'filter_type', category);
+                draw.setFeatureProperty(pendingFeatureId, 'color_code', colorKey);
+                draw.setFeatureProperty(pendingFeatureId, 'color', colorDef.hex);
+                draw.setFeatureProperty(pendingFeatureId, 'roof_color', colorDef.roof);
+                draw.setFeatureProperty(pendingFeatureId, 'user_color', colorDef.hex);
+                draw.setFeatureProperty(pendingFeatureId, 'user_roof_color', colorDef.roof);
+                draw.setFeatureProperty(pendingFeatureId, 'user_color_code', colorKey);
+                draw.setFeatureProperty(pendingFeatureId, 'user_category', category);
+                draw.setFeatureProperty(pendingFeatureId, 'station', 'qares');
+            }
+        } else {
+            const select = document.getElementById('buildingSelect');
+            buildingId = select.value;
+            if (buildingId === '__custom__') {
+                const customVal = document.getElementById('customIdInput').value.trim();
+                buildingId = customVal.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+            }
+            if (!buildingId) {
+                alert('Please select or specify a Building ID.');
+                return;
+            }
+            buildingName = KNOWN_BUILDING_NAMES[buildingId] || buildingId;
+            has3D = document.getElementById('buildingHas3D').checked;
         }
 
-        pendingFeatureId = null;
-    }
+        const height = parseFloat(document.getElementById('buildingHeight').value) || 5;
+        let minHeight = parseFloat(document.getElementById('buildingMinHeight').value) || 0;
+        if (minHeight >= height) {
+            minHeight = 0;
+            const mhInput = document.getElementById('buildingMinHeight');
+            if (mhInput) mhInput.value = 0;
+        }
 
-    document.getElementById('buildingModal').style.display = 'none';
-    updateMapLabels();
-    showToast(`Saved properties for ${KNOWN_BUILDING_NAMES[buildingId] || buildingId}!`);
+        if (pendingFeatureId) {
+            draw.setFeatureProperty(pendingFeatureId, 'id', buildingId);
+            draw.setFeatureProperty(pendingFeatureId, 'name', buildingName);
+            draw.setFeatureProperty(pendingFeatureId, 'height', height);
+            draw.setFeatureProperty(pendingFeatureId, 'min_height', minHeight);
+            draw.setFeatureProperty(pendingFeatureId, 'station', currentStation);
+
+            if (!isQares) {
+                draw.setFeatureProperty(pendingFeatureId, 'has_3d_model', has3D);
+            }
+
+            if (selectedFeature && selectedFeature.id === pendingFeatureId) {
+                selectedFeature.properties.id = buildingId;
+                selectedFeature.properties.name = buildingName;
+                selectedFeature.properties.height = height;
+                selectedFeature.properties.min_height = minHeight;
+                selectedFeature.properties.station = currentStation;
+
+                if (isQares) {
+                    selectedFeature.properties.category = category;
+                    selectedFeature.properties.filter_type = category;
+                    selectedFeature.properties.color_code = colorKey;
+                    selectedFeature.properties.color = colorDef.hex;
+                    selectedFeature.properties.roof_color = colorDef.roof;
+                    selectedFeature.properties.user_color = colorDef.hex;
+                    selectedFeature.properties.user_roof_color = colorDef.roof;
+                    selectedFeature.properties.user_color_code = colorKey;
+                    selectedFeature.properties.user_category = category;
+                }
+
+                updateSelectionCardUI();
+            }
+
+            if (isQares) {
+                const feat = draw.get(pendingFeatureId);
+                if (feat) {
+                    feat.properties = feat.properties || {};
+                    feat.properties.id = buildingId;
+                    feat.properties.name = buildingName;
+                    feat.properties.height = height;
+                    feat.properties.min_height = minHeight;
+                    feat.properties.category = category;
+                    feat.properties.filter_type = category;
+                    feat.properties.color_code = colorKey;
+                    feat.properties.color = colorDef.hex;
+                    feat.properties.roof_color = colorDef.roof;
+                    feat.properties.user_color = colorDef.hex;
+                    feat.properties.user_roof_color = colorDef.roof;
+                    feat.properties.user_color_code = colorKey;
+                    feat.properties.user_category = category;
+                    feat.properties.station = 'qares';
+                    window.qaresMasterFeatures.set(feat.id, feat);
+
+                    if (category !== qaresActiveFilter) {
+                        draw.delete(pendingFeatureId);
+                        showToast(`Saved and assigned to ${category} (hidden from ${qaresActiveFilter} view)`);
+                    }
+                }
+            }
+
+            pendingFeatureId = null;
+        }
+
+        document.getElementById('buildingModal').style.display = 'none';
+        updateMapLabels();
+        if (isQares) updateQaresPaletteUI();
+        showToast(`Saved properties for ${buildingName}!`);
+    } catch (err) {
+        console.error('Error confirming modal:', err);
+        alert('Error saving properties: ' + err.message);
+    }
 };
 
 window.cancelModal = function() {
     if (!isEditingExisting && pendingFeatureId) {
-        // If it was a newly drawn polygon and user cancelled, discard it
         draw.delete(pendingFeatureId);
         pendingFeatureId = null;
     }
     document.getElementById('buildingModal').style.display = 'none';
     updateMapLabels();
+};
+
+// Explicit event listeners for modal buttons and keyboard Enter submission
+document.addEventListener('DOMContentLoaded', () => {
+    const applyBtn = document.getElementById('modalApplyBtn');
+    if (applyBtn) {
+        applyBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.confirmModal();
+        });
+    }
+    ['qaresBuildingId', 'qaresBuildingName', 'buildingHeight', 'buildingMinHeight', 'customIdInput'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    window.confirmModal();
+                }
+            });
+        }
+    });
+});
+
+// Base Layer Switcher (Drone vs Google)
+window.setBaseLayer = function(layerType) {
+    activeBaseLayer = layerType;
+    document.getElementById('btn-layer-drone').classList.toggle('active', layerType === 'drone');
+    document.getElementById('btn-layer-google').classList.toggle('active', layerType === 'google');
+
+    const isDrone = (layerType === 'drone');
+    if (map.getLayer('lares-drone-layer')) {
+        map.setLayoutProperty('lares-drone-layer', 'visibility', (currentStation === 'lares' && isDrone) ? 'visible' : 'none');
+    }
+    if (map.getLayer('qares-drone-layer')) {
+        map.setLayoutProperty('qares-drone-layer', 'visibility', (currentStation === 'qares' && isDrone) ? 'visible' : 'none');
+    }
+};
+
+window.setDroneOpacity = function(val) {
+    const opacity = parseFloat(val);
+    document.getElementById('drone-opacity-val').textContent = `${Math.round(opacity * 100)}%`;
+    if (map.getLayer('lares-drone-layer')) {
+        map.setPaintProperty('lares-drone-layer', 'raster-opacity', opacity);
+    }
+    if (map.getLayer('qares-drone-layer')) {
+        map.setPaintProperty('qares-drone-layer', 'raster-opacity', opacity);
+    }
 };
 
 // Map Layer Toggles
@@ -707,28 +1846,62 @@ window.toggleRoadsLayer = function(visible) {
     if (map.getLayer('ref-entrances-label')) map.setLayoutProperty('ref-entrances-label', 'visibility', val);
 };
 
-// Direct Save to Backend (updates js/data/buildings.js & buildings.json)
+window.toggleBoundaryLayer = function(visible) {
+    const val = visible ? 'visible' : 'none';
+    if (map.getLayer('qares-boundary-fill')) map.setLayoutProperty('qares-boundary-fill', 'visibility', val);
+    if (map.getLayer('qares-boundary-line')) map.setLayoutProperty('qares-boundary-line', 'visibility', val);
+};
+
+// Direct Save to Backend (supports both LARES and QARES)
 window.saveDirectlyToMap = function() {
-    const data = draw.getAll();
+    let data;
     const btn = document.getElementById('saveDirectBtn');
-    btn.textContent = "Saving to buildings.js...";
+    const cfg = STATION_CONFIG[currentStation];
+    btn.textContent = `Saving to ${cfg.buildingsFile}...`;
     btn.disabled = true;
 
-    // Validate features
-    let unassignedCounter = 1;
-    for (const f of data.features) {
-        if (!f.properties.id) {
-            f.properties.id = `building_${unassignedCounter++}`;
+    if (currentStation === 'lares') {
+        data = draw.getAll();
+        let unassignedCounter = 1;
+        for (const f of data.features) {
+            if (!f.properties.id) f.properties.id = `building_${unassignedCounter++}`;
+            if (f.properties.height === undefined) f.properties.height = 5;
+            if (f.properties.min_height === undefined) f.properties.min_height = 0;
+            if (f.properties.id in CUSTOM_3D_BUILDINGS) f.properties.has_3d_model = true;
+            f.properties.station = 'lares';
         }
-        if (f.properties.height === undefined) f.properties.height = 5;
-        if (f.properties.min_height === undefined) f.properties.min_height = 0;
-        const b3d = ['mis_rafis_building', 'tanco_hall_building', 'argosino_hall', 'canteen', 'raed_building', 'guard_house', 'amad_building', 'pgrc_building', 'prdp_building', 'ored_building', 'admin_building', 'lares_building', 'laboratory_building', 'f2c2_building', 'ild_building', 'seaguard_building', 'corn/casava_building', 'rsbsa_building', 'tissue_culture_building', 'rcpc_building', 'motorpool_barracks'];
-        if (b3d.includes(f.properties.id)) {
-            f.properties.has_3d_model = true;
+        localStorage.setItem('building_draw_autosave_lares', JSON.stringify(data));
+    } else {
+        syncCurrentDrawToMaster();
+        const allFeatures = Array.from(window.qaresMasterFeatures.values());
+        let unassignedCounter = 1;
+        for (const f of allFeatures) {
+            const p = f.properties = f.properties || {};
+            if (!p.id) p.id = `qares_facility_${unassignedCounter++}`;
+            if (!p.name) p.name = p.id;
+            if (p.height === undefined) p.height = 5;
+            if (p.min_height === undefined) p.min_height = 0;
+            if (!p.category) p.category = 'Buildings';
+            if (!p.filter_type) p.filter_type = p.category;
+            if (!p.color_code) p.color_code = 'red';
+            const colorDef = QARES_COLORS[p.color_code] || QARES_COLORS.red;
+            if (!p.color) p.color = colorDef.hex;
+            if (!p.roof_color) p.roof_color = colorDef.roof;
+            p.user_color = p.color;
+            p.user_roof_color = p.roof_color;
+            p.user_color_code = p.color_code;
+            p.user_category = p.category;
+            p.station = 'qares';
         }
+        data = {
+            type: 'FeatureCollection',
+            name: 'QARES Buildings',
+            features: allFeatures
+        };
+        localStorage.setItem('building_draw_autosave_qares', JSON.stringify(data));
     }
 
-    fetch('/api/buildings', {
+    fetch(cfg.buildingsApi, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -736,12 +1909,12 @@ window.saveDirectlyToMap = function() {
     .then(r => r.json())
     .then(res => {
         if (res.success) {
-            btn.textContent = `✅ Saved ${res.count} buildings to buildings.js!`;
+            btn.textContent = `✅ Saved ${res.count} buildings!`;
             btn.style.background = "#10b981";
-            showToast(`✅ Successfully saved ${res.count} building footprints!`);
+            showToast(`✅ Successfully saved ${res.count} ${currentStation.toUpperCase()} building footprints across all categories!`);
             setTimeout(() => {
-                btn.textContent = "💾 Save Directly to Map (buildings.js)";
-                btn.style.background = "#22c55e";
+                btn.textContent = cfg.saveBtnText;
+                btn.style.background = (currentStation === 'lares') ? '#22c55e' : '#0284c7';
                 btn.disabled = false;
             }, 3000);
         } else {
@@ -759,134 +1932,127 @@ window.saveDirectlyToMap = function() {
 
 // Copy GeoJSON to clipboard
 window.exportData = function() {
-    const data = draw.getAll();
+    let data;
+    if (currentStation === 'qares') {
+        syncCurrentDrawToMaster();
+        data = {
+            type: 'FeatureCollection',
+            name: 'QARES Buildings',
+            features: Array.from(window.qaresMasterFeatures.values())
+        };
+    } else {
+        data = draw.getAll();
+    }
     const outputField = document.getElementById('output');
     outputField.value = JSON.stringify(data, null, 2);
     outputField.select();
     document.execCommand('copy');
-    showToast('📋 GeoJSON copied to clipboard!');
+    showToast(`📋 ${currentStation.toUpperCase()} GeoJSON (${data.features.length} buildings) copied to clipboard!`);
 };
 
 // Reload from codebase
 window.reloadFromCodebase = function() {
-    if (confirm('Discard any unsaved local edits and reload the original building footprints from the codebase?')) {
-        localStorage.removeItem('building_draw_autosave');
+    const cfg = STATION_CONFIG[currentStation];
+    if (confirm(`Discard any unsaved local edits and reload the original ${currentStation.toUpperCase()} building footprints from ${cfg.buildingsFile}?`)) {
+        localStorage.removeItem('building_draw_autosave_' + currentStation);
+        if (currentStation === 'qares') {
+            window.qaresMasterFeatures.clear();
+        }
         draw.deleteAll();
-        loadBuildingsFromBackend();
+        loadStationBuildings(currentStation);
     }
 };
 
-// Fetch buildings from backend and load into Draw canvas
-function loadBuildingsFromBackend() {
-    fetch('/api/buildings')
-        .then(res => res.json())
-        .then(data => {
-            if (data && data.features && data.features.length > 0) {
-                draw.add(data);
-                updateMapLabels();
-                showToast(`Loaded ${data.features.length} buildings from codebase.`);
-            }
-        })
-        .catch(err => {
-            console.error('Failed to load buildings from API:', err);
-            showToast('⚠️ Could not fetch buildings from API.');
-        });
+// Helper to find the first draw layer so all auxiliary layers sit UNDER MapboxDraw
+function getBeforeDrawId() {
+    if (map.getLayer('gl-draw-polygon-stroke-active-casing')) return 'gl-draw-polygon-stroke-active-casing';
+    if (map.getLayer('gl-draw-polygon-stroke-inactive-casing')) return 'gl-draw-polygon-stroke-inactive-casing';
+    if (map.getLayer('gl-draw-polygon-stroke-inactive')) return 'gl-draw-polygon-stroke-inactive';
+    const layers = map.getStyle().layers || [];
+    for (const l of layers) {
+        if (l.id.startsWith('gl-draw-')) return l.id;
+    }
+    return undefined;
 }
 
-// Setup layers upon map load
-map.on('load', () => {
-    // 1. Reference Roads & Entrances Layer from roads.json
-    fetch('roads.json')
+// Load Reference Roads & Entrances for active station
+function loadReferenceRoads(station) {
+    const cfg = STATION_CONFIG[station];
+    fetch(cfg.roadsEndpoint + '?t=' + Date.now())
         .then(res => res.json())
         .then(roadsData => {
-            map.addSource('roads-reference', {
-                type: 'geojson',
-                data: roadsData
-            });
-
-            // Road Lines
-            map.addLayer({
-                id: 'ref-roads-layer',
-                type: 'line',
-                source: 'roads-reference',
-                filter: ['==', '$type', 'LineString'],
-                paint: {
-                    'line-color': '#38bdf8',
-                    'line-width': 2.5,
-                    'line-opacity': 0.65,
-                    'line-dasharray': [2, 2]
-                }
-            });
-
-            // Entrance Circles
-            map.addLayer({
-                id: 'ref-entrances-circle',
-                type: 'circle',
-                source: 'roads-reference',
-                filter: ['==', '$type', 'Point'],
-                paint: {
-                    'circle-radius': 4.5,
-                    'circle-color': '#f59e0b',
-                    'circle-stroke-width': 1.5,
-                    'circle-stroke-color': '#ffffff'
-                }
-            });
-
-            // Entrance Labels
-            map.addLayer({
-                id: 'ref-entrances-label',
-                type: 'symbol',
-                source: 'roads-reference',
-                filter: ['==', '$type', 'Point'],
-                layout: {
-                    'text-field': ['get', 'name'],
-                    'text-size': 9.5,
-                    'text-offset': [0, 1.2],
-                    'text-justify': 'center'
-                },
-                paint: {
-                    'text-color': '#fbbf24',
-                    'text-halo-color': '#000000',
-                    'text-halo-width': 1.5
-                }
-            });
+            if (map.getSource('roads-reference')) {
+                map.getSource('roads-reference').setData(roadsData);
+            }
         })
-        .catch(err => console.log('Could not load roads.json reference layer:', err));
+        .catch(err => console.log(`Could not load ${cfg.roadsFile} reference:`, err));
+}
 
-    // 2. Dynamic Floating Building Labels Layer
-    map.addSource('building-labels', {
-        type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] }
-    });
+// Fetch buildings from backend and load into Draw canvas
+function loadStationBuildings(station) {
+    const cfg = STATION_CONFIG[station];
+    const storageKey = 'building_draw_autosave_' + station;
 
-    map.addLayer({
-        'id': 'building-labels-layer',
-        'type': 'symbol',
-        'source': 'building-labels',
-        'layout': {
-            'text-field': ['get', 'title'],
-            'text-size': 11.5,
-            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-            'text-variable-anchor': ['center', 'top', 'bottom'],
-            'text-justify': 'center',
-            'text-allow-overlap': true
-        },
-        'paint': {
-            'text-color': '#ffffff',
-            'text-halo-color': '#0f172a',
-            'text-halo-width': 2.5
+    // Ensure QARES autosave has proper colors without purging user drawings
+    if (station === 'qares') {
+        const autosave = localStorage.getItem(storageKey);
+        if (autosave) {
+            try {
+                const parsed = JSON.parse(autosave);
+                if (parsed && Array.isArray(parsed.features)) {
+                    parsed.features.forEach(f => {
+                        f.properties = f.properties || {};
+                        if (f.properties.name === '1' || f.properties.id === 'visitors_information_hub') {
+                            f.properties.name = "Visitor's Information Hub";
+                            f.properties.id = "visitors_information_hub";
+                        }
+                        if (!f.properties.color_code) f.properties.color_code = 'red';
+                        const cDef = QARES_COLORS[f.properties.color_code] || QARES_COLORS.red;
+                        if (!f.properties.color) f.properties.color = cDef.hex;
+                        if (!f.properties.roof_color) f.properties.roof_color = cDef.roof;
+                        if (!f.properties.category) f.properties.category = 'Buildings';
+                        f.properties.user_color = f.properties.color;
+                        f.properties.user_roof_color = f.properties.roof_color;
+                        f.properties.user_color_code = f.properties.color_code;
+                        f.properties.user_category = f.properties.category;
+                        f.properties.station = 'qares';
+                    });
+                    localStorage.setItem(storageKey, JSON.stringify(parsed));
+                }
+            } catch(e) {}
         }
-    });
+    }
 
-    // 3. Load Data: Try LocalStorage Autosave first, fallback to /api/buildings
-    const autosave = localStorage.getItem('building_draw_autosave');
+    const autosave = localStorage.getItem(storageKey);
     if (autosave) {
         try {
             const data = JSON.parse(autosave);
             if (data && data.features && data.features.length > 0) {
+                if (station === 'qares') {
+                    window.qaresMasterFeatures.clear();
+                    data.features.forEach(f => {
+                        const p = f.properties = f.properties || {};
+                        if (!p.category) p.category = 'Buildings';
+                        if (!p.filter_type) p.filter_type = p.category;
+                        if (!p.color_code) p.color_code = 'red';
+                        const colorDef = QARES_COLORS[p.color_code] || QARES_COLORS.red;
+                        if (!p.color) p.color = colorDef.hex;
+                        if (!p.roof_color) p.roof_color = colorDef.roof;
+                        p.user_color = p.color;
+                        p.user_roof_color = p.roof_color;
+                        p.user_color_code = p.color_code;
+                        p.user_category = p.category;
+                        p.station = 'qares';
+                        if (!f.id) f.id = p.id || ('feat_' + Math.random().toString(36).substr(2, 9));
+                        window.qaresMasterFeatures.set(f.id, f);
+                    });
+                    renderQaresActiveDrawings();
+                    showToast(`[QARES] Restored ${window.qaresMasterFeatures.size} buildings from autosave.`);
+                    return;
+                }
                 draw.add(data);
                 updateMapLabels();
-                showToast(`Restored ${data.features.length} buildings from autosave.`);
+                showToast(`[${station.toUpperCase()}] Restored ${data.features.length} buildings from autosave.`);
                 return;
             }
         } catch (e) {
@@ -894,8 +2060,224 @@ map.on('load', () => {
         }
     }
 
-    // Fallback: load fresh from backend
-    loadBuildingsFromBackend();
+    fetch(cfg.buildingsApi + '?t=' + Date.now())
+        .then(res => res.json())
+        .then(data => {
+            if (data && data.features && data.features.length > 0) {
+                if (station === 'qares') {
+                    window.qaresMasterFeatures.clear();
+                    data.features.forEach(f => {
+                        const p = f.properties = f.properties || {};
+                        if (!p.category) p.category = 'Buildings';
+                        if (!p.filter_type) p.filter_type = p.category;
+                        if (!p.color_code) p.color_code = 'red';
+                        const colorDef = QARES_COLORS[p.color_code] || QARES_COLORS.red;
+                        if (!p.color) p.color = colorDef.hex;
+                        if (!p.roof_color) p.roof_color = colorDef.roof;
+                        p.user_color = p.color;
+                        p.user_roof_color = p.roof_color;
+                        p.user_color_code = p.color_code;
+                        p.user_category = p.category;
+                        p.station = 'qares';
+                        if (!f.id) f.id = p.id || ('feat_' + Math.random().toString(36).substr(2, 9));
+                        window.qaresMasterFeatures.set(f.id, f);
+                    });
+                    renderQaresActiveDrawings();
+                    showToast(`[QARES] Loaded ${window.qaresMasterFeatures.size} buildings from codebase.`);
+                } else {
+                    draw.add(data);
+                    updateMapLabels();
+                    showToast(`[${station.toUpperCase()}] Loaded ${data.features.length} buildings from codebase.`);
+                }
+            } else {
+                updateMapLabels();
+                if (station === 'qares') updateQaresPaletteUI();
+                showToast(`[${station.toUpperCase()}] No buildings traced yet. Ready to draw!`);
+            }
+        })
+        .catch(err => {
+            console.error(`Failed to load ${station} buildings from API:`, err);
+            updateMapLabels();
+            if (station === 'qares') updateQaresPaletteUI();
+        });
+}
+
+// Switch Station function
+window.switchStation = function(station) {
+    if (station === currentStation) return;
+
+    // Autosave current station data before switching
+    if (currentStation === 'qares') {
+        syncCurrentDrawToMaster();
+        const fullData = {
+            type: 'FeatureCollection',
+            name: 'QARES Buildings',
+            features: Array.from(window.qaresMasterFeatures.values())
+        };
+        localStorage.setItem('building_draw_autosave_qares', JSON.stringify(fullData));
+    } else {
+        const currentData = draw.getAll();
+        localStorage.setItem('building_draw_autosave_lares', JSON.stringify(currentData));
+    }
+
+    currentStation = station;
+    try {
+        const newUrl = new URL(window.location);
+        newUrl.searchParams.set('station', station);
+        window.history.replaceState({}, '', newUrl);
+    } catch (e) {}
+
+    updateStationUIState();
+
+    // Teleport camera smoothly to target station
+    map.flyTo({
+        center: STATION_CONFIG[station].center,
+        zoom: STATION_CONFIG[station].zoom,
+        essential: true,
+        duration: 1500
+    });
+
+    // Toggle Drone layers
+    const isDrone = (activeBaseLayer === 'drone');
+    if (map.getLayer('lares-drone-layer')) {
+        map.setLayoutProperty('lares-drone-layer', 'visibility', (station === 'lares' && isDrone) ? 'visible' : 'none');
+    }
+    if (map.getLayer('qares-drone-layer')) {
+        map.setLayoutProperty('qares-drone-layer', 'visibility', (station === 'qares' && isDrone) ? 'visible' : 'none');
+    }
+
+    // Toggle QARES boundary
+    if (map.getLayer('qares-boundary-fill')) {
+        map.setLayoutProperty('qares-boundary-fill', 'visibility', (station === 'qares') ? 'visible' : 'none');
+    }
+    if (map.getLayer('qares-boundary-line')) {
+        map.setLayoutProperty('qares-boundary-line', 'visibility', (station === 'qares') ? 'visible' : 'none');
+    }
+
+    // Clear current canvas and load target station
+    draw.deleteAll();
+    if (document.getElementById('selectionCard')) {
+        document.getElementById('selectionCard').style.display = 'none';
+    }
+
+    loadReferenceRoads(station);
+    loadStationBuildings(station);
+};
+
+// Setup layers upon map load
+map.on('load', () => {
+    const beforeDraw = getBeforeDrawId();
+
+    // 1. Reference Roads & Entrances Layer
+    map.addSource('roads-reference', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
+    });
+
+    map.addLayer({
+        id: 'ref-roads-layer',
+        type: 'line',
+        source: 'roads-reference',
+        filter: ['==', '$type', 'LineString'],
+        paint: {
+            'line-color': '#38bdf8',
+            'line-width': 2.5,
+            'line-opacity': 0.7,
+            'line-dasharray': [2, 2]
+        }
+    }, beforeDraw);
+
+    map.addLayer({
+        id: 'ref-entrances-circle',
+        type: 'circle',
+        source: 'roads-reference',
+        filter: ['==', '$type', 'Point'],
+        paint: {
+            'circle-radius': 5,
+            'circle-color': '#f59e0b',
+            'circle-stroke-width': 1.5,
+            'circle-stroke-color': '#ffffff'
+        }
+    }, beforeDraw);
+
+    map.addLayer({
+        id: 'ref-entrances-label',
+        type: 'symbol',
+        source: 'roads-reference',
+        filter: ['==', '$type', 'Point'],
+        layout: {
+            'text-field': ['get', 'name'],
+            'text-size': 9.5,
+            'text-offset': [0, 1.2],
+            'text-justify': 'center'
+        },
+        paint: {
+            'text-color': '#fbbf24',
+            'text-halo-color': '#000000',
+            'text-halo-width': 1.5
+        }
+    }, beforeDraw);
+
+    // 2. QARES Official Survey Boundary Layer
+    map.addSource('qares-boundary-source', {
+        type: 'geojson',
+        data: 'qares_boundary.json'
+    });
+    map.addLayer({
+        id: 'qares-boundary-fill',
+        type: 'fill',
+        source: 'qares-boundary-source',
+        layout: {
+            'visibility': (currentStation === 'qares') ? 'visible' : 'none'
+        },
+        paint: {
+            'fill-color': '#10b981',
+            'fill-opacity': 0.08
+        }
+    }, beforeDraw);
+    map.addLayer({
+        id: 'qares-boundary-line',
+        type: 'line',
+        source: 'qares-boundary-source',
+        layout: {
+            'visibility': (currentStation === 'qares') ? 'visible' : 'none'
+        },
+        paint: {
+            'line-color': '#10b981',
+            'line-width': 2.5,
+            'line-dasharray': [3, 1]
+        }
+    }, beforeDraw);
+
+    // 3. Dynamic Floating Building Labels Layer
+    map.addSource('building-labels', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
+    });
+
+    map.addLayer({
+        id: 'building-labels-layer',
+        type: 'symbol',
+        source: 'building-labels',
+        layout: {
+            'text-field': ['get', 'title'],
+            'text-size': 11.5,
+            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+            'text-variable-anchor': ['center', 'top', 'bottom'],
+            'text-justify': 'center',
+            'text-allow-overlap': true
+        },
+        paint: {
+            'text-color': '#ffffff',
+            'text-halo-color': '#0f172a',
+            'text-halo-width': 2.5
+        }
+    });
+
+    // Initialize UI and load initial station data
+    updateStationUIState();
+    loadReferenceRoads(currentStation);
+    loadStationBuildings(currentStation);
 });
 </script>
 </body>

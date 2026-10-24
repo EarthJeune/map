@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const mysql = require('mysql2');
+const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const { spawn, execSync } = require('child_process');
 const fs = require('fs');
@@ -64,6 +65,8 @@ pool.getConnection((err, connection) => {
             if (!err) {
                 const defaultCoords = JSON.stringify([121.16198, 13.958679]);
                 connection.query(`INSERT IGNORE INTO settings (\`key\`, \`value\`) VALUES ('kiosk_pin', ?)`, [defaultCoords]);
+                const defaultQARESCoords = JSON.stringify([121.3713315, 13.9432268]);
+                connection.query(`INSERT IGNORE INTO settings (\`key\`, \`value\`) VALUES ('qares_kiosk_pin', ?)`, [defaultQARESCoords]);
                 connection.query(`INSERT IGNORE INTO settings (\`key\`, \`value\`) VALUES ('drawing_counter', '3')`);
                 
                 connection.query(createColorsTable, (err2) => {
@@ -88,38 +91,148 @@ function query(sql, params) {
     });
 }
 
-// API endpoint to get the "You Are Here" pin
+// API endpoint to get the "You Are Here" pin (supports ?station=lares or ?station=qares)
 app.get('/api/pin', async (req, res) => {
+    const station = req.query.station;
+    const isQares = (station === 'qares');
+    const key = isQares ? 'qares_kiosk_pin' : 'kiosk_pin';
+    const fallbackFile = isQares ? 'qares_pin.json' : 'pin.json';
+    const defaultCoords = isQares ? [121.3713315, 13.9432268] : [121.16198, 13.958679];
+
     try {
-        const rows = await query(`SELECT \`value\` FROM settings WHERE \`key\` = 'kiosk_pin'`);
+        const rows = await query(`SELECT \`value\` FROM settings WHERE \`key\` = ?`, [key]);
         if (rows.length > 0) {
-            res.json({ coordinates: JSON.parse(rows[0].value) });
-        } else {
-            res.json({ coordinates: [121.16198, 13.958679] });
+            return res.json({ coordinates: JSON.parse(rows[0].value), station: isQares ? 'qares' : 'lares' });
         }
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    } catch (err) {}
+
+    try {
+        const filePath = path.join(__dirname, fallbackFile);
+        if (fs.existsSync(filePath)) {
+            const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+            if (data.coordinates) return res.json({ coordinates: data.coordinates, station: isQares ? 'qares' : 'lares' });
+        }
+    } catch (e) {}
+
+    res.json({ coordinates: defaultCoords, station: isQares ? 'qares' : 'lares' });
 });
 
-// API endpoint to update the "You Are Here" pin
+// Dedicated endpoint to get QARES kiosk pin
+app.get('/api/qares/pin', async (req, res) => {
+    try {
+        const rows = await query(`SELECT \`value\` FROM settings WHERE \`key\` = 'qares_kiosk_pin'`);
+        if (rows.length > 0) {
+            return res.json({ coordinates: JSON.parse(rows[0].value), station: 'qares' });
+        }
+    } catch (err) {}
+
+    try {
+        const filePath = path.join(__dirname, 'qares_pin.json');
+        if (fs.existsSync(filePath)) {
+            const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+            if (data.coordinates) return res.json({ coordinates: data.coordinates, station: 'qares' });
+        }
+    } catch (e) {}
+
+    res.json({ coordinates: [121.3713315, 13.9432268], station: 'qares' });
+});
+
+// API endpoint to update the "You Are Here" pin (supports station in body or query)
 app.post('/api/pin', async (req, res) => {
     const coords = req.body.coordinates;
+    const station = req.body.station || req.query.station;
+    const isQares = (station === 'qares');
+    const key = isQares ? 'qares_kiosk_pin' : 'kiosk_pin';
+    const fallbackFile = isQares ? 'qares_pin.json' : 'pin.json';
+
     if (!coords || !Array.isArray(coords) || coords.length !== 2) {
         return res.status(400).json({ error: 'Invalid coordinates format. Expected [lng, lat]' });
     }
     
     try {
         await query(
-            `INSERT INTO settings (\`key\`, \`value\`) VALUES ('kiosk_pin', ?) 
+            `INSERT INTO settings (\`key\`, \`value\`) VALUES (?, ?) 
+             ON DUPLICATE KEY UPDATE \`value\` = VALUES(\`value\`)`, 
+            [key, JSON.stringify(coords)]
+        );
+    } catch (err) {
+        console.warn('Notice: Could not persist pin to DB, using JSON fallback:', err.message);
+    }
+
+    try {
+        fs.writeFileSync(path.join(__dirname, fallbackFile), JSON.stringify({ station: isQares ? 'qares' : 'lares', coordinates: coords }, null, 2), 'utf8');
+    } catch (e) {}
+
+    res.json({ success: true, coordinates: coords, station: isQares ? 'qares' : 'lares' });
+});
+
+// Dedicated endpoint to update QARES kiosk pin
+app.post('/api/qares/pin', async (req, res) => {
+    const coords = req.body.coordinates;
+    if (!coords || !Array.isArray(coords) || coords.length !== 2) {
+        return res.status(400).json({ error: 'Invalid coordinates format. Expected [lng, lat]' });
+    }
+
+    try {
+        await query(
+            `INSERT INTO settings (\`key\`, \`value\`) VALUES ('qares_kiosk_pin', ?) 
              ON DUPLICATE KEY UPDATE \`value\` = VALUES(\`value\`)`, 
             [JSON.stringify(coords)]
         );
-        res.json({ success: true, coordinates: coords });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.warn('Notice: Could not persist QARES pin to DB, using JSON fallback:', err.message);
     }
+
+    try {
+        fs.writeFileSync(path.join(__dirname, 'qares_pin.json'), JSON.stringify({ station: 'qares', coordinates: coords }, null, 2), 'utf8');
+    } catch (e) {}
+
+    res.json({ success: true, coordinates: coords, station: 'qares' });
 });
+
+// API endpoint to get drone orthomosaic calibration offset
+app.get('/api/drone-offset', async (req, res) => {
+    try {
+        const rows = await query("SELECT `value` FROM settings WHERE `key` = 'drone_offset'");
+        if (rows && rows.length > 0) {
+            return res.json(JSON.parse(rows[0].value));
+        }
+    } catch (err) {}
+
+    try {
+        const offsetFile = path.join(__dirname, 'drone_offset.json');
+        if (fs.existsSync(offsetFile)) {
+            const data = JSON.parse(fs.readFileSync(offsetFile, 'utf8'));
+            return res.json(data);
+        }
+    } catch (e) {}
+
+    res.json({ dx: 0, dy: 0, autoApply: true });
+});
+
+// API endpoint to save drone orthomosaic calibration offset
+app.post('/api/drone-offset', async (req, res) => {
+    const { dx, dy, autoApply } = req.body;
+    const payload = {
+        dx: (typeof dx === 'number' && !isNaN(dx)) ? dx : 0,
+        dy: (typeof dy === 'number' && !isNaN(dy)) ? dy : 0,
+        autoApply: autoApply !== false
+    };
+
+    try {
+        await query(
+            "INSERT INTO settings (`key`, `value`) VALUES ('drone_offset', ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)",
+            [JSON.stringify(payload)]
+        );
+    } catch (err) {}
+
+    try {
+        fs.writeFileSync(path.join(__dirname, 'drone_offset.json'), JSON.stringify(payload, null, 2), 'utf8');
+    } catch (e) {}
+
+    res.json({ success: true, ...payload });
+});
+
 
 let currentTunnelUrl = '';
 let tunnelProcess = null;
@@ -193,12 +306,97 @@ app.post('/api/roads', (req, res) => {
         }
         if (fs.existsSync('roads.json')) {
             fs.copyFileSync('roads.json', 'roads.backup.json');
+            try {
+                const bDir = path.join(__dirname, 'archive', 'backups');
+                if (!fs.existsSync(bDir)) fs.mkdirSync(bDir, { recursive: true });
+                const ts = new Date().toISOString().replace(/[:.]/g, '-');
+                fs.copyFileSync('roads.json', path.join(bDir, `roads_backup_${ts}.json`));
+            } catch (errBak) {}
         }
         fs.writeFileSync('roads.json', JSON.stringify(data, null, 2), 'utf8');
         console.log(`Saved roads.json with ${data.features.length} features.`);
         res.json({ success: true, count: data.features.length });
     } catch (err) {
         console.error('Error saving roads.json:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// =========================================================================
+// API ENDPOINTS FOR QARES (Quezon Agricultural Research & Experiment Station)
+// =========================================================================
+app.get('/api/qares/roads', (req, res) => {
+    try {
+        const filePath = path.join(__dirname, 'qares_roads.json');
+        if (fs.existsSync(filePath)) {
+            const data = fs.readFileSync(filePath, 'utf8');
+            res.json(JSON.parse(data));
+        } else {
+            res.json({ type: 'FeatureCollection', name: 'QARES Roads & Walkways', features: [] });
+        }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/qares/roads', (req, res) => {
+    try {
+        const data = req.body;
+        if (!data || !data.features) {
+            return res.status(400).json({ error: 'Invalid GeoJSON: features array expected' });
+        }
+        const filePath = path.join(__dirname, 'qares_roads.json');
+        if (fs.existsSync(filePath)) {
+            try {
+                const bDir = path.join(__dirname, 'archive', 'backups');
+                if (!fs.existsSync(bDir)) fs.mkdirSync(bDir, { recursive: true });
+                const ts = new Date().toISOString().replace(/[:.]/g, '-');
+                fs.copyFileSync(filePath, path.join(bDir, `qares_roads_backup_${ts}.json`));
+            } catch (e) {}
+        }
+        fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+        console.log(`[QARES] Saved qares_roads.json with ${data.features.length} features.`);
+        res.json({ success: true, count: data.features.length });
+    } catch (err) {
+        console.error('Error saving qares_roads.json:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/qares/buildings', (req, res) => {
+    try {
+        const filePath = path.join(__dirname, 'qares_buildings.json');
+        if (fs.existsSync(filePath)) {
+            const data = fs.readFileSync(filePath, 'utf8');
+            res.json(JSON.parse(data));
+        } else {
+            res.json({ type: 'FeatureCollection', name: 'QARES Buildings', features: [] });
+        }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/qares/buildings', (req, res) => {
+    try {
+        const data = req.body;
+        if (!data || !data.features) {
+            return res.status(400).json({ error: 'Invalid GeoJSON: features array expected' });
+        }
+        const filePath = path.join(__dirname, 'qares_buildings.json');
+        if (fs.existsSync(filePath)) {
+            try {
+                const bDir = path.join(__dirname, 'archive', 'backups');
+                if (!fs.existsSync(bDir)) fs.mkdirSync(bDir, { recursive: true });
+                const ts = new Date().toISOString().replace(/[:.]/g, '-');
+                fs.copyFileSync(filePath, path.join(bDir, `qares_buildings_backup_${ts}.json`));
+            } catch (e) {}
+        }
+        fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+        console.log(`[QARES] Saved qares_buildings.json with ${data.features.length} buildings.`);
+        res.json({ success: true, count: data.features.length });
+    } catch (err) {
+        console.error('Error saving qares_buildings.json:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -321,6 +519,198 @@ app.post('/api/buildings', (req, res) => {
     }
 });
 
+// API endpoint to get drone imagery calibration offset
+app.get('/api/drone-offset', async (req, res) => {
+    try {
+        const rows = await query("SELECT `value` FROM settings WHERE `key` = 'drone_offset'");
+        if (rows && rows.length > 0) {
+            return res.json(JSON.parse(rows[0].value));
+        }
+    } catch (err) {
+        // Fallback to local JSON file
+    }
+    try {
+        const offsetFile = path.join(__dirname, 'drone_offset.json');
+        if (fs.existsSync(offsetFile)) {
+            return res.json(JSON.parse(fs.readFileSync(offsetFile, 'utf8')));
+        }
+    } catch (e) {}
+    res.json({ dx: 0, dy: 0, autoApply: true });
+});
+
+// API endpoint to save drone imagery calibration offset
+app.post('/api/drone-offset', async (req, res) => {
+    const { dx, dy, autoApply } = req.body || {};
+    const payload = {
+        dx: typeof dx === 'number' ? dx : (parseFloat(dx) || 0),
+        dy: typeof dy === 'number' ? dy : (parseFloat(dy) || 0),
+        autoApply: autoApply !== false
+    };
+
+    try {
+        await query(
+            "INSERT INTO settings (`key`, `value`) VALUES ('drone_offset', ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)",
+            [JSON.stringify(payload)]
+        );
+    } catch (err) {
+        // MySQL fallback ignored
+    }
+
+    try {
+        const offsetFile = path.join(__dirname, 'drone_offset.json');
+        fs.writeFileSync(offsetFile, JSON.stringify(payload, null, 2), 'utf8');
+    } catch (err) {
+        console.error('Error writing drone_offset.json:', err);
+    }
+
+    res.json({ success: true, ...payload });
+});
+
+
+// ============================================================================
+// OFFLINE DRONE ORTHOMOSAIC MBTILES TILE SERVER
+// Multi-station high-performance streaming of DA-LARES and DA-QARES orthophoto tiles
+// ============================================================================
+const TILE_CACHE_MAX = 300;
+
+const stationsDb = {
+    lares: { db: null, stmt: null, cache: new Map(), label: 'DA-LARES' },
+    qares: { db: null, stmt: null, cache: new Map(), label: 'DA-QARES' }
+};
+
+const laresCandidates = [
+    process.env.MBTILES_PATH,
+    path.join(__dirname, 'LARES v1.mbtiles'),
+    path.join(os.homedir(), 'Downloads', 'LARES v1.mbtiles'),
+    'C:\\Users\\LGU-SanPedro\\Downloads\\LARES v1.mbtiles'
+].filter(Boolean);
+
+const qaresCandidates = [
+    process.env.QARES_MBTILES_PATH,
+    path.join(__dirname, 'QARES v1.mbtiles'),
+    path.join(os.homedir(), 'Downloads', 'QARES v1.mbtiles'),
+    'C:\\Users\\LGU-SanPedro\\Downloads\\QARES v1.mbtiles'
+].filter(Boolean);
+
+function initStationMbtiles(stationKey, candidates, label) {
+    for (const candidate of candidates) {
+        if (fs.existsSync(candidate) && fs.statSync(candidate).size > 1024) {
+            console.log(`[MBTiles] Loading ${label} drone orthomosaic from: ${candidate}`);
+            const db = new sqlite3.Database(candidate, sqlite3.OPEN_READONLY, (err) => {
+                if (err) {
+                    console.error(`[MBTiles] Error opening ${label} MBTiles database:`, err.message);
+                } else {
+                    console.log(`[MBTiles] ${label} database opened successfully in read-only mode.`);
+                    db.run('PRAGMA query_only = 1;');
+                    db.run('PRAGMA cache_size = -64000;');
+                    db.run('PRAGMA mmap_size = 536870912;');
+                    const stmt = db.prepare(
+                        'SELECT tile_data FROM tiles WHERE zoom_level = ? AND tile_column = ? AND tile_row = ?'
+                    );
+                    stationsDb[stationKey].db = db;
+                    stationsDb[stationKey].stmt = stmt;
+                    console.log(`[MBTiles] ${label} prepared statement ready. Sub-millisecond tile serving active.`);
+                }
+            });
+            break;
+        }
+    }
+}
+
+initStationMbtiles('lares', laresCandidates, 'DA-LARES');
+initStationMbtiles('qares', qaresCandidates, 'DA-QARES');
+
+function handleStationTileRequest(stationKey, req, res) {
+    const st = stationsDb[stationKey];
+    if (!st || !st.stmt) {
+        return res.status(404).end();
+    }
+
+    const z = parseInt(req.params.z, 10);
+    const x = parseInt(req.params.x, 10);
+    const y = parseInt(req.params.y, 10);
+
+    if (isNaN(z) || isNaN(x) || isNaN(y)) {
+        return res.status(400).end();
+    }
+
+    const cacheKey = `${z}/${x}/${y}`;
+    if (st.cache.has(cacheKey)) {
+        const cachedData = st.cache.get(cacheKey);
+        st.cache.delete(cacheKey);
+        st.cache.set(cacheKey, cachedData);
+
+        res.writeHead(200, {
+            'Content-Type': 'image/png',
+            'Content-Length': cachedData.length,
+            'Cache-Control': 'public, max-age=86400, immutable',
+            'Access-Control-Allow-Origin': '*'
+        });
+        return res.end(cachedData);
+    }
+
+    // Convert XYZ Slippy Map tile row to TMS tile row: tile_row = (1 << z) - 1 - y
+    const tileRow = (1 << z) - 1 - y;
+
+    st.stmt.get([z, x, tileRow], (err, row) => {
+        if (err || !row || !row.tile_data) {
+            return res.status(404).end();
+        }
+
+        if (st.cache.size >= TILE_CACHE_MAX) {
+            const oldestKey = st.cache.keys().next().value;
+            st.cache.delete(oldestKey);
+        }
+        st.cache.set(cacheKey, row.tile_data);
+
+        res.writeHead(200, {
+            'Content-Type': 'image/png',
+            'Content-Length': row.tile_data.length,
+            'Cache-Control': 'public, max-age=86400, immutable',
+            'Access-Control-Allow-Origin': '*'
+        });
+        res.end(row.tile_data);
+    });
+}
+
+// QARES tile endpoints
+app.get('/api/tiles/qares/:z/:x/:y.png', (req, res) => handleStationTileRequest('qares', req, res));
+app.get('/api/tiles/qares/:z/:x/:y', (req, res) => handleStationTileRequest('qares', req, res));
+
+// LARES tile endpoints & legacy backward-compatible routes
+app.get('/api/tiles/lares/:z/:x/:y.png', (req, res) => handleStationTileRequest('lares', req, res));
+app.get('/api/tiles/lares/:z/:x/:y', (req, res) => handleStationTileRequest('lares', req, res));
+app.get('/api/tiles/:z/:x/:y.png', (req, res) => handleStationTileRequest('lares', req, res));
+app.get('/api/tiles/:z/:x/:y', (req, res) => handleStationTileRequest('lares', req, res));
+
+app.get('/api/tiles-metadata/:station', (req, res) => {
+    const station = req.params.station || 'lares';
+    const st = stationsDb[station];
+    if (!st || !st.db) return res.status(404).json({ error: `MBTiles database for ${station} not loaded` });
+    st.db.all('SELECT name, value FROM metadata', (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        const meta = {};
+        rows.forEach(r => { meta[r.name] = r.value; });
+        res.json(meta);
+    });
+});
+
+app.get('/api/tiles-metadata', (req, res) => {
+    const st = stationsDb.lares;
+    if (!st || !st.db) return res.status(404).json({ error: 'MBTiles database not loaded' });
+    st.db.all('SELECT name, value FROM metadata', (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        const meta = {};
+        rows.forEach(r => { meta[r.name] = r.value; });
+        res.json(meta);
+    });
+});
+
+// Permanently redirect legacy URLs to upgraded modern 3D map
+app.get(['/legacy.html', '/legacy'], (req, res) => {
+    const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
+    res.redirect(301, '/' + qs);
+});
 
 // Serve static files (like index.html, assets, etc.) with no-cache for instant development updates
 app.use(express.static(__dirname, {
@@ -337,6 +727,63 @@ app.get(/(.*)/, (req, res) => {
 });
 
 let healthCheckInterval = null;
+let fallbackTunnelProcess = null;
+let cloudflareCooldownUntil = 0;
+let tunnelRetryDelay = 5000;
+let consecutive429Count = 0;
+let lastTunnelError = '';
+
+function startFallbackTunnel() {
+    if (fallbackTunnelProcess) return;
+    if (process.env.NO_TUNNEL || process.argv.includes('--no-tunnel')) return;
+
+    console.log('[Tunnel Fallback] Launching secure public tunnel via localhost.run for port ' + port + '...');
+    try {
+        fallbackTunnelProcess = spawn('ssh', [
+            '-R', `80:localhost:${port}`,
+            '-o', 'StrictHostKeyChecking=no',
+            '-o', 'ServerAliveInterval=30',
+            '-o', 'ExitOnForwardFailure=yes',
+            'nokey@localhost.run'
+        ]);
+
+        fallbackTunnelProcess.stdout.on('data', (data) => {
+            const str = data.toString();
+            const match = str.match(/https:\/\/[a-z0-9]+\.lhr\.life/i);
+            if (match && match[0] && match[0] !== currentTunnelUrl) {
+                currentTunnelUrl = match[0];
+                console.log('\n======================================================');
+                console.log(`[Public Tunnel Active - localhost.run Fallback]`);
+                console.log(`Public URL: ${currentTunnelUrl}`);
+                console.log('======================================================\n');
+
+                query(
+                    "INSERT INTO settings (`key`, `value`) VALUES ('tunnel_url', ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)",
+                    [currentTunnelUrl]
+                ).catch(e => console.error('[Tunnel] Failed to save tunnel URL to DB:', e.message));
+            }
+        });
+
+        fallbackTunnelProcess.stderr.on('data', () => {});
+
+        fallbackTunnelProcess.on('exit', (code) => {
+            console.log(`[Tunnel Fallback] Exited with code ${code}.`);
+            fallbackTunnelProcess = null;
+            // If Cloudflare is still cooling down and we don't have another tunnel, restart fallback after 5s
+            if (!currentTunnelUrl || currentTunnelUrl.includes('.lhr.life')) {
+                currentTunnelUrl = '';
+                setTimeout(startFallbackTunnel, 5000);
+            }
+        });
+
+        fallbackTunnelProcess.on('error', (err) => {
+            console.error('[Tunnel Fallback] Error:', err.message);
+            fallbackTunnelProcess = null;
+        });
+    } catch (e) {
+        console.error('[Tunnel Fallback] Exception starting ssh tunnel:', e.message);
+    }
+}
 
 function restartCloudflareTunnel() {
     console.log('[Cloudflare] Tunnel unhealthy or disconnected. Restarting...');
@@ -351,29 +798,32 @@ function restartCloudflareTunnel() {
     setTimeout(startCloudflareTunnel, 1500);
 }
 
-let tunnelRetryDelay = 5000;
-let consecutive429Count = 0;
-let lastTunnelError = '';
-
 function startCloudflareTunnel() {
     if (process.env.NO_TUNNEL || process.argv.includes('--no-tunnel')) {
         console.log('[Cloudflare] Tunnel disabled via configuration (--no-tunnel or NO_TUNNEL=1).');
         return;
     }
 
-    const cloudflaredExe = path.join(__dirname, 'cloudflared.exe');
-    if (!fs.existsSync(cloudflaredExe)) {
-        console.log('[Cloudflare] cloudflared.exe not found in directory. Running without public tunnel.');
+    // If Cloudflare is currently in a 429 rate-limit cooldown, don't spam it!
+    if (Date.now() < cloudflareCooldownUntil) {
+        const remainingMin = Math.ceil((cloudflareCooldownUntil - Date.now()) / 60000);
+        console.log(`[Cloudflare] In rate-limit cooldown (${remainingMin}m remaining). Keeping fallback tunnel active.`);
+        startFallbackTunnel();
         return;
     }
 
-    // Terminate any old orphan cloudflared processes so a fresh process generates a valid tunnel
+    const cloudflaredExe = path.join(__dirname, 'cloudflared.exe');
+    if (!fs.existsSync(cloudflaredExe)) {
+        console.log('[Cloudflare] cloudflared.exe not found in directory. Using fallback tunnel.');
+        startFallbackTunnel();
+        return;
+    }
+
     try {
         execSync('taskkill /F /IM cloudflared.exe 2>NUL', { stdio: 'ignore' });
     } catch (e) {}
 
     console.log('[Cloudflare] Launching Cloudflare Tunnel for port ' + port + '...');
-    currentTunnelUrl = '';
     lastTunnelError = '';
     try {
         tunnelProcess = spawn(cloudflaredExe, ['tunnel', '--url', `http://localhost:${port}`]);
@@ -381,7 +831,6 @@ function startCloudflareTunnel() {
         const parseTunnelOutput = (data) => {
             const str = data.toString();
 
-            // Detect rate limits or errors
             if (str.includes('429')) {
                 lastTunnelError = 'Cloudflare free quick tunnel rate limit reached (HTTP 429 Too Many Requests).';
             } else if (str.toLowerCase().includes('error') || str.toLowerCase().includes('fail')) {
@@ -399,7 +848,11 @@ function startCloudflareTunnel() {
                 console.log(`Public URL: ${currentTunnelUrl}`);
                 console.log('======================================================\n');
 
-                // Persist to MySQL settings table
+                if (fallbackTunnelProcess) {
+                    try { fallbackTunnelProcess.kill(); } catch (e) {}
+                    fallbackTunnelProcess = null;
+                }
+
                 query(
                     "INSERT INTO settings (`key`, `value`) VALUES ('tunnel_url', ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)",
                     [currentTunnelUrl]
@@ -417,34 +870,35 @@ function startCloudflareTunnel() {
 
             if (lastTunnelError.includes('429')) {
                 consecutive429Count++;
-                if (consecutive429Count >= 3) {
-                    tunnelRetryDelay = 300000; // 5 minutes cooldown
-                    console.log(`[Cloudflare] Rate limit persistent (${consecutive429Count}x). Pausing retries for 5 minutes to let Cloudflare cooldown.`);
-                    console.log(`[Cloudflare] Local campus map is 100% active at http://localhost:${port}`);
-                } else {
-                    tunnelRetryDelay = 60000; // 1 minute cooldown
-                    console.log(`[Cloudflare] Rate limited (HTTP 429). Waiting 60s for Cloudflare cooldown before retrying...`);
-                }
+                // 15-minute cooldown to let Cloudflare rate limit truly reset
+                cloudflareCooldownUntil = Date.now() + 15 * 60 * 1000;
+                console.log(`[Cloudflare] Rate limited (HTTP 429). Pausing Cloudflare retries for 15 minutes to allow cooldown.`);
+                console.log(`[Cloudflare] Engaging immediate fallback tunnel...`);
+                startFallbackTunnel();
+                setTimeout(startCloudflareTunnel, 15 * 60 * 1000);
             } else {
                 tunnelRetryDelay = Math.min(tunnelRetryDelay * 1.5, 60000);
                 console.log(`[Cloudflare] Tunnel exited with code ${code}. Restarting in ${Math.round(tunnelRetryDelay / 1000)}s...`);
+                setTimeout(startCloudflareTunnel, tunnelRetryDelay);
             }
 
-            currentTunnelUrl = '';
+            if (!currentTunnelUrl.includes('.lhr.life')) {
+                currentTunnelUrl = '';
+            }
             tunnelProcess = null;
-            setTimeout(startCloudflareTunnel, tunnelRetryDelay);
         });
 
         tunnelProcess.on('error', (err) => {
             console.error('[Cloudflare] Error launching tunnel:', err.message);
-            currentTunnelUrl = '';
+            tunnelProcess = null;
+            startFallbackTunnel();
         });
     } catch (err) {
         console.error('[Cloudflare] Exception starting tunnel:', err.message);
-        currentTunnelUrl = '';
+        tunnelProcess = null;
+        startFallbackTunnel();
     }
 
-    // Start proactive health check every 45 seconds to keep tunnel alive
     if (!healthCheckInterval) {
         healthCheckInterval = setInterval(async () => {
             if (!currentTunnelUrl) return;
@@ -454,26 +908,32 @@ function startCloudflareTunnel() {
                 const res = await fetch(`${currentTunnelUrl}/api/tunnel`, { signal: controller.signal });
                 clearTimeout(timeout);
                 if (!res.ok) {
-                    console.log(`[Cloudflare] Health check status ${res.status}. Restarting tunnel...`);
+                    console.log(`[Tunnel] Health check status ${res.status}. Restarting...`);
                     restartCloudflareTunnel();
                 }
             } catch (e) {
-                console.log(`[Cloudflare] Health check ping failed (${e.message}). Restarting tunnel...`);
-                restartCloudflareTunnel();
+                // If ping fails on Cloudflare, try restart
+                if (currentTunnelUrl.includes('trycloudflare.com')) {
+                    console.log(`[Cloudflare] Health check ping failed (${e.message}). Restarting...`);
+                    restartCloudflareTunnel();
+                }
             }
         }, 45000);
     }
 }
 
 // Graceful cleanup
-process.on('SIGINT', () => {
-    if (tunnelProcess) tunnelProcess.kill();
+function cleanupAndExit() {
+    for (const k of Object.keys(stationsDb)) {
+        try { if (stationsDb[k].stmt) stationsDb[k].stmt.finalize(); } catch (e) {}
+        try { if (stationsDb[k].db) stationsDb[k].db.close(); } catch (e) {}
+    }
+    try { if (tunnelProcess) tunnelProcess.kill(); } catch (e) {}
+    try { if (fallbackTunnelProcess) fallbackTunnelProcess.kill(); } catch (e) {}
     process.exit();
-});
-process.on('SIGTERM', () => {
-    if (tunnelProcess) tunnelProcess.kill();
-    process.exit();
-});
+}
+process.on('SIGINT', cleanupAndExit);
+process.on('SIGTERM', cleanupAndExit);
 
 app.listen(port, () => {
     console.log(`Kiosk Backend Server running at http://localhost:${port}`);

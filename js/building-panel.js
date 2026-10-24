@@ -2,11 +2,12 @@
 // Building detail drawer, photo gallery trigger, and color picker.
 
 import { DEFAULT_MAP_VIEW } from './data/config.js';
-import { BUILDING_DIRECTORY } from './data/buildings.js?v=60';
+import { getActiveStationDefaultView } from './data/stations.js';
+import { BUILDING_DIRECTORY } from './data/buildings.js?v=72';
 import { renderBuildingOfficesHTML } from './data/offices.js?v=52';
 import { state } from './data/state.js';
 import { map, getRoofColorCaseStyle } from './map-setup.js';
-import { updateBuildingQR } from './qr.js';
+import { updateBuildingQR, closeQRZoomModal } from './qr.js';
 import { stopOrbit, resetIdle } from './idle.js';
 import { removeMarkers, createMarkers } from './markers.js';
 import { buildDirectory } from './sidebar.js';
@@ -66,16 +67,33 @@ export function showBuildingPanel(buildingId, targetOffice = '') {
     };
     img.src = imgPath;
 
+    // Image click lightbox expand
+    imgEl.style.cursor = 'pointer';
+    imgEl.title = 'Click to expand photo';
+    imgEl.onclick = () => {
+        if (typeof window.openPhotoLightbox === 'function') {
+            window.openPhotoLightbox(imgEl.src, building.name);
+        }
+    };
+
     // Update QR code for mobile handoff
     updateBuildingQR(buildingId);
 
     // Show panel
     panel.classList.add('active');
+    document.body.classList.add('has-active-bldg-panel');
 }
 
-export function closeBuildingPanel() {
+export function closeBuildingPanel(skipFly = false) {
+    if (typeof closeQRZoomModal === 'function') {
+        closeQRZoomModal();
+    } else if (typeof window.closeQRZoomModal === 'function') {
+        window.closeQRZoomModal();
+    }
     const panel = document.getElementById('building-panel');
+    const wasActive = panel && panel.classList.contains('active');
     if (panel) panel.classList.remove('active');
+    document.body.classList.remove('has-active-bldg-panel');
     
     // Unhighlight directory items and map markers
     document.querySelectorAll('.dir-item').forEach(el => el.classList.remove('active'));
@@ -100,14 +118,17 @@ export function closeBuildingPanel() {
         restoreLabels();
     }
 
-    // Fly back to default overview angle
-    map.flyTo({ 
-        center: DEFAULT_MAP_VIEW.center, 
-        zoom: DEFAULT_MAP_VIEW.zoom, 
-        pitch: DEFAULT_MAP_VIEW.pitch, 
-        bearing: DEFAULT_MAP_VIEW.bearing, 
-        duration: 2000 
-    });
+    // Fly back to active station default overview angle only if panel was actually open and skipFly is not requested
+    if (wasActive && !skipFly && map) {
+        const defaultView = getActiveStationDefaultView();
+        map.flyTo({ 
+            center: defaultView.center, 
+            zoom: defaultView.zoom, 
+            pitch: defaultView.pitch, 
+            bearing: defaultView.bearing, 
+            duration: 1500 
+        });
+    }
 
     resetIdle();
 }

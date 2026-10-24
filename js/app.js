@@ -2,13 +2,13 @@
 // Native ES Module Application Shell
 
 import { MAPBOX_ACCESS_TOKEN, DEFAULT_MAP_VIEW } from './data/config.js';
-import { BUILDING_DIRECTORY } from './data/buildings.js?v=60';
+import { BUILDING_DIRECTORY } from './data/buildings.js?v=72';
 import { state } from './data/state.js';
 import { createMarkers, removeMarkers } from './markers.js';
-import { 
-    map, 
-    revealMap, 
-    syncLightingWithTime, 
+import {
+    map,
+    revealMap,
+    syncLightingWithTime,
     getRoofColorCaseStyle,
     toggleBuildings,
     toggleMapboxView,
@@ -20,105 +20,144 @@ import {
     toggleBoundary,
     toggleTerrain,
     toggleMarkers,
+    toggleTrees,
     flyToView,
     stopIntroAnimation
 } from './map-setup.js';
 
-import { 
-    buildDirectory, 
-    filterDirectory, 
-    toggleSidebarMenu, 
-    collapseSidebarMenu, 
+import {
+    buildDirectory,
+    filterDirectory,
+    toggleSidebarMenu,
+    collapseSidebarMenu,
     updateSidebarToggleIcon,
-    toggleSettingChip 
+    toggleSettingChip
 } from './sidebar.js';
 
-import { 
-    navigateTo, 
-    setRouteSpeed, 
-    setRouteCameraMode, 
+import {
+    navigateTo,
+    setRouteSpeed,
+    setRouteCameraMode,
     resetCameraModeToDefault,
-    exitRouteMode, 
-    initWalkerCameraListeners 
+    updateCameraControlsUI,
+    exitRouteMode,
+    initWalkerCameraListeners
 } from './walker.js';
 
-import { 
-    buildRoadGraph, 
-    clearRoute, 
-    closeRouteAndReset, 
-    getDirections, 
-    replayRoute 
+import {
+    buildRoadGraph,
+    clearRoute,
+    closeRouteAndReset,
+    getDirections,
+    replayRoute
 } from './routing.js';
 
-import { 
-    closeBuildingPanel, 
-    closeColorPicker, 
-    saveColorPicker, 
-    useEyeDropper 
+import {
+    closeBuildingPanel,
+    closeColorPicker,
+    saveColorPicker,
+    useEyeDropper
 } from './building-panel.js';
 
-import { 
+import {
     applyAppModeToDOM,
     isPhoneMode,
     isKioskMode,
     isPortraitKiosk
 } from './mode.js';
 
-import { 
-    showPhoneWelcomeModal, 
-    handleWelcomeContinue, 
-    handleWelcomeSkip, 
-    renderPhoneDirectory, 
-    filterPhoneDirectory, 
-    clearPhoneSearch, 
-    showPhoneBuildingDetails, 
-    showPhoneDirectoryView, 
-    closePhoneBuildingDetails, 
-    setPhoneSheetSnap, 
-    cyclePhoneSheetSnap, 
-    togglePhoneRouteSheet, 
-    initPhoneSheetGestures, 
-    closePhotoLightbox 
+import {
+    showPhoneWelcomeModal,
+    handleWelcomeContinue,
+    handleWelcomeSkip,
+    renderPhoneDirectory,
+    filterPhoneDirectory,
+    clearPhoneSearch,
+    showPhoneBuildingDetails,
+    showPhoneDirectoryView,
+    closePhoneBuildingDetails,
+    setPhoneSheetSnap,
+    cyclePhoneSheetSnap,
+    togglePhoneRouteSheet,
+    initPhoneSheetGestures,
+    closePhotoLightbox
 } from './phone-ui.js';
 
-import { 
-    startPhoneAnimatedRoute, 
-    replayPhoneRoute, 
-    cancelPhoneRoute, 
-    showPhoneArrival, 
-    closePhoneArrivalPopup, 
-    replayFromArrivalPopup 
+import {
+    startPhoneAnimatedRoute,
+    replayPhoneRoute,
+    cancelPhoneRoute,
+    showPhoneArrival,
+    closePhoneArrivalPopup,
+    replayFromArrivalPopup
 } from './phone-nav.js';
 
-import { 
-    startPhoneLiveGPS, 
-    startMobileGPSNavigation, 
-    stopPhoneLiveGPS, 
-    recenterOnUserGPS, 
-    initGPSMapListeners 
+import {
+    startPhoneLiveGPS,
+    startMobileGPSNavigation,
+    stopPhoneLiveGPS,
+    recenterOnUserGPS,
+    initGPSMapListeners
 } from './gps.js';
 
-import { 
-    createKioskMarker, 
-    resetIdle, 
-    initIdleListeners 
+import {
+    createKioskMarker,
+    resetIdle,
+    initIdleListeners,
+    autoExitActiveSession,
+    triggerAutoExitToIdle,
+    showAutoExitToast
 } from './idle.js';
 
-import { 
-    getMobileNavigationUrl, 
-    updateBuildingQR 
+import {
+    getMobileNavigationUrl,
+    updateBuildingQR,
+    openQRZoomModal,
+    closeQRZoomModal
 } from './qr.js';
 
-import { 
-    initOrbitControl, 
-    toggleOneFingerOrbitMode 
+import {
+    initOrbitControl,
+    toggleOneFingerOrbitMode
 } from './orbit-control.js';
 
-import { 
-    ensureOcclusionLayers, 
-    updateOcclusion, 
-    resetOcclusion 
-} from './occlusion.js';
+import {
+    initMapSettings,
+    toggleMapSettingsPanel,
+    openMapSettingsPanel,
+    closeMapSettingsPanel,
+    handleLayerToggle,
+    setLabelDisplayMode,
+    setEnvironmentLighting
+} from './map-settings.js';
+
+import {
+    ensureOcclusionLayers,
+    updateOcclusion,
+    resetOcclusion
+} from './occlusion.js?v=81';
+
+import {
+    initDroneCalibration,
+    toggleDroneCalibrationHUD,
+    applyDroneOffset,
+    saveDroneCalibration,
+    resetDroneCalibration
+} from './drone-calibration.js';
+
+import {
+    initStationSelector,
+    toggleStationDropdown,
+    closeStationDropdown,
+    switchResearchStation,
+    loadQARESData
+} from './stations.js?v=2';
+
+import {
+    reportFrameRate,
+    setPerformanceProfile,
+    updatePerformanceUI
+} from './performance.js';
 
 mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
 
@@ -128,7 +167,7 @@ window.roadGraph = new Map();
 window.BUILDING_ENTRANCES = {};
 
 // Fetch roads.json and build pathfinding graph
-fetch('roads.json')
+fetch('roads.json?v=72')
     .then(res => res.json())
     .then(data => {
         window.ROAD_NETWORK = data;
@@ -183,39 +222,55 @@ fetch('/api/colors')
             updateList(window.BUILDING_DIRECTORY);
         }
 
-        removeMarkers();
-        createMarkers();
+        if (state.currentStationId === 'lares') {
+            removeMarkers();
+            createMarkers();
 
-        if (map.getLayer('3d-drawings-roofs')) {
-            map.setPaintProperty('3d-drawings-roofs', 'fill-extrusion-color', getRoofColorCaseStyle());
+            if (map.getLayer('3d-drawings-roofs')) {
+                map.setPaintProperty('3d-drawings-roofs', 'fill-extrusion-color', getRoofColorCaseStyle());
+            }
+
+            buildDirectory();
         }
-
-        buildDirectory();
     })
     .catch(err => console.error("Could not fetch building colors", err));
 
-// Fetch pin location from backend
+// Fetch LARES pin location from backend
 fetch('/api/pin')
     .then(res => res.json())
     .then(data => {
         if (data.coordinates) {
             state.KIOSK_COORDS = data.coordinates;
             window.KIOSK_COORDS = state.KIOSK_COORDS;
-            if (state.kioskMarkerInstance) {
+            if (state.kioskMarkerInstance && state.currentStationId === 'lares') {
                 state.kioskMarkerInstance.setLngLat(state.KIOSK_COORDS);
             }
-            if (state.mapReady && !state.selectedBuildingId && !state.activeRoute) {
-                map.flyTo({ 
-                    center: DEFAULT_MAP_VIEW.center, 
-                    zoom: DEFAULT_MAP_VIEW.zoom, 
-                    pitch: DEFAULT_MAP_VIEW.pitch, 
-                    bearing: DEFAULT_MAP_VIEW.bearing, 
-                    duration: 1500 
+            if (state.currentStationId === 'lares' && state.mapReady && !state.selectedBuildingId && !state.activeRoute) {
+                map.flyTo({
+                    center: DEFAULT_MAP_VIEW.center,
+                    zoom: DEFAULT_MAP_VIEW.zoom,
+                    pitch: DEFAULT_MAP_VIEW.pitch,
+                    bearing: DEFAULT_MAP_VIEW.bearing,
+                    duration: 1500
                 });
             }
         }
     })
     .catch(err => console.error("Could not fetch pin location", err));
+
+// Fetch QARES pin location from backend
+fetch('/api/qares/pin')
+    .then(res => res.json())
+    .then(data => {
+        if (data.coordinates) {
+            state.QARES_KIOSK_COORDS = data.coordinates;
+            window.QARES_KIOSK_COORDS = state.QARES_KIOSK_COORDS;
+            if (state.kioskMarkerInstance && state.currentStationId === 'qares') {
+                state.kioskMarkerInstance.setLngLat(state.QARES_KIOSK_COORDS);
+            }
+        }
+    })
+    .catch(err => console.error("Could not fetch QARES pin location", err));
 
 // Initial Map load sequence
 function initViewportTelemetry() {
@@ -231,8 +286,12 @@ function initViewportTelemetry() {
         lastPosUpdate = now;
         const center = map.getCenter();
         const zoom = map.getZoom();
+        const pitch = (map.getPitch() || 0) * Math.PI / 180;
+        const fov = 36.87 * Math.PI / 180;
+        const earthCirc = 40075016.686;
+        const altMeters = Math.round(((earthCirc * Math.cos(center.lat * Math.PI / 180)) / (Math.pow(2, zoom) * 2 * Math.tan(fov / 2))) * Math.cos(pitch));
         if (coordsEl) coordsEl.textContent = `${center.lat.toFixed(4)}° N, ${center.lng.toFixed(4)}° E`;
-        if (zoomEl) zoomEl.textContent = `Zoom ${zoom.toFixed(1)}`;
+        if (zoomEl) zoomEl.textContent = `Zoom ${zoom.toFixed(1)} (${altMeters}m alt)`;
     };
     map.on('move', updateCoords);
     updateCoords();
@@ -249,6 +308,9 @@ function initViewportTelemetry() {
                 fpsEl.textContent = `${fps} FPS`;
                 fpsEl.style.color = fps >= 45 ? '#22c55e' : (fps >= 28 ? '#eab308' : '#ef4444');
             }
+            if (typeof reportFrameRate === 'function') {
+                reportFrameRate(fps);
+            }
         }
         requestAnimationFrame(fpsLoop);
     }
@@ -257,10 +319,15 @@ function initViewportTelemetry() {
 
 map.on('load', () => {
     setTimeout(() => {
+        initStationSelector();
         revealMap();
         ensureOcclusionLayers();
-        createKioskMarker();
-        buildDirectory();
+        if (state.currentStationId === 'lares') {
+            createKioskMarker();
+            buildDirectory();
+        } else if (state.currentStationId === 'qares') {
+            loadQARESData();
+        }
         resetIdle();
         syncLightingWithTime();
         initViewportTelemetry();
@@ -286,7 +353,7 @@ export function handleUrlParameters() {
         const interval = setInterval(() => {
             if (state.mapReady && typeof BUILDING_DIRECTORY !== 'undefined' && BUILDING_DIRECTORY.length > 0 && window.roadGraph && window.roadGraph.size > 0) {
                 clearInterval(interval);
-                const bldg = BUILDING_DIRECTORY.find(b => 
+                const bldg = BUILDING_DIRECTORY.find(b =>
                     b.id.toLowerCase() === destParam.toLowerCase() ||
                     b.id.toLowerCase().includes(destParam.toLowerCase()) ||
                     (!isNaN(destParam) && BUILDING_DIRECTORY[parseInt(destParam, 10) - 1]?.id === b.id)
@@ -299,7 +366,7 @@ export function handleUrlParameters() {
                         try {
                             const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
                             window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
-                        } catch (e) {}
+                        } catch (e) { }
                     } else {
                         navigateTo(bldg.id);
                     }
@@ -308,8 +375,8 @@ export function handleUrlParameters() {
         }, 150);
     }
 
-    // On phone mode: Show Welcome / Onboarding modal if not seen in session
-    if (isPhoneMode() && !sessionStorage.getItem('da_lares_welcome_seen')) {
+    // Show Welcome / Intro modal on load or refresh (unless navigated directly via ?dest=)
+    if (!destParam) {
         setTimeout(showPhoneWelcomeModal, 450);
     }
 }
@@ -323,17 +390,36 @@ initIdleListeners();
 initGPSMapListeners();
 initWalkerCameraListeners();
 initOrbitControl();
+initMapSettings();
+initDroneCalibration();
 handleUrlParameters();
 
 // ============================================================
 // Window reflections for inline HTML onclick/oninput handlers
 // ============================================================
+window.autoExitActiveSession = autoExitActiveSession;
+window.triggerAutoExitToIdle = triggerAutoExitToIdle;
+window.showAutoExitToast = showAutoExitToast;
+window.toggleMapSettingsPanel = toggleMapSettingsPanel;
+window.openMapSettingsPanel = openMapSettingsPanel;
+window.closeMapSettingsPanel = closeMapSettingsPanel;
+window.handleLayerToggle = handleLayerToggle;
+window.setLabelDisplayMode = setLabelDisplayMode;
+window.setEnvironmentLighting = setEnvironmentLighting;
+window.initMapSettings = initMapSettings;
+window.initDroneCalibration = initDroneCalibration;
+window.toggleDroneCalibrationHUD = toggleDroneCalibrationHUD;
+window.applyDroneOffset = applyDroneOffset;
+window.saveDroneCalibration = saveDroneCalibration;
+window.resetDroneCalibration = resetDroneCalibration;
 window.cancelPhoneRoute = cancelPhoneRoute;
 window.clearPhoneSearch = clearPhoneSearch;
 window.closeBuildingPanel = closeBuildingPanel;
 window.closeColorPicker = closeColorPicker;
 window.closePhoneArrivalPopup = closePhoneArrivalPopup;
 window.closePhotoLightbox = closePhotoLightbox;
+window.closeQRZoomModal = closeQRZoomModal;
+window.openQRZoomModal = openQRZoomModal;
 window.closeRouteAndReset = closeRouteAndReset;
 window.collapseSidebarMenu = collapseSidebarMenu;
 window.cyclePhoneSheetSnap = cyclePhoneSheetSnap;
@@ -353,6 +439,7 @@ window.resetIdle = resetIdle;
 window.resetCameraModeToDefault = resetCameraModeToDefault;
 window.saveColorPicker = saveColorPicker;
 window.setRouteCameraMode = setRouteCameraMode;
+window.updateCameraControlsUI = updateCameraControlsUI;
 window.setRouteSpeed = setRouteSpeed;
 window.showPhoneDirectoryView = showPhoneDirectoryView;
 window.showPhoneWelcomeModal = showPhoneWelcomeModal;
@@ -379,9 +466,15 @@ window.useEyeDropper = useEyeDropper;
 window.ensureOcclusionLayers = ensureOcclusionLayers;
 window.updateOcclusion = updateOcclusion;
 window.resetOcclusion = resetOcclusion;
+window.initStationSelector = initStationSelector;
+window.toggleStationDropdown = toggleStationDropdown;
+window.closeStationDropdown = closeStationDropdown;
+window.switchResearchStation = switchResearchStation;
+window.state = state;
 
 // Sync Admin Mode state to DOM
 if (typeof document !== 'undefined') {
+    document.documentElement.classList.toggle('admin-mode', !!state.isAdmin);
     document.body.classList.toggle('admin-mode', !!state.isAdmin);
 }
 
@@ -390,16 +483,32 @@ window.addEventListener('keydown', (e) => {
     if (e.altKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
         e.preventDefault();
         state.isAdmin = !state.isAdmin;
+        state.isKioskDraggable = state.isAdmin;
         if (typeof localStorage !== 'undefined') {
             localStorage.setItem('da_admin_mode', state.isAdmin ? 'true' : 'false');
         }
+        document.documentElement.classList.toggle('admin-mode', state.isAdmin);
         document.body.classList.toggle('admin-mode', state.isAdmin);
         buildDirectory();
         createKioskMarker();
-        const msg = state.isAdmin 
-            ? '🔓 Admin Mode Enabled (Calibration & Customization Unlocked)' 
+        const activeStationLabel = (state.currentStationId === 'qares') ? 'DA-QARES (Tiaong)' : 'DA-LARES (Lipa)';
+        const msg = state.isAdmin
+            ? `🔓 Admin Mode Enabled (${activeStationLabel})\n\n• Kiosk Pin Calibration: Drag the "You Are Here" pin or Alt + Click anywhere on the map to place it\n• Drone Calibration: Click 🛰️ in the top-right toolbar or press Alt + Shift + D`
             : '🔒 Visitor Kiosk Mode (Admin Controls Hidden)';
         console.log(msg);
         alert(msg);
     }
 });
+
+// Admin Mode Quick Pin Placement: Alt + Click anywhere on the map to relocate the active station's Kiosk Pin
+if (map) {
+    map.on('click', (e) => {
+        if (state.isAdmin && e.originalEvent && e.originalEvent.altKey) {
+            e.preventDefault();
+            const newCoords = [e.lngLat.lng, e.lngLat.lat];
+            if (typeof window.repositionActiveKioskPin === 'function') {
+                window.repositionActiveKioskPin(newCoords);
+            }
+        }
+    });
+}

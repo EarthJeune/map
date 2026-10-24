@@ -1,7 +1,7 @@
 // DA-LARES Sidebar & Directory Module
 // Directory list, search filter, sidebar menu toggle/collapse, and setting chips.
 
-import { BUILDING_DIRECTORY } from './data/buildings.js?v=60';
+import { BUILDING_DIRECTORY } from './data/buildings.js?v=72';
 import { getFlatBuildingOffices, renderBuildingOfficesHTML } from './data/offices.js?v=52';
 import { LARES_BOUNDARY } from './data/geo.js';
 import { state } from './data/state.js';
@@ -167,6 +167,9 @@ export function quickSearch(term) {
 }
 
 export function buildDirectory(filter = '', category = currentCategory) {
+    if (state.currentStationId && state.currentStationId !== 'lares') {
+        return; // Prevent LARES directory from overwriting QARES or other stations
+    }
     const dir = document.getElementById('directory');
     if (!dir) return;
     const lowerFilter = filter.toLowerCase().trim();
@@ -229,6 +232,13 @@ export function buildDirectory(filter = '', category = currentCategory) {
 
 export function filterDirectory() {
     const val = document.getElementById('search-input')?.value || '';
+    if (state.currentStationId === 'qares') {
+        if (typeof window.filterQARESSearch === 'function') {
+            window.filterQARESSearch(val);
+        }
+        safeResetIdle();
+        return;
+    }
     buildDirectory(val, currentCategory);
     safeRenderPhoneDirectory(val);
 

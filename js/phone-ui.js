@@ -1,26 +1,27 @@
 // DA-LARES Wayfinding — Phone UI & Bottom Sheet Module
 
 import { DEFAULT_MAP_VIEW } from './data/config.js';
-import { BUILDING_DIRECTORY } from './data/buildings.js?v=60';
+import { getActiveStationDefaultView } from './data/stations.js';
+import { BUILDING_DIRECTORY } from './data/buildings.js?v=72';
 import { renderBuildingOfficesHTML, getFlatBuildingOffices } from './data/offices.js?v=52';
 import { state } from './data/state.js';
 import { map } from './map-setup.js';
 import { clearRoute } from './routing.js';
 import { isNavigationActive } from './sidebar.js';
-import { 
-    requestUserInitialLocation, 
+import {
+    requestUserInitialLocation,
     requestDeviceOrientationPermission,
-    stopPhoneLiveGPS 
+    stopPhoneLiveGPS
 } from './gps.js';
 import { orbitBuilding, stopOrbit } from './idle.js';
 import { stopIntroAnimation } from './map-setup.js';
 
-import { 
-    isPhoneMode, 
-    isKioskMode, 
-    isPortraitKiosk, 
-    detectAppMode, 
-    detectKioskOrientation 
+import {
+    isPhoneMode,
+    isKioskMode,
+    isPortraitKiosk,
+    detectAppMode,
+    detectKioskOrientation
 } from './mode.js';
 
 export { isPhoneMode, isKioskMode, isPortraitKiosk };
@@ -338,16 +339,16 @@ export function closePhotoLightbox(e) {
     if (modal) modal.style.display = 'none';
 }
 
-// --- Mobile Welcome Onboarding Modal Handlers ---
-export function showPhoneWelcomeModal() {
-    const modal = document.getElementById('phone-welcome-modal');
+// --- System-Wide DASH Welcome & Intro Modal Handlers ---
+export function showDashWelcomeModal() {
+    const modal = document.getElementById('dash-welcome-modal') || document.getElementById('phone-welcome-modal');
     if (!modal) return;
     modal.style.display = 'flex';
 }
 
-export function handleWelcomeContinue() {
-    sessionStorage.setItem('da_lares_welcome_seen', '1');
-    const modal = document.getElementById('phone-welcome-modal');
+export function closeDashWelcomeModal(event) {
+    if (event && event.target && event.target.id !== 'dash-welcome-modal' && event.target.id !== 'phone-welcome-modal') return;
+    const modal = document.getElementById('dash-welcome-modal') || document.getElementById('phone-welcome-modal');
     if (modal) {
         modal.classList.add('closing');
         setTimeout(() => {
@@ -355,23 +356,56 @@ export function handleWelcomeContinue() {
             modal.classList.remove('closing');
         }, 260);
     }
-    // Single consolidated permission request on initial user gesture:
-    // Request both compass/orientation AND GPS location in this single click gesture
-    requestDeviceOrientationPermission();
-    requestUserInitialLocation();
+}
+
+export function handleDashWelcomeProceed() {
+    const modal = document.getElementById('dash-welcome-modal') || document.getElementById('phone-welcome-modal');
+    if (modal) {
+        modal.classList.add('closing');
+        setTimeout(() => {
+            modal.style.display = 'none';
+            modal.classList.remove('closing');
+        }, 260);
+    }
+
+    // Play signature cinematic intro fly-in
+    if (typeof window.playIntroAnimation === 'function') {
+        window.playIntroAnimation();
+    }
+
+    // ============================================================
+    // DEVICE-SPECIFIC PROCEED BEHAVIOR:
+    // - Kiosk / PC / Laptop: NO asking of location (proceed directly to map)
+    // - Mobile Phone: Ask location & orientation notifications so live GPS is ready
+    // ============================================================
+    const isMobileUA = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|Mobile/i.test(navigator.userAgent);
+    const hasPhoneParam = (new URLSearchParams(window.location.search).get('mode') || '').toLowerCase() === 'phone';
+    const isActualPhone = isPhoneMode() && !isKioskMode() && (isMobileUA || hasPhoneParam);
+
+    if (isActualPhone) {
+        try {
+            if (typeof requestDeviceOrientationPermission === 'function') {
+                requestDeviceOrientationPermission();
+            }
+            if (typeof requestUserInitialLocation === 'function') {
+                requestUserInitialLocation();
+            }
+        } catch (e) {
+            console.warn('Mobile sensor permission note:', e);
+        }
+    }
+}
+
+export function showPhoneWelcomeModal() {
+    showDashWelcomeModal();
+}
+
+export function handleWelcomeContinue() {
+    handleDashWelcomeProceed();
 }
 
 export function handleWelcomeSkip() {
-    sessionStorage.setItem('da_lares_welcome_seen', '1');
-    const modal = document.getElementById('phone-welcome-modal');
-    if (modal) {
-        modal.classList.add('closing');
-        setTimeout(() => {
-            modal.style.display = 'none';
-            modal.classList.remove('closing');
-        }, 260);
-    }
-    showMobileToast('🏛️ Welcome to DA-LARES! Tap any building to navigate.', 3000);
+    handleDashWelcomeProceed();
 }
 
 // --- Phone Directory & Filtering ---
@@ -425,6 +459,15 @@ export function renderPhoneDirectory(filter = '') {
 export function filterPhoneDirectory() {
     const input = document.getElementById('phone-search-input');
     const val = input ? input.value : '';
+    if (state.currentStationId === 'qares') {
+        if (typeof window.filterQARESSearch === 'function') {
+            window.filterQARESSearch(val);
+        }
+        if (state.phoneSheetCurrentSnap === 'peek' && val.length > 0) {
+            setPhoneSheetSnap('half');
+        }
+        return;
+    }
     renderPhoneDirectory(val);
     if (state.phoneSheetCurrentSnap === 'peek' && val.length > 0) {
         setPhoneSheetSnap('half');
@@ -528,11 +571,12 @@ export function closePhoneBuildingDetails() {
     document.querySelectorAll('.bldg-map-marker').forEach(el => el.classList.remove('active'));
     setPhoneSheetView('dir');
     setPhoneSheetSnap('peek');
+    const defaultView = getActiveStationDefaultView();
     map.flyTo({
-        center: DEFAULT_MAP_VIEW.center,
-        zoom: DEFAULT_MAP_VIEW.zoom,
-        pitch: DEFAULT_MAP_VIEW.pitch,
-        bearing: DEFAULT_MAP_VIEW.bearing,
+        center: defaultView.center,
+        zoom: defaultView.zoom,
+        pitch: defaultView.pitch,
+        bearing: defaultView.bearing,
         duration: 1500
     });
 }
@@ -551,6 +595,9 @@ window.initPhoneSheetGestures = initPhoneSheetGestures;
 window.renderPhoneBuildingGallery = renderPhoneBuildingGallery;
 window.openPhotoLightbox = openPhotoLightbox;
 window.closePhotoLightbox = closePhotoLightbox;
+window.showDashWelcomeModal = showDashWelcomeModal;
+window.closeDashWelcomeModal = closeDashWelcomeModal;
+window.handleDashWelcomeProceed = handleDashWelcomeProceed;
 window.showPhoneWelcomeModal = showPhoneWelcomeModal;
 window.handleWelcomeContinue = handleWelcomeContinue;
 window.handleWelcomeSkip = handleWelcomeSkip;

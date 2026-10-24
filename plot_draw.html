@@ -1,0 +1,2948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DA-LARES Agricultural Field Plot Calibration — Drone Orthomosaic</title>
+<meta name="viewport" content="initial-scale=1,maximum-scale=1">
+<link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+<script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.js"></script>
+<link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.css" type="text/css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 0; background: #0b1120; color: #f8fafc; font-family: 'Inter', -apple-system, sans-serif; overflow: hidden; }
+  #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+
+  .panel { 
+      position: absolute; top: 16px; left: 16px; z-index: 10; 
+      background: rgba(15, 23, 42, 0.94); 
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      padding: 18px; border-radius: 14px; 
+      box-shadow: 0 16px 40px rgba(0,0,0,0.65), 0 0 20px rgba(16, 185, 129, 0.2); 
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      width: 380px;
+      max-height: calc(100vh - 32px);
+      overflow-y: auto;
+  }
+
+  .panel-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .panel-icon { font-size: 24px; }
+  .panel-title { margin: 0; font-size: 15px; font-weight: 800; color: #10b981; letter-spacing: 0.3px; }
+  .panel-sub { font-size: 11px; color: #94a3b8; margin: 2px 0 0 0; }
+
+  .section-label {
+      font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.2px; color: #38bdf8; margin: 14px 0 6px 0;
+  }
+
+  /* Segmented Layer Switcher */
+  .layer-switcher {
+      display: flex;
+      background: rgba(30, 41, 59, 0.7);
+      padding: 3px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.08);
+      gap: 3px;
+      margin-bottom: 10px;
+  }
+  .layer-btn {
+      flex: 1;
+      padding: 6px 8px;
+      border: none;
+      background: transparent;
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: all 0.2s ease;
+  }
+  .layer-btn:hover { color: #f8fafc; background: rgba(255,255,255,0.06); }
+  .layer-btn.active {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #ffffff;
+      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+  }
+
+  .slider-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #cbd5e1;
+      margin-bottom: 4px;
+  }
+  .slider-num { font-family: monospace; color: #38bdf8; font-weight: 700; }
+  .range-input {
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(255,255,255,0.12);
+      outline: none;
+      cursor: pointer;
+      accent-color: #10b981;
+      margin-bottom: 10px;
+  }
+
+  .action-btn {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 6px;
+      transition: all 0.2s ease;
+  }
+  .btn-save {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      font-size: 13px;
+      font-weight: 800;
+      padding: 11px;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+      margin-top: 8px;
+  }
+  .btn-save:hover { background: #059669; transform: translateY(-1px); }
+  .btn-drop { background: linear-gradient(135deg, #38bdf8, #0284c7); color: white; }
+  .btn-drop:hover { background: #0284c7; }
+  .btn-draw { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+  .btn-draw:hover { background: rgba(56, 189, 248, 0.25); }
+  .btn-copy-all { background: linear-gradient(135deg, #0284c7, #0369a1); color: white; font-size: 13px; padding: 11px; }
+  .btn-copy-all:hover { background: #0369a1; }
+  .btn-copy-sel { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+  .btn-copy-sel:hover { background: rgba(16, 185, 129, 0.25); }
+  .btn-trash { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+  .btn-trash:hover { background: rgba(239, 68, 68, 0.25); }
+  .btn-reset { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.3); font-size: 11px; padding: 7px; }
+  .btn-reset:hover { background: rgba(148, 163, 184, 0.25); color: #f8fafc; }
+
+  .save-status-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      color: #94a3b8;
+      margin-top: 4px;
+      padding: 0 4px;
+  }
+  .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 8px #10b981;
+  }
+
+  .coord-box {
+      background: #020617;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 10px;
+      font-family: monospace;
+      font-size: 10px;
+      color: #94a3b8;
+      max-height: 120px;
+      overflow-y: auto;
+      margin-top: 8px;
+      white-space: pre-wrap;
+      word-break: break-all;
+  }
+
+  /* List of placed squares */
+  .squares-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-top: 6px;
+      max-height: 180px;
+      overflow-y: auto;
+      padding-right: 4px;
+  }
+  .square-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 10px;
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 7px;
+      font-size: 11px;
+      transition: all 0.15s ease;
+  }
+  .square-item.active {
+      border-color: #10b981;
+      background: rgba(16, 185, 129, 0.14);
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
+  }
+  .square-name {
+      font-weight: 700;
+      color: #f1f5f9;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 175px;
+  }
+  .square-actions {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+  }
+  .btn-mini {
+      padding: 3px 8px;
+      font-size: 10px;
+      font-weight: 700;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+  }
+  .btn-mini-select { background: #0284c7; color: white; }
+  .btn-mini-select:hover { background: #0369a1; }
+  .btn-mini-delete { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+  .btn-mini-delete:hover { background: #ef4444; color: white; }
+
+  /* Map Floating Label Marker */
+  .map-plot-label {
+      background: rgba(15, 23, 42, 0.94);
+      backdrop-filter: blur(8px);
+      border: 1.5px solid #10b981;
+      color: #ffffff;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.6), 0 0 10px rgba(16, 185, 129, 0.3);
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.18s ease;
+      white-space: nowrap;
+      pointer-events: auto;
+  }
+  .map-plot-label:hover {
+      transform: scale(1.08);
+      border-color: #38bdf8;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.8), 0 0 15px rgba(56, 189, 248, 0.5);
+  }
+
+  /* Floating Toast Alert */
+  #toast-alert {
+      position: fixed;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-60px);
+      background: #059669;
+      color: white;
+      padding: 10px 22px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6), 0 0 20px rgba(16, 185, 129, 0.5);
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  #toast-alert.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+  }
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div id="toast-alert">Notification</div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-icon">🌿</span>
+    <div>
+      <h3 class="panel-title">Field Plot Calibration</h3>
+      <p class="panel-sub">45 Calibrated Plots • Auto-Persists on Refresh</p>
+    </div>
+  </div>
+
+  <div class="section-label">Imagery Base Layer</div>
+  <div class="layer-switcher">
+    <button class="layer-btn active" id="btn-layer-drone" onclick="setBaseLayer('drone')">
+      <span>🚁 10GB Drone Shot</span>
+    </button>
+    <button class="layer-btn" id="btn-layer-google" onclick="setBaseLayer('google')">
+      <span>🛰️ Google Satellite</span>
+    </button>
+  </div>
+
+  <div class="slider-row">
+    <span>Drone Imagery Opacity</span>
+    <span id="drone-opacity-val" class="slider-num">100%</span>
+  </div>
+  <input type="range" id="drone-opacity-slider" class="range-input" min="0" max="1" step="0.05" value="1.0" oninput="setDroneOpacity(this.value)">
+
+  <div class="slider-row" style="margin-top: 6px;">
+    <span>Road Lines Guide</span>
+    <input type="checkbox" id="toggle-roads-cb" checked onchange="toggleRoadLines(this.checked)" style="cursor:pointer;">
+  </div>
+
+  <div class="section-label">1. Choose Commodity / Facility</div>
+  <select id="box-zone-select" onchange="onPresetSelectChange(this)" style="width: 100%; padding: 9px; border-radius: 8px; background: #0f172a; border: 1px solid rgba(56, 189, 248, 0.3); color: #f8fafc; font-size: 12px; font-weight: 700; margin-bottom: 6px; outline: none;">
+    <option value="Citrus Orchard">🍊 Citrus Orchard</option>
+    <option value="Corn Research">🌽 Corn Research</option>
+    <option value="Mango Orchard">🥭 Mango Orchard</option>
+    <option value="Cassava Production">🌿 Cassava Production</option>
+    <option value="ATI Corn Trial">🌽 ATI Corn Trial</option>
+    <option value="Cassava Germplasm">🌱 Cassava Germplasm</option>
+    <option value="Tall Makapuno & Cacao">☕ Tall Makapuno & Cacao</option>
+    <option value="Glutinous Flint Corn">🌽 Glutinous Flint Corn</option>
+    <option value="Pomelo Orchard">🍈 Pomelo Orchard</option>
+    <option value="Vegetable Derby Citrus">🥬 Vegetable Derby Citrus</option>
+    <option value="Vegetable Garden">🥬 Vegetable Garden</option>
+    <option value="Coffee & Makapuno">☕ Coffee & Makapuno</option>
+    <option value="Jackfruit & Fruit Trees">🌳 Jackfruit & Fruit Trees</option>
+    <option value="Rice-Soybean Trial">🌾 Rice-Soybean Trial</option>
+    <option value="Calamansi Clonal Block">🌱 Calamansi Clonal Block</option>
+    <option value="Sprinkler Irrigation">💧 Sprinkler Irrigation</option>
+    <option value="Automated Weather Station">📡 Automated Weather Station</option>
+    <option value="Water Tower & CR">🗼 Water Tower & CR</option>
+    <option value="Field Rest Hut">🛖 Field Rest Hut</option>
+    <option value="Greenhouse & Screenhouse">🏡 Greenhouse & Screenhouse</option>
+    <option value="Banana & Fruit Nursery">🪴 Banana & Fruit Nursery</option>
+    <option value="Organic Agriculture / Vermicompost">🪱 Organic Agriculture / Vermicompost</option>
+    <option value="Custom">✏️ Custom Name...</option>
+  </select>
+
+  <input type="text" id="box-name-input" value="Citrus Orchard" placeholder="Enter custom name or block..." style="width: 100%; padding: 8px 10px; border-radius: 7px; background: #1e293b; border: 1px solid rgba(255,255,255,0.15); color: #38bdf8; font-size: 12px; font-weight: 700; margin-bottom: 8px; outline: none;">
+
+  <button class="action-btn btn-drop" onclick="dropSquareBox()">
+    <span>➕</span> Drop 4-Corner Square on View
+  </button>
+  <button class="action-btn btn-draw" onclick="startDrawPolygon()">
+    <span>✏️</span> Click 4 Points to Draw Manually
+  </button>
+
+  <button class="action-btn btn-save" id="btn-manual-save" onclick="manualSaveLayout()">
+    <span>💾</span> Save Plotted Layout
+  </button>
+  <div class="save-status-bar">
+    <div class="status-dot"></div>
+    <span id="save-status-text">All 45 plots saved • Persists on refresh</span>
+  </div>
+
+  <div class="section-label">Plotted Squares (<span id="squares-count">45</span>)</div>
+  <div class="squares-list" id="squares-list">
+    <div style="font-size: 11px; color: #64748b; padding: 6px 0; text-align: center;">Loading calibrated squares...</div>
+  </div>
+
+  <div class="section-label">2. Copy Coordinates to Chat</div>
+  <div style="font-size: 11px; color: #94a3b8; line-height: 1.4; margin-bottom: 6px;">
+    Click Save anytime or Copy to chat. Drag any corner handle to calibrate directly against drone furrows.
+  </div>
+
+  <button class="action-btn btn-copy-all" onclick="copyAllSquaresGeoJSON()">
+    <span>📋</span> Copy ALL Plotted Squares
+  </button>
+
+  <div style="display: flex; gap: 6px; margin-top: 6px;">
+    <button class="action-btn btn-copy-sel" style="margin-top:0;" onclick="copySelectedSquare()">
+      <span>📋</span> Copy Selected
+    </button>
+    <button class="action-btn btn-trash" style="margin-top:0;" onclick="deleteSelectedSquare()">
+      <span>🗑️</span> Delete Selected
+    </button>
+  </div>
+
+  <div style="display: flex; gap: 6px; margin-top: 6px;">
+    <button class="action-btn btn-reset" style="margin-top:0;" onclick="resetToBaseline45Plots()">
+      <span>🔄 Reset to 45 Calibrated Plots</span>
+    </button>
+    <button class="action-btn btn-trash" style="margin-top:0; font-size:11px; padding:7px;" onclick="clearAllSquares()">
+      <span>⚠️ Clear All</span>
+    </button>
+  </div>
+
+  <div class="section-label">Raw Export Textarea (Instant Copy)</div>
+  <textarea id="raw-export-area" readonly style="width: 100%; height: 110px; background: #020617; border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 8px; font-family: monospace; font-size: 10px; color: #38bdf8; resize: vertical; outline: none;" onclick="this.select()"></textarea>
+
+  <div class="section-label">Active Coordinates Preview</div>
+  <div class="coord-box" id="coord-display">Select any square to inspect coordinates...</div>
+</div>
+
+<script>
+mapboxgl.accessToken = 'pk.eyJ1IjoiZWFydGgwMzA3IiwiYSI6ImNtdWFqNTR5czAxNmEyd29lMm42YjZlMDkifQ.xdPOP5RVPdn6YNka-ZdwoQ';
+
+// Storage Key for persistent localStorage calibration (bumped to v8 for updated plots)
+const STORAGE_KEY = 'lares_calibrated_plots_v8';
+['lares_calibrated_plots', 'lares_calibrated_plots_v1', 'lares_calibrated_plots_v2', 'lares_calibrated_plots_v3', 'lares_calibrated_plots_v4', 'lares_calibrated_plots_v5', 'lares_calibrated_plots_v6', 'lares_calibrated_plots_v7'].forEach(k => {
+    try { localStorage.removeItem(k); } catch(e){}
+});
+
+// 45 Ground-Truth Calibrated Agricultural Plots (DA-LARES Field Plot Plan 1 to 45)
+const DEFAULT_CALIBRATED_SQUARES = [
+  {
+    "name": "Plot 1 - Cassava Production",
+    "corners": {
+      "topLeft": [
+        121.16761428761268,
+        13.960780004901487
+      ],
+      "topRight": [
+        121.16927638623841,
+        13.96135069821559
+      ],
+      "bottomRight": [
+        121.16944060859075,
+        13.960931912407922
+      ],
+      "bottomLeft": [
+        121.16777552726202,
+        13.960352323866879
+      ]
+    },
+    "polygon": [
+      [
+        121.16761428761268,
+        13.960780004901487
+      ],
+      [
+        121.16927638623841,
+        13.96135069821559
+      ],
+      [
+        121.16944060859075,
+        13.960931912407922
+      ],
+      [
+        121.16777552726202,
+        13.960352323866879
+      ],
+      [
+        121.16761428761268,
+        13.960780004901487
+      ]
+    ]
+  },
+  {
+    "name": "Plot 2 - Cassava Production",
+    "corners": {
+      "topLeft": [
+        121.16927755662624,
+        13.961349145645464
+      ],
+      "topRight": [
+        121.17080838839638,
+        13.96190277386092
+      ],
+      "bottomRight": [
+        121.17098397929357,
+        13.961466271147735
+      ],
+      "bottomLeft": [
+        121.16944125321561,
+        13.960936698444378
+      ]
+    },
+    "polygon": [
+      [
+        121.16927755662624,
+        13.961349145645464
+      ],
+      [
+        121.17080838839638,
+        13.96190277386092
+      ],
+      [
+        121.17098397929357,
+        13.961466271147735
+      ],
+      [
+        121.16944125321561,
+        13.960936698444378
+      ],
+      [
+        121.16927755662624,
+        13.961349145645464
+      ]
+    ]
+  },
+  {
+    "name": "Plot 3 - Vegetable Derby Citrus",
+    "corners": {
+      "topLeft": [
+        121.16729543232424,
+        13.95993677327348
+      ],
+      "topRight": [
+        121.16746301834138,
+        13.959433654482378
+      ],
+      "bottomRight": [
+        121.16710914066238,
+        13.959322112406394
+      ],
+      "bottomLeft": [
+        121.1669320266704,
+        13.959811858225745
+      ]
+    },
+    "polygon": [
+      [
+        121.16729543232424,
+        13.95993677327348
+      ],
+      [
+        121.16746301834138,
+        13.959433654482378
+      ],
+      [
+        121.16710914066238,
+        13.959322112406394
+      ],
+      [
+        121.1669320266704,
+        13.959811858225745
+      ],
+      [
+        121.16729543232424,
+        13.95993677327348
+      ]
+    ]
+  },
+  {
+    "name": "Plot 4 - Vegetable Derby Citrus",
+    "corners": {
+      "topLeft": [
+        121.16755418146161,
+        13.960023513456942
+      ],
+      "topRight": [
+        121.16772351552507,
+        13.95952498411172
+      ],
+      "bottomRight": [
+        121.16746336319622,
+        13.959437147551878
+      ],
+      "bottomLeft": [
+        121.16729650563676,
+        13.959939665494328
+      ]
+    },
+    "polygon": [
+      [
+        121.16755418146161,
+        13.960023513456942
+      ],
+      [
+        121.16772351552507,
+        13.95952498411172
+      ],
+      [
+        121.16746336319622,
+        13.959437147551878
+      ],
+      [
+        121.16729650563676,
+        13.959939665494328
+      ],
+      [
+        121.16755418146161,
+        13.960023513456942
+      ]
+    ]
+  },
+  {
+    "name": "Plot 5 - Vegetable Derby Citrus",
+    "corners": {
+      "topLeft": [
+        121.16781351524224,
+        13.960111706031494
+      ],
+      "topRight": [
+        121.16799832959964,
+        13.959624876766252
+      ],
+      "bottomRight": [
+        121.16772928945682,
+        13.959524696110375
+      ],
+      "bottomLeft": [
+        121.1675577914458,
+        13.960025804373284
+      ]
+    },
+    "polygon": [
+      [
+        121.16781351524224,
+        13.960111706031494
+      ],
+      [
+        121.16799832959964,
+        13.959624876766252
+      ],
+      [
+        121.16772928945682,
+        13.959524696110375
+      ],
+      [
+        121.1675577914458,
+        13.960025804373284
+      ],
+      [
+        121.16781351524224,
+        13.960111706031494
+      ]
+    ]
+  },
+  {
+    "name": "Plot 6 - Citrus Orchard",
+    "corners": {
+      "topLeft": [
+        121.16801373432531,
+        13.960425164214453
+      ],
+      "topRight": [
+        121.16827723541246,
+        13.95972968143695
+      ],
+      "bottomRight": [
+        121.16803302863588,
+        13.959646449575242
+      ],
+      "bottomLeft": [
+        121.1677784243754,
+        13.960344913815572
+      ]
+    },
+    "polygon": [
+      [
+        121.16801373432531,
+        13.960425164214453
+      ],
+      [
+        121.16827723541246,
+        13.95972968143695
+      ],
+      [
+        121.16803302863588,
+        13.959646449575242
+      ],
+      [
+        121.1677784243754,
+        13.960344913815572
+      ],
+      [
+        121.16801373432531,
+        13.960425164214453
+      ]
+    ]
+  },
+  {
+    "name": "Plot 7 - Citrus Orchard",
+    "corners": {
+      "topLeft": [
+        121.16825871927844,
+        13.960512539849088
+      ],
+      "topRight": [
+        121.16851925491719,
+        13.959809485997749
+      ],
+      "bottomRight": [
+        121.16828176112622,
+        13.959726962554807
+      ],
+      "bottomLeft": [
+        121.16801950327161,
+        13.96042940252519
+      ]
+    },
+    "polygon": [
+      [
+        121.16825871927844,
+        13.960512539849088
+      ],
+      [
+        121.16851925491719,
+        13.959809485997749
+      ],
+      [
+        121.16828176112622,
+        13.959726962554807
+      ],
+      [
+        121.16801950327161,
+        13.96042940252519
+      ],
+      [
+        121.16825871927844,
+        13.960512539849088
+      ]
+    ]
+  },
+  {
+    "name": "Plot 8 - Citrus Orchard",
+    "corners": {
+      "topLeft": [
+        121.16863466257257,
+        13.960640017342993
+      ],
+      "topRight": [
+        121.16889078018278,
+        13.959943912014747
+      ],
+      "bottomRight": [
+        121.16852701002199,
+        13.959816971161285
+      ],
+      "bottomLeft": [
+        121.1682678366451,
+        13.960512395212756
+      ]
+    },
+    "polygon": [
+      [
+        121.16863466257257,
+        13.960640017342993
+      ],
+      [
+        121.16889078018278,
+        13.959943912014747
+      ],
+      [
+        121.16852701002199,
+        13.959816971161285
+      ],
+      [
+        121.1682678366451,
+        13.960512395212756
+      ],
+      [
+        121.16863466257257,
+        13.960640017342993
+      ]
+    ]
+  },
+  {
+    "name": "Plot 9 - Citrus Orchard",
+    "corners": {
+      "topLeft": [
+        121.16898245698411,
+        13.960762131578296
+      ],
+      "topRight": [
+        121.16923893875247,
+        13.960057932305805
+      ],
+      "bottomRight": [
+        121.16889543360566,
+        13.959943831085656
+      ],
+      "bottomLeft": [
+        121.1686397160579,
+        13.960642439145023
+      ]
+    },
+    "polygon": [
+      [
+        121.16898245698411,
+        13.960762131578296
+      ],
+      [
+        121.16923893875247,
+        13.960057932305805
+      ],
+      [
+        121.16889543360566,
+        13.959943831085656
+      ],
+      [
+        121.1686397160579,
+        13.960642439145023
+      ],
+      [
+        121.16898245698411,
+        13.960762131578296
+      ]
+    ]
+  },
+  {
+    "name": "Plot 10 - Citrus Orchard",
+    "corners": {
+      "topLeft": [
+        121.16942865647368,
+        13.960922921239447
+      ],
+      "topRight": [
+        121.16968910054422,
+        13.960213066936124
+      ],
+      "bottomRight": [
+        121.16924304351406,
+        13.960063975763095
+      ],
+      "bottomLeft": [
+        121.16898946969397,
+        13.960765894775609
+      ]
+    },
+    "polygon": [
+      [
+        121.16942865647368,
+        13.960922921239447
+      ],
+      [
+        121.16968910054422,
+        13.960213066936124
+      ],
+      [
+        121.16924304351406,
+        13.960063975763095
+      ],
+      [
+        121.16898946969397,
+        13.960765894775609
+      ],
+      [
+        121.16942865647368,
+        13.960922921239447
+      ]
+    ]
+  },
+  {
+    "name": "Plot 11 - Citrus Orchard",
+    "corners": {
+      "topLeft": [
+        121.16979675864525,
+        13.961052261900125
+      ],
+      "topRight": [
+        121.17006788092317,
+        13.960346232320948
+      ],
+      "bottomRight": [
+        121.16970603789963,
+        13.960217649154135
+      ],
+      "bottomLeft": [
+        121.16944091830766,
+        13.96092808977237
+      ]
+    },
+    "polygon": [
+      [
+        121.16979675864525,
+        13.961052261900125
+      ],
+      [
+        121.17006788092317,
+        13.960346232320948
+      ],
+      [
+        121.16970603789963,
+        13.960217649154135
+      ],
+      [
+        121.16944091830766,
+        13.96092808977237
+      ],
+      [
+        121.16979675864525,
+        13.961052261900125
+      ]
+    ]
+  },
+  {
+    "name": "Plot 12 - Citrus Orchard",
+    "corners": {
+      "topLeft": [
+        121.17012961825066,
+        13.961166018402146
+      ],
+      "topRight": [
+        121.17040357225426,
+        13.96045660596139
+      ],
+      "bottomRight": [
+        121.1700705979016,
+        13.960346027950898
+      ],
+      "bottomLeft": [
+        121.16980100776073,
+        13.961054417100748
+      ]
+    },
+    "polygon": [
+      [
+        121.17012961825066,
+        13.961166018402146
+      ],
+      [
+        121.17040357225426,
+        13.96045660596139
+      ],
+      [
+        121.1700705979016,
+        13.960346027950898
+      ],
+      [
+        121.16980100776073,
+        13.961054417100748
+      ],
+      [
+        121.17012961825066,
+        13.961166018402146
+      ]
+    ]
+  },
+  {
+    "name": "Plot 13 - Cassava Germplasm",
+    "corners": {
+      "topLeft": [
+        121.1703858014474,
+        13.961255892411579
+      ],
+      "topRight": [
+        121.17066353707096,
+        13.960548494677575
+      ],
+      "bottomRight": [
+        121.17040758387222,
+        13.960458159326329
+      ],
+      "bottomLeft": [
+        121.17012977763719,
+        13.961171549565854
+      ]
+    },
+    "polygon": [
+      [
+        121.1703858014474,
+        13.961255892411579
+      ],
+      [
+        121.17066353707096,
+        13.960548494677575
+      ],
+      [
+        121.17040758387222,
+        13.960458159326329
+      ],
+      [
+        121.17012977763719,
+        13.961171549565854
+      ],
+      [
+        121.1703858014474,
+        13.961255892411579
+      ]
+    ]
+  },
+  {
+    "name": "Plot 14 - Cassava Germplasm",
+    "corners": {
+      "topLeft": [
+        121.17059134809159,
+        13.961326395630941
+      ],
+      "topRight": [
+        121.17085684568224,
+        13.960611783270146
+      ],
+      "bottomRight": [
+        121.1706661052155,
+        13.960549910876757
+      ],
+      "bottomLeft": [
+        121.17039194370966,
+        13.961257898658012
+      ]
+    },
+    "polygon": [
+      [
+        121.17059134809159,
+        13.961326395630941
+      ],
+      [
+        121.17085684568224,
+        13.960611783270146
+      ],
+      [
+        121.1706661052155,
+        13.960549910876757
+      ],
+      [
+        121.17039194370966,
+        13.961257898658012
+      ],
+      [
+        121.17059134809159,
+        13.961326395630941
+      ]
+    ]
+  },
+  {
+    "name": "Plot 15 - ATI Corn Trial",
+    "corners": {
+      "topLeft": [
+        121.17098599518857,
+        13.961456911674912
+      ],
+      "topRight": [
+        121.17125964936002,
+        13.960752185516238
+      ],
+      "bottomRight": [
+        121.17086744205415,
+        13.960617074623624
+      ],
+      "bottomLeft": [
+        121.17059860611289,
+        13.96132875102543
+      ]
+    },
+    "polygon": [
+      [
+        121.17098599518857,
+        13.961456911674912
+      ],
+      [
+        121.17125964936002,
+        13.960752185516238
+      ],
+      [
+        121.17086744205415,
+        13.960617074623624
+      ],
+      [
+        121.17059860611289,
+        13.96132875102543
+      ],
+      [
+        121.17098599518857,
+        13.961456911674912
+      ]
+    ]
+  },
+  {
+    "name": "Plot 16 - Mango Orchard",
+    "corners": {
+      "topLeft": [
+        121.17118256515053,
+        13.961160698658798
+      ],
+      "topRight": [
+        121.17252370511406,
+        13.961656928890275
+      ],
+      "bottomRight": [
+        121.17277596376024,
+        13.960912307684833
+      ],
+      "bottomLeft": [
+        121.1714550115947,
+        13.960334298392933
+      ]
+    },
+    "polygon": [
+      [
+        121.17118256515053,
+        13.961160698658798
+      ],
+      [
+        121.17252370511406,
+        13.961656928890275
+      ],
+      [
+        121.17277596376024,
+        13.960912307684833
+      ],
+      [
+        121.1714550115947,
+        13.960334298392933
+      ],
+      [
+        121.17118256515053,
+        13.961160698658798
+      ]
+    ]
+  },
+  {
+    "name": "Plot 17 - TC Makapuno & Banana Screenhouse",
+    "corners": {
+      "topLeft": [
+        121.16739638852135,
+        13.959271323700783
+      ],
+      "topRight": [
+        121.16767080556389,
+        13.958547027853903
+      ],
+      "bottomRight": [
+        121.16742685035422,
+        13.95846738766513
+      ],
+      "bottomLeft": [
+        121.16714343862537,
+        13.959183284650827
+      ]
+    },
+    "polygon": [
+      [
+        121.16739638852135,
+        13.959271323700783
+      ],
+      [
+        121.16767080556389,
+        13.958547027853903
+      ],
+      [
+        121.16742685035422,
+        13.95846738766513
+      ],
+      [
+        121.16714343862537,
+        13.959183284650827
+      ],
+      [
+        121.16739638852135,
+        13.959271323700783
+      ]
+    ]
+  },
+  {
+    "name": "Plot 18 - Coffee & Citrus Screenhouse",
+    "corners": {
+      "topLeft": [
+        121.16774261454921,
+        13.95938929057548
+      ],
+      "topRight": [
+        121.16801762291058,
+        13.958659752964031
+      ],
+      "bottomRight": [
+        121.1676714475773,
+        13.958546826521278
+      ],
+      "bottomLeft": [
+        121.1673975873401,
+        13.959271071309779
+      ]
+    },
+    "polygon": [
+      [
+        121.16774261454921,
+        13.95938929057548
+      ],
+      [
+        121.16801762291058,
+        13.958659752964031
+      ],
+      [
+        121.1676714475773,
+        13.958546826521278
+      ],
+      [
+        121.1673975873401,
+        13.959271071309779
+      ],
+      [
+        121.16774261454921,
+        13.95938929057548
+      ]
+    ]
+  },
+  {
+    "name": "Plot 19 - Pummelo Orchard",
+    "corners": {
+      "topLeft": [
+        121.16806478598295,
+        13.959503333123472
+      ],
+      "topRight": [
+        121.16835524221705,
+        13.958772264010825
+      ],
+      "bottomRight": [
+        121.16802140628471,
+        13.958661230522004
+      ],
+      "bottomLeft": [
+        121.1677440413253,
+        13.959389276810832
+      ]
+    },
+    "polygon": [
+      [
+        121.16806478598295,
+        13.959503333123472
+      ],
+      [
+        121.16835524221705,
+        13.958772264010825
+      ],
+      [
+        121.16802140628471,
+        13.958661230522004
+      ],
+      [
+        121.1677440413253,
+        13.959389276810832
+      ],
+      [
+        121.16806478598295,
+        13.959503333123472
+      ]
+    ]
+  },
+  {
+    "name": "Plot 20 - Coffee Orchard & TC Banana",
+    "corners": {
+      "topLeft": [
+        121.16842451039633,
+        13.95962236665562
+      ],
+      "topRight": [
+        121.16869666413407,
+        13.958891572492103
+      ],
+      "bottomRight": [
+        121.16838084374211,
+        13.958788131059432
+      ],
+      "bottomLeft": [
+        121.16809554269884,
+        13.959514688262825
+      ]
+    },
+    "polygon": [
+      [
+        121.16842451039633,
+        13.95962236665562
+      ],
+      [
+        121.16869666413407,
+        13.958891572492103
+      ],
+      [
+        121.16838084374211,
+        13.958788131059432
+      ],
+      [
+        121.16809554269884,
+        13.959514688262825
+      ],
+      [
+        121.16842451039633,
+        13.95962236665562
+      ]
+    ]
+  },
+  {
+    "name": "Plot 21 - Coffee Orchard & TC Banana",
+    "corners": {
+      "topLeft": [
+        121.16873654584688,
+        13.95972915073197
+      ],
+      "topRight": [
+        121.16901427242195,
+        13.958996410869656
+      ],
+      "bottomRight": [
+        121.16869879524708,
+        13.958891619080756
+      ],
+      "bottomLeft": [
+        121.16842551753021,
+        13.959623806868702
+      ]
+    },
+    "polygon": [
+      [
+        121.16873654584688,
+        13.95972915073197
+      ],
+      [
+        121.16901427242195,
+        13.958996410869656
+      ],
+      [
+        121.16869879524708,
+        13.958891619080756
+      ],
+      [
+        121.16842551753021,
+        13.959623806868702
+      ],
+      [
+        121.16873654584688,
+        13.95972915073197
+      ]
+    ]
+  },
+  {
+    "name": "Plot 22 - Coffee Orchard & TC Banana",
+    "corners": {
+      "topLeft": [
+        121.16902334303632,
+        13.959830136701992
+      ],
+      "topRight": [
+        121.16931205516732,
+        13.95910464098969
+      ],
+      "bottomRight": [
+        121.16901358045283,
+        13.95899800919322
+      ],
+      "bottomLeft": [
+        121.16873673926187,
+        13.959731297392462
+      ]
+    },
+    "polygon": [
+      [
+        121.16902334303632,
+        13.959830136701992
+      ],
+      [
+        121.16931205516732,
+        13.95910464098969
+      ],
+      [
+        121.16901358045283,
+        13.95899800919322
+      ],
+      [
+        121.16873673926187,
+        13.959731297392462
+      ],
+      [
+        121.16902334303632,
+        13.959830136701992
+      ]
+    ]
+  },
+  {
+    "name": "Plot 23 - Vegetable Garden",
+    "corners": {
+      "topLeft": [
+        121.16936637113713,
+        13.959948547692523
+      ],
+      "topRight": [
+        121.16965538311484,
+        13.959225599662634
+      ],
+      "bottomRight": [
+        121.16933208878879,
+        13.959118833488152
+      ],
+      "bottomLeft": [
+        121.16904634188569,
+        13.959836353094179
+      ]
+    },
+    "polygon": [
+      [
+        121.16936637113713,
+        13.959948547692523
+      ],
+      [
+        121.16965538311484,
+        13.959225599662634
+      ],
+      [
+        121.16933208878879,
+        13.959118833488152
+      ],
+      [
+        121.16904634188569,
+        13.959836353094179
+      ],
+      [
+        121.16936637113713,
+        13.959948547692523
+      ]
+    ]
+  },
+  {
+    "name": "Plot 24 - Vegetable Garden",
+    "corners": {
+      "topLeft": [
+        121.169698645627,
+        13.960065190379968
+      ],
+      "topRight": [
+        121.16996713344028,
+        13.959333486243768
+      ],
+      "bottomRight": [
+        121.16965615663176,
+        13.959225878169097
+      ],
+      "bottomLeft": [
+        121.1693675396626,
+        13.959949293064131
+      ]
+    },
+    "polygon": [
+      [
+        121.169698645627,
+        13.960065190379968
+      ],
+      [
+        121.16996713344028,
+        13.959333486243768
+      ],
+      [
+        121.16965615663176,
+        13.959225878169097
+      ],
+      [
+        121.1693675396626,
+        13.959949293064131
+      ],
+      [
+        121.169698645627,
+        13.960065190379968
+      ]
+    ]
+  },
+  {
+    "name": "Plot 25 - Vegetable Garden",
+    "corners": {
+      "topLeft": [
+        121.16999277297816,
+        13.960167005310002
+      ],
+      "topRight": [
+        121.17028831979286,
+        13.959443939397861
+      ],
+      "bottomRight": [
+        121.16997027406313,
+        13.959333882672642
+      ],
+      "bottomLeft": [
+        121.16969799899505,
+        13.960065218689
+      ]
+    },
+    "polygon": [
+      [
+        121.16999277297816,
+        13.960167005310002
+      ],
+      [
+        121.17028831979286,
+        13.959443939397861
+      ],
+      [
+        121.16997027406313,
+        13.959333882672642
+      ],
+      [
+        121.16969799899505,
+        13.960065218689
+      ],
+      [
+        121.16999277297816,
+        13.960167005310002
+      ]
+    ]
+  },
+  {
+    "name": "Plot 26 - Fruit Trees, Surghum & Citrus",
+    "corners": {
+      "topLeft": [
+        121.17035203304954,
+        13.960286727218168
+      ],
+      "topRight": [
+        121.17064257733477,
+        13.959572129477898
+      ],
+      "bottomRight": [
+        121.1703352566762,
+        13.959460353178947
+      ],
+      "bottomLeft": [
+        121.17004349943943,
+        13.96018205599885
+      ]
+    },
+    "polygon": [
+      [
+        121.17035203304954,
+        13.960286727218168
+      ],
+      [
+        121.17064257733477,
+        13.959572129477898
+      ],
+      [
+        121.1703352566762,
+        13.959460353178947
+      ],
+      [
+        121.17004349943943,
+        13.96018205599885
+      ],
+      [
+        121.17035203304954,
+        13.960286727218168
+      ]
+    ]
+  },
+  {
+    "name": "Plot 27 - Fruit Trees, Surghum & Citrus",
+    "corners": {
+      "topLeft": [
+        121.17063945685501,
+        13.960389060533977
+      ],
+      "topRight": [
+        121.17094211147148,
+        13.959681333486948
+      ],
+      "bottomRight": [
+        121.17065082181651,
+        13.959576196672124
+      ],
+      "bottomLeft": [
+        121.1703517178955,
+        13.960286220133263
+      ]
+    },
+    "polygon": [
+      [
+        121.17063945685501,
+        13.960389060533977
+      ],
+      [
+        121.17094211147148,
+        13.959681333486948
+      ],
+      [
+        121.17065082181651,
+        13.959576196672124
+      ],
+      [
+        121.1703517178955,
+        13.960286220133263
+      ],
+      [
+        121.17063945685501,
+        13.960389060533977
+      ]
+    ]
+  },
+  {
+    "name": "Plot 28 - Fruit Trees, Surghum & Citrus",
+    "corners": {
+      "topLeft": [
+        121.17090514723037,
+        13.960485092218342
+      ],
+      "topRight": [
+        121.17120100546339,
+        13.959779441967235
+      ],
+      "bottomRight": [
+        121.17094388556768,
+        13.959685770723219
+      ],
+      "bottomLeft": [
+        121.1706410426878,
+        13.960391380595858
+      ]
+    },
+    "polygon": [
+      [
+        121.17090514723037,
+        13.960485092218342
+      ],
+      [
+        121.17120100546339,
+        13.959779441967235
+      ],
+      [
+        121.17094388556768,
+        13.959685770723219
+      ],
+      [
+        121.1706410426878,
+        13.960391380595858
+      ],
+      [
+        121.17090514723037,
+        13.960485092218342
+      ]
+    ]
+  },
+  {
+    "name": "Plot 29 - Tall Makapuno & Cacao",
+    "corners": {
+      "topLeft": [
+        121.17135253455945,
+        13.96051109995998
+      ],
+      "topRight": [
+        121.17174137170468,
+        13.959579476547852
+      ],
+      "bottomRight": [
+        121.17144698993195,
+        13.95946399638671
+      ],
+      "bottomLeft": [
+        121.17105352255726,
+        13.960395861108715
+      ]
+    },
+    "polygon": [
+      [
+        121.17135253455945,
+        13.96051109995998
+      ],
+      [
+        121.17174137170468,
+        13.959579476547852
+      ],
+      [
+        121.17144698993195,
+        13.95946399638671
+      ],
+      [
+        121.17105352255726,
+        13.960395861108715
+      ],
+      [
+        121.17135253455945,
+        13.96051109995998
+      ]
+    ]
+  },
+  {
+    "name": "Plot 30 - Mango, Banana & Jackfruit",
+    "corners": {
+      "topLeft": [
+        121.16769782336365,
+        13.958464917709495
+      ],
+      "topRight": [
+        121.16799713392498,
+        13.957636558358647
+      ],
+      "bottomRight": [
+        121.16774565418189,
+        13.957557120345175
+      ],
+      "bottomLeft": [
+        121.16745990420185,
+        13.958385204003878
+      ]
+    },
+    "polygon": [
+      [
+        121.16769782336365,
+        13.958464917709495
+      ],
+      [
+        121.16799713392498,
+        13.957636558358647
+      ],
+      [
+        121.16774565418189,
+        13.957557120345175
+      ],
+      [
+        121.16745990420185,
+        13.958385204003878
+      ],
+      [
+        121.16769782336365,
+        13.958464917709495
+      ]
+    ]
+  },
+  {
+    "name": "Plot 31 - Mango, Banana & Jackfruit",
+    "corners": {
+      "topLeft": [
+        121.16804350441274,
+        13.958577526282514
+      ],
+      "topRight": [
+        121.16834827280118,
+        13.95775022130444
+      ],
+      "bottomRight": [
+        121.16800034983348,
+        13.957639681061938
+      ],
+      "bottomLeft": [
+        121.16769860428477,
+        13.958465406222064
+      ]
+    },
+    "polygon": [
+      [
+        121.16804350441274,
+        13.958577526282514
+      ],
+      [
+        121.16834827280118,
+        13.95775022130444
+      ],
+      [
+        121.16800034983348,
+        13.957639681061938
+      ],
+      [
+        121.16769860428477,
+        13.958465406222064
+      ],
+      [
+        121.16804350441274,
+        13.958577526282514
+      ]
+    ]
+  },
+  {
+    "name": "Plot 32 - Mango, Banana & Jackfruit",
+    "corners": {
+      "topLeft": [
+        121.16837922318643,
+        13.958687183074577
+      ],
+      "topRight": [
+        121.16867000971331,
+        13.95786904636454
+      ],
+      "bottomRight": [
+        121.16835079735671,
+        13.957752073107589
+      ],
+      "bottomLeft": [
+        121.16804516823669,
+        13.958572967362347
+      ]
+    },
+    "polygon": [
+      [
+        121.16837922318643,
+        13.958687183074577
+      ],
+      [
+        121.16867000971331,
+        13.95786904636454
+      ],
+      [
+        121.16835079735671,
+        13.957752073107589
+      ],
+      [
+        121.16804516823669,
+        13.958572967362347
+      ],
+      [
+        121.16837922318643,
+        13.958687183074577
+      ]
+    ]
+  },
+  {
+    "name": "Plot 33 - Dwarf Makapuno",
+    "corners": {
+      "topLeft": [
+        121.16874034480617,
+        13.958812402170715
+      ],
+      "topRight": [
+        121.16902211763022,
+        13.95803368010126
+      ],
+      "bottomRight": [
+        121.16869034755263,
+        13.957923836831036
+      ],
+      "bottomLeft": [
+        121.16841755847065,
+        13.95870378592128
+      ]
+    },
+    "polygon": [
+      [
+        121.16874034480617,
+        13.958812402170715
+      ],
+      [
+        121.16902211763022,
+        13.95803368010126
+      ],
+      [
+        121.16869034755263,
+        13.957923836831036
+      ],
+      [
+        121.16841755847065,
+        13.95870378592128
+      ],
+      [
+        121.16874034480617,
+        13.958812402170715
+      ]
+    ]
+  },
+  {
+    "name": "Plot 34 - Dwarf Makapuno",
+    "corners": {
+      "topLeft": [
+        121.16904197149327,
+        13.95891151212836
+      ],
+      "topRight": [
+        121.16931979766994,
+        13.958133943676252
+      ],
+      "bottomRight": [
+        121.16902254564891,
+        13.958033482454745
+      ],
+      "bottomLeft": [
+        121.16874175267972,
+        13.958814028983504
+      ]
+    },
+    "polygon": [
+      [
+        121.16904197149327,
+        13.95891151212836
+      ],
+      [
+        121.16931979766994,
+        13.958133943676252
+      ],
+      [
+        121.16902254564891,
+        13.958033482454745
+      ],
+      [
+        121.16874175267972,
+        13.958814028983504
+      ],
+      [
+        121.16904197149327,
+        13.95891151212836
+      ]
+    ]
+  },
+  {
+    "name": "Plot 35 - Dwarf Makapuno",
+    "corners": {
+      "topLeft": [
+        121.1693031626271,
+        13.958993922091345
+      ],
+      "topRight": [
+        121.16960004591772,
+        13.958230401818263
+      ],
+      "bottomRight": [
+        121.16932486413378,
+        13.958137339977846
+      ],
+      "bottomLeft": [
+        121.16904191647541,
+        13.958912939651775
+      ]
+    },
+    "polygon": [
+      [
+        121.1693031626271,
+        13.958993922091345
+      ],
+      [
+        121.16960004591772,
+        13.958230401818263
+      ],
+      [
+        121.16932486413378,
+        13.958137339977846
+      ],
+      [
+        121.16904191647541,
+        13.958912939651775
+      ],
+      [
+        121.1693031626271,
+        13.958993922091345
+      ]
+    ]
+  },
+  {
+    "name": "Plot 36 - Rice & Soybean",
+    "corners": {
+      "topLeft": [
+        121.16968665460337,
+        13.959109768815363
+      ],
+      "topRight": [
+        121.16996998841887,
+        13.958358268938294
+      ],
+      "bottomRight": [
+        121.16966781082999,
+        13.95826170779102
+      ],
+      "bottomLeft": [
+        121.16938351433106,
+        13.959010795677568
+      ]
+    },
+    "polygon": [
+      [
+        121.16968665460337,
+        13.959109768815363
+      ],
+      [
+        121.16996998841887,
+        13.958358268938294
+      ],
+      [
+        121.16966781082999,
+        13.95826170779102
+      ],
+      [
+        121.16938351433106,
+        13.959010795677568
+      ],
+      [
+        121.16968665460337,
+        13.959109768815363
+      ]
+    ]
+  },
+  {
+    "name": "Plot 37 - Bio Prime & Enviro Corn Trial",
+    "corners": {
+      "topLeft": [
+        121.17001364224103,
+        13.959226032949427
+      ],
+      "topRight": [
+        121.17030130720156,
+        13.958462345006364
+      ],
+      "bottomRight": [
+        121.16997211093428,
+        13.9583584678313
+      ],
+      "bottomLeft": [
+        121.16968859914084,
+        13.959110093305437
+      ]
+    },
+    "polygon": [
+      [
+        121.17001364224103,
+        13.959226032949427
+      ],
+      [
+        121.17030130720156,
+        13.958462345006364
+      ],
+      [
+        121.16997211093428,
+        13.9583584678313
+      ],
+      [
+        121.16968859914084,
+        13.959110093305437
+      ],
+      [
+        121.17001364224103,
+        13.959226032949427
+      ]
+    ]
+  },
+  {
+    "name": "Plot 38 - Bio Prime & Enviro Corn Trial",
+    "corners": {
+      "topLeft": [
+        121.17038463662973,
+        13.959349948984038
+      ],
+      "topRight": [
+        121.1706678833942,
+        13.9585807232456
+      ],
+      "bottomRight": [
+        121.17030161310461,
+        13.958463454671925
+      ],
+      "bottomLeft": [
+        121.17001512046201,
+        13.959226789182221
+      ]
+    },
+    "polygon": [
+      [
+        121.17038463662973,
+        13.959349948984038
+      ],
+      [
+        121.1706678833942,
+        13.9585807232456
+      ],
+      [
+        121.17030161310461,
+        13.958463454671925
+      ],
+      [
+        121.17001512046201,
+        13.959226789182221
+      ],
+      [
+        121.17038463662973,
+        13.959349948984038
+      ]
+    ]
+  },
+  {
+    "name": "Plot 39 - Corn Research",
+    "corners": {
+      "topLeft": [
+        121.17070246080237,
+        13.959469958930288
+      ],
+      "topRight": [
+        121.17101948715856,
+        13.958702979575836
+      ],
+      "bottomRight": [
+        121.17069470340715,
+        13.958600810574854
+      ],
+      "bottomLeft": [
+        121.17040626068564,
+        13.959361990824963
+      ]
+    },
+    "polygon": [
+      [
+        121.17070246080237,
+        13.959469958930288
+      ],
+      [
+        121.17101948715856,
+        13.958702979575836
+      ],
+      [
+        121.17069470340715,
+        13.958600810574854
+      ],
+      [
+        121.17040626068564,
+        13.959361990824963
+      ],
+      [
+        121.17070246080237,
+        13.959469958930288
+      ]
+    ]
+  },
+  {
+    "name": "Plot 40 - Corn Research",
+    "corners": {
+      "topLeft": [
+        121.17099552140738,
+        13.95956832020737
+      ],
+      "topRight": [
+        121.17133534546784,
+        13.95880663152862
+      ],
+      "bottomRight": [
+        121.17102485636767,
+        13.958706583754012
+      ],
+      "bottomLeft": [
+        121.17070333108344,
+        13.959471679119293
+      ]
+    },
+    "polygon": [
+      [
+        121.17099552140738,
+        13.95956832020737
+      ],
+      [
+        121.17133534546784,
+        13.95880663152862
+      ],
+      [
+        121.17102485636767,
+        13.958706583754012
+      ],
+      [
+        121.17070333108344,
+        13.959471679119293
+      ],
+      [
+        121.17099552140738,
+        13.95956832020737
+      ]
+    ]
+  },
+  {
+    "name": "Plot 41 - Corn Research",
+    "corners": {
+      "topLeft": [
+        121.17125913585625,
+        13.959653652539902
+      ],
+      "topRight": [
+        121.17161146898093,
+        13.958898383551546
+      ],
+      "bottomRight": [
+        121.17134042892474,
+        13.958808491362223
+      ],
+      "bottomLeft": [
+        121.17099960626223,
+        13.959574651958878
+      ]
+    },
+    "polygon": [
+      [
+        121.17125913585625,
+        13.959653652539902
+      ],
+      [
+        121.17161146898093,
+        13.958898383551546
+      ],
+      [
+        121.17134042892474,
+        13.958808491362223
+      ],
+      [
+        121.17099960626223,
+        13.959574651958878
+      ],
+      [
+        121.17125913585625,
+        13.959653652539902
+      ]
+    ]
+  },
+  {
+    "name": "Plot 42 - Tall Makapuno & Cacao",
+    "corners": {
+      "topLeft": [
+        121.1717411901156,
+        13.959579124289593
+      ],
+      "topRight": [
+        121.17218387674558,
+        13.958551402876655
+      ],
+      "bottomRight": [
+        121.17188999310986,
+        13.958440896153068
+      ],
+      "bottomLeft": [
+        121.17144785348233,
+        13.959464544307696
+      ]
+    },
+    "polygon": [
+      [
+        121.1717411901156,
+        13.959579124289593
+      ],
+      [
+        121.17218387674558,
+        13.958551402876655
+      ],
+      [
+        121.17188999310986,
+        13.958440896153068
+      ],
+      [
+        121.17144785348233,
+        13.959464544307696
+      ],
+      [
+        121.1717411901156,
+        13.959579124289593
+      ]
+    ]
+  },
+  {
+    "name": "Plot 43 - Glutinous Flint Corn",
+    "corners": {
+      "topLeft": [
+        121.1696958671213,
+        13.958242464693416
+      ],
+      "topRight": [
+        121.17163836465048,
+        13.958889607470343
+      ],
+      "bottomRight": [
+        121.17187339670974,
+        13.958437566152032
+      ],
+      "bottomLeft": [
+        121.1697690292979,
+        13.958036556227757
+      ]
+    },
+    "polygon": [
+      [
+        121.1696958671213,
+        13.958242464693416
+      ],
+      [
+        121.17163836465048,
+        13.958889607470343
+      ],
+      [
+        121.17187339670974,
+        13.958437566152032
+      ],
+      [
+        121.1697690292979,
+        13.958036556227757
+      ],
+      [
+        121.1696958671213,
+        13.958242464693416
+      ]
+    ]
+  },
+  {
+    "name": "Plot 44 - Pomelo Orchard",
+    "corners": {
+      "topLeft": [
+        121.16771913679435,
+        13.957506273161957
+      ],
+      "topRight": [
+        121.16969565448267,
+        13.958221926516462
+      ],
+      "bottomRight": [
+        121.16976650009917,
+        13.95803638966969
+      ],
+      "bottomLeft": [
+        121.1677192573344,
+        13.957505589074774
+      ]
+    },
+    "polygon": [
+      [
+        121.16771913679435,
+        13.957506273161957
+      ],
+      [
+        121.16969565448267,
+        13.958221926516462
+      ],
+      [
+        121.16976650009917,
+        13.95803638966969
+      ],
+      [
+        121.1677192573344,
+        13.957505589074774
+      ],
+      [
+        121.16771913679435,
+        13.957506273161957
+      ]
+    ]
+  },
+  {
+    "name": "Plot 45 - Mango Orchard",
+    "corners": {
+      "topLeft": [
+        121.17083625580881,
+        13.961929777007594
+      ],
+      "topRight": [
+        121.17220106232065,
+        13.962406128728954
+      ],
+      "bottomRight": [
+        121.17249335325192,
+        13.961739830591522
+      ],
+      "bottomLeft": [
+        121.1711402549326,
+        13.961197296009384
+      ]
+    },
+    "polygon": [
+      [
+        121.17083625580881,
+        13.961929777007594
+      ],
+      [
+        121.17220106232065,
+        13.962406128728954
+      ],
+      [
+        121.17249335325192,
+        13.961739830591522
+      ],
+      [
+        121.1711402549326,
+        13.961197296009384
+      ],
+      [
+        121.17083625580881,
+        13.961929777007594
+      ]
+    ]
+  }
+];
+
+const map = new mapboxgl.Map({
+    container: 'map',
+    style: {
+        'version': 8,
+        'glyphs': 'mapbox://fonts/mapbox/{fontstack}/{range}.pbf',
+        'sources': {
+            'google-satellite': {
+                'type': 'raster',
+                'tiles': ['https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'],
+                'tileSize': 256,
+                'maxzoom': 22
+            },
+            'lares-drone-source': {
+                'type': 'raster',
+                'tiles': ['/api/tiles/{z}/{x}/{y}.png'],
+                'tileSize': 256,
+                'minzoom': 14,
+                'maxzoom': 24,
+                'bounds': [121.165052, 13.956537, 121.173221, 13.963068]
+            }
+        },
+        'layers': [
+            {
+                'id': 'google-satellite-layer',
+                'type': 'raster',
+                'source': 'google-satellite'
+            },
+            {
+                'id': 'lares-drone-layer',
+                'type': 'raster',
+                'source': 'lares-drone-source',
+                'paint': {
+                    'raster-opacity': 1.0,
+                    'raster-fade-duration': 0
+                }
+            }
+        ]
+    },
+    // Center dynamically on the 45 calibrated field plots
+    center: [121.1698, 13.9599],
+    zoom: 17.2,
+    pitch: 0,
+    bearing: 0
+});
+
+window.map = map;
+
+// Initialize Mapbox Draw
+const draw = new MapboxDraw({
+    displayControlsDefault: false,
+    controls: {
+        polygon: true,
+        trash: true
+    },
+    defaultMode: 'simple_select'
+});
+map.addControl(draw, 'top-right');
+window.draw = draw;
+
+// Metadata map: featureId -> { name }
+const featureMeta = {};
+// HTML Markers for on-map labels: featureId -> mapboxgl.Marker
+const mapMarkers = {};
+
+function showToast(msg, bg) {
+    const toast = document.getElementById('toast-alert');
+    if (!toast) return;
+    toast.textContent = msg;
+    toast.style.background = bg || '#059669';
+    toast.classList.add('show');
+    clearTimeout(window._toastTimeout);
+    window._toastTimeout = setTimeout(() => {
+        toast.classList.remove('show');
+    }, 2800);
+}
+
+// Centroid calculator (robust against 2D rings or nested arrays)
+function getCentroid(ring) {
+    if (!ring) return [121.1702, 13.9610];
+    if (Array.isArray(ring[0]) && Array.isArray(ring[0][0])) {
+        ring = ring[0];
+    }
+    if (typeof ring[0] === 'number') {
+        return [ring[0], ring[1]];
+    }
+    let sumLng = 0, sumLat = 0, count = 0;
+    const pts = (ring.length > 1 && ring[0][0] === ring[ring.length - 1][0] && ring[0][1] === ring[ring.length - 1][1])
+        ? ring.slice(0, -1)
+        : ring;
+    for (let i = 0; i < pts.length; i++) {
+        const pt = pts[i];
+        if (Array.isArray(pt) && typeof pt[0] === 'number' && typeof pt[1] === 'number' && !isNaN(pt[0]) && !isNaN(pt[1])) {
+            sumLng += pt[0];
+            sumLat += pt[1];
+            count++;
+        }
+    }
+    return count > 0 ? [sumLng / count, sumLat / count] : [121.1702, 13.9610];
+}
+
+// Helper to extract a 2D linear ring from a feature
+function getFeatureRing(feat) {
+    if (!feat || !feat.geometry || !feat.geometry.coordinates) return [];
+    const c = feat.geometry.coordinates;
+    if (Array.isArray(c[0]) && Array.isArray(c[0][0])) {
+        return c[0];
+    }
+    return c;
+}
+
+// Save state to browser localStorage
+function saveSquaresToStorage() {
+    const all = draw.getAll();
+    if (!all.features) return;
+    const squares = all.features.map(feat => {
+        const meta = featureMeta[feat.id] || { name: 'Square' };
+        const ring = getFeatureRing(feat);
+        return {
+            id: feat.id,
+            name: meta.name,
+            corners: {
+                topLeft: ring[0] || [0,0],
+                topRight: ring[1] || [0,0],
+                bottomRight: ring[2] || [0,0],
+                bottomLeft: ring[3] || [0,0]
+            },
+            polygon: ring
+        };
+    });
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(squares));
+        const statusText = document.getElementById('save-status-text');
+        if (statusText) statusText.textContent = `All ${squares.length} squares saved • Persists on refresh`;
+    } catch(e) {
+        console.warn('LocalStorage save error:', e);
+    }
+}
+
+// Manual Save Button Handler
+window.manualSaveLayout = function() {
+    saveSquaresToStorage();
+    const btn = document.getElementById('btn-manual-save');
+    if (btn) {
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<span>✅</span> Saved Successfully!';
+        btn.style.background = '#059669';
+        setTimeout(() => {
+            btn.innerHTML = originalHtml;
+            btn.style.background = '';
+        }, 2000);
+    }
+    const all = draw.getAll();
+    const count = (all && all.features) ? all.features.length : 0;
+    showToast(`💾 Saved ${count} squares to browser storage!`, '#059669');
+};
+
+// Refresh UI, list, markers, and export textarea
+function syncPlottedSquares() {
+    try {
+        const all = draw.getAll();
+        const countEl = document.getElementById('squares-count');
+        const listEl = document.getElementById('squares-list');
+        const selectedIds = draw.getSelectedIds();
+        const activeSelectedId = selectedIds.length > 0 ? selectedIds[0] : null;
+
+        if (!all.features || all.features.length === 0) {
+            countEl.textContent = '0';
+            listEl.innerHTML = '<div style="font-size: 11px; color: #64748b; padding: 6px 0; text-align: center;">No squares placed yet. Drop one above!</div>';
+            document.getElementById('coord-display').textContent = 'Drop or select a square to see coordinates...';
+            document.getElementById('raw-export-area').value = '';
+            Object.keys(mapMarkers).forEach(id => {
+                mapMarkers[id].remove();
+                delete mapMarkers[id];
+            });
+            saveSquaresToStorage();
+            return;
+        }
+
+        countEl.textContent = all.features.length;
+
+        const presentIds = new Set();
+        let listHtml = '';
+        const exportedBlocks = [];
+
+        all.features.forEach((feat, idx) => {
+            const id = feat.id;
+            presentIds.add(id);
+
+            const meta = featureMeta[id] || { name: `Square #${idx + 1}` };
+            const ring = getFeatureRing(feat);
+            const isSel = (id === activeSelectedId);
+
+            listHtml += `
+                <div class="square-item ${isSel ? 'active' : ''}">
+                    <div class="square-name" title="${meta.name}">
+                        ${isSel ? '👉 ' : ''}${meta.name}
+                    </div>
+                    <div class="square-actions">
+                        <button class="btn-mini btn-mini-select" onclick="selectSquare('${id}')">Edit</button>
+                        <button class="btn-mini btn-mini-delete" onclick="deleteSpecificSquare('${id}')">✕</button>
+                    </div>
+                </div>
+            `;
+
+            // Update on-map label marker
+            const centroid = getCentroid(ring);
+            if (!isNaN(centroid[0]) && !isNaN(centroid[1])) {
+                if (mapMarkers[id]) {
+                    mapMarkers[id].setLngLat(centroid);
+                    const el = mapMarkers[id].getElement();
+                    if (el) el.textContent = meta.name;
+                } else {
+                    const el = document.createElement('div');
+                    el.className = 'map-plot-label';
+                    el.textContent = meta.name;
+                    el.onclick = () => selectSquare(id);
+
+                    const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
+                        .setLngLat(centroid)
+                        .addTo(map);
+                    mapMarkers[id] = marker;
+                }
+            }
+
+            exportedBlocks.push({
+                name: meta.name,
+                corners: {
+                    topLeft: ring[0] || [0,0],
+                    topRight: ring[1] || [0,0],
+                    bottomRight: ring[2] || [0,0],
+                    bottomLeft: ring[3] || [0,0]
+                },
+                polygon: ring
+            });
+        });
+
+        listEl.innerHTML = listHtml;
+
+        // Remove deleted markers
+        Object.keys(mapMarkers).forEach(id => {
+            if (!presentIds.has(id)) {
+                mapMarkers[id].remove();
+                delete mapMarkers[id];
+            }
+        });
+
+        // Update active coordinates display
+        const coordBox = document.getElementById('coord-display');
+        if (activeSelectedId) {
+            const selFeat = all.features.find(f => f.id === activeSelectedId);
+            if (selFeat) {
+                const meta = featureMeta[activeSelectedId] || { name: 'Selected Square' };
+                const ring = getFeatureRing(selFeat);
+                coordBox.textContent = '[Selected: ' + meta.name + ']\n' + JSON.stringify(ring, null, 2);
+            }
+        } else {
+            const summary = all.features.map(f => {
+                const meta = featureMeta[f.id] || { name: 'Square' };
+                const ring = getFeatureRing(f);
+                return `${meta.name}: ${ring.length - 1} vertices`;
+            }).join('\n');
+            coordBox.textContent = 'Total ' + all.features.length + ' Squares:\n' + summary;
+        }
+
+        // Update Raw Export Area
+        const formattedBlocks = exportedBlocks.map(b => JSON.stringify(b, null, 2)).join('\n\n');
+        const rawArea = document.getElementById('raw-export-area');
+        if (rawArea) {
+            rawArea.value = formattedBlocks;
+        }
+
+        // Persist automatically to localStorage
+        saveSquaresToStorage();
+    } catch (err) {
+        console.error('syncPlottedSquares error:', err);
+    }
+}
+
+// Load squares on page load (from localStorage or baseline)
+function loadSquaresState(forceBaseline = false) {
+    let squaresToLoad = null;
+    if (!forceBaseline) {
+        try {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    squaresToLoad = parsed;
+                }
+            }
+        } catch (e) {
+            console.warn('Storage read error:', e);
+        }
+    }
+
+    if (!squaresToLoad || squaresToLoad.length === 0) {
+        squaresToLoad = DEFAULT_CALIBRATED_SQUARES;
+    }
+
+    draw.deleteAll();
+    Object.keys(featureMeta).forEach(k => delete featureMeta[k]);
+
+    squaresToLoad.forEach((sq, idx) => {
+        const fid = 'field_' + (sq.id || (Date.now() + '_' + idx));
+        featureMeta[fid] = { name: sq.name };
+
+        // Normalize ring to a clean array of points
+        let ring = sq.polygon;
+        if (!ring && sq.corners) {
+            ring = [
+                sq.corners.topLeft,
+                sq.corners.topRight,
+                sq.corners.bottomRight,
+                sq.corners.bottomLeft,
+                sq.corners.topLeft
+            ];
+        }
+        if (Array.isArray(ring[0]) && Array.isArray(ring[0][0])) {
+            ring = ring[0];
+        }
+        // Ensure closed ring
+        if (ring.length >= 4) {
+            const first = ring[0];
+            const last = ring[ring.length - 1];
+            if (first[0] !== last[0] || first[1] !== last[1]) {
+                ring.push([first[0], first[1]]);
+            }
+        }
+
+        draw.add({
+            type: 'Feature',
+            id: fid,
+            properties: { name: sq.name },
+            geometry: {
+                type: 'Polygon',
+                coordinates: [ring]
+            }
+        });
+    });
+
+    syncPlottedSquares();
+    console.log(`[PlotDrawer] Successfully loaded ${squaresToLoad.length} squares.`);
+}
+
+map.on('load', async () => {
+    // Road Network Lines
+    try {
+        const roadsRes = await fetch('./roads.json');
+        const roadsData = await roadsRes.json();
+        map.addSource('roads-source', { type: 'geojson', data: roadsData });
+        map.addLayer({
+            id: 'roads-casing',
+            type: 'line',
+            source: 'roads-source',
+            paint: { 'line-color': '#020617', 'line-width': 4.0, 'line-opacity': 0.7 }
+        });
+        map.addLayer({
+            id: 'roads-line',
+            type: 'line',
+            source: 'roads-source',
+            paint: { 'line-color': '#38bdf8', 'line-width': 2.0, 'line-opacity': 0.85 }
+        });
+    } catch(e) { console.warn('Roads load error:', e); }
+
+    // Load saved or baseline squares
+    loadSquaresState();
+});
+
+// Update name input when preset dropdown changes
+window.onPresetSelectChange = function(sel) {
+    const input = document.getElementById('box-name-input');
+    if (sel.value === 'Custom') {
+        input.value = '';
+        input.focus();
+    } else {
+        input.value = sel.value;
+    }
+};
+
+map.on('draw.create', (e) => {
+    if (e.features && e.features.length > 0) {
+        const feat = e.features[0];
+        if (!featureMeta[feat.id]) {
+            const nameInput = document.getElementById('box-name-input');
+            const name = (nameInput && nameInput.value.trim()) ? nameInput.value.trim() : 'Plotted Field';
+            featureMeta[feat.id] = { name: name };
+        }
+    }
+    syncPlottedSquares();
+});
+map.on('draw.update', syncPlottedSquares);
+map.on('draw.delete', syncPlottedSquares);
+map.on('draw.selectionchange', syncPlottedSquares);
+
+// Drop a new 4-corner square onto the screen
+window.dropSquareBox = function() {
+    const nameInput = document.getElementById('box-name-input');
+    const name = (nameInput && nameInput.value.trim()) ? nameInput.value.trim() : 'Plotted Square';
+    
+    const center = map.getCenter();
+    const dLng = 0.00035;
+    const dLat = 0.00020;
+
+    const all = draw.getAll();
+    const offsetCount = (all.features ? all.features.length : 0);
+    const offsetX = (offsetCount % 3 - 1) * 0.0001;
+    const offsetY = (Math.floor(offsetCount / 3) % 3 - 1) * 0.0001;
+
+    const featureId = 'field_' + Date.now();
+    featureMeta[featureId] = { name: name };
+
+    const ids = draw.add({
+        type: 'Feature',
+        id: featureId,
+        properties: { name: name },
+        geometry: {
+            type: 'Polygon',
+            coordinates: [[
+                [center.lng - dLng + offsetX, center.lat + dLat + offsetY],
+                [center.lng + dLng + offsetX, center.lat + dLat + offsetY],
+                [center.lng + dLng + offsetX, center.lat - dLat + offsetY],
+                [center.lng - dLng + offsetX, center.lat - dLat + offsetY],
+                [center.lng - dLng + offsetX, center.lat + dLat + offsetY]
+            ]]
+        }
+    });
+
+    if (ids && ids.length > 0) {
+        draw.changeMode('direct_select', { featureId: ids[0] });
+    }
+    syncPlottedSquares();
+    showToast(`➕ Placed new square: ${name}`, '#0284c7');
+};
+
+window.startDrawPolygon = function() {
+    draw.changeMode('draw_polygon');
+    showToast('✏️ Click 4 points on the map to draw polygon', '#0284c7');
+};
+
+window.selectSquare = function(id) {
+    draw.changeMode('direct_select', { featureId: id });
+    const all = draw.getAll();
+    const feat = all.features.find(f => f.id === id);
+    if (feat) {
+        const ring = getFeatureRing(feat);
+        const centroid = getCentroid(ring);
+        map.panTo(centroid, { duration: 400 });
+    }
+    syncPlottedSquares();
+};
+
+window.deleteSpecificSquare = function(id) {
+    draw.delete(id);
+    delete featureMeta[id];
+    if (mapMarkers[id]) {
+        mapMarkers[id].remove();
+        delete mapMarkers[id];
+    }
+    syncPlottedSquares();
+    showToast('🗑️ Square deleted', '#ef4444');
+};
+
+window.deleteSelectedSquare = function() {
+    draw.trash();
+    syncPlottedSquares();
+    showToast('🗑️ Selected square removed', '#ef4444');
+};
+
+window.clearAllSquares = function() {
+    if (confirm('Clear all plotted squares from canvas?')) {
+        draw.deleteAll();
+        Object.keys(featureMeta).forEach(k => delete featureMeta[k]);
+        Object.keys(mapMarkers).forEach(k => {
+            mapMarkers[k].remove();
+            delete mapMarkers[k];
+        });
+        syncPlottedSquares();
+        showToast('⚠️ All squares cleared', '#ef4444');
+    }
+};
+
+window.resetToBaseline45Plots = function() {
+    if (confirm('Reset canvas back to the 45 calibrated ground-truth plots?')) {
+        localStorage.removeItem(STORAGE_KEY);
+        loadSquaresState(true);
+        showToast('🔄 Restored 45 calibrated baseline plots', '#10b981');
+    }
+};
+
+// Bulletproof Copy to Clipboard
+function copyTextSafely(text) {
+    let success = false;
+    try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        ta.style.top = '-9999px';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        success = document.execCommand('copy');
+        document.body.removeChild(ta);
+    } catch (e) {
+        console.warn('execCommand copy failed:', e);
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).catch(() => {});
+    }
+    return success;
+}
+
+// Copy ALL Plotted Squares
+window.copyAllSquaresGeoJSON = function() {
+    const data = draw.getAll();
+    if (!data.features || data.features.length === 0) {
+        showToast('⚠️ No squares to copy', '#ef4444');
+        return;
+    }
+
+    const exportedBlocks = data.features.map(feat => {
+        const meta = featureMeta[feat.id] || { name: 'Field' };
+        const ring = getFeatureRing(feat);
+        return {
+            name: meta.name,
+            corners: {
+                topLeft: ring[0] || [0,0],
+                topRight: ring[1] || [0,0],
+                bottomRight: ring[2] || [0,0],
+                bottomLeft: ring[3] || [0,0]
+            },
+            polygon: ring
+        };
+    });
+
+    const formattedBlocks = exportedBlocks.map(b => JSON.stringify(b, null, 2)).join('\\n\\n');
+    
+    // Update raw textarea
+    const rawArea = document.getElementById('raw-export-area');
+    if (rawArea) {
+        rawArea.value = formattedBlocks;
+        rawArea.select();
+    }
+
+    copyTextSafely(formattedBlocks);
+    showToast(`✅ Copied ALL ${exportedBlocks.length} Plotted Squares to Clipboard!`, '#059669');
+};
+
+// Copy Selected Square
+window.copySelectedSquare = function() {
+    const selectedIds = draw.getSelectedIds();
+    if (selectedIds.length === 0) {
+        showToast('⚠️ Click on a square first to select it', '#f59e0b');
+        return;
+    }
+    const id = selectedIds[0];
+    const all = draw.getAll();
+    const feat = all.features.find(f => f.id === id);
+    if (!feat) return;
+
+    const meta = featureMeta[id] || { name: 'Plotted Square' };
+    const ring = getFeatureRing(feat);
+    const block = {
+        name: meta.name,
+        corners: {
+            topLeft: ring[0] || [0,0],
+            topRight: ring[1] || [0,0],
+            bottomRight: ring[2] || [0,0],
+            bottomLeft: ring[3] || [0,0]
+        },
+        polygon: ring
+    };
+
+    const formatted = JSON.stringify(block, null, 2);
+    const rawArea = document.getElementById('raw-export-area');
+    if (rawArea) {
+        rawArea.value = formatted;
+        rawArea.select();
+    }
+
+    copyTextSafely(formatted);
+    showToast(`✅ Copied "${meta.name}" to Clipboard!`, '#059669');
+};
+
+// Base Layer Controls
+window.setBaseLayer = function(mode) {
+    const isDrone = (mode === 'drone');
+    document.getElementById('btn-layer-drone').classList.toggle('active', isDrone);
+    document.getElementById('btn-layer-google').classList.toggle('active', !isDrone);
+    if (map.getLayer('lares-drone-layer')) {
+        map.setLayoutProperty('lares-drone-layer', 'visibility', isDrone ? 'visible' : 'none');
+    }
+};
+
+window.setDroneOpacity = function(val) {
+    const opacity = parseFloat(val);
+    document.getElementById('drone-opacity-val').textContent = `${Math.round(opacity * 100)}%`;
+    if (map.getLayer('lares-drone-layer')) {
+        map.setPaintProperty('lares-drone-layer', 'raster-opacity', opacity);
+    }
+};
+
+window.toggleRoadLines = function(show) {
+    const vis = show ? 'visible' : 'none';
+    if (map.getLayer('roads-casing')) map.setLayoutProperty('roads-casing', 'visibility', vis);
+    if (map.getLayer('roads-line')) map.setLayoutProperty('roads-line', 'visibility', vis);
+};
+</script>
+
+</body>
+</html>

@@ -12,6 +12,8 @@ import {
     SECTION_PASTEL_COLORS
 } from './data/config.js';
 
+import { STATIONS, getActiveStationDefaultView, getStationIntroViews } from './data/stations.js';
+
 import {
     DA_LARES_OUTER_PERIMETER,
     LARES_MASK,
@@ -25,7 +27,7 @@ import {
     LARES_DRAWINGS,
     BUILDING_DIRECTORY,
     CUSTOM_3D_BUILDINGS
-} from './data/buildings.js?v=60';
+} from './data/buildings.js?v=72';
 
 import { state } from './data/state.js';
 
@@ -38,21 +40,48 @@ import {
     updateMarkerZoomState
 } from './markers.js';
 
+import {
+    detectGpuHardware,
+    getOptimalPixelRatio
+} from './performance.js';
+
 // Mapbox Map Instance
 mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
+const isInitialMobileDevice = (typeof window !== 'undefined' && (
+    window.innerWidth <= 768 ||
+    window.location.search.includes('mode=phone') ||
+    /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|Mobile/i.test(navigator.userAgent)
+));
+
+const activeStationId = state.currentStationId || 'lares';
+const activeStation = STATIONS[activeStationId] || STATIONS.lares;
+const introViews = getStationIntroViews(activeStationId);
+const initialCameraView = isInitialMobileDevice
+    ? getActiveStationDefaultView(activeStationId)
+    : introViews.start;
+
+const hardwareProfile = detectGpuHardware();
+const optimalRatio = getOptimalPixelRatio();
+
 export const map = new mapboxgl.Map({
     container: 'map',
     style: (state.currentMapStyleMode === 'mapbox')
         ? 'mapbox://styles/mapbox/standard'
         : 'mapbox://styles/mapbox/satellite-streets-v12',
-    center: INTRO_START_VIEW.center,
-    zoom: INTRO_START_VIEW.zoom,
-    pitch: INTRO_START_VIEW.pitch,
-    bearing: INTRO_START_VIEW.bearing,
-    antialias: true,
-    pixelRatio: Math.min(window.devicePixelRatio || 1, 1.5),
-    maxTileCacheSize: 80,
-    fadeDuration: 100,
+    center: initialCameraView.center,
+    zoom: initialCameraView.zoom,
+    pitch: initialCameraView.pitch,
+    bearing: initialCameraView.bearing,
+    minZoom: 10.0,
+    maxZoom: 22.5,
+    maxBounds: activeStation.bounds || [
+        [120.40, 13.30], // Southwest bounds (CALABARZON Region IV-A)
+        [122.80, 15.00]  // Northeast bounds
+    ],
+    antialias: !hardwareProfile.isLowEnd && !isInitialMobileDevice, // Disable expensive MSAA on low-end Intel HD Graphics & Mobile
+    pixelRatio: optimalRatio,
+    maxTileCacheSize: (hardwareProfile.isLowEnd || isInitialMobileDevice) ? 40 : 80,
+    fadeDuration: isInitialMobileDevice ? 0 : 50,
     refreshExpiredTiles: false
 });
 state.map = map;
@@ -118,6 +147,50 @@ export function setupLayers() {
             'source': 'google-satellite',
             'layout': {
                 'visibility': (state.currentMapStyleMode === 'google') ? 'visible' : 'none'
+            }
+        });
+    }
+
+    // 2b. High-Resolution DA-LARES Drone Orthomosaic (Offline MBTiles, 100% ground-truth imagery)
+    if (!map.getSource('lares-drone-source')) {
+        map.addSource('lares-drone-source', {
+            'type': 'raster',
+            'tiles': [
+                '/api/tiles/{z}/{x}/{y}.png'
+            ],
+            'tileSize': 256,
+            'minzoom': 14,
+            'maxzoom': 24,
+            'bounds': [121.165052, 13.956537, 121.173221, 13.963068]
+        });
+    }
+    if (!map.getLayer('lares-drone-layer')) {
+        map.addLayer({
+            'id': 'lares-drone-layer',
+            'type': 'raster',
+            'source': 'lares-drone-source',
+            'layout': {
+                'visibility': (state.currentMapStyleMode === 'google' && (!state.currentStationId || state.currentStationId === 'lares')) ? 'visible' : 'none'
+            },
+            'paint': {
+                'raster-opacity': 1.0,
+                'raster-fade-duration': 0
+            }
+        });
+    }
+
+    // 2c. Google Satellite Comparison Overlay Layer (Adjustable opacity on top of drone layer for calibration)
+    if (!map.getLayer('google-satellite-overlay-layer')) {
+        map.addLayer({
+            'id': 'google-satellite-overlay-layer',
+            'type': 'raster',
+            'source': 'google-satellite',
+            'layout': {
+                'visibility': (state.gmapsOverlayOpacity > 0 && state.currentMapStyleMode === 'google') ? 'visible' : 'none'
+            },
+            'paint': {
+                'raster-opacity': state.gmapsOverlayOpacity || 0.0,
+                'raster-fade-duration': 0
             }
         });
     }
@@ -204,7 +277,7 @@ export function setupLayers() {
     if (!map.getSource('lares-roads-source')) {
         map.addSource('lares-roads-source', {
             type: 'geojson',
-            data: 'roads.json'
+            data: 'roads.json?v=72'
         });
     }
     if (!map.getLayer('lares-roads-casing')) {
@@ -269,7 +342,7 @@ export function setupLayers() {
             'type': 'fill',
             'source': 'lares-mask-source',
             'layout': {
-                'visibility': 'visible'
+                'visibility': (!state.currentStationId || state.currentStationId === 'lares') ? 'visible' : 'none'
             },
             'paint': {
                 'fill-color': (state.currentMapStyleMode === 'mapbox') ? '#060a12' : '#0b1121',
@@ -279,6 +352,13 @@ export function setupLayers() {
     }
 
     // 6. Custom Traced DA-LARES 3D Buildings (33 Facilities)
+    if (LARES_DRAWINGS && LARES_DRAWINGS.features && CUSTOM_3D_BUILDINGS) {
+        LARES_DRAWINGS.features.forEach(f => {
+            if (f.properties && CUSTOM_3D_BUILDINGS[f.properties.id]) {
+                f.properties.has_3d_model = true;
+            }
+        });
+    }
     if (!map.getSource('lares-drawings-source')) {
         map.addSource('lares-drawings-source', {
             type: 'geojson',
@@ -325,19 +405,48 @@ export function setupLayers() {
     // 7. Custom Realistic 3D Building Models (MIS-RAFIS, etc.)
     setup3DBuildingModelsLayer(map, false);
 
-    // 8. Main Entrance Arrow Marker
-    createEntranceArrowMarker();
+    // If active station is NOT lares, immediately ensure LARES models and layers are hidden
+    if (state.currentStationId && state.currentStationId !== 'lares') {
+        const laresLayers = [
+            '3d-buildings-models-layer',
+            '3d-buildings-translucent-layer',
+            '3d-drawings',
+            '3d-drawings-roofs',
+            'lares-mask-layer',
+            'lares-boundary-line',
+            'lares-boundary-fill',
+            'lares-boundary-glow',
+            'lares-compound-border-line',
+            'lares-roads-casing',
+            'lares-roads-network'
+        ];
+        laresLayers.forEach(id => {
+            if (map.getLayer(id)) {
+                try { map.setLayoutProperty(id, 'visibility', 'none'); } catch (e) { }
+            }
+        });
+        if (state.currentStationId === 'qares' && typeof window.loadQARESData === 'function') {
+            window.loadQARESData();
+        }
+    }
+
+    // 8. Main Entrance Arrow Marker (LARES only)
+    if (state.currentStationId === 'lares') {
+        createEntranceArrowMarker();
+    }
 
     // 9. Floating Section Badges — Mapbox view only (never in Google Maps view)
     removeSectionBadges();
 
-    // 10. Building Name Markers
+    // 10. Building Name Markers (LARES only)
     removeMarkers();
-    createMarkers();
+    if (state.currentStationId === 'lares') {
+        createMarkers();
+    }
 
     // Strip unused Mapbox base style layers to keep style graph ultra-lean (~110 layers removed)
     // We provide our own Google satellite tiles + custom layers, so nothing from the base is needed.
-    const customPrefixes = ['sec-', 'lares-', 'route-', 'google-', '3d-', 'gps-', 'phone-'];
+    const customPrefixes = ['sec-', 'lares-', 'qares-', 'route-', 'google-', 'drone-', '3d-', 'gps-', 'phone-', 'plots-'];
     const currentLayers = map.getStyle().layers || [];
     currentLayers.forEach(layer => {
         const isCustom = customPrefixes.some(p => layer.id.startsWith(p));
@@ -374,11 +483,21 @@ export function setupMapboxStandardLayers() {
     // Synchronize initial sky and atmospheric lighting with current time of day
     syncLightingWithTime();
 
+    if (state.currentStationId === 'qares') {
+        if (typeof window.loadQARESData === 'function') {
+            window.loadQARESData();
+        }
+        removeSectionBadges();
+        removeMarkers();
+        setMapStyleMode(state.currentMapStyleMode);
+        return;
+    }
+
     // 2. Stylized Internal Road Network (roads.json) — slot 'middle'
     if (!map.getSource('lares-roads-source')) {
         map.addSource('lares-roads-source', {
             type: 'geojson',
-            data: 'roads.json'
+            data: 'roads.json?v=72'
         });
     }
     if (!map.getLayer('lares-roads-casing')) {
@@ -391,7 +510,7 @@ export function setupMapboxStandardLayers() {
             layout: {
                 'line-cap': 'round',
                 'line-join': 'round',
-                'visibility': 'visible'
+                'visibility': (state.currentMapStyleMode === 'mapbox') ? 'visible' : 'none'
             },
             paint: {
                 'line-color': '#94a3b8',
@@ -416,7 +535,7 @@ export function setupMapboxStandardLayers() {
             layout: {
                 'line-cap': 'round',
                 'line-join': 'round',
-                'visibility': 'visible'
+                'visibility': (state.currentMapStyleMode === 'mapbox') ? 'visible' : 'none'
             },
             paint: {
                 'line-color': '#f8fafc',
@@ -483,6 +602,13 @@ export function setupMapboxStandardLayers() {
     }
 
     // 5. Custom DA-LARES 3D Buildings (33 traced footprints) — slot 'middle'
+    if (LARES_DRAWINGS && LARES_DRAWINGS.features && CUSTOM_3D_BUILDINGS) {
+        LARES_DRAWINGS.features.forEach(f => {
+            if (f.properties && CUSTOM_3D_BUILDINGS[f.properties.id]) {
+                f.properties.has_3d_model = true;
+            }
+        });
+    }
     if (!map.getSource('lares-drawings-source')) {
         map.addSource('lares-drawings-source', {
             type: 'geojson',
@@ -535,9 +661,9 @@ export function setupMapboxStandardLayers() {
     try {
         const TREE_MODELS = {
             'tree_mango': 'models/tree_mango.glb',
-            'tree_palm':  'models/tree_palm.glb',
-            'tree_pine':  'models/tree_pine.glb',
-            'tree_bush':  'models/tree_bush.glb'
+            'tree_palm': 'models/tree_palm.glb',
+            'tree_pine': 'models/tree_pine.glb',
+            'tree_bush': 'models/tree_bush.glb'
         };
         Object.keys(TREE_MODELS).forEach(k => {
             if (!map.hasModel(k)) map.addModel(k, TREE_MODELS[k]);
@@ -546,7 +672,7 @@ export function setupMapboxStandardLayers() {
         if (!map.getSource('lares-3d-trees-source')) {
             map.addSource('lares-3d-trees-source', {
                 type: 'geojson',
-                data: 'trees.json'
+                data: 'trees.json?v=72'
             });
         }
 
@@ -572,7 +698,7 @@ export function setupMapboxStandardLayers() {
                         'case',
                         ['==', ['get', 'scale'], 0.75], [0.75, 0.75, 0.75],
                         ['==', ['get', 'scale'], 1.35], [1.35, 1.35, 1.35],
-                        ['==', ['get', 'scale'], 1.7],  [1.7, 1.7, 1.7],
+                        ['==', ['get', 'scale'], 1.7], [1.7, 1.7, 1.7],
                         [1.0, 1.0, 1.0]
                     ],
                     'model-rotation': [0, 0, ['coalesce', ['get', 'rotation'], 0]],
@@ -821,7 +947,86 @@ let isIntroAnimating = false;
 export function stopIntroAnimation() {
     isIntroAnimating = false;
     state.isIntroAnimating = false;
-    try { map.stop(); } catch (e) {}
+    try { map.stop(); } catch (e) { }
+}
+
+export function playIntroAnimation(onComplete) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const isMobileMode = (typeof window !== 'undefined' && (
+        window.innerWidth <= 768 ||
+        urlParams.get('mode') === 'phone' ||
+        /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|Mobile/i.test(navigator.userAgent)
+    ));
+
+    if (urlParams.has('dest') || isMobileMode) {
+        isIntroAnimating = false;
+        state.isIntroAnimating = false;
+        map.jumpTo(getActiveStationDefaultView());
+        if (typeof onComplete === 'function') onComplete();
+        return;
+    }
+
+    // Cancel any in-flight camera movements
+    stopIntroAnimation();
+
+    const stationId = state.currentStationId || 'lares';
+    const introViews = getStationIntroViews(stationId);
+
+    // 1. Position camera at station's start view (top-down 2D view zoomed out: pitch 0, bearing 0)
+    map.jumpTo({
+        center: introViews.start.center,
+        zoom: introViews.start.zoom,
+        pitch: introViews.start.pitch,
+        bearing: introViews.start.bearing
+    });
+
+    isIntroAnimating = true;
+    state.isIntroAnimating = true;
+
+    // Temporarily relax bounds during the cinematic fly-in so there is zero camera jitter or boundary snapping
+    try {
+        map.setMaxBounds([
+            [120.40, 13.30],
+            [122.80, 15.00]
+        ]);
+    } catch (e) { }
+
+    // 2. Slowly zooms in until it gets to the 2D top-down view directly above You Are Here pin
+    map.flyTo({
+        center: introViews.target2D.center,
+        zoom: introViews.target2D.zoom,
+        pitch: introViews.target2D.pitch,
+        bearing: introViews.target2D.bearing,
+        duration: 3600,
+        speed: 0.65,
+        curve: 1.0,
+        essential: true
+    });
+
+    map.once('moveend', () => {
+        if (!isIntroAnimating) return;
+        setTimeout(() => {
+            if (!isIntroAnimating) return;
+            // 3. Then after reaching this zoom, transitions to the station's signature 3D perspective angle
+            map.flyTo({
+                center: introViews.final3D.center,
+                zoom: introViews.final3D.zoom,
+                pitch: introViews.final3D.pitch,
+                bearing: introViews.final3D.bearing,
+                duration: 2200,
+                essential: true
+            });
+            map.once('moveend', () => {
+                isIntroAnimating = false;
+                state.isIntroAnimating = false;
+                const activeBounds = introViews.bounds || (STATIONS[stationId] && STATIONS[stationId].bounds);
+                if (activeBounds) {
+                    try { map.setMaxBounds(activeBounds); } catch (e) { }
+                }
+                if (typeof onComplete === 'function') onComplete();
+            });
+        }, 450);
+    });
 }
 
 export function revealMap() {
@@ -833,46 +1038,7 @@ export function revealMap() {
     setTimeout(() => document.getElementById('sidebar').classList.add('visible'), 500);
     setTimeout(() => document.getElementById('coords-badge').classList.add('visible'), 800);
 
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('dest')) {
-        isIntroAnimating = false;
-        state.isIntroAnimating = false;
-        return;
-    }
-
-    // Startup animation sequence:
-    // 1. Starts top-down 2D view zoomed out (zoom: 17.2, pitch: 0, bearing: 0)
-    // 2. Slowly zooms in until it gets to the 2D top-down view in the picture (Zoom 19.6)
-    // 3. Then after reaching this zoom, transitions to the current 3D perspective angle (pitch: 52, bearing: 165)
-    isIntroAnimating = true;
-    map.flyTo({
-        center: INTRO_TARGET_2D_VIEW.center,
-        zoom: INTRO_TARGET_2D_VIEW.zoom,
-        pitch: INTRO_TARGET_2D_VIEW.pitch,
-        bearing: INTRO_TARGET_2D_VIEW.bearing,
-        duration: 3600,
-        speed: 0.65,
-        curve: 1.0,
-        essential: true
-    });
-
-    map.once('moveend', () => {
-        if (!isIntroAnimating) return;
-        setTimeout(() => {
-            if (!isIntroAnimating) return;
-            map.flyTo({
-                center: DEFAULT_MAP_VIEW.center,
-                zoom: DEFAULT_MAP_VIEW.zoom,
-                pitch: DEFAULT_MAP_VIEW.pitch,
-                bearing: DEFAULT_MAP_VIEW.bearing,
-                duration: 2200,
-                essential: true
-            });
-            map.once('moveend', () => {
-                isIntroAnimating = false;
-            });
-        }, 450);
-    });
+    playIntroAnimation();
 }
 
 // Allow any user interaction to stop the intro animation smoothly
@@ -880,7 +1046,13 @@ export function revealMap() {
     map.on(evt, (e) => {
         if (e && e.originalEvent && isIntroAnimating) {
             isIntroAnimating = false;
+            state.isIntroAnimating = false;
             map.stop();
+            const stationId = state.currentStationId || 'lares';
+            const station = STATIONS[stationId] || STATIONS.lares;
+            if (station && station.bounds) {
+                try { map.setMaxBounds(station.bounds); } catch (err) { }
+            }
         }
     });
 });
@@ -891,7 +1063,7 @@ class OrbitControl {
         this._map = map;
         this._container = document.createElement('div');
         this._container.className = 'mapboxgl-ctrl mapboxgl-ctrl-group ctrl-orbit-group';
-        
+
         const btn = document.createElement('button');
         btn.className = 'mapboxgl-ctrl-icon ctrl-orbit-btn';
         btn.type = 'button';
@@ -917,13 +1089,45 @@ class OrbitControl {
     }
 }
 
+// Height Limit & Metric Scale Control (Includes 75m threshold and limits maximum vertical display to 75m)
+class HeightLimitScaleControl extends mapboxgl.ScaleControl {
+    constructor(options = {}) {
+        super({ maxWidth: 120, unit: 'metric', ...options });
+    }
+
+    _setScale(maxWidth, maxDistance, unit) {
+        if (unit === 'meter') {
+            let distance = 1;
+            const thresholds = [75, 50, 20, 10, 5, 2, 1];
+            for (const t of thresholds) {
+                if (maxDistance >= t) {
+                    distance = t;
+                    break;
+                }
+            }
+            const ratio = distance / maxDistance;
+            this._container.innerHTML = `${distance} m`;
+            this._container.style.width = `${Math.min(maxWidth, Math.round(maxWidth * ratio))}px`;
+            return;
+        }
+        super._setScale(maxWidth, maxDistance, unit);
+    }
+}
+
 map.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), 'top-right');
 map.addControl(new OrbitControl(), 'top-right');
-map.addControl(new mapboxgl.ScaleControl({ maxWidth: 120 }), 'bottom-right');
+map.addControl(new HeightLimitScaleControl(), 'bottom-right');
 map.addControl(new mapboxgl.FullscreenControl({ container: document.documentElement }), 'top-right');
 
 // Strategy 1: full load
-map.on('load', () => setTimeout(revealMap, 300));
+map.on('load', () => {
+    const isMobileMode = (typeof window !== 'undefined' && (
+        window.innerWidth <= 768 ||
+        window.location.search.includes('mode=phone') ||
+        /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|Mobile/i.test(navigator.userAgent)
+    ));
+    setTimeout(revealMap, isMobileMode ? 750 : 300);
+});
 // Strategy 2: style load fallback
 map.on('style.load', () => setTimeout(() => { if (!mapReady) revealMap(); }, 5000));
 // Strategy 3: hard timeout
@@ -982,18 +1186,18 @@ export function setLighting(preset) {
     const config = SKY_PRESETS[preset] || SKY_PRESETS['day'];
     currentSkyPreset = preset;
 
-    // 1. If in Mapbox Standard 3D mode, update basemap lightPreset and clear external fog pass
+    // 1. If in Mapbox Standard 3D mode, update basemap lightPreset
     if (state.currentMapStyleMode === 'mapbox') {
         try {
             map.setConfigProperty('basemap', 'lightPreset', config.lightPreset);
-            map.setFog(null);
-        } catch (e) { }
-    } else {
-        // 2. Set atmospheric sky/fog for Google Satellite mode
-        try {
-            map.setFog(config.fog);
         } catch (e) { }
     }
+
+    // 2. Set atmospheric sky/fog for ALL modes (both Mapbox Standard 3D & Aerial Drone View)
+    // Eliminates morning pitch blackness above horizon and ensures morning daylight, dawn, dusk, and night skies render vibrantly
+    try {
+        map.setFog(config.fog);
+    } catch (e) { }
 }
 
 export function syncLightingWithTime() {
@@ -1025,6 +1229,8 @@ export function toggleBuildings(btn) {
         if (map.getLayer('3d-buildings-mapbox')) {
             map.setLayoutProperty('3d-buildings-mapbox', 'visibility', (state.buildingsVisible && state.currentMapStyleMode === 'mapbox') ? 'visible' : 'none');
         }
+        if (map.getLayer('qares-footprints-3d')) map.setLayoutProperty('qares-footprints-3d', 'visibility', vis);
+        if (map.getLayer('qares-footprints-roofs')) map.setLayoutProperty('qares-footprints-roofs', 'visibility', vis);
     } catch (e) { }
     safeResetIdle();
 }
@@ -1109,6 +1315,9 @@ export function selectMapStyle(mode) {
             pitch: currentPitch,
             bearing: currentBearing
         });
+        if (state.currentStationId === 'qares' && typeof window.loadQARESData === 'function') {
+            window.loadQARESData();
+        }
         setMapStyleMode(mode);
     });
 
@@ -1170,17 +1379,42 @@ export function setMapStyleMode(mode) {
 
     removeSectionBadges();
     try {
+        if (map.getLayer('google-satellite-layer')) {
+            map.setLayoutProperty('google-satellite-layer', 'visibility', isMapbox ? 'none' : 'visible');
+        }
+        if (map.getLayer('lares-drone-layer')) {
+            map.setLayoutProperty('lares-drone-layer', 'visibility', (!isMapbox && (!state.currentStationId || state.currentStationId === 'lares')) ? 'visible' : 'none');
+        }
+        if (map.getLayer('qares-ortho-layer')) {
+            map.setLayoutProperty('qares-ortho-layer', 'visibility', (!isMapbox && state.currentStationId === 'qares') ? 'visible' : 'none');
+        }
+        if (map.getLayer('google-satellite-overlay-layer')) {
+            map.setLayoutProperty('google-satellite-overlay-layer', 'visibility', (!isMapbox && state.gmapsOverlayOpacity > 0) ? 'visible' : 'none');
+        }
+        if (map.getLayer('lares-mask-layer')) {
+            map.setPaintProperty('lares-mask-layer', 'fill-color', isMapbox ? '#060a12' : '#0b1121');
+        }
         if (map.getLayer('3d-trees-layer')) {
             map.setLayoutProperty('3d-trees-layer', 'visibility', (isMapbox && state.treesVisible) ? 'visible' : 'none');
         }
         if (map.getLayer('3d-trees')) {
             map.setLayoutProperty('3d-trees', 'visibility', 'none');
         }
+        const showRoads = isMapbox && (state.currentStationId === 'lares' || !state.currentStationId);
+        if (map.getLayer('lares-roads-casing')) {
+            map.setLayoutProperty('lares-roads-casing', 'visibility', showRoads ? 'visible' : 'none');
+        }
+        if (map.getLayer('lares-roads-fill')) {
+            map.setLayoutProperty('lares-roads-fill', 'visibility', showRoads ? 'visible' : 'none');
+        }
     } catch (e) { }
     // Maintain atmospheric sky across mode toggles
     setLighting(currentSkyPreset);
 
     updateMarkerZoomState();
+    if (typeof window.syncDroneOffsetOnStyleChange === 'function') {
+        window.syncDroneOffsetOnStyleChange();
+    }
     safeResetIdle();
 }
 
@@ -1198,6 +1432,8 @@ if (typeof window !== 'undefined') {
     window.closeMapLayerModal = closeMapLayerModal;
     window.closeMapLayerFlyout = closeMapLayerFlyout;
     window.selectMapStyle = selectMapStyle;
+    window.setLighting = setLighting;
+    window.syncLightingWithTime = syncLightingWithTime;
 }
 
 export function toggleBoundary(btn) {
@@ -1218,9 +1454,16 @@ export function toggleMarkers(btn) {
 
 export function flyToView(n) {
     isIntroAnimating = false;
+    if (state.currentStationId === 'qares') {
+        const defaultView = getActiveStationDefaultView('qares');
+        map.flyTo({ center: defaultView.center, zoom: defaultView.zoom, pitch: defaultView.pitch, bearing: defaultView.bearing, duration: 1500, essential: true });
+        return;
+    }
     const v = VIEWS[n]; if (!v) return;
     map.flyTo({ center: v.center, zoom: v.zoom, pitch: v.pitch, bearing: v.bearing, duration: v.duration, essential: true, curve: 1.2 });
 }
 
 window.stopIntroAnimation = stopIntroAnimation;
+window.playIntroAnimation = playIntroAnimation;
+window.revealMap = revealMap;
 

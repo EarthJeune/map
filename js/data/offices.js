@@ -63,6 +63,9 @@ export const BUILDING_OFFICES = {
         'FMR',
         'MIS Data Center',
         'BAC Extension Office'
+    ],
+    'rnd_building': [
+        'Office of the Chief - Research Division'
     ]
 };
 

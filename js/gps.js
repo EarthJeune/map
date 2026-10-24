@@ -1,29 +1,30 @@
 // DA-LARES Wayfinding — Live Mobile GPS Engine & Sensor Fusion Optimization Module
 // High-precision road snapping, Kalman-style jitter filtering, haptics, and compass sync
 
-import { BUILDING_DIRECTORY } from './data/buildings.js?v=60';
+import { BUILDING_DIRECTORY } from './data/buildings.js?v=72';
 import { state } from './data/state.js';
 import { map, stopIntroAnimation } from './map-setup.js';
 import { stopOrbit } from './idle.js';
-import { 
-    computeRouteFromKiosk, 
-    drawRoute, 
-    clearRoute, 
-    findShortestPath 
+import {
+    computeRouteFromKiosk,
+    drawRoute,
+    clearRoute,
+    findShortestPath
 } from './routing.js';
 import { buildSteps, updateLiveNavigation } from './steps.js';
-import { 
-    showMobileToast, 
-    getResponsiveMapPadding, 
-    setPhoneSheetView, 
-    setPhoneSheetSnap 
+import {
+    showMobileToast,
+    getResponsiveMapPadding,
+    setPhoneSheetView,
+    setPhoneSheetSnap
 } from './phone-ui.js';
-import { 
-    updatePhoneRouteUI, 
-    showPhoneArrival, 
-    startPhoneAnimatedRoute 
+import {
+    updatePhoneRouteUI,
+    showPhoneArrival,
+    startPhoneAnimatedRoute
 } from './phone-nav.js';
-import { updateOcclusion, resetOcclusion } from './occlusion.js';
+import { updateOcclusion, resetOcclusion } from './occlusion.js?v=81';
+import { isPhoneMode, isKioskMode } from './mode.js';
 
 // ============================================================
 // SENSOR FUSION & JITTER FILTER ENGINE
@@ -162,13 +163,13 @@ let activeTouchCount = 0;
 // Haptic feedback helpers
 export function triggerHapticArrival() {
     if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
-        try { navigator.vibrate([180, 80, 180]); } catch (e) {}
+        try { navigator.vibrate([180, 80, 180]); } catch (e) { }
     }
 }
 
 export function triggerHapticRecalculate() {
     if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
-        try { navigator.vibrate(60); } catch (e) {}
+        try { navigator.vibrate(60); } catch (e) { }
     }
 }
 
@@ -196,7 +197,7 @@ export async function releaseWakeLock() {
             await screenWakeLock.release();
             screenWakeLock = null;
         }
-    } catch (err) {}
+    } catch (err) { }
 }
 
 if (typeof document !== 'undefined') {
@@ -319,7 +320,7 @@ export function requestDeviceOrientationPermission(callback) {
 export function updateUserGPSMarker(lng, lat) {
     if (!state.userGPSMarker) {
         const el = createUserGPSMarkerElement();
-        state.userGPSMarker = new mapboxgl.Marker({ 
+        state.userGPSMarker = new mapboxgl.Marker({
             element: el,
             anchor: 'center',
             rotationAlignment: 'map',
@@ -335,6 +336,13 @@ export function updateUserGPSMarker(lng, lat) {
 }
 
 export function requestUserInitialLocation() {
+    // Strictly ONLY for mobile smartphones — NEVER on PC, Laptop, or Kiosk displays
+    const isMobileUA = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|Mobile/i.test(navigator.userAgent);
+    const hasPhoneParam = (new URLSearchParams(window.location.search).get('mode') || '').toLowerCase() === 'phone';
+    if (isKioskMode() || (!isMobileUA && !hasPhoneParam)) {
+        return;
+    }
+
     if (!navigator.geolocation) {
         showMobileToast('📍 GPS not supported on this browser.', 3000);
         return;
@@ -396,7 +404,7 @@ export function startPhoneLiveGPS(buildingId) {
     stopOrbit();
     if (typeof stopIntroAnimation === 'function') stopIntroAnimation();
     if (typeof window.stopOrbit === 'function') window.stopOrbit();
-    try { map.stop(); } catch (e) {}
+    try { map.stop(); } catch (e) { }
 
     // Stop animated walker simulation if running
     if (state.walkAnimFrame) cancelAnimationFrame(state.walkAnimFrame);
@@ -772,7 +780,7 @@ export function computeAndDrawRouteFromGPS(startCoord, buildingId) {
     drawRoute(routeCoords, { animated: false });
 
     stopOrbit();
-    try { map.stop(); } catch (e) {}
+    try { map.stop(); } catch (e) { }
 
     // Focus camera directly on the blue ping (startCoord)
     map.flyTo({
@@ -823,7 +831,7 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
                 const bearing = turf.bearing(turf.point(state.lastKnownGPSCoords), userPt);
                 applyUserHeading((bearing + 360) % 360);
             }
-        } catch (e) {}
+        } catch (e) { }
     }
 
     state.lastKnownGPSCoords = userCoord;
@@ -832,7 +840,7 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
     const lerpDuration = filterResult.isStationary ? 300 : Math.min(600, Math.max(350, 1000 / (filterResult.speed + 1)));
     if (!state.userGPSMarker) {
         const el = createUserGPSMarkerElement();
-        state.userGPSMarker = new mapboxgl.Marker({ 
+        state.userGPSMarker = new mapboxgl.Marker({
             element: el,
             anchor: 'center',
             rotationAlignment: 'map',
@@ -857,7 +865,7 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
             if (map.getSource('gps-connector-source')) {
                 map.getSource('gps-connector-source').setData({ type: 'FeatureCollection', features: [] });
             }
-        } catch (err) {}
+        } catch (err) { }
     }
 
     // 5. Route Generation / Reset from User GPS
@@ -957,7 +965,7 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
                     if (map.getSource('route-traveled-source')) {
                         map.getSource('route-traveled-source').setData(traveledSlice);
                     }
-                } catch (e) {}
+                } catch (e) { }
 
                 // Dynamic subtle dashed connector line if user drifts 3.5m - 8.5m into trees/sidewalk
                 if (distFromRoute >= 3.5 && map.getSource('gps-connector-source')) {
@@ -1076,15 +1084,15 @@ export function dismissGPSPermissionCard(startRoute = false) {
 export function startTapToPlaceLocation(buildingId) {
     dismissGPSPermissionCard();
     showMobileToast('📍 Tap anywhere on the campus map to set your starting location!', 5000);
-    
+
     const onMapTap = (e) => {
         map.off('click', onMapTap);
         const tappedCoord = [e.lngLat.lng, e.lngLat.lat];
         state.lastKnownGPSCoords = tappedCoord;
-        
+
         if (!state.userGPSMarker) {
             const el = createUserGPSMarkerElement();
-            state.userGPSMarker = new mapboxgl.Marker({ 
+            state.userGPSMarker = new mapboxgl.Marker({
                 element: el,
                 anchor: 'center',
                 rotationAlignment: 'map',
@@ -1097,11 +1105,11 @@ export function startTapToPlaceLocation(buildingId) {
             }
             state.userGPSMarker.setLngLat(tappedCoord);
         }
-        
+
         computeAndDrawRouteFromGPS(tappedCoord, buildingId || state.selectedBuildingId);
         showMobileToast('📍 Route started from your selected point!', 3000);
     };
-    
+
     map.once('click', onMapTap);
 }
 

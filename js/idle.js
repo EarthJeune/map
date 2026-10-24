@@ -1,91 +1,209 @@
-// DA-LARES Wayfinding — Idle, Screensaver & Kiosk Marker Module
-
-import { DEFAULT_MAP_VIEW, IDLE_TIMEOUT } from './data/config.js';
+import { DEFAULT_MAP_VIEW, IDLE_TIMEOUT, SAVED_MAIN_KIOSK_COORDS } from './data/config.js';
+import { getActiveStationDefaultView } from './data/stations.js';
 import { state } from './data/state.js';
 import { map } from './map-setup.js';
-import { clearRoute } from './routing.js';
+import { clearRoute, closeRouteAndReset } from './routing.js';
 import { buildDirectory, filterByCategory, openSidebarMenu } from './sidebar.js';
-import { navigateTo } from './walker.js';
+import { navigateTo, exitRouteMode, clearArrivedCountdown } from './walker.js';
 import { isKioskMode } from './mode.js';
+import { closeQRZoomModal, resetQRAutoExitCountdown, clearQRAutoExitCountdown } from './qr.js';
+import { closePhotoLightbox } from './phone-ui.js';
+import { closeBuildingPanel } from './building-panel.js';
+import { declutterMarkersForOrbit, restoreMarkersAfterOrbit } from './markers.js';
 
 export function createKioskMarker() {
-    if (state.kioskMarkerInstance) state.kioskMarkerInstance.remove();
+    if (state.kioskMarkerInstance) {
+        state.kioskMarkerInstance.remove();
+        state.kioskMarkerInstance = null;
+    }
+    if (state.qaresKioskMarkerInstance) {
+        state.qaresKioskMarkerInstance.remove();
+        state.qaresKioskMarkerInstance = null;
+    }
+
+    const isQares = (state.currentStationId === 'qares');
+    const targetCoords = isQares
+        ? (state.QARES_KIOSK_COORDS || [121.3713315, 13.9432268])
+        : (state.KIOSK_COORDS || SAVED_MAIN_KIOSK_COORDS);
+
+    // In admin mode, enable dragging by default so it's immediately ready
+    const isDraggable = !!(state.isAdmin && state.isKioskDraggable !== false);
+
     const el = document.createElement('div');
     el.className = 'kiosk-marker' + (state.isAdmin ? ' admin-mode' : ' visitor-mode');
 
+    const prefix = isQares ? 'QARES • ' : '';
     if (state.isAdmin) {
-        el.innerHTML = '<div class="kiosk-marker-pulse"></div><div class="kiosk-marker-dot"></div><div class="kiosk-marker-label" style="cursor:pointer;pointer-events:auto;" onclick="toggleKioskLock(event)">📍 You Are Here 🔒 (Admin)</div>';
+        const dragNotice = isDraggable ? '🔓 (Drag to move)' : '🔒 (Admin)';
+        const bgStyle = isDraggable ? 'background:#eab308;color:#000;border:1px solid #ca8a04;' : '';
+        el.innerHTML = `<div class="kiosk-marker-pulse"></div><div class="kiosk-marker-dot"></div><div class="kiosk-marker-label" style="cursor:pointer;pointer-events:auto;${bgStyle}" onclick="toggleKioskLock(event)">📍 ${prefix}You Are Here ${dragNotice}</div>`;
     } else {
-        el.innerHTML = '<div class="kiosk-marker-pulse"></div><div class="kiosk-marker-dot"></div><div class="kiosk-marker-label" style="pointer-events:none;cursor:default;user-select:none;">📍 You Are Here</div>';
+        el.innerHTML = `<div class="kiosk-marker-pulse"></div><div class="kiosk-marker-dot"></div><div class="kiosk-marker-label" style="pointer-events:none;cursor:default;user-select:none;">📍 ${prefix}You Are Here</div>`;
     }
 
-    state.kioskMarkerInstance = new mapboxgl.Marker({
+    const marker = new mapboxgl.Marker({
         element: el,
         anchor: 'center',
-        draggable: !!(state.isAdmin && state.isKioskDraggable)
+        draggable: isDraggable
     })
-        .setLngLat(state.KIOSK_COORDS)
+        .setLngLat(targetCoords)
         .addTo(map);
 
-    if (state.kioskMarkerInstance.getElement()) {
-        state.kioskMarkerInstance.getElement().style.zIndex = '99999';
+    state.kioskMarkerInstance = marker;
+    if (isQares) {
+        state.qaresKioskMarkerInstance = marker;
+    }
+
+    const markerEl = marker.getElement();
+    if (markerEl) {
+        markerEl.style.zIndex = '99999';
+        if (state.isAdmin) {
+            markerEl.style.cursor = isDraggable ? 'grab' : 'pointer';
+        }
     }
 
     if (state.isAdmin) {
-        state.kioskMarkerInstance.on('dragend', () => {
-            const lngLat = state.kioskMarkerInstance.getLngLat();
-            state.KIOSK_COORDS = [lngLat.lng, lngLat.lat];
+        marker.on('dragstart', () => {
+            if (marker.getElement()) marker.getElement().style.cursor = 'grabbing';
+        });
 
-            fetch('/api/pin', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ coordinates: state.KIOSK_COORDS })
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        alert("Saved new Kiosk Location!");
-                        if (state.activeRoute) navigateTo(state.activeRoute); // Refresh route
-                    }
-                });
+        marker.on('dragend', () => {
+            if (marker.getElement()) marker.getElement().style.cursor = 'grab';
+            const lngLat = marker.getLngLat();
+            repositionActiveKioskPin([lngLat.lng, lngLat.lat]);
         });
     }
 }
 
-let idleAnimFrame = null;
-
-export function resetIdle() {
-    if (state.idleTimer) {
-        clearTimeout(state.idleTimer);
-        state.idleTimer = null;
+export function repositionActiveKioskPin(newCoords) {
+    if (!newCoords || !Array.isArray(newCoords) || newCoords.length !== 2) return;
+    const isQares = (state.currentStationId === 'qares');
+    const marker = state.kioskMarkerInstance;
+    if (marker) {
+        marker.setLngLat(newCoords);
     }
-    stopIdleRotation();
-    if (!isKioskMode()) return;
-    state.idleTimer = setTimeout(startIdleRotation, IDLE_TIMEOUT);
+
+    if (isQares) {
+        state.QARES_KIOSK_COORDS = newCoords;
+        window.QARES_KIOSK_COORDS = newCoords;
+
+        fetch('/api/qares/pin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ coordinates: newCoords, station: 'qares' })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showAutoExitToast(`📍 Saved QARES Kiosk Pin [${newCoords[0].toFixed(5)}, ${newCoords[1].toFixed(5)}]`, 3500);
+                }
+            })
+            .catch(err => console.error("Error saving QARES kiosk pin:", err));
+    } else {
+        state.KIOSK_COORDS = newCoords;
+        window.KIOSK_COORDS = newCoords;
+
+        fetch('/api/pin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ coordinates: newCoords, station: 'lares' })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showAutoExitToast(`📍 Saved LARES Kiosk Pin [${newCoords[0].toFixed(5)}, ${newCoords[1].toFixed(5)}]`, 3500);
+                    if (state.activeRoute) navigateTo(state.activeRoute);
+                }
+            })
+            .catch(err => console.error("Error saving LARES kiosk pin:", err));
+    }
+}
+if (typeof window !== 'undefined') {
+    window.repositionActiveKioskPin = repositionActiveKioskPin;
 }
 
-export function startIdleRotation() {
-    if (!isKioskMode()) return;
-    
-    // Stop any existing animation loop
-    if (idleAnimFrame) {
-        cancelAnimationFrame(idleAnimFrame);
-        idleAnimFrame = null;
+let idleAnimFrame = null;
+let autoExitToastTimer = null;
+
+export function showAutoExitToast(msg = 'Auto-exiting session • Returning to You Are Here', duration = 2600) {
+    const toast = document.getElementById('kiosk-auto-exit-toast');
+    const text = document.getElementById('kiosk-auto-exit-text');
+    if (!toast) return;
+
+    if (text) text.textContent = msg;
+    toast.style.display = 'flex';
+    void toast.offsetWidth; // Force reflow
+    toast.classList.add('visible');
+
+    if (autoExitToastTimer) clearTimeout(autoExitToastTimer);
+    autoExitToastTimer = setTimeout(() => {
+        toast.classList.remove('visible');
+        setTimeout(() => {
+            if (!toast.classList.contains('visible')) {
+                toast.style.display = 'none';
+            }
+        }, 300);
+    }, duration);
+}
+
+export function autoExitActiveSession(reason = 'afk') {
+    // 1. Immediately dismiss QR Zoom modal & stop countdown
+    try {
+        if (typeof clearQRAutoExitCountdown === 'function') clearQRAutoExitCountdown();
+        if (typeof closeQRZoomModal === 'function') closeQRZoomModal();
+        else if (typeof window.closeQRZoomModal === 'function') window.closeQRZoomModal();
+    } catch (e) { }
+
+    // 2. Dismiss Fullscreen Photo Lightbox modal
+    try {
+        if (typeof closePhotoLightbox === 'function') closePhotoLightbox();
+        else if (typeof window.closePhotoLightbox === 'function') window.closePhotoLightbox();
+    } catch (e) { }
+
+    // 3. Dismiss Color Picker modal if open
+    const colorModal = document.getElementById('color-picker-modal');
+    if (colorModal) colorModal.style.display = 'none';
+
+    // 4. Dismiss Map Settings Panel if open
+    try {
+        if (typeof closeMapSettingsPanel === 'function') closeMapSettingsPanel();
+        else if (typeof window.closeMapSettingsPanel === 'function') window.closeMapSettingsPanel();
+    } catch (e) { }
+
+    // 5. Check if an active route navigation or building panel was open
+    const hadActiveSession = !!(
+        state.activeRoute ||
+        state.selectedBuildingId ||
+        document.getElementById('route-info')?.classList.contains('active') ||
+        document.getElementById('building-panel')?.classList.contains('active') ||
+        document.getElementById('qr-zoom-modal')?.style.display === 'flex'
+    );
+
+    if (hadActiveSession) {
+        showAutoExitToast('Auto-exiting session • Returning to You Are Here', 2600);
     }
 
-    // 1. Clear any active walking route & turn banner
-    if (typeof clearRoute === 'function') {
-        clearRoute();
-    } else if (state.activeRoute) {
-        state.activeRoute = null;
-    }
+    // 5. Exit active route and reset walker, HUD, banner, steps, camera controls
+    try {
+        if (typeof clearArrivedCountdown === 'function') clearArrivedCountdown();
+        if (typeof exitRouteMode === 'function') exitRouteMode();
+        else if (typeof window.exitRouteMode === 'function') window.exitRouteMode();
+        else if (typeof closeRouteAndReset === 'function') closeRouteAndReset();
+        else if (typeof clearRoute === 'function') clearRoute();
+    } catch (e) { }
+    state.activeRoute = null;
 
-    // 2. Clear building selection and unhighlight ALL map markers & directory items
-    state.selectedBuildingId = null;
-    window.selectedBuildingId = null;
+    // 6. Close building info panel and unhighlight markers
+    try {
+        if (typeof closeBuildingPanel === 'function') closeBuildingPanel(true);
+        else if (typeof window.closeBuildingPanel === 'function') window.closeBuildingPanel(true);
+    } catch (e) { }
 
     const panel = document.getElementById('building-panel');
     if (panel) panel.classList.remove('active');
+
+    state.selectedBuildingId = null;
+    window.selectedBuildingId = null;
 
     document.querySelectorAll('.dir-item').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.phone-dir-item').forEach(el => el.classList.remove('active'));
@@ -102,45 +220,127 @@ export function startIdleRotation() {
 
     stopOrbit();
 
-    // 3. Reset search & directory view
+    // 7. Reset search input and directory view (LARES only; QARES has its own drawing suite/directory)
     const searchInput = document.getElementById('search-input');
     if (searchInput) searchInput.value = '';
     try {
         if (typeof openSidebarMenu === 'function') openSidebarMenu();
-        if (typeof filterByCategory === 'function') filterByCategory('all');
-        else buildDirectory();
+        if (state.currentStationId === 'lares') {
+            if (typeof filterByCategory === 'function') filterByCategory('all');
+            else buildDirectory();
+        }
     } catch (e) {
-        buildDirectory();
+        try { if (state.currentStationId === 'lares') buildDirectory(); } catch (err) { }
     }
+}
+
+export function triggerAutoExitToIdle(reason = 'afk') {
+    if (!isKioskMode()) return;
+    autoExitActiveSession(reason);
+    startIdleRotation();
+}
+
+export function resetIdle() {
+    if (state.idleTimer) {
+        clearTimeout(state.idleTimer);
+        state.idleTimer = null;
+    }
+    const wasIdleOrResting = state.idleRotating || state.isEcoRestMode;
+    stopIdleRotation();
+
+    // If user touched to exit idle/eco-rest and is in QARES, ensure camera is centered on QARES compound if it drifted
+    if (wasIdleOrResting && state.currentStationId === 'qares' && map) {
+        try {
+            const curCenter = map.getCenter();
+            // QARES compound is around [121.371, 13.943]
+            // If the camera somehow got clamped at the west/outer bounds
+            if (curCenter.lng < 121.365 || curCenter.lng > 121.378 || curCenter.lat < 13.938 || curCenter.lat > 13.952) {
+                const defaultView = getActiveStationDefaultView('qares');
+                map.flyTo({
+                    center: defaultView.center,
+                    zoom: defaultView.zoom,
+                    pitch: defaultView.pitch,
+                    bearing: defaultView.bearing,
+                    duration: 1200
+                });
+            }
+        } catch (e) { }
+    }
+
+    if (!isKioskMode()) return;
+    state.idleTimer = setTimeout(startIdleRotation, IDLE_TIMEOUT);
+}
+
+export function startIdleRotation() {
+    if (!isKioskMode()) return;
+
+    // Stop any existing animation loop
+    if (idleAnimFrame) {
+        cancelAnimationFrame(idleAnimFrame);
+        idleAnimFrame = null;
+    }
+
+    // Auto-exit any active route, modals, or panels before returning to You Are Here animation
+    autoExitActiveSession('idle_timeout');
 
     state.idleRotating = true;
 
-    // 4. Fly camera back to Kiosk default view
-    map.flyTo({ 
-        center: DEFAULT_MAP_VIEW.center, 
-        zoom: DEFAULT_MAP_VIEW.zoom, 
-        pitch: DEFAULT_MAP_VIEW.pitch, 
-        bearing: DEFAULT_MAP_VIEW.bearing, 
+    // Station-aware default view: flies to QARES pin in QARES, or LARES pin in LARES
+    const defaultView = getActiveStationDefaultView();
+
+    map.flyTo({
+        center: defaultView.center,
+        zoom: defaultView.zoom,
+        pitch: defaultView.pitch,
+        bearing: defaultView.bearing,
         duration: 1800,
         essential: true
     });
 
-    // 5. Start 360° continuous rotation loop around Kiosk
-    function rotateStep() {
+    let lastRotTime = 0;
+    const idleStartTime = Date.now();
+    const IDLE_ROTATION_ECO_LIMIT_MS = 5 * 60 * 1000; // 5 minutes max continuous rotation before resting
+
+    // Paced, delta-time smoothed screensaver loop (~30 FPS budget to prevent 100% GPU saturation on i3/i5 kiosks)
+    function rotateStep(now) {
         if (!state.idleRotating) return;
-        map.rotateTo(map.getBearing() + 0.15, { duration: 0 });
+
+        // Thermal / Eco-Rest: After 5 minutes unattended, smoothly park camera at You Are Here
+        if (Date.now() - idleStartTime > IDLE_ROTATION_ECO_LIMIT_MS) {
+            stopIdleRotation();
+            state.isEcoRestMode = true;
+            const restView = getActiveStationDefaultView();
+            map.easeTo({
+                center: restView.center,
+                zoom: restView.zoom,
+                pitch: restView.pitch,
+                bearing: restView.bearing,
+                duration: 1200
+            });
+            showAutoExitToast('💡 Kiosk Eco-Rest Active • Touch screen to explore', 5000);
+            return;
+        }
+
+        if (!lastRotTime || (now - lastRotTime) >= 16) {
+            const dt = lastRotTime ? Math.min(now - lastRotTime, 64) : 16.67;
+            lastRotTime = now;
+            const bearingStep = 0.10 * (dt / 16.67);
+            map.setBearing(map.getBearing() + bearingStep);
+        }
         idleAnimFrame = requestAnimationFrame(rotateStep);
     }
 
     setTimeout(() => {
         state.idleRotating = true;
         if (idleAnimFrame) cancelAnimationFrame(idleAnimFrame);
+        lastRotTime = performance.now();
         idleAnimFrame = requestAnimationFrame(rotateStep);
     }, 1900);
 }
 
 export function stopIdleRotation() {
     state.idleRotating = false;
+    state.isEcoRestMode = false;
     if (idleAnimFrame) {
         cancelAnimationFrame(idleAnimFrame);
         idleAnimFrame = null;
@@ -153,30 +353,61 @@ export function orbitBuilding(center, options = {}) {
     stopOrbit();
     state.isOrbiting = true;
 
-    const isPhone = (typeof window.isPhoneMode === 'function') ? window.isPhoneMode() : false;
-    const targetZoom = options.zoom !== undefined ? options.zoom : (isPhone ? 19.3 : 20.1);
-    const targetPitch = options.pitch !== undefined ? options.pitch : (isPhone ? 50 : 70);
+    const isPhone = (typeof window.isPhoneMode === 'function') ? window.isPhoneMode() : (window.innerWidth <= 768);
+    // Optimized targetPitch: 54° on kiosk, 48° on mobile.
+    // 70° was causing massive horizon frustum overdraw, rendering all distant buildings and ground mipmaps simultaneously.
+    // 54° gives a gorgeous, realistic 3D isometric view while cutting GPU fill-rate strain by >60%.
+    const targetZoom = options.zoom !== undefined ? options.zoom : (isPhone ? 19.1 : 19.6);
+    const targetPitch = options.pitch !== undefined ? options.pitch : (isPhone ? 48 : 54);
     const targetBearing = options.bearing !== undefined ? options.bearing : map.getBearing();
-    const duration = options.duration !== undefined ? options.duration : 1500;
+    const duration = options.duration !== undefined ? options.duration : 1300;
+
+    // Declutter distant markers during orbit so browser doesn't compute CSS transforms for 33 labels every 16ms
+    if (typeof declutterMarkersForOrbit === 'function' && state.selectedBuildingId) {
+        declutterMarkersForOrbit(state.selectedBuildingId);
+    }
+
+    // Offset camera padding so building is centered between the sidebar and building detail drawer
+    const isPortraitKiosk = (typeof document !== 'undefined' && document.body.classList.contains('kiosk-portrait')) ||
+        ((typeof window !== 'undefined') && window.innerHeight > window.innerWidth && !isPhone);
+    const pad = options.padding || (isPortraitKiosk
+        ? { top: 90, bottom: Math.round((typeof window !== 'undefined' ? window.innerHeight : 1000) * 0.46), left: 24, right: 24 }
+        : (isPhone
+            ? { top: 70, bottom: 250, left: 16, right: 16 }
+            : { top: 60, bottom: 60, left: 380, right: 380 }
+        )
+    );
 
     map.flyTo({
         center: center,
         zoom: targetZoom,
         pitch: targetPitch,
         bearing: targetBearing,
+        padding: pad,
         duration: duration,
         essential: true
     });
 
     state.orbitTimeout = setTimeout(() => {
         if (!state.isOrbiting) return;
-        function orbitStep() {
-            if (!state.isOrbiting) return;
-            map.rotateTo(map.getBearing() + 0.22, { duration: 0 });
+        let lastOrbitTime = performance.now();
+
+        function orbitStep(now) {
+            if (!state.isOrbiting || !map) return;
+            const dt = Math.min(now - lastOrbitTime, 64);
+            lastOrbitTime = now;
+
+            // True V-synced 60 FPS smooth rotation using synchronous setBearing
+            // Eliminates rotateTo() animation controller allocations and 30ms judder
+            const step = (0.16 * dt) / 16.67;
+            map.setBearing(map.getBearing() + step);
+
             state.orbitAnimFrame = requestAnimationFrame(orbitStep);
         }
+
+        lastOrbitTime = performance.now();
         state.orbitAnimFrame = requestAnimationFrame(orbitStep);
-    }, duration + 100);
+    }, duration + 50);
 }
 
 export function stopOrbit() {
@@ -189,6 +420,9 @@ export function stopOrbit() {
         cancelAnimationFrame(state.orbitAnimFrame);
         state.orbitAnimFrame = null;
     }
+    if (typeof restoreMarkersAfterOrbit === 'function') {
+        restoreMarkersAfterOrbit();
+    }
 }
 
 let holdRotateFrame = null;
@@ -198,7 +432,7 @@ export function startManualRotate(dir) {
     stopIdleRotation();
     stopOrbit();
     stop360Rotation();
-    
+
     isHoldingRotate = true;
     let speed = dir * 1.6;
 
@@ -237,7 +471,7 @@ export function toggle360Rotation() {
         stop360Rotation();
         return;
     }
-    
+
     stopOrbit();
     state.is360Spinning = true;
     update360ButtonUI(true);
@@ -247,7 +481,7 @@ export function toggle360Rotation() {
         map.rotateTo(map.getBearing() + 0.22, { duration: 0 });
         manual360Frame = requestAnimationFrame(step);
     }
-    
+
     if (manual360Frame) cancelAnimationFrame(manual360Frame);
     manual360Frame = requestAnimationFrame(step);
 }
@@ -290,6 +524,11 @@ export function initIdleListeners() {
         }
 
         resetIdle();
+        if (typeof resetQRAutoExitCountdown === 'function') {
+            resetQRAutoExitCountdown();
+        } else if (typeof window.resetQRAutoExitCountdown === 'function') {
+            window.resetQRAutoExitCountdown();
+        }
     };
 
     // User interactions reset idle timer
@@ -315,6 +554,9 @@ window.createKioskMarker = createKioskMarker;
 window.resetIdle = resetIdle;
 window.startIdleRotation = startIdleRotation;
 window.stopIdleRotation = stopIdleRotation;
+window.autoExitActiveSession = autoExitActiveSession;
+window.triggerAutoExitToIdle = triggerAutoExitToIdle;
+window.showAutoExitToast = showAutoExitToast;
 window.orbitBuilding = orbitBuilding;
 window.stopOrbit = stopOrbit;
 window.toggle360Rotation = toggle360Rotation;
