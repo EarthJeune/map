@@ -11,7 +11,7 @@ Paste this into the new chat:
 
 ```
 Read AGENTS.md and docs/SESSION_HANDOFF.md in c:\Users\LGU-SanPedro\Downloads\map
-before doing anything. Continue from "Open items" in SESSION_HANDOFF.md.
+before doing anything. Start immediately with Section 2 ("Next Active Task: Automated Weather Station").
 ```
 
 Runtime:
@@ -21,7 +21,45 @@ Runtime:
 
 ---
 
-## 2. Project rules that apply to this work (summary — AGENTS.md is the source of truth)
+## 2. 🎯 Immediate Active Task: 3D Modeling for Automated Weather Station (`automated_weather_station`)
+
+The user has explicitly designated the next 3D architectural model to build:
+
+- **Facility Name:** Automated Weather Station
+- **Campus Station:** **DA-LARES** (Lipa City, Batangas)
+- **ID Name:** `automated_weather_station`
+- **Model Output Target:** `models/automated_weather_station.glb` (strictly under **$300\text{ KB}$** per Rule 2)
+- **Drawn Footprint Status:** ✅ **Already drawn and saved in `buildings.json`**:
+  - Centroid Coordinates: `[121.16855139, 13.96006960]`
+  - Footprint Dimensions: Square compound enclosure of $3.28\text{ m} \times 3.28\text{ m}$
+  - Perimeter Edge Bearings:
+    - Front face (Edge 0→1): $161.1^\circ$ (length: $3.25\text{ m}$)
+    - Right flank (Edge 1→2): $74.2^\circ$ (length: $3.32\text{ m}$)
+    - Rear face (Edge 2→3): $340.3^\circ$ (length: $3.28\text{ m}$)
+    - Left flank (Edge 3→4): $253.8^\circ$ (length: $3.27\text{ m}$)
+  - Mapbox GLTF Layer Rotation: $161.1^\circ$ (aligned with front entrance gate)
+
+### 📸 Ground-Truth Field Photographs Breakdown (`Building Images/AWS/`)
+The authentic field photographs are in `Building Images/AWS/`:
+- **`IMG_3998.jpg`**: **Front Elevation / Overview** — Front perspective of the AWS compound showing perimeter wire mesh security fence, access gate/latch, central instrument mast tower, solar panel, radiation shield, data logger box, and wind sensors against the sky.
+- **`IMG_3999.jpg`**: **Right Side Angle** — Perspective view from the right flank showing structural triangulation of the mast, cabling runs, concrete foundation pads, and side clearance.
+- **`IMG_4001.jpg`**: **Close-Up Shot** — Detailed close-up of the instrumentation assembly.
+- **`IMG_4002.jpg`**: **Close-Up Shot of Components** — Detailed view of telemetry/data logger enclosure, mounting brackets, ground rods, and weather-sealed conduit pipes.
+- **`IMG_4003.jpg`**: **Close-Up Shot** — Additional close-up inspection shot of sensors and brackets.
+- **`IMG_4004.jpg`**: **Close-Up Shot of Rain Meter & Sensors** — Detailed shot of the tipping bucket rain gauge / collector cone, bubble leveling mount, and sensor wiring.
+- **`IMG_4005.jpg`**: **Picture Behind / Rear View** — Perspective view taken directly from behind the AWS enclosure.
+- **`IMG_4006.jpg` & `IMG_4007.jpg`**: **Back Part Shots** — Clear inspection shots capturing the rear fence, mast anchoring, and rear-facing components.
+- **`IMG_4008.jpg`**: **Clear View of the Whole AWS at the Back Part** — Wide, crisp full-compound overview from the rear capturing the entire station footprint, height relationships, and solar panel tilt angle.
+
+### 🚨 Architectural & Modeling Rules for AWS:
+1. **Rule 1 (Strictly One Building at a Time):** Complete, export, register in `js/data/buildings.js`, and visually verify `automated_weather_station` before touching any other building.
+2. **Rule 2 (Performance Budget):** Keep `models/automated_weather_station.glb` under **$300\text{ KB}$**.
+3. **Rule 4 (No Extraneous Outdoor Props):** Confine the model strictly to the $3.3\text{ m} \times 3.3\text{ m}$ fenced weather station footprint (concrete footing pads/plinths, perimeter chain-link/wire mesh fence with corner posts and gate, central galvanized steel lattice/tubular mast tower, tipping bucket rain gauge, solar panel with mounting arm, white radiation shield thermometer/hygrometer louvers, data logger enclosure cabinet box, anemometer cups & wind vane). Do NOT model external grass lawns, adjacent farm fields, trees, or dirt roads outside the fence boundary.
+4. **Rule 6 (No Invented Offices):** Standalone outdoor research facility. Do NOT add any entries to `BUILDING_OFFICES` in `js/data/offices.js`.
+
+---
+
+## 3. Project rules that apply to this work (summary — AGENTS.md is the source of truth)
 
 | # | Rule |
 |---|------|
@@ -35,7 +73,7 @@ Runtime:
 
 ---
 
-## 3. Multi-station architecture (LARES + QARES)
+## 4. Multi-station architecture (LARES + QARES)
 
 | Station | Data files | Drawing tools |
 |---|---|---|
@@ -58,9 +96,9 @@ Runtime:
 
 ---
 
-## 4. Work completed in this session
+## 5. Work completed in this session
 
-### 4.1 QARES buildings invisible in Mapbox Standard mode — FIXED
+### 5.1 QARES buildings invisible in Mapbox Standard mode — FIXED
 **Symptom:** In QARES with `mapbox://styles/mapbox/standard`, sidebar listed 48 buildings but no extrusions were drawn.
 
 **Root causes**
@@ -83,7 +121,7 @@ Runtime:
 
 **Verified** (headless Edge CDP, `scratch/inspect_mapbox_qares.py`): `hasSource/has3d/hasRoofs = true`, both slots `middle`, **54 rendered features**, 0 console errors. Screenshot: `scratch/edge_mapbox_qares.png`.
 
-### 4.2 Blue added to “Misc Buildings” color options — DONE
+### 5.2 Blue added to “Misc Buildings” color options — DONE
 Files: [qares_draw.html](../qares_draw.html) and [draw.html](../draw.html)
 
 ```js
@@ -100,7 +138,7 @@ const FILTER_COLOR_SETS = {
 
 ---
 
-## 5. Key technical notes / gotchas
+## 6. Key technical notes / gotchas
 
 - **Mapbox Standard style:** any custom layer needs `slot` (`bottom` / `middle` / `top`). 3D extrusions also need `fill-extrusion-emissive-strength` (~0.35).
 - **`window.map` is shadowed** by the `<div id="map">` element. Use `state.map` from [js/data/state.js](../js/data/state.js) (or `window.state.map`).
@@ -114,7 +152,7 @@ const FILTER_COLOR_SETS = {
 
 ---
 
-## 6. Verification scripts (in `scratch/`)
+## 7. Verification scripts (in `scratch/`)
 
 | Script | Purpose |
 |---|---|
@@ -124,10 +162,11 @@ const FILTER_COLOR_SETS = {
 
 ---
 
-## 7. Open items / next steps
+## 8. Open items / next steps
 
+- [ ] **Automated Weather Station (`automated_weather_station`) 3D Model:** Build, export to `models/automated_weather_station.glb` (<300 KB), register in `js/data/buildings.js`, and verify orientation. See Section 2 above for full photo breakdown.
 - [ ] User to test **Mapbox mode in QARES** on the actual kiosk/phone and confirm the buildings appear.
 - [ ] User to assign blue to any Misc Buildings in `qares_draw.html`, then **Save Directly to Map** (writes `qares_buildings.json` with a backup).
 - [ ] Utilities category has 0 features — waiting for the user to draw them.
-- [ ] **MIS-RAFIS Building** is still marked 🔄 *Existing* in the AGENTS.md matrix (it wasn't re-modeled from photos yet). The next 3D modeling target is whatever the user names, **one building at a time**.
-- [ ] Nothing has been committed to git — many files show as modified/untracked (`git status`). Commit or back up when the user asks.
+- [ ] **MIS-RAFIS Building** is still marked 🔄 *Existing* in the AGENTS.md matrix (it wasn't re-modeled from photos yet).
+- [x] Codebase changes committed to `git` (`master` commit `12dbfde`).
