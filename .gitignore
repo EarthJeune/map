@@ -30,6 +30,9 @@ Thumbs.db
 renders/
 archive/
 scratch/
+verified_*.*
+plot22_cr_*.*
+*.baseline.*
 
 # === Python Cache & Blender Files ===
 __pycache__/

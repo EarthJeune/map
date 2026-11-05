@@ -1,8 +1,8 @@
 // DA-LARES Wayfinding — Main Application Orchestration Entry Point
 // Native ES Module Application Shell
 
-import { MAPBOX_ACCESS_TOKEN, DEFAULT_MAP_VIEW } from './data/config.js';
-import { BUILDING_DIRECTORY } from './data/buildings.js?v=72';
+import { MAPBOX_ACCESS_TOKEN, DEFAULT_MAP_VIEW, SAVED_MAIN_KIOSK_COORDS } from './data/config.js';
+import { BUILDING_DIRECTORY, DEFAULT_BUILDING_COLORS } from './data/buildings.js';
 import { state } from './data/state.js';
 import { createMarkers, removeMarkers } from './markers.js';
 import {
@@ -80,7 +80,10 @@ import {
     cyclePhoneSheetSnap,
     togglePhoneRouteSheet,
     initPhoneSheetGestures,
-    closePhotoLightbox
+    closePhotoLightbox,
+    showPhonePlotDetails,
+    togglePhoneFilterDropdown,
+    closePhoneFilterDropdown
 } from './phone-ui.js';
 
 import {
@@ -131,11 +134,13 @@ import {
     setEnvironmentLighting
 } from './map-settings.js';
 
+import { selectStandaloneGate } from './markers.js';
+
 import {
     ensureOcclusionLayers,
     updateOcclusion,
     resetOcclusion
-} from './occlusion.js?v=81';
+} from './occlusion.js';
 
 import {
     initDroneCalibration,
@@ -151,7 +156,7 @@ import {
     closeStationDropdown,
     switchResearchStation,
     loadQARESData
-} from './stations.js?v=2';
+} from './stations.js';
 
 import {
     reportFrameRate,
@@ -167,7 +172,7 @@ window.roadGraph = new Map();
 window.BUILDING_ENTRANCES = {};
 
 // Fetch roads.json and build pathfinding graph
-fetch('roads.json?v=72')
+fetch('roads.json?v=81')
     .then(res => res.json())
     .then(data => {
         window.ROAD_NETWORK = data;
@@ -182,7 +187,8 @@ fetch('roads.json?v=72')
                 'pmed_building': 'tanco_hall_building',
                 'fmr': 'multi_purpose_administrative_building',
                 'mis_data_center': 'multi_purpose_administrative_building',
-                'vacant': 'multi_purpose_administrative_building'
+                'vacant': 'multi_purpose_administrative_building',
+                'warehouse_2': 'lares_farm_machinery_shed_1'
             };
             data.features.forEach(f => {
                 if (f.geometry.type === 'Point' && f.properties.type === 'entrance' && f.properties.buildingId) {
@@ -193,19 +199,27 @@ fetch('roads.json?v=72')
                     window.BUILDING_ENTRANCES[bId].push(f.geometry.coordinates);
                 }
             });
+
+            // Standalone compound gate barriers for direct pathfinding
+            window.BUILDING_ENTRANCES['gate_main_entrance'] = [[121.165745, 13.958316]];
+            window.BUILDING_ENTRANCES['gate_main_exit'] = [[121.165745, 13.959177]];
+            window.BUILDING_ENTRANCES['gate_back_gate'] = [[121.172478, 13.961711]];
         }
 
         window.roadGraph = buildRoadGraph(data);
         state.roadGraph = window.roadGraph;
+        state.laresRoadGraph = window.roadGraph;
         console.log(`Loaded road graph with ${window.roadGraph.size} nodes.`);
     })
     .catch(err => console.error("Could not fetch roads.json", err));
 
-// Fetch colors from backend
+// Fetch colors from backend (with guaranteed per-building fallback to DEFAULT_BUILDING_COLORS)
 fetch('/api/colors')
-    .then(res => res.json())
+    .then(res => res.ok ? res.json() : {})
+    .catch(() => ({}))
     .then(data => {
-        state.savedBuildingColors = data || {};
+        const validData = (data && typeof data === 'object' && !data.error) ? data : {};
+        state.savedBuildingColors = { ...DEFAULT_BUILDING_COLORS, ...validData };
         window.savedBuildingColors = state.savedBuildingColors;
 
         const updateList = (list) => {
@@ -235,12 +249,14 @@ fetch('/api/colors')
     })
     .catch(err => console.error("Could not fetch building colors", err));
 
-// Fetch LARES pin location from backend
+// Fetch LARES pin location from backend (with fallback to current SAVED_MAIN_KIOSK_COORDS)
 fetch('/api/pin')
-    .then(res => res.json())
+    .then(res => res.ok ? res.json() : {})
+    .catch(() => ({}))
     .then(data => {
-        if (data.coordinates) {
-            state.KIOSK_COORDS = data.coordinates;
+        const validPin = data && Array.isArray(data.coordinates) && data.coordinates.length === 2 && data.coordinates[0] > 121.164 && data.coordinates[0] < 121.175;
+        state.KIOSK_COORDS = validPin ? data.coordinates : [...SAVED_MAIN_KIOSK_COORDS];
+        if (state.KIOSK_COORDS) {
             window.KIOSK_COORDS = state.KIOSK_COORDS;
             if (state.kioskMarkerInstance && state.currentStationId === 'lares') {
                 state.kioskMarkerInstance.setLngLat(state.KIOSK_COORDS);
@@ -280,7 +296,9 @@ function initViewportTelemetry() {
     if (!map) return;
 
     let lastPosUpdate = 0;
+    let coordsRafId = null;
     const updateCoords = () => {
+        coordsRafId = null;
         const now = (typeof performance !== 'undefined') ? performance.now() : Date.now();
         if (now - lastPosUpdate < 150) return;
         lastPosUpdate = now;
@@ -293,12 +311,48 @@ function initViewportTelemetry() {
         if (coordsEl) coordsEl.textContent = `${center.lat.toFixed(4)}° N, ${center.lng.toFixed(4)}° E`;
         if (zoomEl) zoomEl.textContent = `Zoom ${zoom.toFixed(1)} (${altMeters}m alt)`;
     };
-    map.on('move', updateCoords);
+    const onMapMoveThrottled = () => {
+        if (!coordsRafId) {
+            coordsRafId = requestAnimationFrame(updateCoords);
+        }
+        wakeFpsMeter();
+    };
+    map.on('move', onMapMoveThrottled);
     updateCoords();
 
+    // Adaptive, Idle-Sleeping Frame Meter
+    // On low-end systems, running continuous RAF ticks while the map is static wastes CPU/battery.
+    // This meter runs during active interaction / movement / animation, and enters sleep during idle.
     let frameCount = 0;
     let lastFpsCalc = (typeof performance !== 'undefined') ? performance.now() : Date.now();
-    function fpsLoop(now) {
+    let fpsRafId = null;
+    let isFpsMeterActive = false;
+    let lastActivityTimestamp = Date.now();
+
+    function wakeFpsMeter() {
+        lastActivityTimestamp = Date.now();
+        if (isFpsMeterActive || (typeof document !== 'undefined' && document.hidden)) return;
+        isFpsMeterActive = true;
+        frameCount = 0;
+        lastFpsCalc = (typeof performance !== 'undefined') ? performance.now() : Date.now();
+        fpsRafId = requestAnimationFrame(fpsStep);
+    }
+
+    function sleepFpsMeter() {
+        if (!isFpsMeterActive) return;
+        isFpsMeterActive = false;
+        if (fpsRafId) {
+            cancelAnimationFrame(fpsRafId);
+            fpsRafId = null;
+        }
+    }
+
+    function fpsStep(now) {
+        if (!isFpsMeterActive || (typeof document !== 'undefined' && document.hidden)) {
+            sleepFpsMeter();
+            return;
+        }
+
         frameCount++;
         if (now - lastFpsCalc >= 500) {
             const fps = Math.round((frameCount * 1000) / (now - lastFpsCalc));
@@ -311,10 +365,37 @@ function initViewportTelemetry() {
             if (typeof reportFrameRate === 'function') {
                 reportFrameRate(fps);
             }
+
+            // Check if animations or movement are ongoing
+            const isAnyAnimationActive = state.isWalking || state.isOrbiting || state.idleRotating || state.isIntroAnimating;
+            if (!isAnyAnimationActive && (Date.now() - lastActivityTimestamp > 2000)) {
+                // Enter idle sleep to free CPU cores
+                sleepFpsMeter();
+                return;
+            }
         }
-        requestAnimationFrame(fpsLoop);
+        fpsRafId = requestAnimationFrame(fpsStep);
     }
-    requestAnimationFrame(fpsLoop);
+
+    // Wake meter on any camera manipulation or interactive state change
+    map.on('movestart', wakeFpsMeter);
+    map.on('zoomstart', wakeFpsMeter);
+    map.on('rotatestart', wakeFpsMeter);
+    map.on('pitchstart', wakeFpsMeter);
+
+    // Initial warm-up for 3 seconds to measure baseline hardware FPS
+    wakeFpsMeter();
+
+    // Page Visibility API integration: stop measuring when tab is hidden, wake up when tab returns
+    if (typeof document !== 'undefined') {
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                sleepFpsMeter();
+            } else {
+                wakeFpsMeter();
+            }
+        });
+    }
 }
 
 map.on('load', () => {
@@ -326,6 +407,7 @@ map.on('load', () => {
             createKioskMarker();
             buildDirectory();
         } else if (state.currentStationId === 'qares') {
+            createKioskMarker();
             loadQARESData();
         }
         resetIdle();
@@ -356,7 +438,7 @@ export function handleUrlParameters() {
                 const bldg = BUILDING_DIRECTORY.find(b =>
                     b.id.toLowerCase() === destParam.toLowerCase() ||
                     b.id.toLowerCase().includes(destParam.toLowerCase()) ||
-                    (!isNaN(destParam) && BUILDING_DIRECTORY[parseInt(destParam, 10) - 1]?.id === b.id)
+                    (!isNaN(destParam) && (b.num === parseInt(destParam, 10) || BUILDING_DIRECTORY[parseInt(destParam, 10) - 1]?.id === b.id))
                 );
                 if (bldg) {
                     if (isPhoneMode()) {
@@ -364,7 +446,10 @@ export function handleUrlParameters() {
                         state.selectedBuildingId = bldg.id;
                         showPhoneBuildingDetails(bldg.id);
                         try {
-                            const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                            const nextParams = new URLSearchParams(window.location.search);
+                            nextParams.delete('dest');
+                            const queryStr = nextParams.toString();
+                            const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + (queryStr ? `?${queryStr}` : '');
                             window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
                         } catch (e) { }
                     } else {
@@ -375,10 +460,8 @@ export function handleUrlParameters() {
         }, 150);
     }
 
-    // Show Welcome / Intro modal on load or refresh (unless navigated directly via ?dest=)
-    if (!destParam) {
-        setTimeout(showPhoneWelcomeModal, 450);
-    }
+    // Always show Welcome / Intro modal first on load, refresh, or QR scan
+    setTimeout(showPhoneWelcomeModal, 450);
 }
 
 // Initialize mode, gesture, and event listeners
@@ -431,6 +514,7 @@ window.getDirections = getDirections;
 window.handleWelcomeContinue = handleWelcomeContinue;
 window.handleWelcomeSkip = handleWelcomeSkip;
 window.navigateTo = navigateTo;
+window.selectStandaloneGate = selectStandaloneGate;
 window.recenterOnUserGPS = recenterOnUserGPS;
 window.replayFromArrivalPopup = replayFromArrivalPopup;
 window.replayPhoneRoute = replayPhoneRoute;
@@ -442,6 +526,9 @@ window.setRouteCameraMode = setRouteCameraMode;
 window.updateCameraControlsUI = updateCameraControlsUI;
 window.setRouteSpeed = setRouteSpeed;
 window.showPhoneDirectoryView = showPhoneDirectoryView;
+window.showPhonePlotDetails = showPhonePlotDetails;
+window.togglePhoneFilterDropdown = togglePhoneFilterDropdown;
+window.closePhoneFilterDropdown = closePhoneFilterDropdown;
 window.showPhoneWelcomeModal = showPhoneWelcomeModal;
 window.startMobileGPSNavigation = startMobileGPSNavigation;
 window.startPhoneAnimatedRoute = startPhoneAnimatedRoute;
@@ -489,6 +576,9 @@ window.addEventListener('keydown', (e) => {
         }
         document.documentElement.classList.toggle('admin-mode', state.isAdmin);
         document.body.classList.toggle('admin-mode', state.isAdmin);
+        if (typeof window.syncAdminDroneDOM === 'function') {
+            window.syncAdminDroneDOM();
+        }
         buildDirectory();
         createKioskMarker();
         const activeStationLabel = (state.currentStationId === 'qares') ? 'DA-QARES (Tiaong)' : 'DA-LARES (Lipa)';

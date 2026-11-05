@@ -168,7 +168,7 @@ flowchart TD
 #### Avatar Construction Details:
 1. **White Sticker Outline**: Uses `filter: drop-shadow(0 0 2.5px #ffffff) drop-shadow(0 0 1.2px #ffffff) drop-shadow(0 6px 12px rgba(0, 0, 0, 0.75))` for readability against dark satellite asphalt and green foliage.
 2. **Ground Contact Shadow**: An animated `<ellipse class="clay-shadow">` sitting directly under the red shoes, scaling on each footfall.
-3. **Pixel-Perfect Alignment (`offset: [0, -72]`)**: Fixed so the feet touch the green route line, while the torso and head remain upright.
+3. **Pixel-Perfect Ground Alignment (`anchor: 'bottom', offset: [0, 0]`)**: The marker's bottom anchor places the contact shadow directly on the green route line on the ground plane, eliminating false vertical offsets in tilted 3D perspectives.
 4. **Screen-Relative Facing**: Uses `map.project(current).x - map.project(prev).x` rather than map longitude differences, ensuring the sprite faces forward on screen even as the camera rotates.
 5. **Speed Pacing**: User-selectable speed multipliers (`1x`, `2x`, `4x`, `6x`) alter step pacing and trigger dust clouds (`💨`) and speed lines (`⚡`) without overlaying text badges on the model.
 

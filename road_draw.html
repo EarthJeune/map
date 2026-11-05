@@ -661,15 +661,29 @@ function updateBuildingDropdown(station) {
         fetch('buildings.json')
             .then(r => r.json())
             .then(data => {
-                if (!data || !data.features) return;
-                data.features.forEach(f => {
-                    const bId = f.properties && f.properties.id;
-                    if (bId) {
-                        const opt = document.createElement('option');
-                        opt.value = bId;
-                        opt.textContent = bId.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-                        select.appendChild(opt);
-                    }
+                const bIdMap = new Map();
+                if (data && data.features) {
+                    data.features.forEach(f => {
+                        const bId = f.properties && f.properties.id;
+                        if (bId) {
+                            const name = (f.properties.name && f.properties.name !== bId)
+                                ? f.properties.name
+                                : bId.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                            bIdMap.set(bId, name);
+                        }
+                    });
+                }
+                // Ensure Automated Weather Station is explicitly included
+                if (!bIdMap.has('automated_weather_station')) {
+                    bIdMap.set('automated_weather_station', 'Automated Weather Station');
+                }
+
+                const sortedEntries = Array.from(bIdMap.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+                sortedEntries.forEach(([bId, name]) => {
+                    const opt = document.createElement('option');
+                    opt.value = bId;
+                    opt.textContent = `${name} (${bId})`;
+                    select.appendChild(opt);
                 });
             })
             .catch(e => console.log('Notice: Could not load buildings.json:', e));

@@ -332,10 +332,10 @@
   <input type="text" id="box-name-input" value="Citrus Orchard" placeholder="Enter custom name or block..." style="width: 100%; padding: 8px 10px; border-radius: 7px; background: #1e293b; border: 1px solid rgba(255,255,255,0.15); color: #38bdf8; font-size: 12px; font-weight: 700; margin-bottom: 8px; outline: none;">
 
   <button class="action-btn btn-drop" onclick="dropSquareBox()">
-    <span>➕</span> Drop 4-Corner Square on View
+    <span>➕</span> Drop Box on View (Auto Multi-Side Ready)
   </button>
   <button class="action-btn btn-draw" onclick="startDrawPolygon()">
-    <span>✏️</span> Click 4 Points to Draw Manually
+    <span>✏️</span> Draw Multi-Sided Polygon (Freeform)
   </button>
 
   <button class="action-btn btn-save" id="btn-manual-save" onclick="manualSaveLayout()">
@@ -346,7 +346,35 @@
     <span id="save-status-text">All 45 plots saved • Persists on refresh</span>
   </div>
 
-  <div class="section-label">Plotted Squares (<span id="squares-count">45</span>)</div>
+  <!-- Interactive Shape & Sides Sculptor Card (Active when any plot is selected) -->
+  <div id="selected-plot-card" style="display: none; background: rgba(30, 41, 59, 0.95); border: 1.5px solid #38bdf8; border-radius: 10px; padding: 12px; margin-top: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.5);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+      <div id="sel-plot-name" style="font-size: 13px; font-weight: 800; color: #f8fafc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 215px;">Plot Selected</div>
+      <div id="sel-plot-sides-badge" style="background: #0284c7; color: #fff; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 12px; white-space: nowrap;">4 Sides</div>
+    </div>
+    <div style="font-size: 11px; color: #cbd5e1; line-height: 1.45; margin-bottom: 8px;">
+      👉 <strong style="color:#38bdf8;">Drag cyan dots (●)</strong> along any edge to pull out a new corner/side!<br>
+      👉 <strong style="color:#fbbf24;">Drag corner dots</strong> to reposition plot vertices.
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+      <button class="action-btn" style="margin-top:0; padding:7px 8px; font-size:11px; background:#0284c7; color:#fff;" onclick="addVertexToLongestEdge()" title="Insert 1 new corner vertex on the longest edge of this plot">
+        <span>➕</span> Add 1 Side
+      </button>
+      <button class="action-btn" style="margin-top:0; padding:7px 8px; font-size:11px; background:#059669; color:#fff;" onclick="subdivideSelectedPlot()" title="Subdivide all edges with midpoints to double the number of sides">
+        <span>✨</span> Subdivide (Double)
+      </button>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px;">
+      <button class="action-btn" style="margin-top:0; padding:7px 8px; font-size:11px; background:rgba(239, 68, 68, 0.2); color:#fca5a5; border:1px solid rgba(239, 68, 68, 0.4);" onclick="deleteSelectedVertex()" title="Click a specific corner vertex handle first, then click here to remove it">
+        <span>🗑️</span> Remove Vertex
+      </button>
+      <button class="action-btn" style="margin-top:0; padding:7px 8px; font-size:11px; background:rgba(239, 68, 68, 0.35); color:#fecaca; border:1px solid rgba(239, 68, 68, 0.5);" onclick="deleteSelectedSquare()" title="Delete entire plot">
+        <span>🗑️</span> Delete Plot
+      </button>
+    </div>
+  </div>
+
+  <div class="section-label">Plotted Agricultural Plots (<span id="squares-count">45</span>)</div>
   <div class="squares-list" id="squares-list">
     <div style="font-size: 11px; color: #64748b; padding: 6px 0; text-align: center;">Loading calibrated squares...</div>
   </div>
@@ -397,25 +425,9 @@ const STORAGE_KEY = 'lares_calibrated_plots_v8';
 // 45 Ground-Truth Calibrated Agricultural Plots (DA-LARES Field Plot Plan 1 to 45)
 const DEFAULT_CALIBRATED_SQUARES = [
   {
-    "name": "Plot 1 - Cassava Production",
-    "corners": {
-      "topLeft": [
-        121.16761428761268,
-        13.960780004901487
-      ],
-      "topRight": [
-        121.16927638623841,
-        13.96135069821559
-      ],
-      "bottomRight": [
-        121.16944060859075,
-        13.960931912407922
-      ],
-      "bottomLeft": [
-        121.16777552726202,
-        13.960352323866879
-      ]
-    },
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112322_0",
+    "name": "Plot 1 - Indigenous Trees",
+    "sides": 4,
     "polygon": [
       [
         121.16761428761268,
@@ -437,28 +449,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.16761428761268,
         13.960780004901487
       ]
-    ]
-  },
-  {
-    "name": "Plot 2 - Cassava Production",
+    ],
     "corners": {
       "topLeft": [
-        121.16927755662624,
-        13.961349145645464
+        121.16761428761268,
+        13.960780004901487
       ],
       "topRight": [
-        121.17080838839638,
-        13.96190277386092
+        121.16927638623841,
+        13.96135069821559
       ],
       "bottomRight": [
-        121.17098397929357,
-        13.961466271147735
+        121.16944060859075,
+        13.960931912407922
       ],
       "bottomLeft": [
-        121.16944125321561,
-        13.960936698444378
+        121.16777552726202,
+        13.960352323866879
       ]
-    },
+    }
+  },
+  {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112322_1",
+    "name": "Plot 2 - Corn Seed Production Area",
+    "sides": 4,
     "polygon": [
       [
         121.16927755662624,
@@ -480,28 +494,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.16927755662624,
         13.961349145645464
       ]
-    ]
-  },
-  {
-    "name": "Plot 3 - Vegetable Derby Citrus",
+    ],
     "corners": {
       "topLeft": [
-        121.16729543232424,
-        13.95993677327348
+        121.16927755662624,
+        13.961349145645464
       ],
       "topRight": [
-        121.16746301834138,
-        13.959433654482378
+        121.17080838839638,
+        13.96190277386092
       ],
       "bottomRight": [
-        121.16710914066238,
-        13.959322112406394
+        121.17098397929357,
+        13.961466271147735
       ],
       "bottomLeft": [
-        121.1669320266704,
-        13.959811858225745
+        121.16944125321561,
+        13.960936698444378
       ]
-    },
+    }
+  },
+  {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112322_2",
+    "name": "Plot 3 - Upland Rice Experimental Area",
+    "sides": 4,
     "polygon": [
       [
         121.16729543232424,
@@ -523,28 +539,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.16729543232424,
         13.95993677327348
       ]
-    ]
-  },
-  {
-    "name": "Plot 4 - Vegetable Derby Citrus",
+    ],
     "corners": {
       "topLeft": [
-        121.16755418146161,
-        13.960023513456942
+        121.16729543232424,
+        13.95993677327348
       ],
       "topRight": [
-        121.16772351552507,
-        13.95952498411172
+        121.16746301834138,
+        13.959433654482378
       ],
       "bottomRight": [
-        121.16746336319622,
-        13.959437147551878
+        121.16710914066238,
+        13.959322112406394
       ],
       "bottomLeft": [
-        121.16729650563676,
-        13.959939665494328
+        121.1669320266704,
+        13.959811858225745
       ]
-    },
+    }
+  },
+  {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112322_3",
+    "name": "Plot 4 - Vegetables Experimental Area",
+    "sides": 4,
     "polygon": [
       [
         121.16755418146161,
@@ -566,28 +584,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.16755418146161,
         13.960023513456942
       ]
-    ]
-  },
-  {
-    "name": "Plot 5 - Vegetable Derby Citrus",
+    ],
     "corners": {
       "topLeft": [
-        121.16781351524224,
-        13.960111706031494
+        121.16755418146161,
+        13.960023513456942
       ],
       "topRight": [
-        121.16799832959964,
-        13.959624876766252
+        121.16772351552507,
+        13.95952498411172
       ],
       "bottomRight": [
-        121.16772928945682,
-        13.959524696110375
+        121.16746336319622,
+        13.959437147551878
       ],
       "bottomLeft": [
-        121.1675577914458,
-        13.960025804373284
+        121.16729650563676,
+        13.959939665494328
       ]
-    },
+    }
+  },
+  {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112322_4",
+    "name": "Plot 5 - CGUARD Corn",
+    "sides": 4,
     "polygon": [
       [
         121.16781351524224,
@@ -609,28 +629,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.16781351524224,
         13.960111706031494
       ]
-    ]
-  },
-  {
-    "name": "Plot 6 - Citrus Orchard",
+    ],
     "corners": {
       "topLeft": [
-        121.16801373432531,
-        13.960425164214453
+        121.16781351524224,
+        13.960111706031494
       ],
       "topRight": [
-        121.16827723541246,
-        13.95972968143695
+        121.16799832959964,
+        13.959624876766252
       ],
       "bottomRight": [
-        121.16803302863588,
-        13.959646449575242
+        121.16772928945682,
+        13.959524696110375
       ],
       "bottomLeft": [
-        121.1677784243754,
-        13.960344913815572
+        121.1675577914458,
+        13.960025804373284
       ]
-    },
+    }
+  },
+  {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112322_5",
+    "name": "Plot 6 - Sprinkler Irrigation Block",
+    "sides": 4,
     "polygon": [
       [
         121.16801373432531,
@@ -652,28 +674,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.16801373432531,
         13.960425164214453
       ]
-    ]
-  },
-  {
-    "name": "Plot 7 - Citrus Orchard",
+    ],
     "corners": {
       "topLeft": [
-        121.16825871927844,
-        13.960512539849088
+        121.16801373432531,
+        13.960425164214453
       ],
       "topRight": [
-        121.16851925491719,
-        13.959809485997749
+        121.16827723541246,
+        13.95972968143695
       ],
       "bottomRight": [
-        121.16828176112622,
-        13.959726962554807
+        121.16803302863588,
+        13.959646449575242
       ],
       "bottomLeft": [
-        121.16801950327161,
-        13.96042940252519
+        121.1677784243754,
+        13.960344913815572
       ]
-    },
+    }
+  },
+  {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112322_6",
+    "name": "Plot 7 - Calamansi Clonal Block",
+    "sides": 4,
     "polygon": [
       [
         121.16825871927844,
@@ -695,28 +719,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.16825871927844,
         13.960512539849088
       ]
-    ]
-  },
-  {
-    "name": "Plot 8 - Citrus Orchard",
+    ],
     "corners": {
       "topLeft": [
-        121.16863466257257,
-        13.960640017342993
+        121.16825871927844,
+        13.960512539849088
       ],
       "topRight": [
-        121.16889078018278,
-        13.959943912014747
+        121.16851925491719,
+        13.959809485997749
       ],
       "bottomRight": [
-        121.16852701002199,
-        13.959816971161285
+        121.16828176112622,
+        13.959726962554807
       ],
       "bottomLeft": [
-        121.1682678366451,
-        13.960512395212756
+        121.16801950327161,
+        13.96042940252519
       ]
-    },
+    }
+  },
+  {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112322_7",
+    "name": "Plot 8 - Agro-Meteorological Station",
+    "sides": 4,
     "polygon": [
       [
         121.16863466257257,
@@ -738,28 +764,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.16863466257257,
         13.960640017342993
       ]
-    ]
-  },
-  {
-    "name": "Plot 9 - Citrus Orchard",
+    ],
     "corners": {
       "topLeft": [
-        121.16898245698411,
-        13.960762131578296
+        121.16863466257257,
+        13.960640017342993
       ],
       "topRight": [
-        121.16923893875247,
-        13.960057932305805
+        121.16889078018278,
+        13.959943912014747
       ],
       "bottomRight": [
-        121.16889543360566,
-        13.959943831085656
+        121.16852701002199,
+        13.959816971161285
       ],
       "bottomLeft": [
-        121.1686397160579,
-        13.960642439145023
+        121.1682678366451,
+        13.960512395212756
       ]
-    },
+    }
+  },
+  {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112322_8",
+    "name": "Plot 9 - Mandarin & Sweet Orange",
+    "sides": 4,
     "polygon": [
       [
         121.16898245698411,
@@ -781,28 +809,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.16898245698411,
         13.960762131578296
       ]
-    ]
-  },
-  {
-    "name": "Plot 10 - Citrus Orchard",
+    ],
     "corners": {
       "topLeft": [
-        121.16942865647368,
-        13.960922921239447
+        121.16898245698411,
+        13.960762131578296
       ],
       "topRight": [
-        121.16968910054422,
-        13.960213066936124
+        121.16923893875247,
+        13.960057932305805
       ],
       "bottomRight": [
-        121.16924304351406,
-        13.960063975763095
+        121.16889543360566,
+        13.959943831085656
       ],
       "bottomLeft": [
-        121.16898946969397,
-        13.960765894775609
+        121.1686397160579,
+        13.960642439145023
       ]
-    },
+    }
+  },
+  {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_9",
+    "name": "Plot 10 - Citrus IPM Research",
+    "sides": 4,
     "polygon": [
       [
         121.16942865647368,
@@ -824,28 +854,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.16942865647368,
         13.960922921239447
       ]
-    ]
-  },
-  {
-    "name": "Plot 11 - Citrus Orchard",
+    ],
     "corners": {
       "topLeft": [
-        121.16979675864525,
-        13.961052261900125
+        121.16942865647368,
+        13.960922921239447
       ],
       "topRight": [
-        121.17006788092317,
-        13.960346232320948
+        121.16968910054422,
+        13.960213066936124
       ],
       "bottomRight": [
-        121.16970603789963,
-        13.960217649154135
+        121.16924304351406,
+        13.960063975763095
       ],
       "bottomLeft": [
-        121.16944091830766,
-        13.96092808977237
+        121.16898946969397,
+        13.960765894775609
       ]
-    },
+    }
+  },
+  {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_10",
+    "name": "Plot 11 - Citrus Horticultural Plot",
+    "sides": 4,
     "polygon": [
       [
         121.16979675864525,
@@ -867,28 +899,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.16979675864525,
         13.961052261900125
       ]
-    ]
-  },
-  {
-    "name": "Plot 12 - Citrus Orchard",
+    ],
     "corners": {
       "topLeft": [
-        121.17012961825066,
-        13.961166018402146
+        121.16979675864525,
+        13.961052261900125
       ],
       "topRight": [
-        121.17040357225426,
-        13.96045660596139
+        121.17006788092317,
+        13.960346232320948
       ],
       "bottomRight": [
-        121.1700705979016,
-        13.960346027950898
+        121.16970603789963,
+        13.960217649154135
       ],
       "bottomLeft": [
-        121.16980100776073,
-        13.961054417100748
+        121.16944091830766,
+        13.96092808977237
       ]
-    },
+    }
+  },
+  {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_11",
+    "name": "Plot 12 - Citrus Field Irrigation Plot",
+    "sides": 4,
     "polygon": [
       [
         121.17012961825066,
@@ -910,28 +944,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.17012961825066,
         13.961166018402146
       ]
-    ]
-  },
-  {
-    "name": "Plot 13 - Cassava Germplasm",
+    ],
     "corners": {
       "topLeft": [
-        121.1703858014474,
-        13.961255892411579
+        121.17012961825066,
+        13.961166018402146
       ],
       "topRight": [
-        121.17066353707096,
-        13.960548494677575
+        121.17040357225426,
+        13.96045660596139
       ],
       "bottomRight": [
-        121.17040758387222,
-        13.960458159326329
+        121.1700705979016,
+        13.960346027950898
       ],
       "bottomLeft": [
-        121.17012977763719,
-        13.961171549565854
+        121.16980100776073,
+        13.961054417100748
       ]
-    },
+    }
+  },
+  {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_12",
+    "name": "Plot 13 - Corn Seed Production Area",
+    "sides": 4,
     "polygon": [
       [
         121.1703858014474,
@@ -953,28 +989,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.1703858014474,
         13.961255892411579
       ]
-    ]
-  },
-  {
-    "name": "Plot 14 - Cassava Germplasm",
+    ],
     "corners": {
       "topLeft": [
-        121.17059134809159,
-        13.961326395630941
+        121.1703858014474,
+        13.961255892411579
       ],
       "topRight": [
-        121.17085684568224,
-        13.960611783270146
+        121.17066353707096,
+        13.960548494677575
       ],
       "bottomRight": [
-        121.1706661052155,
-        13.960549910876757
+        121.17040758387222,
+        13.960458159326329
       ],
       "bottomLeft": [
-        121.17039194370966,
-        13.961257898658012
+        121.17012977763719,
+        13.961171549565854
       ]
-    },
+    }
+  },
+  {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_13",
+    "name": "Plot 14 - Corn Seed Production Area",
+    "sides": 4,
     "polygon": [
       [
         121.17059134809159,
@@ -996,28 +1034,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.17059134809159,
         13.961326395630941
       ]
-    ]
-  },
-  {
-    "name": "Plot 15 - ATI Corn Trial",
+    ],
     "corners": {
       "topLeft": [
-        121.17098599518857,
-        13.961456911674912
+        121.17059134809159,
+        13.961326395630941
       ],
       "topRight": [
-        121.17125964936002,
-        13.960752185516238
+        121.17085684568224,
+        13.960611783270146
       ],
       "bottomRight": [
-        121.17086744205415,
-        13.960617074623624
+        121.1706661052155,
+        13.960549910876757
       ],
       "bottomLeft": [
-        121.17059860611289,
-        13.96132875102543
+        121.17039194370966,
+        13.961257898658012
       ]
-    },
+    }
+  },
+  {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_14",
+    "name": "Plot 15 - Corn Seed Production Area",
+    "sides": 4,
     "polygon": [
       [
         121.17098599518857,
@@ -1039,28 +1079,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.17098599518857,
         13.961456911674912
       ]
-    ]
+    ],
+    "corners": {
+      "topLeft": [
+        121.17098599518857,
+        13.961456911674912
+      ],
+      "topRight": [
+        121.17125964936002,
+        13.960752185516238
+      ],
+      "bottomRight": [
+        121.17086744205415,
+        13.960617074623624
+      ],
+      "bottomLeft": [
+        121.17059860611289,
+        13.96132875102543
+      ]
+    }
   },
   {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_15",
     "name": "Plot 16 - Mango Orchard",
-    "corners": {
-      "topLeft": [
-        121.17118256515053,
-        13.961160698658798
-      ],
-      "topRight": [
-        121.17252370511406,
-        13.961656928890275
-      ],
-      "bottomRight": [
-        121.17277596376024,
-        13.960912307684833
-      ],
-      "bottomLeft": [
-        121.1714550115947,
-        13.960334298392933
-      ]
-    },
+    "sides": 4,
     "polygon": [
       [
         121.17118256515053,
@@ -1082,40 +1124,42 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.17118256515053,
         13.961160698658798
       ]
-    ]
+    ],
+    "corners": {
+      "topLeft": [
+        121.17118256515053,
+        13.961160698658798
+      ],
+      "topRight": [
+        121.17252370511406,
+        13.961656928890275
+      ],
+      "bottomRight": [
+        121.17277596376024,
+        13.960912307684833
+      ],
+      "bottomLeft": [
+        121.1714550115947,
+        13.960334298392933
+      ]
+    }
   },
   {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_16",
     "name": "Plot 17 - TC Makapuno & Banana Screenhouse",
-    "corners": {
-      "topLeft": [
-        121.16739638852135,
-        13.959271323700783
-      ],
-      "topRight": [
-        121.16767080556389,
-        13.958547027853903
-      ],
-      "bottomRight": [
-        121.16742685035422,
-        13.95846738766513
-      ],
-      "bottomLeft": [
-        121.16714343862537,
-        13.959183284650827
-      ]
-    },
+    "sides": 4,
     "polygon": [
       [
         121.16739638852135,
         13.959271323700783
       ],
       [
-        121.16767080556389,
-        13.958547027853903
+        121.16768168279407,
+        13.958547470562216
       ],
       [
-        121.16742685035422,
-        13.95846738766513
+        121.16742848685931,
+        13.95846308945088
       ],
       [
         121.16714343862537,
@@ -1125,40 +1169,42 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.16739638852135,
         13.959271323700783
       ]
-    ]
+    ],
+    "corners": {
+      "topLeft": [
+        121.16739638852135,
+        13.959271323700783
+      ],
+      "topRight": [
+        121.16768168279407,
+        13.958547470562216
+      ],
+      "bottomRight": [
+        121.16742848685931,
+        13.95846308945088
+      ],
+      "bottomLeft": [
+        121.16714343862537,
+        13.959183284650827
+      ]
+    }
   },
   {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_17",
     "name": "Plot 18 - Coffee & Citrus Screenhouse",
-    "corners": {
-      "topLeft": [
-        121.16774261454921,
-        13.95938929057548
-      ],
-      "topRight": [
-        121.16801762291058,
-        13.958659752964031
-      ],
-      "bottomRight": [
-        121.1676714475773,
-        13.958546826521278
-      ],
-      "bottomLeft": [
-        121.1673975873401,
-        13.959271071309779
-      ]
-    },
+    "sides": 4,
     "polygon": [
       [
         121.16774261454921,
         13.95938929057548
       ],
       [
-        121.16801762291058,
-        13.958659752964031
+        121.16790884987282,
+        13.95895636963457
       ],
       [
-        121.1676714475773,
-        13.958546826521278
+        121.16756986151049,
+        13.958833814186058
       ],
       [
         121.1673975873401,
@@ -1168,28 +1214,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.16774261454921,
         13.95938929057548
       ]
-    ]
-  },
-  {
-    "name": "Plot 19 - Pummelo Orchard",
+    ],
     "corners": {
       "topLeft": [
-        121.16806478598295,
-        13.959503333123472
+        121.16774261454921,
+        13.95938929057548
       ],
       "topRight": [
-        121.16835524221705,
-        13.958772264010825
+        121.16790884987282,
+        13.95895636963457
       ],
       "bottomRight": [
-        121.16802140628471,
-        13.958661230522004
+        121.16756986151049,
+        13.958833814186058
       ],
       "bottomLeft": [
-        121.1677440413253,
-        13.959389276810832
+        121.1673975873401,
+        13.959271071309779
       ]
-    },
+    }
+  },
+  {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_18",
+    "name": "Plot 19 - Pomelo Orchard",
+    "sides": 7,
     "polygon": [
       [
         121.16806478598295,
@@ -1204,6 +1252,18 @@ const DEFAULT_CALIBRATED_SQUARES = [
         13.958661230522004
       ],
       [
+        121.16768173490146,
+        13.958547237410919
+      ],
+      [
+        121.16756928145179,
+        13.958833274886594
+      ],
+      [
+        121.16790962901143,
+        13.958955694990529
+      ],
+      [
         121.1677440413253,
         13.959389276810832
       ],
@@ -1214,25 +1274,9 @@ const DEFAULT_CALIBRATED_SQUARES = [
     ]
   },
   {
-    "name": "Plot 20 - Coffee Orchard & TC Banana",
-    "corners": {
-      "topLeft": [
-        121.16842451039633,
-        13.95962236665562
-      ],
-      "topRight": [
-        121.16869666413407,
-        13.958891572492103
-      ],
-      "bottomRight": [
-        121.16838084374211,
-        13.958788131059432
-      ],
-      "bottomLeft": [
-        121.16809554269884,
-        13.959514688262825
-      ]
-    },
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_19",
+    "name": "Plot 20 - Coffee Orchard",
+    "sides": 4,
     "polygon": [
       [
         121.16842451039633,
@@ -1254,28 +1298,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.16842451039633,
         13.95962236665562
       ]
-    ]
-  },
-  {
-    "name": "Plot 21 - Coffee Orchard & TC Banana",
+    ],
     "corners": {
       "topLeft": [
-        121.16873654584688,
-        13.95972915073197
+        121.16842451039633,
+        13.95962236665562
       ],
       "topRight": [
-        121.16901427242195,
-        13.958996410869656
+        121.16869666413407,
+        13.958891572492103
       ],
       "bottomRight": [
-        121.16869879524708,
-        13.958891619080756
+        121.16838084374211,
+        13.958788131059432
       ],
       "bottomLeft": [
-        121.16842551753021,
-        13.959623806868702
+        121.16809554269884,
+        13.959514688262825
       ]
-    },
+    }
+  },
+  {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_20",
+    "name": "Plot 21 - Coffee Orchard",
+    "sides": 4,
     "polygon": [
       [
         121.16873654584688,
@@ -1297,28 +1343,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.16873654584688,
         13.95972915073197
       ]
-    ]
-  },
-  {
-    "name": "Plot 22 - Coffee Orchard & TC Banana",
+    ],
     "corners": {
       "topLeft": [
-        121.16902334303632,
-        13.959830136701992
+        121.16873654584688,
+        13.95972915073197
       ],
       "topRight": [
-        121.16931205516732,
-        13.95910464098969
+        121.16901427242195,
+        13.958996410869656
       ],
       "bottomRight": [
-        121.16901358045283,
-        13.95899800919322
+        121.16869879524708,
+        13.958891619080756
       ],
       "bottomLeft": [
-        121.16873673926187,
-        13.959731297392462
+        121.16842551753021,
+        13.959623806868702
       ]
-    },
+    }
+  },
+  {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_21",
+    "name": "Plot 22 - Coffee Orchard",
+    "sides": 4,
     "polygon": [
       [
         121.16902334303632,
@@ -1340,28 +1388,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.16902334303632,
         13.959830136701992
       ]
-    ]
-  },
-  {
-    "name": "Plot 23 - Vegetable Garden",
+    ],
     "corners": {
       "topLeft": [
-        121.16936637113713,
-        13.959948547692523
+        121.16902334303632,
+        13.959830136701992
       ],
       "topRight": [
-        121.16965538311484,
-        13.959225599662634
+        121.16931205516732,
+        13.95910464098969
       ],
       "bottomRight": [
-        121.16933208878879,
-        13.959118833488152
+        121.16901358045283,
+        13.95899800919322
       ],
       "bottomLeft": [
-        121.16904634188569,
-        13.959836353094179
+        121.16873673926187,
+        13.959731297392462
       ]
-    },
+    }
+  },
+  {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_22",
+    "name": "Plot 23 - Vegetable Production Area",
+    "sides": 4,
     "polygon": [
       [
         121.16936637113713,
@@ -1383,28 +1433,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.16936637113713,
         13.959948547692523
       ]
-    ]
-  },
-  {
-    "name": "Plot 24 - Vegetable Garden",
+    ],
     "corners": {
       "topLeft": [
-        121.169698645627,
-        13.960065190379968
+        121.16936637113713,
+        13.959948547692523
       ],
       "topRight": [
-        121.16996713344028,
-        13.959333486243768
+        121.16965538311484,
+        13.959225599662634
       ],
       "bottomRight": [
-        121.16965615663176,
-        13.959225878169097
+        121.16933208878879,
+        13.959118833488152
       ],
       "bottomLeft": [
-        121.1693675396626,
-        13.959949293064131
+        121.16904634188569,
+        13.959836353094179
       ]
-    },
+    }
+  },
+  {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_23",
+    "name": "Plot 24 - Vegetable Production Area",
+    "sides": 4,
     "polygon": [
       [
         121.169698645627,
@@ -1426,28 +1478,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.169698645627,
         13.960065190379968
       ]
-    ]
-  },
-  {
-    "name": "Plot 25 - Vegetable Garden",
+    ],
     "corners": {
       "topLeft": [
-        121.16999277297816,
-        13.960167005310002
+        121.169698645627,
+        13.960065190379968
       ],
       "topRight": [
-        121.17028831979286,
-        13.959443939397861
+        121.16996713344028,
+        13.959333486243768
       ],
       "bottomRight": [
-        121.16997027406313,
-        13.959333882672642
+        121.16965615663176,
+        13.959225878169097
       ],
       "bottomLeft": [
-        121.16969799899505,
-        13.960065218689
+        121.1693675396626,
+        13.959949293064131
       ]
-    },
+    }
+  },
+  {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_24",
+    "name": "Plot 25 - Vegetable Production Area",
+    "sides": 4,
     "polygon": [
       [
         121.16999277297816,
@@ -1469,28 +1523,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.16999277297816,
         13.960167005310002
       ]
-    ]
-  },
-  {
-    "name": "Plot 26 - Fruit Trees, Surghum & Citrus",
+    ],
     "corners": {
       "topLeft": [
-        121.17035203304954,
-        13.960286727218168
+        121.16999277297816,
+        13.960167005310002
       ],
       "topRight": [
-        121.17064257733477,
-        13.959572129477898
+        121.17028831979286,
+        13.959443939397861
       ],
       "bottomRight": [
-        121.1703352566762,
-        13.959460353178947
+        121.16997027406313,
+        13.959333882672642
       ],
       "bottomLeft": [
-        121.17004349943943,
-        13.96018205599885
+        121.16969799899505,
+        13.960065218689
       ]
-    },
+    }
+  },
+  {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_25",
+    "name": "Plot 26 - Fruit Trees & Citrus Orchard",
+    "sides": 4,
     "polygon": [
       [
         121.17035203304954,
@@ -1512,28 +1568,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.17035203304954,
         13.960286727218168
       ]
-    ]
-  },
-  {
-    "name": "Plot 27 - Fruit Trees, Surghum & Citrus",
+    ],
     "corners": {
       "topLeft": [
-        121.17063945685501,
-        13.960389060533977
+        121.17035203304954,
+        13.960286727218168
       ],
       "topRight": [
-        121.17094211147148,
-        13.959681333486948
+        121.17064257733477,
+        13.959572129477898
       ],
       "bottomRight": [
-        121.17065082181651,
-        13.959576196672124
+        121.1703352566762,
+        13.959460353178947
       ],
       "bottomLeft": [
-        121.1703517178955,
-        13.960286220133263
+        121.17004349943943,
+        13.96018205599885
       ]
-    },
+    }
+  },
+  {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_26",
+    "name": "Plot 27 - Fruit Trees & Citrus Orchard",
+    "sides": 4,
     "polygon": [
       [
         121.17063945685501,
@@ -1555,28 +1613,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.17063945685501,
         13.960389060533977
       ]
-    ]
-  },
-  {
-    "name": "Plot 28 - Fruit Trees, Surghum & Citrus",
+    ],
     "corners": {
       "topLeft": [
-        121.17090514723037,
-        13.960485092218342
+        121.17063945685501,
+        13.960389060533977
       ],
       "topRight": [
-        121.17120100546339,
-        13.959779441967235
+        121.17094211147148,
+        13.959681333486948
       ],
       "bottomRight": [
-        121.17094388556768,
-        13.959685770723219
+        121.17065082181651,
+        13.959576196672124
       ],
       "bottomLeft": [
-        121.1706410426878,
-        13.960391380595858
+        121.1703517178955,
+        13.960286220133263
       ]
-    },
+    }
+  },
+  {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_27",
+    "name": "Plot 28 - Fruit Trees & Citrus Orchard",
+    "sides": 4,
     "polygon": [
       [
         121.17090514723037,
@@ -1598,28 +1658,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.17090514723037,
         13.960485092218342
       ]
-    ]
+    ],
+    "corners": {
+      "topLeft": [
+        121.17090514723037,
+        13.960485092218342
+      ],
+      "topRight": [
+        121.17120100546339,
+        13.959779441967235
+      ],
+      "bottomRight": [
+        121.17094388556768,
+        13.959685770723219
+      ],
+      "bottomLeft": [
+        121.1706410426878,
+        13.960391380595858
+      ]
+    }
   },
   {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_28",
     "name": "Plot 29 - Tall Makapuno & Cacao",
-    "corners": {
-      "topLeft": [
-        121.17135253455945,
-        13.96051109995998
-      ],
-      "topRight": [
-        121.17174137170468,
-        13.959579476547852
-      ],
-      "bottomRight": [
-        121.17144698993195,
-        13.95946399638671
-      ],
-      "bottomLeft": [
-        121.17105352255726,
-        13.960395861108715
-      ]
-    },
+    "sides": 4,
     "polygon": [
       [
         121.17135253455945,
@@ -1641,71 +1703,65 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.17135253455945,
         13.96051109995998
       ]
-    ]
-  },
-  {
-    "name": "Plot 30 - Mango, Banana & Jackfruit",
+    ],
     "corners": {
       "topLeft": [
-        121.16769782336365,
-        13.958464917709495
+        121.17135253455945,
+        13.96051109995998
       ],
       "topRight": [
-        121.16799713392498,
-        13.957636558358647
+        121.17174137170468,
+        13.959579476547852
       ],
       "bottomRight": [
-        121.16774565418189,
-        13.957557120345175
+        121.17144698993195,
+        13.95946399638671
       ],
       "bottomLeft": [
-        121.16745990420185,
-        13.958385204003878
+        121.17105352255726,
+        13.960395861108715
       ]
-    },
+    }
+  },
+  {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_29",
+    "name": "Plot 30 - Mango, Banana & Jackfruit Trees",
+    "sides": 6,
     "polygon": [
       [
-        121.16769782336365,
-        13.958464917709495
+        121.167775920868,
+        13.958242868066836
       ],
       [
         121.16799713392498,
         13.957636558358647
       ],
       [
-        121.16774565418189,
-        13.957557120345175
+        121.16751766945316,
+        13.95748371481982
       ],
       [
-        121.16745990420185,
-        13.958385204003878
+        121.16737253299056,
+        13.957940810089855
       ],
       [
-        121.16769782336365,
-        13.958464917709495
+        121.16760873382967,
+        13.958022327902153
+      ],
+      [
+        121.16755718403806,
+        13.958165303701154
+      ],
+      [
+        121.167775920868,
+        13.958242868066836
       ]
     ]
   },
   {
-    "name": "Plot 31 - Mango, Banana & Jackfruit",
-    "corners": {
-      "topLeft": [
-        121.16804350441274,
-        13.958577526282514
-      ],
-      "topRight": [
-        121.16834827280118,
-        13.95775022130444
-      ],
-      "bottomRight": [
-        121.16800034983348,
-        13.957639681061938
-      ],
-      "bottomLeft": [
-        121.16769860428477,
-        13.958465406222064
-      ]
-    },
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_30",
+    "name": "Plot 31 - Mango, Banana & Jackfruit Trees",
+    "sides": 4,
     "polygon": [
       [
         121.16804350441274,
@@ -1727,28 +1783,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.16804350441274,
         13.958577526282514
       ]
-    ]
-  },
-  {
-    "name": "Plot 32 - Mango, Banana & Jackfruit",
+    ],
     "corners": {
       "topLeft": [
-        121.16837922318643,
-        13.958687183074577
+        121.16804350441274,
+        13.958577526282514
       ],
       "topRight": [
-        121.16867000971331,
-        13.95786904636454
+        121.16834827280118,
+        13.95775022130444
       ],
       "bottomRight": [
-        121.16835079735671,
-        13.957752073107589
+        121.16800034983348,
+        13.957639681061938
       ],
       "bottomLeft": [
-        121.16804516823669,
-        13.958572967362347
+        121.16769860428477,
+        13.958465406222064
       ]
-    },
+    }
+  },
+  {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_31",
+    "name": "Plot 32 - Mango, Banana & Jackfruit Trees",
+    "sides": 4,
     "polygon": [
       [
         121.16837922318643,
@@ -1770,28 +1828,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.16837922318643,
         13.958687183074577
       ]
-    ]
+    ],
+    "corners": {
+      "topLeft": [
+        121.16837922318643,
+        13.958687183074577
+      ],
+      "topRight": [
+        121.16867000971331,
+        13.95786904636454
+      ],
+      "bottomRight": [
+        121.16835079735671,
+        13.957752073107589
+      ],
+      "bottomLeft": [
+        121.16804516823669,
+        13.958572967362347
+      ]
+    }
   },
   {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_32",
     "name": "Plot 33 - Dwarf Makapuno",
-    "corners": {
-      "topLeft": [
-        121.16874034480617,
-        13.958812402170715
-      ],
-      "topRight": [
-        121.16902211763022,
-        13.95803368010126
-      ],
-      "bottomRight": [
-        121.16869034755263,
-        13.957923836831036
-      ],
-      "bottomLeft": [
-        121.16841755847065,
-        13.95870378592128
-      ]
-    },
+    "sides": 4,
     "polygon": [
       [
         121.16874034480617,
@@ -1813,28 +1873,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.16874034480617,
         13.958812402170715
       ]
-    ]
+    ],
+    "corners": {
+      "topLeft": [
+        121.16874034480617,
+        13.958812402170715
+      ],
+      "topRight": [
+        121.16902211763022,
+        13.95803368010126
+      ],
+      "bottomRight": [
+        121.16869034755263,
+        13.957923836831036
+      ],
+      "bottomLeft": [
+        121.16841755847065,
+        13.95870378592128
+      ]
+    }
   },
   {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_33",
     "name": "Plot 34 - Dwarf Makapuno",
-    "corners": {
-      "topLeft": [
-        121.16904197149327,
-        13.95891151212836
-      ],
-      "topRight": [
-        121.16931979766994,
-        13.958133943676252
-      ],
-      "bottomRight": [
-        121.16902254564891,
-        13.958033482454745
-      ],
-      "bottomLeft": [
-        121.16874175267972,
-        13.958814028983504
-      ]
-    },
+    "sides": 4,
     "polygon": [
       [
         121.16904197149327,
@@ -1856,28 +1918,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.16904197149327,
         13.95891151212836
       ]
-    ]
+    ],
+    "corners": {
+      "topLeft": [
+        121.16904197149327,
+        13.95891151212836
+      ],
+      "topRight": [
+        121.16931979766994,
+        13.958133943676252
+      ],
+      "bottomRight": [
+        121.16902254564891,
+        13.958033482454745
+      ],
+      "bottomLeft": [
+        121.16874175267972,
+        13.958814028983504
+      ]
+    }
   },
   {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_34",
     "name": "Plot 35 - Dwarf Makapuno",
-    "corners": {
-      "topLeft": [
-        121.1693031626271,
-        13.958993922091345
-      ],
-      "topRight": [
-        121.16960004591772,
-        13.958230401818263
-      ],
-      "bottomRight": [
-        121.16932486413378,
-        13.958137339977846
-      ],
-      "bottomLeft": [
-        121.16904191647541,
-        13.958912939651775
-      ]
-    },
+    "sides": 4,
     "polygon": [
       [
         121.1693031626271,
@@ -1899,28 +1963,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.1693031626271,
         13.958993922091345
       ]
-    ]
-  },
-  {
-    "name": "Plot 36 - Rice & Soybean",
+    ],
     "corners": {
       "topLeft": [
-        121.16968665460337,
-        13.959109768815363
+        121.1693031626271,
+        13.958993922091345
       ],
       "topRight": [
-        121.16996998841887,
-        13.958358268938294
+        121.16960004591772,
+        13.958230401818263
       ],
       "bottomRight": [
-        121.16966781082999,
-        13.95826170779102
+        121.16932486413378,
+        13.958137339977846
       ],
       "bottomLeft": [
-        121.16938351433106,
-        13.959010795677568
+        121.16904191647541,
+        13.958912939651775
       ]
-    },
+    }
+  },
+  {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_35",
+    "name": "Plot 36 - Cassava Production Area",
+    "sides": 4,
     "polygon": [
       [
         121.16968665460337,
@@ -1942,28 +2008,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.16968665460337,
         13.959109768815363
       ]
-    ]
-  },
-  {
-    "name": "Plot 37 - Bio Prime & Enviro Corn Trial",
+    ],
     "corners": {
       "topLeft": [
-        121.17001364224103,
-        13.959226032949427
+        121.16968665460337,
+        13.959109768815363
       ],
       "topRight": [
-        121.17030130720156,
-        13.958462345006364
+        121.16996998841887,
+        13.958358268938294
       ],
       "bottomRight": [
-        121.16997211093428,
-        13.9583584678313
+        121.16966781082999,
+        13.95826170779102
       ],
       "bottomLeft": [
-        121.16968859914084,
-        13.959110093305437
+        121.16938351433106,
+        13.959010795677568
       ]
-    },
+    }
+  },
+  {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_36",
+    "name": "Plot 37 - Cassava Production Area",
+    "sides": 4,
     "polygon": [
       [
         121.17001364224103,
@@ -1985,28 +2053,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.17001364224103,
         13.959226032949427
       ]
-    ]
-  },
-  {
-    "name": "Plot 38 - Bio Prime & Enviro Corn Trial",
+    ],
     "corners": {
       "topLeft": [
-        121.17038463662973,
-        13.959349948984038
+        121.17001364224103,
+        13.959226032949427
       ],
       "topRight": [
-        121.1706678833942,
-        13.9585807232456
+        121.17030130720156,
+        13.958462345006364
       ],
       "bottomRight": [
-        121.17030161310461,
-        13.958463454671925
+        121.16997211093428,
+        13.9583584678313
       ],
       "bottomLeft": [
-        121.17001512046201,
-        13.959226789182221
+        121.16968859914084,
+        13.959110093305437
       ]
-    },
+    }
+  },
+  {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_37",
+    "name": "Plot 38 - Cassava Production Area",
+    "sides": 4,
     "polygon": [
       [
         121.17038463662973,
@@ -2028,28 +2098,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.17038463662973,
         13.959349948984038
       ]
-    ]
-  },
-  {
-    "name": "Plot 39 - Corn Research",
+    ],
     "corners": {
       "topLeft": [
-        121.17070246080237,
-        13.959469958930288
+        121.17038463662973,
+        13.959349948984038
       ],
       "topRight": [
-        121.17101948715856,
-        13.958702979575836
+        121.1706678833942,
+        13.9585807232456
       ],
       "bottomRight": [
-        121.17069470340715,
-        13.958600810574854
+        121.17030161310461,
+        13.958463454671925
       ],
       "bottomLeft": [
-        121.17040626068564,
-        13.959361990824963
+        121.17001512046201,
+        13.959226789182221
       ]
-    },
+    }
+  },
+  {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_38",
+    "name": "Plot 39 - Soybean Seeds Production Area",
+    "sides": 4,
     "polygon": [
       [
         121.17070246080237,
@@ -2071,28 +2143,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.17070246080237,
         13.959469958930288
       ]
-    ]
-  },
-  {
-    "name": "Plot 40 - Corn Research",
+    ],
     "corners": {
       "topLeft": [
-        121.17099552140738,
-        13.95956832020737
+        121.17070246080237,
+        13.959469958930288
       ],
       "topRight": [
-        121.17133534546784,
-        13.95880663152862
+        121.17101948715856,
+        13.958702979575836
       ],
       "bottomRight": [
-        121.17102485636767,
-        13.958706583754012
+        121.17069470340715,
+        13.958600810574854
       ],
       "bottomLeft": [
-        121.17070333108344,
-        13.959471679119293
+        121.17040626068564,
+        13.959361990824963
       ]
-    },
+    }
+  },
+  {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_39",
+    "name": "Plot 40 - Soybean Seeds Production Area",
+    "sides": 4,
     "polygon": [
       [
         121.17099552140738,
@@ -2114,28 +2188,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.17099552140738,
         13.95956832020737
       ]
-    ]
-  },
-  {
-    "name": "Plot 41 - Corn Research",
+    ],
     "corners": {
       "topLeft": [
-        121.17125913585625,
-        13.959653652539902
+        121.17099552140738,
+        13.95956832020737
       ],
       "topRight": [
-        121.17161146898093,
-        13.958898383551546
+        121.17133534546784,
+        13.95880663152862
       ],
       "bottomRight": [
-        121.17134042892474,
-        13.958808491362223
+        121.17102485636767,
+        13.958706583754012
       ],
       "bottomLeft": [
-        121.17099960626223,
-        13.959574651958878
+        121.17070333108344,
+        13.959471679119293
       ]
-    },
+    }
+  },
+  {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_40",
+    "name": "Plot 41 - Soybean Seeds Production Area",
+    "sides": 4,
     "polygon": [
       [
         121.17125913585625,
@@ -2157,28 +2233,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.17125913585625,
         13.959653652539902
       ]
-    ]
+    ],
+    "corners": {
+      "topLeft": [
+        121.17125913585625,
+        13.959653652539902
+      ],
+      "topRight": [
+        121.17161146898093,
+        13.958898383551546
+      ],
+      "bottomRight": [
+        121.17134042892474,
+        13.958808491362223
+      ],
+      "bottomLeft": [
+        121.17099960626223,
+        13.959574651958878
+      ]
+    }
   },
   {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_41",
     "name": "Plot 42 - Tall Makapuno & Cacao",
-    "corners": {
-      "topLeft": [
-        121.1717411901156,
-        13.959579124289593
-      ],
-      "topRight": [
-        121.17218387674558,
-        13.958551402876655
-      ],
-      "bottomRight": [
-        121.17188999310986,
-        13.958440896153068
-      ],
-      "bottomLeft": [
-        121.17144785348233,
-        13.959464544307696
-      ]
-    },
+    "sides": 4,
     "polygon": [
       [
         121.1717411901156,
@@ -2200,28 +2278,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.1717411901156,
         13.959579124289593
       ]
-    ]
-  },
-  {
-    "name": "Plot 43 - Glutinous Flint Corn",
+    ],
     "corners": {
       "topLeft": [
-        121.1696958671213,
-        13.958242464693416
+        121.1717411901156,
+        13.959579124289593
       ],
       "topRight": [
-        121.17163836465048,
-        13.958889607470343
+        121.17218387674558,
+        13.958551402876655
       ],
       "bottomRight": [
-        121.17187339670974,
-        13.958437566152032
+        121.17188999310986,
+        13.958440896153068
       ],
       "bottomLeft": [
-        121.1697690292979,
-        13.958036556227757
+        121.17144785348233,
+        13.959464544307696
       ]
-    },
+    }
+  },
+  {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_42",
+    "name": "Plot 43 - Cassava Production Area",
+    "sides": 4,
     "polygon": [
       [
         121.1696958671213,
@@ -2243,28 +2323,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.1696958671213,
         13.958242464693416
       ]
-    ]
-  },
-  {
-    "name": "Plot 44 - Pomelo Orchard",
+    ],
     "corners": {
       "topLeft": [
-        121.16771913679435,
-        13.957506273161957
+        121.1696958671213,
+        13.958242464693416
       ],
       "topRight": [
-        121.16969565448267,
-        13.958221926516462
+        121.17163836465048,
+        13.958889607470343
       ],
       "bottomRight": [
-        121.16976650009917,
-        13.95803638966969
+        121.17187339670974,
+        13.958437566152032
       ],
       "bottomLeft": [
-        121.1677192573344,
-        13.957505589074774
+        121.1697690292979,
+        13.958036556227757
       ]
-    },
+    }
+  },
+  {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_43",
+    "name": "Plot 44 - Organic Vegetable Production Area",
+    "sides": 4,
     "polygon": [
       [
         121.16771913679435,
@@ -2286,28 +2368,30 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.16771913679435,
         13.957506273161957
       ]
-    ]
+    ],
+    "corners": {
+      "topLeft": [
+        121.16771913679435,
+        13.957506273161957
+      ],
+      "topRight": [
+        121.16969565448267,
+        13.958221926516462
+      ],
+      "bottomRight": [
+        121.16976650009917,
+        13.95803638966969
+      ],
+      "bottomLeft": [
+        121.1677192573344,
+        13.957505589074774
+      ]
+    }
   },
   {
+    "id": "field_field_field_field_field_field_field_field_field_field_field_1792487112323_44",
     "name": "Plot 45 - Mango Orchard",
-    "corners": {
-      "topLeft": [
-        121.17083625580881,
-        13.961929777007594
-      ],
-      "topRight": [
-        121.17220106232065,
-        13.962406128728954
-      ],
-      "bottomRight": [
-        121.17249335325192,
-        13.961739830591522
-      ],
-      "bottomLeft": [
-        121.1711402549326,
-        13.961197296009384
-      ]
-    },
+    "sides": 4,
     "polygon": [
       [
         121.17083625580881,
@@ -2329,74 +2413,92 @@ const DEFAULT_CALIBRATED_SQUARES = [
         121.17083625580881,
         13.961929777007594
       ]
-    ]
+    ],
+    "corners": {
+      "topLeft": [
+        121.17083625580881,
+        13.961929777007594
+      ],
+      "topRight": [
+        121.17220106232065,
+        13.962406128728954
+      ],
+      "bottomRight": [
+        121.17249335325192,
+        13.961739830591522
+      ],
+      "bottomLeft": [
+        121.1711402549326,
+        13.961197296009384
+      ]
+    }
   }
-];
-
-const map = new mapboxgl.Map({
-    container: 'map',
-    style: {
-        'version': 8,
-        'glyphs': 'mapbox://fonts/mapbox/{fontstack}/{range}.pbf',
-        'sources': {
-            'google-satellite': {
-                'type': 'raster',
-                'tiles': ['https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'],
-                'tileSize': 256,
-                'maxzoom': 22
-            },
-            'lares-drone-source': {
-                'type': 'raster',
-                'tiles': ['/api/tiles/{z}/{x}/{y}.png'],
-                'tileSize': 256,
-                'minzoom': 14,
-                'maxzoom': 24,
-                'bounds': [121.165052, 13.956537, 121.173221, 13.963068]
-            }
-        },
-        'layers': [
-            {
-                'id': 'google-satellite-layer',
-                'type': 'raster',
-                'source': 'google-satellite'
-            },
-            {
-                'id': 'lares-drone-layer',
-                'type': 'raster',
-                'source': 'lares-drone-source',
-                'paint': {
-                    'raster-opacity': 1.0,
-                    'raster-fade-duration': 0
-                }
-            }
-        ]
-    },
-    // Center dynamically on the 45 calibrated field plots
-    center: [121.1698, 13.9599],
-    zoom: 17.2,
-    pitch: 0,
-    bearing: 0
-});
-
-window.map = map;
-
-// Initialize Mapbox Draw
-const draw = new MapboxDraw({
-    displayControlsDefault: false,
-    controls: {
-        polygon: true,
-        trash: true
-    },
-    defaultMode: 'simple_select'
-});
-map.addControl(draw, 'top-right');
-window.draw = draw;
-
-// Metadata map: featureId -> { name }
-const featureMeta = {};
-// HTML Markers for on-map labels: featureId -> mapboxgl.Marker
-const mapMarkers = {};
-
+];
+
+const map = new mapboxgl.Map({
+    container: 'map',
+    style: {
+        'version': 8,
+        'glyphs': 'mapbox://fonts/mapbox/{fontstack}/{range}.pbf',
+        'sources': {
+            'google-satellite': {
+                'type': 'raster',
+                'tiles': ['https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'],
+                'tileSize': 256,
+                'maxzoom': 22
+            },
+            'lares-drone-source': {
+                'type': 'raster',
+                'tiles': ['/api/tiles/{z}/{x}/{y}.png'],
+                'tileSize': 256,
+                'minzoom': 14,
+                'maxzoom': 24,
+                'bounds': [121.165052, 13.956537, 121.173221, 13.963068]
+            }
+        },
+        'layers': [
+            {
+                'id': 'google-satellite-layer',
+                'type': 'raster',
+                'source': 'google-satellite'
+            },
+            {
+                'id': 'lares-drone-layer',
+                'type': 'raster',
+                'source': 'lares-drone-source',
+                'paint': {
+                    'raster-opacity': 1.0,
+                    'raster-fade-duration': 0
+                }
+            }
+        ]
+    },
+    // Center dynamically on the 45 calibrated field plots
+    center: [121.1698, 13.9599],
+    zoom: 17.2,
+    pitch: 0,
+    bearing: 0
+});
+
+window.map = map;
+
+// Initialize Mapbox Draw
+const draw = new MapboxDraw({
+    displayControlsDefault: false,
+    controls: {
+        polygon: true,
+        trash: true
+    },
+    defaultMode: 'simple_select'
+});
+map.addControl(draw, 'top-right');
+window.draw = draw;
+
+// Metadata map: featureId -> { name }
+const featureMeta = {};
+// HTML Markers for on-map labels: featureId -> mapboxgl.Marker
+const mapMarkers = {};
+
 function showToast(msg, bg) {
     const toast = document.getElementById('toast-alert');
     if (!toast) return;
@@ -2443,29 +2545,34 @@ function getFeatureRing(feat) {
     return c;
 }
 
-// Save state to browser localStorage
+// Save state to browser localStorage (fully supporting any number of sides)
 function saveSquaresToStorage() {
     const all = draw.getAll();
     if (!all.features) return;
     const squares = all.features.map(feat => {
         const meta = featureMeta[feat.id] || { name: 'Square' };
         const ring = getFeatureRing(feat);
-        return {
+        const sides = Math.max(0, ring.length - 1);
+        const out = {
             id: feat.id,
             name: meta.name,
-            corners: {
+            sides: sides,
+            polygon: ring
+        };
+        if (sides === 4) {
+            out.corners = {
                 topLeft: ring[0] || [0,0],
                 topRight: ring[1] || [0,0],
                 bottomRight: ring[2] || [0,0],
                 bottomLeft: ring[3] || [0,0]
-            },
-            polygon: ring
-        };
+            };
+        }
+        return out;
     });
     try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(squares));
         const statusText = document.getElementById('save-status-text');
-        if (statusText) statusText.textContent = `All ${squares.length} squares saved • Persists on refresh`;
+        if (statusText) statusText.textContent = `All ${squares.length} plots saved • Persists on refresh`;
     } catch(e) {
         console.warn('LocalStorage save error:', e);
     }
@@ -2521,14 +2628,16 @@ function syncPlottedSquares() {
             const id = feat.id;
             presentIds.add(id);
 
-            const meta = featureMeta[id] || { name: `Square #${idx + 1}` };
+            const meta = featureMeta[id] || { name: `Plot #${idx + 1}` };
             const ring = getFeatureRing(feat);
             const isSel = (id === activeSelectedId);
+            const sides = Math.max(0, ring.length - 1);
 
             listHtml += `
                 <div class="square-item ${isSel ? 'active' : ''}">
                     <div class="square-name" title="${meta.name}">
                         ${isSel ? '👉 ' : ''}${meta.name}
+                        <span style="display:inline-block; font-size:9px; font-weight:800; background:rgba(56, 189, 248, 0.2); color:#38bdf8; border-radius:4px; padding:1px 5px; margin-left:4px;">${sides} sides</span>
                     </div>
                     <div class="square-actions">
                         <button class="btn-mini btn-mini-select" onclick="selectSquare('${id}')">Edit</button>
@@ -2557,16 +2666,21 @@ function syncPlottedSquares() {
                 }
             }
 
-            exportedBlocks.push({
+            const sidesCount = Math.max(0, ring.length - 1);
+            const blockObj = {
                 name: meta.name,
-                corners: {
+                sides: sidesCount,
+                polygon: ring
+            };
+            if (sidesCount === 4) {
+                blockObj.corners = {
                     topLeft: ring[0] || [0,0],
                     topRight: ring[1] || [0,0],
                     bottomRight: ring[2] || [0,0],
                     bottomLeft: ring[3] || [0,0]
-                },
-                polygon: ring
-            });
+                };
+            }
+            exportedBlocks.push(blockObj);
         });
 
         listEl.innerHTML = listHtml;
@@ -2579,22 +2693,33 @@ function syncPlottedSquares() {
             }
         });
 
-        // Update active coordinates display
+        // Update active coordinates display & Sculptor Card
         const coordBox = document.getElementById('coord-display');
+        const selCard = document.getElementById('selected-plot-card');
+        const selNameEl = document.getElementById('sel-plot-name');
+        const selSidesBadge = document.getElementById('sel-plot-sides-badge');
+
         if (activeSelectedId) {
             const selFeat = all.features.find(f => f.id === activeSelectedId);
             if (selFeat) {
-                const meta = featureMeta[activeSelectedId] || { name: 'Selected Square' };
+                const meta = featureMeta[activeSelectedId] || { name: 'Selected Plot' };
                 const ring = getFeatureRing(selFeat);
-                coordBox.textContent = '[Selected: ' + meta.name + ']\n' + JSON.stringify(ring, null, 2);
+                const sides = Math.max(0, ring.length - 1);
+
+                if (selCard) selCard.style.display = 'block';
+                if (selNameEl) selNameEl.textContent = meta.name;
+                if (selSidesBadge) selSidesBadge.textContent = `${sides} Sides`;
+
+                coordBox.textContent = `[Selected: ${meta.name} • ${sides} Sides (${ring.length} Coordinates)]\n` + JSON.stringify(ring, null, 2);
             }
         } else {
+            if (selCard) selCard.style.display = 'none';
             const summary = all.features.map(f => {
-                const meta = featureMeta[f.id] || { name: 'Square' };
+                const meta = featureMeta[f.id] || { name: 'Plot' };
                 const ring = getFeatureRing(f);
-                return `${meta.name}: ${ring.length - 1} vertices`;
+                return `${meta.name}: ${Math.max(0, ring.length - 1)} sides`;
             }).join('\n');
-            coordBox.textContent = 'Total ' + all.features.length + ' Squares:\n' + summary;
+            coordBox.textContent = 'Total ' + all.features.length + ' Agricultural Plots:\n' + summary;
         }
 
         // Update Raw Export Area
@@ -2720,12 +2845,140 @@ map.on('draw.create', (e) => {
             const name = (nameInput && nameInput.value.trim()) ? nameInput.value.trim() : 'Plotted Field';
             featureMeta[feat.id] = { name: name };
         }
+        // Immediately elevate new polygon to direct_select so midpoints appear
+        setTimeout(() => {
+            try { draw.changeMode('direct_select', { featureId: feat.id }); } catch(err){}
+        }, 50);
     }
     syncPlottedSquares();
 });
 map.on('draw.update', syncPlottedSquares);
 map.on('draw.delete', syncPlottedSquares);
-map.on('draw.selectionchange', syncPlottedSquares);
+
+// Auto-elevate single selection to direct_select so vertex corners & glowing midpoint handles light up instantly!
+map.on('draw.selectionchange', (e) => {
+    if (e.features && e.features.length === 1 && draw.getMode() === 'simple_select') {
+        const featId = e.features[0].id;
+        setTimeout(() => {
+            try { draw.changeMode('direct_select', { featureId: featId }); } catch(err){}
+        }, 10);
+    }
+    syncPlottedSquares();
+});
+
+// Sculpting Function 1: Subdivide all edges to double polygon sides
+window.subdivideSelectedPlot = function() {
+    const selectedIds = draw.getSelectedIds();
+    if (selectedIds.length === 0) {
+        showToast('⚠️ Click on a plot first to select it', '#f59e0b');
+        return;
+    }
+    const id = selectedIds[0];
+    const feat = draw.get(id);
+    if (!feat || !feat.geometry || feat.geometry.type !== 'Polygon') return;
+
+    let ring = getFeatureRing(feat);
+    if (ring.length < 4) return;
+
+    const pts = (ring[0][0] === ring[ring.length - 1][0] && ring[0][1] === ring[ring.length - 1][1])
+        ? ring.slice(0, -1)
+        : ring;
+
+    const newPts = [];
+    for (let i = 0; i < pts.length; i++) {
+        const p1 = pts[i];
+        const p2 = pts[(i + 1) % pts.length];
+        newPts.push(p1);
+        newPts.push([
+            (p1[0] + p2[0]) / 2,
+            (p1[1] + p2[1]) / 2
+        ]);
+    }
+    newPts.push([newPts[0][0], newPts[0][1]]);
+
+    feat.geometry.coordinates = [newPts];
+    draw.add(feat);
+    draw.changeMode('direct_select', { featureId: id });
+    syncPlottedSquares();
+    showToast(`✨ Subdivided edges! Now has ${newPts.length - 1} sides. Drag cyan handles to shape!`, '#10b981');
+};
+
+// Sculpting Function 2: Add 1 vertex to longest edge
+window.addVertexToLongestEdge = function() {
+    const selectedIds = draw.getSelectedIds();
+    if (selectedIds.length === 0) {
+        showToast('⚠️ Click on a plot first to select it', '#f59e0b');
+        return;
+    }
+    const id = selectedIds[0];
+    const feat = draw.get(id);
+    if (!feat || !feat.geometry || feat.geometry.type !== 'Polygon') return;
+
+    let ring = getFeatureRing(feat);
+    if (ring.length < 4) return;
+
+    const pts = (ring[0][0] === ring[ring.length - 1][0] && ring[0][1] === ring[ring.length - 1][1])
+        ? ring.slice(0, -1)
+        : ring;
+
+    let maxDist = -1;
+    let maxIdx = 0;
+    for (let i = 0; i < pts.length; i++) {
+        const p1 = pts[i];
+        const p2 = pts[(i + 1) % pts.length];
+        const dx = p1[0] - p2[0];
+        const dy = p1[1] - p2[1];
+        const dist = dx * dx + dy * dy;
+        if (dist > maxDist) {
+            maxDist = dist;
+            maxIdx = i;
+        }
+    }
+
+    const p1 = pts[maxIdx];
+    const p2 = pts[(maxIdx + 1) % pts.length];
+    const mid = [(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2];
+
+    const newPts = [];
+    for (let i = 0; i < pts.length; i++) {
+        newPts.push(pts[i]);
+        if (i === maxIdx) {
+            newPts.push(mid);
+        }
+    }
+    newPts.push([newPts[0][0], newPts[0][1]]);
+
+    feat.geometry.coordinates = [newPts];
+    draw.add(feat);
+    draw.changeMode('direct_select', { featureId: id });
+    syncPlottedSquares();
+    showToast(`➕ Added 1 side to longest edge! Now has ${newPts.length - 1} sides.`, '#0284c7');
+};
+
+// Sculpting Function 3: Delete selected vertex
+window.deleteSelectedVertex = function() {
+    const mode = draw.getMode();
+    if (mode === 'direct_select') {
+        draw.trash();
+        syncPlottedSquares();
+        showToast('🗑️ Removed vertex handle', '#ef4444');
+    } else {
+        showToast('⚠️ Click on a specific corner dot first to select the vertex to remove', '#f59e0b');
+    }
+};
+
+// Keyboard shortcut: Delete or Backspace key removes selected vertex
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+            return;
+        }
+        if (draw.getMode() === 'direct_select') {
+            draw.trash();
+            syncPlottedSquares();
+        }
+    }
+});
 
 // Drop a new 4-corner square onto the screen
 window.dropSquareBox = function() {
@@ -2769,7 +3022,7 @@ window.dropSquareBox = function() {
 
 window.startDrawPolygon = function() {
     draw.changeMode('draw_polygon');
-    showToast('✏️ Click 4 points on the map to draw polygon', '#0284c7');
+    showToast('✏️ Click as many points as you want on the map! Double-click to close shape.', '#0284c7', 4500);
 };
 
 window.selectSquare = function(id) {
@@ -2858,16 +3111,21 @@ window.copyAllSquaresGeoJSON = function() {
     const exportedBlocks = data.features.map(feat => {
         const meta = featureMeta[feat.id] || { name: 'Field' };
         const ring = getFeatureRing(feat);
-        return {
+        const sides = Math.max(0, ring.length - 1);
+        const obj = {
             name: meta.name,
-            corners: {
+            sides: sides,
+            polygon: ring
+        };
+        if (sides === 4) {
+            obj.corners = {
                 topLeft: ring[0] || [0,0],
                 topRight: ring[1] || [0,0],
                 bottomRight: ring[2] || [0,0],
                 bottomLeft: ring[3] || [0,0]
-            },
-            polygon: ring
-        };
+            };
+        }
+        return obj;
     });
 
     const formattedBlocks = exportedBlocks.map(b => JSON.stringify(b, null, 2)).join('\\n\\n');
@@ -2895,18 +3153,22 @@ window.copySelectedSquare = function() {
     const feat = all.features.find(f => f.id === id);
     if (!feat) return;
 
-    const meta = featureMeta[id] || { name: 'Plotted Square' };
+    const meta = featureMeta[id] || { name: 'Plotted Plot' };
     const ring = getFeatureRing(feat);
+    const sides = Math.max(0, ring.length - 1);
     const block = {
         name: meta.name,
-        corners: {
+        sides: sides,
+        polygon: ring
+    };
+    if (sides === 4) {
+        block.corners = {
             topLeft: ring[0] || [0,0],
             topRight: ring[1] || [0,0],
             bottomRight: ring[2] || [0,0],
             bottomLeft: ring[3] || [0,0]
-        },
-        polygon: ring
-    };
+        };
+    }
 
     const formatted = JSON.stringify(block, null, 2);
     const rawArea = document.getElementById('raw-export-area');

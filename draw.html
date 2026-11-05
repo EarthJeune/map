@@ -737,7 +737,7 @@
 <div id="toast">✅ Notification</div>
 
 <script type="module">
-import { KNOWN_BUILDING_NAMES, CUSTOM_3D_BUILDINGS } from './js/data/buildings.js?v=72';
+import { KNOWN_BUILDING_NAMES, CUSTOM_3D_BUILDINGS } from './js/data/buildings.js?v=98';
 
 mapboxgl.accessToken = 'pk.eyJ1IjoiZWFydGgwMzA3IiwiYSI6ImNtdWFqNTR5czAxNmEyd29lMm42YjZlMDkifQ.xdPOP5RVPdn6YNka-ZdwoQ';
 
@@ -1281,6 +1281,13 @@ let selectedFeature = null;
 const selectElem = document.getElementById('buildingSelect');
 function populateBuildingDropdown() {
     selectElem.innerHTML = '';
+    const placeholderOpt = document.createElement('option');
+    placeholderOpt.value = '';
+    placeholderOpt.disabled = true;
+    placeholderOpt.selected = true;
+    placeholderOpt.textContent = '-- Select Campus Facility --';
+    selectElem.appendChild(placeholderOpt);
+
     const sortedIds = Object.keys(KNOWN_BUILDING_NAMES).sort((a, b) => {
         return KNOWN_BUILDING_NAMES[a].localeCompare(KNOWN_BUILDING_NAMES[b]);
     });
@@ -1630,7 +1637,7 @@ function openModalForFeature(f) {
             customGroup.style.display = 'block';
             customInput.value = currentId;
         } else {
-            select.value = 'admin_building';
+            select.value = '';
             customGroup.style.display = 'none';
         }
         document.getElementById('buildingHas3D').checked = f.properties.has_3d_model || (currentId in CUSTOM_3D_BUILDINGS);
@@ -2023,12 +2030,13 @@ function loadStationBuildings(station) {
         }
     }
 
-    const autosave = localStorage.getItem(storageKey);
-    if (autosave) {
-        try {
-            const data = JSON.parse(autosave);
-            if (data && data.features && data.features.length > 0) {
-                if (station === 'qares') {
+    // For QARES, restore from localStorage if available
+    if (station === 'qares') {
+        const autosave = localStorage.getItem(storageKey);
+        if (autosave) {
+            try {
+                const data = JSON.parse(autosave);
+                if (data && data.features && data.features.length > 0) {
                     window.qaresMasterFeatures.clear();
                     data.features.forEach(f => {
                         const p = f.properties = f.properties || {};
@@ -2050,14 +2058,16 @@ function loadStationBuildings(station) {
                     showToast(`[QARES] Restored ${window.qaresMasterFeatures.size} buildings from autosave.`);
                     return;
                 }
-                draw.add(data);
-                updateMapLabels();
-                showToast(`[${station.toUpperCase()}] Restored ${data.features.length} buildings from autosave.`);
-                return;
+            } catch (e) {
+                console.error('Failed to parse autosave data:', e);
             }
-        } catch (e) {
-            console.error('Failed to parse autosave data:', e);
         }
+    } else {
+        // For LARES, purge any legacy corrupted local storage so the codebase is always the single source of truth
+        try {
+            localStorage.removeItem('building_draw_autosave');
+            localStorage.removeItem('building_draw_autosave_lares');
+        } catch (e) {}
     }
 
     fetch(cfg.buildingsApi + '?t=' + Date.now())

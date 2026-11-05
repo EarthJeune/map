@@ -4,7 +4,7 @@ import sys
 import glob
 
 MODELS_DIR = os.path.abspath("models")
-BACKUP_DIR = os.path.abspath("scratch/glb_backups")
+BACKUP_DIR = os.path.abspath("archive/glb_backups")
 os.makedirs(BACKUP_DIR, exist_ok=True)
 
 def get_stats(glb_path):

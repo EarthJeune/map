@@ -75,6 +75,10 @@ export function applyAppModeToDOM() {
         window.updateSidebarToggleIcon();
     }
 
+    if (typeof window.updatePerformanceUI === 'function') {
+        window.updatePerformanceUI();
+    }
+
     // Tell Mapbox to recalculate canvas size
     try {
         if (window.map && typeof window.map.resize === 'function') {

@@ -54,39 +54,6 @@
           [
             121.37194041608302,
             13.943319713354398
-          ],
-          [
-            121.37193336808309,
-            13.943328238584343
-          ]
-        ],
-        "type": "LineString"
-      }
-    },
-    {
-      "id": "982d395eb9d23945f0f00415ebe8f768",
-      "type": "Feature",
-      "properties": {
-        "id": "qares_road_3",
-        "station": "qares"
-      },
-      "geometry": {
-        "coordinates": [
-          [
-            121.37193346783039,
-            13.943328327947512
-          ],
-          [
-            121.37183135269277,
-            13.943358445373761
-          ],
-          [
-            121.3717566701689,
-            13.943373831206642
-          ],
-          [
-            121.37170836819064,
-            13.943373199089422
           ]
         ],
         "type": "LineString"
@@ -96,7 +63,7 @@
       "id": "5281196a49c92272022e0df881c72d51",
       "type": "Feature",
       "properties": {
-        "id": "qares_road_4",
+        "id": "qares_road_3",
         "station": "qares"
       },
       "geometry": {
@@ -117,7 +84,7 @@
       "id": "d8cf576dccbb1c20e5f572a6a85cfa1f",
       "type": "Feature",
       "properties": {
-        "id": "qares_road_5",
+        "id": "qares_road_4",
         "station": "qares"
       },
       "geometry": {
@@ -142,7 +109,7 @@
       "id": "c221413cdd0e97dc28607cd9e9d750c3",
       "type": "Feature",
       "properties": {
-        "id": "qares_road_6",
+        "id": "qares_road_5",
         "station": "qares"
       },
       "geometry": {
@@ -167,7 +134,7 @@
       "id": "fb31050b6b5001e7cc11eedd097ccd1a",
       "type": "Feature",
       "properties": {
-        "id": "qares_road_7",
+        "id": "qares_road_6",
         "station": "qares"
       },
       "geometry": {
@@ -256,7 +223,7 @@
       "id": "1a737c0622ebfc6f09ebc5b2d2f5e439",
       "type": "Feature",
       "properties": {
-        "id": "qares_road_8",
+        "id": "qares_road_7",
         "station": "qares"
       },
       "geometry": {
@@ -317,7 +284,7 @@
       "id": "93e94760524f2d76881fcc244cfe73e9",
       "type": "Feature",
       "properties": {
-        "id": "qares_road_9",
+        "id": "qares_road_8",
         "station": "qares"
       },
       "geometry": {
@@ -346,7 +313,7 @@
       "id": "0ab5423963a54ef6652efa0b91c8ec08",
       "type": "Feature",
       "properties": {
-        "id": "qares_road_10",
+        "id": "qares_road_9",
         "station": "qares"
       },
       "geometry": {
@@ -375,7 +342,7 @@
       "id": "7a78fbe6d3d25c430b9f302196c8564c",
       "type": "Feature",
       "properties": {
-        "id": "qares_road_11",
+        "id": "qares_road_10",
         "station": "qares"
       },
       "geometry": {
@@ -424,7 +391,7 @@
       "id": "18a5abdbdc5864d52e5c1800df1da97e",
       "type": "Feature",
       "properties": {
-        "id": "qares_road_12",
+        "id": "qares_road_11",
         "station": "qares"
       },
       "geometry": {
@@ -449,7 +416,7 @@
       "id": "491c56a5ac6fa21f529232d8c4f5ac22",
       "type": "Feature",
       "properties": {
-        "id": "qares_road_13",
+        "id": "qares_road_12",
         "station": "qares"
       },
       "geometry": {
@@ -494,7 +461,7 @@
       "id": "4b0b3fdfed0de123a229a8f5a6bbf809",
       "type": "Feature",
       "properties": {
-        "id": "qares_road_14",
+        "id": "qares_road_13",
         "station": "qares"
       },
       "geometry": {
@@ -519,7 +486,7 @@
       "id": "2c025e6355d4f6697e04f7d7f02e0c55",
       "type": "Feature",
       "properties": {
-        "id": "qares_road_15",
+        "id": "qares_road_14",
         "station": "qares"
       },
       "geometry": {
@@ -636,7 +603,7 @@
       "id": "91c3a8c670eb3273f5b2e79234680960",
       "type": "Feature",
       "properties": {
-        "id": "qares_road_16",
+        "id": "qares_road_15",
         "station": "qares"
       },
       "geometry": {
@@ -753,7 +720,7 @@
       "id": "9fe9baf178030e693284d2267d0d89a1",
       "type": "Feature",
       "properties": {
-        "id": "qares_road_17",
+        "id": "qares_road_16",
         "station": "qares"
       },
       "geometry": {
@@ -838,7 +805,7 @@
       "id": "bce385b517842f6b0eb90cf341a84d5e",
       "type": "Feature",
       "properties": {
-        "id": "qares_road_18",
+        "id": "qares_road_17",
         "station": "qares"
       },
       "geometry": {
@@ -863,7 +830,7 @@
       "id": "1c90feaf535ada7e67f24426f19af348",
       "type": "Feature",
       "properties": {
-        "id": "qares_road_19",
+        "id": "qares_road_18",
         "station": "qares"
       },
       "geometry": {
@@ -924,7 +891,7 @@
       "id": "a264d5a34576f6e772f59d88e667945e",
       "type": "Feature",
       "properties": {
-        "id": "qares_road_20",
+        "id": "qares_road_19",
         "station": "qares"
       },
       "geometry": {
@@ -969,7 +936,7 @@
       "id": "7b2154832aeb54e5f46d49e408938a7f",
       "type": "Feature",
       "properties": {
-        "id": "qares_road_21",
+        "id": "qares_road_20",
         "station": "qares"
       },
       "geometry": {
@@ -1022,7 +989,7 @@
       "id": "cdf19b20c8393b0371da46da16713e51",
       "type": "Feature",
       "properties": {
-        "id": "qares_road_22",
+        "id": "qares_road_21",
         "station": "qares"
       },
       "geometry": {
@@ -1059,7 +1026,7 @@
       "id": "f04d5c5193f9d1b127b9bd74b2b53f65",
       "type": "Feature",
       "properties": {
-        "id": "qares_road_23",
+        "id": "qares_road_22",
         "station": "qares"
       },
       "geometry": {
@@ -1100,7 +1067,7 @@
       "id": "8d5ea5edf4b634b44613c5fd07dea67a",
       "type": "Feature",
       "properties": {
-        "id": "qares_road_24",
+        "id": "qares_road_23",
         "station": "qares"
       },
       "geometry": {
@@ -1153,7 +1120,7 @@
       "id": "e1047f361bf6ad81a283b2a0c43e80b2",
       "type": "Feature",
       "properties": {
-        "id": "qares_road_25",
+        "id": "qares_road_24",
         "station": "qares"
       },
       "geometry": {
@@ -1198,7 +1165,7 @@
       "id": "f6a93aaadb44cc92679b7af4ca1e89ac",
       "type": "Feature",
       "properties": {
-        "id": "qares_road_26",
+        "id": "qares_road_25",
         "station": "qares"
       },
       "geometry": {
@@ -1251,7 +1218,7 @@
       "id": "936a54626bcb27f72bf7dd1becb0b86f",
       "type": "Feature",
       "properties": {
-        "id": "qares_road_27",
+        "id": "qares_road_26",
         "station": "qares"
       },
       "geometry": {
@@ -1316,7 +1283,7 @@
       "id": "b33c02e5689e3793869d4316ebd52cb7",
       "type": "Feature",
       "properties": {
-        "id": "qares_road_28",
+        "id": "qares_road_27",
         "station": "qares"
       },
       "geometry": {
@@ -1429,7 +1396,7 @@
       "id": "f4a630e3c29d03ee780f2ee2204276a0",
       "type": "Feature",
       "properties": {
-        "id": "qares_road_29",
+        "id": "qares_road_28",
         "station": "qares"
       },
       "geometry": {
@@ -1502,7 +1469,7 @@
       "id": "c959bedaa30a28c15aad6dc301d6e29c",
       "type": "Feature",
       "properties": {
-        "id": "qares_road_30",
+        "id": "qares_road_29",
         "station": "qares"
       },
       "geometry": {
@@ -1699,7 +1666,7 @@
       "id": "655abaac2f00ff2dacbe7b071d50a827",
       "type": "Feature",
       "properties": {
-        "id": "qares_road_31",
+        "id": "qares_road_30",
         "station": "qares"
       },
       "geometry": {
@@ -1752,7 +1719,7 @@
       "id": "8ce604956b80810292b30bad2a620396",
       "type": "Feature",
       "properties": {
-        "id": "qares_road_32",
+        "id": "qares_road_31",
         "station": "qares"
       },
       "geometry": {

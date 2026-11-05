@@ -13,7 +13,7 @@
         "station": "qares",
         "category": "Buildings",
         "color": "#ef4444",
-        "roof_color": "#dc2626",
+        "roof_color": "#ef4444",
         "color_code": "red",
         "filter_type": "Buildings",
         "user_color": "#ef4444",
@@ -75,7 +75,7 @@
         "min_height": 0,
         "station": "qares",
         "category": "Buildings",
-        "color": "#ef4444",
+        "color": "#dc2626",
         "roof_color": "#dc2626",
         "color_code": "red",
         "filter_type": "Buildings",
@@ -122,8 +122,8 @@
         "min_height": 0,
         "station": "qares",
         "category": "Buildings",
-        "color": "#ef4444",
-        "roof_color": "#dc2626",
+        "color": "#e11d48",
+        "roof_color": "#e11d48",
         "color_code": "red",
         "filter_type": "Buildings",
         "user_color": "#ef4444",
@@ -169,8 +169,8 @@
         "min_height": 0,
         "station": "qares",
         "category": "Buildings",
-        "color": "#ef4444",
-        "roof_color": "#dc2626",
+        "color": "#b91c1c",
+        "roof_color": "#b91c1c",
         "color_code": "red",
         "filter_type": "Buildings",
         "user_color": "#ef4444",
@@ -264,8 +264,8 @@
         "min_height": 0,
         "station": "qares",
         "category": "Buildings",
-        "color": "#ef4444",
-        "roof_color": "#dc2626",
+        "color": "#f43f5e",
+        "roof_color": "#f43f5e",
         "color_code": "red",
         "filter_type": "Buildings",
         "user_color": "#ef4444",
@@ -335,8 +335,8 @@
         "min_height": 0,
         "station": "qares",
         "category": "Buildings",
-        "color": "#ef4444",
-        "roof_color": "#dc2626",
+        "color": "#ea580c",
+        "roof_color": "#ea580c",
         "color_code": "red",
         "filter_type": "Buildings",
         "user_color": "#ef4444",
@@ -382,8 +382,8 @@
         "min_height": 0,
         "station": "qares",
         "category": "Buildings",
-        "color": "#ef4444",
-        "roof_color": "#dc2626",
+        "color": "#991b1b",
+        "roof_color": "#991b1b",
         "color_code": "red",
         "filter_type": "Buildings",
         "user_color": "#ef4444",
@@ -429,8 +429,8 @@
         "min_height": 0,
         "station": "qares",
         "category": "Buildings",
-        "color": "#ef4444",
-        "roof_color": "#dc2626",
+        "color": "#be123c",
+        "roof_color": "#be123c",
         "color_code": "red",
         "filter_type": "Buildings",
         "user_color": "#ef4444",
@@ -492,8 +492,8 @@
         "min_height": 0,
         "station": "qares",
         "category": "Buildings",
-        "color": "#ef4444",
-        "roof_color": "#dc2626",
+        "color": "#f87171",
+        "roof_color": "#f87171",
         "color_code": "red",
         "filter_type": "Buildings",
         "user_color": "#ef4444",
@@ -539,8 +539,8 @@
         "min_height": 0,
         "station": "qares",
         "category": "Buildings",
-        "color": "#ef4444",
-        "roof_color": "#dc2626",
+        "color": "#c2410c",
+        "roof_color": "#c2410c",
         "color_code": "red",
         "filter_type": "Buildings",
         "user_color": "#ef4444",
@@ -586,8 +586,8 @@
         "min_height": 0,
         "station": "qares",
         "category": "Buildings",
-        "color": "#ef4444",
-        "roof_color": "#dc2626",
+        "color": "#9f1239",
+        "roof_color": "#9f1239",
         "color_code": "red",
         "filter_type": "Buildings",
         "user_color": "#ef4444",
@@ -649,8 +649,8 @@
         "min_height": 0,
         "station": "qares",
         "category": "Buildings",
-        "color": "#ef4444",
-        "roof_color": "#dc2626",
+        "color": "#fb7185",
+        "roof_color": "#fb7185",
         "color_code": "red",
         "filter_type": "Buildings",
         "user_color": "#ef4444",
@@ -696,8 +696,8 @@
         "min_height": 0,
         "station": "qares",
         "category": "Buildings",
-        "color": "#ef4444",
-        "roof_color": "#dc2626",
+        "color": "#881337",
+        "roof_color": "#881337",
         "color_code": "red",
         "filter_type": "Buildings",
         "user_color": "#ef4444",
@@ -759,8 +759,8 @@
         "min_height": 0,
         "station": "qares",
         "category": "Buildings",
-        "color": "#ef4444",
-        "roof_color": "#dc2626",
+        "color": "#e02424",
+        "roof_color": "#e02424",
         "color_code": "red",
         "filter_type": "Buildings",
         "user_color": "#ef4444",
@@ -830,8 +830,8 @@
         "min_height": 0,
         "station": "qares",
         "category": "Buildings",
-        "color": "#ef4444",
-        "roof_color": "#dc2626",
+        "color": "#d946ef",
+        "roof_color": "#d946ef",
         "color_code": "red",
         "filter_type": "Buildings",
         "user_color": "#ef4444",
@@ -877,8 +877,8 @@
         "min_height": 0,
         "station": "qares",
         "category": "Buildings",
-        "color": "#ef4444",
-        "roof_color": "#dc2626",
+        "color": "#7f1d1d",
+        "roof_color": "#7f1d1d",
         "color_code": "red",
         "filter_type": "Buildings",
         "user_color": "#ef4444",
@@ -932,8 +932,8 @@
         "min_height": 0,
         "station": "qares",
         "category": "Buildings",
-        "color": "#ef4444",
-        "roof_color": "#dc2626",
+        "color": "#f05252",
+        "roof_color": "#f05252",
         "color_code": "red",
         "filter_type": "Buildings",
         "user_color": "#ef4444",
@@ -1003,8 +1003,8 @@
         "min_height": 0,
         "station": "qares",
         "category": "Buildings",
-        "color": "#ef4444",
-        "roof_color": "#dc2626",
+        "color": "#c53030",
+        "roof_color": "#c53030",
         "color_code": "red",
         "filter_type": "Buildings",
         "user_color": "#ef4444",
@@ -1050,8 +1050,8 @@
         "min_height": 0,
         "station": "qares",
         "category": "Buildings",
-        "color": "#ef4444",
-        "roof_color": "#dc2626",
+        "color": "#e53e3e",
+        "roof_color": "#e53e3e",
         "color_code": "red",
         "filter_type": "Buildings",
         "user_color": "#ef4444",
@@ -1113,8 +1113,8 @@
         "min_height": 0,
         "station": "qares",
         "category": "Buildings",
-        "color": "#ef4444",
-        "roof_color": "#dc2626",
+        "color": "#dd6b20",
+        "roof_color": "#dd6b20",
         "color_code": "red",
         "filter_type": "Buildings",
         "user_color": "#ef4444",
@@ -1160,8 +1160,8 @@
         "min_height": 0,
         "station": "qares",
         "category": "Buildings",
-        "color": "#ef4444",
-        "roof_color": "#dc2626",
+        "color": "#b83280",
+        "roof_color": "#b83280",
         "color_code": "red",
         "filter_type": "Buildings",
         "user_color": "#ef4444",
@@ -1207,8 +1207,8 @@
         "min_height": 0,
         "station": "qares",
         "category": "Buildings",
-        "color": "#ef4444",
-        "roof_color": "#dc2626",
+        "color": "#9b2c2c",
+        "roof_color": "#9b2c2c",
         "color_code": "red",
         "filter_type": "Buildings",
         "user_color": "#ef4444",
@@ -1268,7 +1268,7 @@
         "filter_type": "Buildings",
         "color_code": "light_grey",
         "color": "#94a3b8",
-        "roof_color": "#64748b",
+        "roof_color": "#94a3b8",
         "user_color": "#94a3b8",
         "user_roof_color": "#64748b",
         "user_color_code": "light_grey",
@@ -1314,7 +1314,7 @@
         "category": "Buildings",
         "filter_type": "Buildings",
         "color_code": "light_grey",
-        "color": "#94a3b8",
+        "color": "#64748b",
         "roof_color": "#64748b",
         "user_color": "#94a3b8",
         "user_roof_color": "#64748b",
@@ -1361,8 +1361,8 @@
         "category": "Buildings",
         "filter_type": "Buildings",
         "color_code": "light_grey",
-        "color": "#94a3b8",
-        "roof_color": "#64748b",
+        "color": "#cbd5e1",
+        "roof_color": "#cbd5e1",
         "user_color": "#94a3b8",
         "user_roof_color": "#64748b",
         "user_color_code": "light_grey",
@@ -1408,8 +1408,8 @@
         "category": "Buildings",
         "filter_type": "Buildings",
         "color_code": "light_grey",
-        "color": "#94a3b8",
-        "roof_color": "#64748b",
+        "color": "#71717a",
+        "roof_color": "#71717a",
         "user_color": "#94a3b8",
         "user_roof_color": "#64748b",
         "user_color_code": "light_grey",
@@ -1464,7 +1464,7 @@
         "filter_type": "Buildings",
         "color_code": "pink",
         "color": "#ec4899",
-        "roof_color": "#db2777",
+        "roof_color": "#ec4899",
         "user_color": "#ec4899",
         "user_roof_color": "#db2777",
         "user_color_code": "pink",
@@ -1511,7 +1511,7 @@
         "filter_type": "Buildings",
         "color_code": "blue",
         "color": "#3b82f6",
-        "roof_color": "#2563eb",
+        "roof_color": "#3b82f6",
         "user_color": "#3b82f6",
         "user_roof_color": "#2563eb",
         "user_color_code": "blue",
@@ -1558,7 +1558,7 @@
         "filter_type": "Buildings",
         "color_code": "yellow",
         "color": "#eab308",
-        "roof_color": "#ca8a04",
+        "roof_color": "#eab308",
         "user_color": "#eab308",
         "user_roof_color": "#ca8a04",
         "user_color_code": "yellow",
@@ -1604,7 +1604,7 @@
         "category": "Buildings",
         "filter_type": "Buildings",
         "color_code": "blue",
-        "color": "#3b82f6",
+        "color": "#2563eb",
         "roof_color": "#2563eb",
         "user_color": "#3b82f6",
         "user_roof_color": "#2563eb",
@@ -1651,8 +1651,8 @@
         "category": "Buildings",
         "filter_type": "Buildings",
         "color_code": "yellow",
-        "color": "#eab308",
-        "roof_color": "#ca8a04",
+        "color": "#d97706",
+        "roof_color": "#d97706",
         "user_color": "#eab308",
         "user_roof_color": "#ca8a04",
         "user_color_code": "yellow",
@@ -1698,8 +1698,8 @@
         "category": "Buildings",
         "filter_type": "Buildings",
         "color_code": "blue",
-        "color": "#3b82f6",
-        "roof_color": "#2563eb",
+        "color": "#1d4ed8",
+        "roof_color": "#1d4ed8",
         "user_color": "#3b82f6",
         "user_roof_color": "#2563eb",
         "user_color_code": "blue",
@@ -1745,8 +1745,8 @@
         "category": "Buildings",
         "filter_type": "Buildings",
         "color_code": "blue",
-        "color": "#3b82f6",
-        "roof_color": "#2563eb",
+        "color": "#0284c7",
+        "roof_color": "#0284c7",
         "user_color": "#3b82f6",
         "user_roof_color": "#2563eb",
         "user_color_code": "blue",
@@ -1792,8 +1792,8 @@
         "category": "Buildings",
         "filter_type": "Buildings",
         "color_code": "blue",
-        "color": "#3b82f6",
-        "roof_color": "#2563eb",
+        "color": "#0ea5e9",
+        "roof_color": "#0ea5e9",
         "user_color": "#3b82f6",
         "user_roof_color": "#2563eb",
         "user_color_code": "blue",
@@ -1839,8 +1839,8 @@
         "category": "Buildings",
         "filter_type": "Buildings",
         "color_code": "blue",
-        "color": "#3b82f6",
-        "roof_color": "#2563eb",
+        "color": "#1e40af",
+        "roof_color": "#1e40af",
         "user_color": "#3b82f6",
         "user_roof_color": "#2563eb",
         "user_color_code": "blue",
@@ -1886,8 +1886,8 @@
         "category": "Buildings",
         "filter_type": "Buildings",
         "color_code": "blue",
-        "color": "#3b82f6",
-        "roof_color": "#2563eb",
+        "color": "#0369a1",
+        "roof_color": "#0369a1",
         "user_color": "#3b82f6",
         "user_roof_color": "#2563eb",
         "user_color_code": "blue",
@@ -1933,8 +1933,8 @@
         "category": "Buildings",
         "filter_type": "Buildings",
         "color_code": "blue",
-        "color": "#3b82f6",
-        "roof_color": "#2563eb",
+        "color": "#4f46e5",
+        "roof_color": "#4f46e5",
         "user_color": "#3b82f6",
         "user_roof_color": "#2563eb",
         "user_color_code": "blue",
@@ -1981,7 +1981,7 @@
         "filter_type": "Buildings",
         "color_code": "green",
         "color": "#22c55e",
-        "roof_color": "#16a34a",
+        "roof_color": "#22c55e",
         "user_color": "#22c55e",
         "user_roof_color": "#16a34a",
         "user_color_code": "green",
@@ -2043,8 +2043,8 @@
         "category": "Buildings",
         "filter_type": "Buildings",
         "color_code": "blue",
-        "color": "#3b82f6",
-        "roof_color": "#2563eb",
+        "color": "#06b6d4",
+        "roof_color": "#06b6d4",
         "user_color": "#3b82f6",
         "user_roof_color": "#2563eb",
         "user_color_code": "blue",
@@ -2090,8 +2090,8 @@
         "category": "Buildings",
         "filter_type": "Buildings",
         "color_code": "blue",
-        "color": "#3b82f6",
-        "roof_color": "#2563eb",
+        "color": "#1e3a8a",
+        "roof_color": "#1e3a8a",
         "user_color": "#3b82f6",
         "user_roof_color": "#2563eb",
         "user_color_code": "blue",
@@ -2169,8 +2169,8 @@
         "category": "Buildings",
         "filter_type": "Buildings",
         "color_code": "blue",
-        "color": "#3b82f6",
-        "roof_color": "#2563eb",
+        "color": "#0891b2",
+        "roof_color": "#0891b2",
         "user_color": "#3b82f6",
         "user_roof_color": "#2563eb",
         "user_color_code": "blue",
@@ -2216,8 +2216,8 @@
         "category": "Buildings",
         "filter_type": "Buildings",
         "color_code": "yellow",
-        "color": "#eab308",
-        "roof_color": "#ca8a04",
+        "color": "#f59e0b",
+        "roof_color": "#f59e0b",
         "user_color": "#eab308",
         "user_roof_color": "#ca8a04",
         "user_color_code": "yellow",
@@ -2263,7 +2263,7 @@
         "category": "Buildings",
         "filter_type": "Buildings",
         "color_code": "yellow",
-        "color": "#eab308",
+        "color": "#ca8a04",
         "roof_color": "#ca8a04",
         "user_color": "#eab308",
         "user_roof_color": "#ca8a04",
@@ -2310,8 +2310,8 @@
         "category": "Buildings",
         "filter_type": "Buildings",
         "color_code": "yellow",
-        "color": "#eab308",
-        "roof_color": "#ca8a04",
+        "color": "#facc15",
+        "roof_color": "#facc15",
         "user_color": "#eab308",
         "user_roof_color": "#ca8a04",
         "user_color_code": "yellow",
@@ -2357,8 +2357,8 @@
         "category": "Buildings",
         "filter_type": "Buildings",
         "color_code": "yellow",
-        "color": "#eab308",
-        "roof_color": "#ca8a04",
+        "color": "#b45309",
+        "roof_color": "#b45309",
         "user_color": "#eab308",
         "user_roof_color": "#ca8a04",
         "user_color_code": "yellow",
@@ -2404,8 +2404,8 @@
         "category": "Buildings",
         "filter_type": "Buildings",
         "color_code": "yellow",
-        "color": "#eab308",
-        "roof_color": "#ca8a04",
+        "color": "#e5a100",
+        "roof_color": "#e5a100",
         "user_color": "#eab308",
         "user_roof_color": "#ca8a04",
         "user_color_code": "yellow",
@@ -2451,8 +2451,8 @@
         "category": "Buildings",
         "filter_type": "Buildings",
         "color_code": "blue",
-        "color": "#3b82f6",
-        "roof_color": "#2563eb",
+        "color": "#6366f1",
+        "roof_color": "#6366f1",
         "user_color": "#3b82f6",
         "user_roof_color": "#2563eb",
         "user_color_code": "blue",
@@ -2498,8 +2498,8 @@
         "category": "Buildings",
         "filter_type": "Buildings",
         "color_code": "blue",
-        "color": "#3b82f6",
-        "roof_color": "#2563eb",
+        "color": "#0f766e",
+        "roof_color": "#0f766e",
         "user_color": "#3b82f6",
         "user_roof_color": "#2563eb",
         "user_color_code": "blue",
@@ -2532,859 +2532,6 @@
             [
               121.37242970591149,
               13.946730537065747
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      }
-    },
-    {
-      "id": "3dbc26cf4bbfbe18712d355ec2717910",
-      "type": "Feature",
-      "properties": {
-        "category": "Misc Buildings",
-        "filter_type": "Misc Buildings",
-        "color_code": "yellow",
-        "color": "#eab308",
-        "roof_color": "#ca8a04",
-        "user_color": "#eab308",
-        "user_roof_color": "#ca8a04",
-        "user_color_code": "yellow",
-        "user_category": "Misc Buildings",
-        "station": "qares",
-        "id": "qares_facility_290",
-        "name": "Water Utility Building",
-        "height": 5,
-        "min_height": 0
-      },
-      "geometry": {
-        "coordinates": [
-          [
-            [
-              121.37129231914707,
-              13.943465624223862
-            ],
-            [
-              121.37127994446092,
-              13.943428333725564
-            ],
-            [
-              121.37132464257093,
-              13.943414103546473
-            ],
-            [
-              121.37133700000987,
-              13.943452843607943
-            ],
-            [
-              121.37129231914707,
-              13.943465624223862
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      }
-    },
-    {
-      "id": "811e71c0b9e69c7716954585ec3c48dd",
-      "type": "Feature",
-      "properties": {
-        "category": "Misc Buildings",
-        "filter_type": "Misc Buildings",
-        "color_code": "brown",
-        "color": "#92400e",
-        "roof_color": "#78350f",
-        "user_color": "#92400e",
-        "user_roof_color": "#78350f",
-        "user_color_code": "brown",
-        "user_category": "Misc Buildings",
-        "station": "qares",
-        "id": "qares_facility_327",
-        "name": "Food Processing Building",
-        "height": 5,
-        "min_height": 0
-      },
-      "geometry": {
-        "coordinates": [
-          [
-            [
-              121.37081437599159,
-              13.943637011769994
-            ],
-            [
-              121.37077464606216,
-              13.943528727135856
-            ],
-            [
-              121.3708310177193,
-              13.943510208830347
-            ],
-            [
-              121.37086798330716,
-              13.943619079351478
-            ],
-            [
-              121.37081437599159,
-              13.943637011769994
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      }
-    },
-    {
-      "id": "296909450b2176d035f4fed951c3fbed",
-      "type": "Feature",
-      "properties": {
-        "category": "Misc Buildings",
-        "filter_type": "Misc Buildings",
-        "color_code": "red",
-        "color": "#ef4444",
-        "roof_color": "#dc2626",
-        "user_color": "#ef4444",
-        "user_roof_color": "#dc2626",
-        "user_color_code": "red",
-        "user_category": "Misc Buildings",
-        "station": "qares",
-        "id": "qares_facility_42",
-        "name": "Staff House B",
-        "height": 5,
-        "min_height": 0
-      },
-      "geometry": {
-        "coordinates": [
-          [
-            [
-              121.36987576543271,
-              13.943779292677604
-            ],
-            [
-              121.36989115046231,
-              13.943824716756566
-            ],
-            [
-              121.36986734167994,
-              13.94383264903965
-            ],
-            [
-              121.36989084687457,
-              13.943899013684643
-            ],
-            [
-              121.36992072917616,
-              13.943890562921325
-            ],
-            [
-              121.36992897859733,
-              13.943912751666844
-            ],
-            [
-              121.36999274445463,
-              13.943892451084608
-            ],
-            [
-              121.3699511048871,
-              13.943754604861951
-            ],
-            [
-              121.36987576543271,
-              13.943779292677604
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      }
-    },
-    {
-      "id": "945fbf13e365ee4493b3c29482ce2837",
-      "type": "Feature",
-      "properties": {
-        "category": "Misc Buildings",
-        "filter_type": "Misc Buildings",
-        "color_code": "red",
-        "color": "#ef4444",
-        "roof_color": "#dc2626",
-        "user_color": "#ef4444",
-        "user_roof_color": "#dc2626",
-        "user_color_code": "red",
-        "user_category": "Misc Buildings",
-        "station": "qares",
-        "id": "qares_facility_53",
-        "name": "Staff House C",
-        "height": 5,
-        "min_height": 0
-      },
-      "geometry": {
-        "coordinates": [
-          [
-            [
-              121.36977380430324,
-              13.94396999428804
-            ],
-            [
-              121.36981470365401,
-              13.943955535151616
-            ],
-            [
-              121.36976930006165,
-              13.943809341553575
-            ],
-            [
-              121.36969942973224,
-              13.943831125237693
-            ],
-            [
-              121.3697019535963,
-              13.943837590829432
-            ],
-            [
-              121.3696825547834,
-              13.943843746315231
-            ],
-            [
-              121.36969830483466,
-              13.943888193343458
-            ],
-            [
-              121.36971758169724,
-              13.943881587234657
-            ],
-            [
-              121.36972608497103,
-              13.943907304791708
-            ],
-            [
-              121.36974444424732,
-              13.943902137117348
-            ],
-            [
-              121.3697633081643,
-              13.94395566914595
-            ],
-            [
-              121.3697685850621,
-              13.943954265048902
-            ],
-            [
-              121.36977380430324,
-              13.94396999428804
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      }
-    },
-    {
-      "id": "38487ede012445d1d957cfb83253aa79",
-      "type": "Feature",
-      "properties": {
-        "category": "Misc Buildings",
-        "filter_type": "Misc Buildings",
-        "color_code": "red",
-        "color": "#ef4444",
-        "roof_color": "#dc2626",
-        "user_color": "#ef4444",
-        "user_roof_color": "#dc2626",
-        "user_color_code": "red",
-        "user_category": "Misc Buildings",
-        "station": "qares",
-        "id": "qares_facility_155",
-        "name": "Staff House D",
-        "height": 5,
-        "min_height": 0
-      },
-      "geometry": {
-        "coordinates": [
-          [
-            [
-              121.36957111081551,
-              13.943878298353525
-            ],
-            [
-              121.36957824448126,
-              13.943899658649812
-            ],
-            [
-              121.36960344684832,
-              13.943891588810004
-            ],
-            [
-              121.36964434806032,
-              13.944016828611083
-            ],
-            [
-              121.36955063962006,
-              13.944046731791744
-            ],
-            [
-              121.3695010676949,
-              13.943902534662044
-            ],
-            [
-              121.36957111081551,
-              13.943878298353525
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      }
-    },
-    {
-      "id": "57fb140f968daf2650713a5de9dbd337",
-      "type": "Feature",
-      "properties": {
-        "category": "Misc Buildings",
-        "filter_type": "Misc Buildings",
-        "color_code": "red",
-        "color": "#ef4444",
-        "roof_color": "#dc2626",
-        "user_color": "#ef4444",
-        "user_roof_color": "#dc2626",
-        "user_color_code": "red",
-        "user_category": "Misc Buildings",
-        "station": "qares",
-        "id": "qares_facility_624",
-        "name": "Staff House E",
-        "height": 5,
-        "min_height": 0
-      },
-      "geometry": {
-        "coordinates": [
-          [
-            [
-              121.36934898055802,
-              13.943946048862728
-            ],
-            [
-              121.36939618069232,
-              13.943928918826117
-            ],
-            [
-              121.3693974732663,
-              13.94393271439101
-            ],
-            [
-              121.36942005345276,
-              13.943925401982241
-            ],
-            [
-              121.3694260544903,
-              13.943942302734172
-            ],
-            [
-              121.36942965707783,
-              13.943940892394934
-            ],
-            [
-              121.36947340681934,
-              13.944070359712512
-            ],
-            [
-              121.36940954185712,
-              13.944092025460876
-            ],
-            [
-              121.36939708009396,
-              13.94405844333643
-            ],
-            [
-              121.36939132089117,
-              13.94406080860584
-            ],
-            [
-              121.36937185799133,
-              13.944010509303837
-            ],
-            [
-              121.36935811281796,
-              13.944015167486185
-            ],
-            [
-              121.36934950297592,
-              13.94399224255963
-            ],
-            [
-              121.36936354652892,
-              13.94398728025422
-            ],
-            [
-              121.36934898055802,
-              13.943946048862728
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      }
-    },
-    {
-      "id": "34ef6fc2875fe3ee4833bc59d1d2b45b",
-      "type": "Feature",
-      "properties": {
-        "category": "Misc Buildings",
-        "filter_type": "Misc Buildings",
-        "color_code": "red",
-        "color": "#ef4444",
-        "roof_color": "#dc2626",
-        "user_color": "#ef4444",
-        "user_roof_color": "#dc2626",
-        "user_color_code": "red",
-        "user_category": "Misc Buildings",
-        "station": "qares",
-        "id": "qares_facility_429",
-        "name": "Staff House F",
-        "height": 5,
-        "min_height": 0
-      },
-      "geometry": {
-        "coordinates": [
-          [
-            [
-              121.36922619407824,
-              13.944147034965226
-            ],
-            [
-              121.36920413666871,
-              13.944085555292133
-            ],
-            [
-              121.36919142403275,
-              13.944089101105192
-            ],
-            [
-              121.3691786548307,
-              13.944052614603066
-            ],
-            [
-              121.36919054416393,
-              13.944049048236963
-            ],
-            [
-              121.36917467950758,
-              13.944000635763288
-            ],
-            [
-              121.36921112404377,
-              13.943989033237187
-            ],
-            [
-              121.36920823608568,
-              13.943981881656839
-            ],
-            [
-              121.36925436719889,
-              13.943966323168809
-            ],
-            [
-              121.36926668503668,
-              13.944003478329833
-            ],
-            [
-              121.36927103604978,
-              13.94400165521742
-            ],
-            [
-              121.36927341279596,
-              13.944008565035418
-            ],
-            [
-              121.36925981113126,
-              13.94401311441014
-            ],
-            [
-              121.36929719099243,
-              13.944124058089045
-            ],
-            [
-              121.36922619407824,
-              13.944147034965226
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      }
-    },
-    {
-      "id": "611ca022412ceabbd101404f336619e1",
-      "type": "Feature",
-      "properties": {
-        "category": "Misc Buildings",
-        "filter_type": "Misc Buildings",
-        "color_code": "red",
-        "color": "#ef4444",
-        "roof_color": "#dc2626",
-        "user_color": "#ef4444",
-        "user_roof_color": "#dc2626",
-        "user_color_code": "red",
-        "user_category": "Misc Buildings",
-        "station": "qares",
-        "id": "qares_facility_559",
-        "name": "Staff House G",
-        "height": 5,
-        "min_height": 0
-      },
-      "geometry": {
-        "coordinates": [
-          [
-            [
-              121.36894103942734,
-              13.944203767273493
-            ],
-            [
-              121.3689375468295,
-              13.944194396459764
-            ],
-            [
-              121.36893372080289,
-              13.944195614516204
-            ],
-            [
-              121.36889511407719,
-              13.944090915790042
-            ],
-            [
-              121.36896232978819,
-              13.94406699839827
-            ],
-            [
-              121.3690061900117,
-              13.944193834604775
-            ],
-            [
-              121.36898596445059,
-              13.944200591665677
-            ],
-            [
-              121.3689815743603,
-              13.94418959147771
-            ],
-            [
-              121.36894103942734,
-              13.944203767273493
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      }
-    },
-    {
-      "id": "307909450857c5b77ad8f45f38c9a3dc",
-      "type": "Feature",
-      "properties": {
-        "category": "Misc Buildings",
-        "filter_type": "Misc Buildings",
-        "color_code": "brown",
-        "color": "#92400e",
-        "roof_color": "#78350f",
-        "user_color": "#92400e",
-        "user_roof_color": "#78350f",
-        "user_color_code": "brown",
-        "user_category": "Misc Buildings",
-        "station": "qares",
-        "id": "qares_facility_555",
-        "name": "Trichoderma Production Laboratory",
-        "height": 5,
-        "min_height": 0
-      },
-      "geometry": {
-        "coordinates": [
-          [
-            [
-              121.37038044637575,
-              13.944085131605377
-            ],
-            [
-              121.370359316166,
-              13.944038000586943
-            ],
-            [
-              121.37024537888453,
-              13.944085368216648
-            ],
-            [
-              121.370266270679,
-              13.944132623471702
-            ],
-            [
-              121.37038044637575,
-              13.944085131605377
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      }
-    },
-    {
-      "id": "4727c901883284ccaf1cb4aea4727473",
-      "type": "Feature",
-      "properties": {
-        "category": "Misc Buildings",
-        "filter_type": "Misc Buildings",
-        "color_code": "red",
-        "color": "#ef4444",
-        "roof_color": "#dc2626",
-        "user_color": "#ef4444",
-        "user_roof_color": "#dc2626",
-        "user_color_code": "red",
-        "user_category": "Misc Buildings",
-        "station": "qares",
-        "id": "qares_facility_308",
-        "name": "Wood Vinegar Chamber",
-        "height": 3,
-        "min_height": 0
-      },
-      "geometry": {
-        "coordinates": [
-          [
-            [
-              121.37095345014359,
-              13.945406315473548
-            ],
-            [
-              121.37093799030919,
-              13.945368847075628
-            ],
-            [
-              121.37097649998577,
-              13.945353038721692
-            ],
-            [
-              121.37099363565522,
-              13.945390234819754
-            ],
-            [
-              121.37095345014359,
-              13.945406315473548
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      }
-    },
-    {
-      "id": "8a6bd1941b0b2fb67c51e588c3b53878",
-      "type": "Feature",
-      "properties": {
-        "category": "Misc Buildings",
-        "filter_type": "Misc Buildings",
-        "color_code": "red",
-        "color": "#ef4444",
-        "roof_color": "#dc2626",
-        "user_color": "#ef4444",
-        "user_roof_color": "#dc2626",
-        "user_color_code": "red",
-        "user_category": "Misc Buildings",
-        "station": "qares",
-        "id": "qares_facility_132",
-        "name": "Staff House",
-        "height": 4,
-        "min_height": 0
-      },
-      "geometry": {
-        "coordinates": [
-          [
-            [
-              121.37233324614192,
-              13.943896829624748
-            ],
-            [
-              121.37238031020394,
-              13.943878151112216
-            ],
-            [
-              121.37241579956526,
-              13.943963572206528
-            ],
-            [
-              121.37236696587343,
-              13.943981983514377
-            ],
-            [
-              121.37233324614192,
-              13.943896829624748
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      }
-    },
-    {
-      "id": "83de1e0fe3793a2002cf71af1e32d661",
-      "type": "Feature",
-      "properties": {
-        "category": "Misc Buildings",
-        "filter_type": "Misc Buildings",
-        "color_code": "yellow",
-        "color": "#eab308",
-        "roof_color": "#ca8a04",
-        "user_color": "#eab308",
-        "user_roof_color": "#ca8a04",
-        "user_color_code": "yellow",
-        "user_category": "Misc Buildings",
-        "station": "qares",
-        "id": "qares_facility_229",
-        "name": "Feed Bodega & Livestock Kitchen",
-        "height": 5,
-        "min_height": 0
-      },
-      "geometry": {
-        "coordinates": [
-          [
-            [
-              121.37244872768747,
-              13.943867978964832
-            ],
-            [
-              121.3724677465579,
-              13.943920342733207
-            ],
-            [
-              121.37240726482952,
-              13.943942144730869
-            ],
-            [
-              121.37238635768722,
-              13.943890622072843
-            ],
-            [
-              121.37244872768747,
-              13.943867978964832
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      }
-    },
-    {
-      "id": "e9600496c5f05bdb876f99dc2eec9265",
-      "type": "Feature",
-      "properties": {
-        "category": "Misc Buildings",
-        "filter_type": "Misc Buildings",
-        "id": "qares_facility_1",
-        "name": "qares_facility_1",
-        "height": 5,
-        "min_height": 0,
-        "color_code": "red",
-        "color": "#ef4444",
-        "roof_color": "#dc2626",
-        "user_color": "#ef4444",
-        "user_roof_color": "#dc2626",
-        "user_color_code": "red",
-        "user_category": "Misc Buildings",
-        "station": "qares"
-      },
-      "geometry": {
-        "coordinates": [
-          [
-            [
-              121.3721820120557,
-              13.944973678395542
-            ],
-            [
-              121.3721820120557,
-              13.944973678395542
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      }
-    },
-    {
-      "id": "88e97da08f93b81b90bb07e980190cdc",
-      "type": "Feature",
-      "properties": {
-        "category": "Misc Buildings",
-        "filter_type": "Misc Buildings",
-        "color_code": "red",
-        "color": "#ef4444",
-        "roof_color": "#dc2626",
-        "user_color": "#ef4444",
-        "user_roof_color": "#dc2626",
-        "user_color_code": "red",
-        "user_category": "Misc Buildings",
-        "station": "qares",
-        "id": "qares_facility_265",
-        "name": "Staff House G",
-        "height": 5,
-        "min_height": 0
-      },
-      "geometry": {
-        "coordinates": [
-          [
-            [
-              121.37240426666358,
-              13.946890583596513
-            ],
-            [
-              121.37234651091967,
-              13.946911977598944
-            ],
-            [
-              121.37235507306184,
-              13.946933999416828
-            ],
-            [
-              121.37231849795427,
-              13.946947986569668
-            ],
-            [
-              121.37229601131429,
-              13.946892011662143
-            ],
-            [
-              121.37239091316007,
-              13.946854801047976
-            ],
-            [
-              121.37240426666358,
-              13.946890583596513
-            ]
-          ]
-        ],
-        "type": "Polygon"
-      }
-    },
-    {
-      "id": "0084e2f74ae25c7b4434839ac936c4af",
-      "type": "Feature",
-      "properties": {
-        "category": "Misc Buildings",
-        "filter_type": "Misc Buildings",
-        "color_code": "yellow",
-        "color": "#eab308",
-        "roof_color": "#ca8a04",
-        "user_color": "#eab308",
-        "user_roof_color": "#ca8a04",
-        "user_color_code": "yellow",
-        "user_category": "Misc Buildings",
-        "station": "qares",
-        "id": "qares_facility_56",
-        "name": "Tool Storage Unit",
-        "height": 3,
-        "min_height": 0
-      },
-      "geometry": {
-        "coordinates": [
-          [
-            [
-              121.37230256919457,
-              13.948196097780084
-            ],
-            [
-              121.37228314330042,
-              13.948204145810053
-            ],
-            [
-              121.37224542090536,
-              13.948115944153358
-            ],
-            [
-              121.37226517998391,
-              13.948106750575008
-            ],
-            [
-              121.37230256919457,
-              13.948196097780084
             ]
           ]
         ],

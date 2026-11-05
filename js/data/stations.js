@@ -4,9 +4,10 @@ export const STATIONS = {
         id: 'lares',
         name: 'DA-LARES',
         label: 'DA-LARES (Lipa)',
-        sub: 'Interactive Wayfinding Map',
+        sub: 'Lipa Agricultural Research & Experiment Station',
         fullName: 'Southern Tagalog Integrated Agricultural Research Center',
         province: 'Lipa City, Batangas',
+        status: 'active',
         icon: '🌾',
         center: [121.1665, 13.9583],
         zoom: 19.1,
@@ -30,21 +31,58 @@ export const STATIONS = {
         sub: 'Quezon Agricultural Research & Experiment Station',
         fullName: 'Quezon Agricultural Research and Experiment Station',
         province: 'Tiaong, Quezon',
+        status: 'under_development',
         icon: '🌱',
-        center: [121.37133, 13.94323],
-        zoom: 17.6,
-        pitch: 45,
-        bearing: -15,
-        introStartZoom: 15.6,
-        introTarget2DZoom: 18.2,
+        center: [121.37130, 13.94360],
+        zoom: 19.0,
+        pitch: 52,
+        bearing: 25,
+        introStartZoom: 17.2,
+        introTarget2DZoom: 19.6,
         bounds: [
-            [121.355, 13.935],
-            [121.385, 13.960]
+            [121.30, 13.88],
+            [121.44, 14.00]
         ],
         kioskCoords: [121.3713315, 13.9432268],
         buildingsFile: 'qares_buildings.json',
         roadsFile: 'qares_roads.json',
         hasDrone: true
+    },
+    rares: {
+        id: 'rares',
+        name: 'DA-RARES',
+        label: 'DA-RARES (Tanay)',
+        sub: 'Rizal Agricultural Research & Experiment Station',
+        fullName: 'Rizal Agricultural Research and Experiment Station',
+        province: 'Tanay, Rizal',
+        status: 'under_development',
+        icon: '🌿',
+        center: [121.2850, 14.4980],
+        zoom: 18.5,
+        pitch: 50,
+        bearing: 0,
+        bounds: [
+            [121.20, 14.40],
+            [121.35, 14.60]
+        ]
+    },
+    cares: {
+        id: 'cares',
+        name: 'DA-CARES',
+        label: 'DA-CARES (Naic)',
+        sub: 'Cavite Agricultural Research & Experiment Station',
+        fullName: 'Cavite Agricultural Research and Experiment Station',
+        province: 'Naic, Cavite',
+        status: 'under_development',
+        icon: '🍃',
+        center: [120.7925, 14.2965],
+        zoom: 18.5,
+        pitch: 50,
+        bearing: 0,
+        bounds: [
+            [120.72, 14.22],
+            [120.86, 14.37]
+        ]
     }
 };
 
@@ -60,19 +98,19 @@ export function getActiveStationDefaultView(targetStationId) {
     const station = STATIONS[stationId] || STATIONS.lares;
     if (stationId === 'qares') {
         const center = (typeof window !== 'undefined' && (window.QARES_KIOSK_COORDS || (window.state && window.state.QARES_KIOSK_COORDS)))
-            || station.kioskCoords 
-            || station.center;
+            || station.center
+            || station.kioskCoords;
         return {
             center: center,
-            zoom: station.zoom || 17.6,
-            pitch: station.pitch !== undefined ? station.pitch : 45,
-            bearing: station.bearing !== undefined ? station.bearing : -15
+            zoom: station.zoom || 19.0,
+            pitch: station.pitch !== undefined ? station.pitch : 52,
+            bearing: station.bearing !== undefined ? station.bearing : 25
         };
     }
 
     const center = (typeof window !== 'undefined' && (window.KIOSK_COORDS || (window.state && window.state.KIOSK_COORDS)))
-        || station.kioskCoords 
-        || station.center;
+        || station.center
+        || station.kioskCoords;
     return {
         center: center,
         zoom: station.zoom || 19.1,

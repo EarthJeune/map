@@ -1,8 +1,12 @@
 // DA-LARES Sidebar & Directory Module
 // Directory list, search filter, sidebar menu toggle/collapse, and setting chips.
 
-import { BUILDING_DIRECTORY } from './data/buildings.js?v=72';
-import { getFlatBuildingOffices, renderBuildingOfficesHTML } from './data/offices.js?v=52';
+import { BUILDING_DIRECTORY, DEFAULT_BUILDING_COLORS, STANDALONE_GATES } from './data/buildings.js';
+import { lucideIcon, renderIconOrText } from './data/icons.js';
+import { getFlatBuildingOffices, isOfficeMatched, findMatchedOffice, getOfficeSearchSubtitle, isBuildingMatched, getBuildingSearchSubtitle, isPlotZoneMatched, matchesSearchText, renderBuildingOfficesHTML } from './data/offices.js';
+import { FIELD_COMMODITY_ZONES } from './data/plots.js';
+import { selectPlotZone } from './plot-layers.js';
+import { getBuildingWayfindingInfo } from './data/descriptions.js';
 import { LARES_BOUNDARY } from './data/geo.js';
 import { state } from './data/state.js';
 import { toggleTrees, toggleBuildings, map } from './map-setup.js';
@@ -46,17 +50,31 @@ export function toggleSettingChip(btn, type) {
         const currentMap = state.map || map || window.map;
 
         if (currentMap) {
-            // Unified grass green boundary layers (Google & Mapbox modes)
+            const isMapbox = (state.currentMapStyleMode === 'mapbox');
+            const shadowVis = (!isMapbox && on) ? 'visible' : 'none';
+
+            // Unified boundary layers (LARES & QARES)
             const boundaryLayerIds = [
                 'lares-boundary-fill',
                 'lares-boundary-glow',
                 'lares-boundary-line',
                 'lares-compound-border-casing',
-                'lares-compound-border-line'
+                'lares-compound-border-line',
+                'qares-boundary-fill',
+                'qares-boundary-line',
+                'qares-railway-casing',
+                'qares-railway-line'
             ];
             boundaryLayerIds.forEach(lid => {
                 if (currentMap.getLayer(lid)) {
                     try { currentMap.setLayoutProperty(lid, 'visibility', vis); } catch (e) { }
+                }
+            });
+
+            // Shadow / glow layers (Satellite mode only, hidden in Mapbox mode)
+            ['qares-boundary-glow', 'qares-boundary-casing'].forEach(lid => {
+                if (currentMap.getLayer(lid)) {
+                    try { currentMap.setLayoutProperty(lid, 'visibility', shadowVis); } catch (e) { }
                 }
             });
 
@@ -82,6 +100,10 @@ export function toggleSettingChip(btn, type) {
             });
         }
 
+        // Sync Map Settings panel checkbox
+        const cbBnd = document.getElementById('msp-toggle-boundary');
+        if (cbBnd) cbBnd.checked = on;
+
         safeResetIdle();
         return;
     }
@@ -91,12 +113,13 @@ export function toggleSettingChip(btn, type) {
         const on = targetBtn ? targetBtn.classList.contains('active') : true;
         state.markersVisible = on;
 
+        const markersShouldShow = on;
         if (state.markers && state.markers.length > 0) {
             state.markers.forEach(m => {
                 if (m && m.getElement()) {
-                    m.getElement().style.display = on ? '' : 'none';
+                    m.getElement().style.display = markersShouldShow ? '' : 'none';
                 }
-                if (!on && m.getPopup && m.getPopup() && m.getPopup().isOpen()) {
+                if (!markersShouldShow && m.getPopup && m.getPopup() && m.getPopup().isOpen()) {
                     m.togglePopup();
                 }
             });
@@ -104,8 +127,16 @@ export function toggleSettingChip(btn, type) {
 
         // Direct DOM update as fallback for any building marker element
         document.querySelectorAll('.bldg-map-marker').forEach(el => {
-            el.style.display = on ? '' : 'none';
+            el.style.display = markersShouldShow ? '' : 'none';
         });
+
+        if (markersShouldShow && typeof window.virtualizeMarkers === 'function') {
+            window.virtualizeMarkers();
+        }
+
+        // Sync Map Settings panel checkbox
+        const cbNum = document.getElementById('msp-toggle-markers');
+        if (cbNum) cbNum.checked = on;
 
         safeResetIdle();
         return;
@@ -146,7 +177,7 @@ export function highlightCategoryMarkers(cat) {
     });
 }
 
-export function filterByCategory(cat) {
+export function filterByCategory(cat, skipIdleReset = false) {
     currentCategory = cat || 'all';
     document.querySelectorAll('.cat-chip').forEach(el => {
         el.classList.toggle('active', el.dataset.cat === currentCategory);
@@ -154,7 +185,149 @@ export function filterByCategory(cat) {
     const searchVal = document.getElementById('search-input')?.value || '';
     buildDirectory(searchVal, currentCategory);
     highlightCategoryMarkers(currentCategory);
+    if (!skipIdleReset) {
+        safeResetIdle();
+    }
+}
+
+// Embedded Conference Halls for direct wayfinding
+export const EMBEDDED_CONFERENCE_HALLS = [
+    {
+        id: 'conf_ored',
+        buildingId: 'ored_building',
+        name: 'ORED Conference',
+        desc: 'Executive Conference Room | ORED Building',
+        category: 'conference',
+        targetOffice: 'ORED Conference',
+        icon: '🏛️'
+    },
+    {
+        id: 'conf_rnd',
+        buildingId: 'rnd_building',
+        name: 'R&D Conference Hall',
+        desc: 'Research Division Conference Hall | R&D Multipurpose Building',
+        category: 'conference',
+        targetOffice: 'R&D Conference Hall',
+        icon: '🏛️'
+    }
+];
+
+export const activeTypeFilters = new Set();
+if (typeof window !== 'undefined') {
+    window.activeTypeFilters = activeTypeFilters;
+}
+
+export function toggleTypeFilter(typeKey, isChecked) {
+    if (isChecked) {
+        activeTypeFilters.add(typeKey);
+    } else {
+        activeTypeFilters.delete(typeKey);
+    }
+    updateFilterDropdownUI();
+    filterDirectory();
+    const phoneInputVal = document.getElementById('phone-search-input')?.value || '';
+    safeRenderPhoneDirectory(phoneInputVal);
     safeResetIdle();
+}
+
+export function resetTypeFilters() {
+    activeTypeFilters.clear();
+    state.activeSearchedOffice = '';
+    document.querySelectorAll('.fdm-checkbox').forEach(cb => {
+        cb.checked = false;
+    });
+    updateFilterDropdownUI();
+    filterDirectory();
+    const phoneInputVal = document.getElementById('phone-search-input')?.value || '';
+    safeRenderPhoneDirectory(phoneInputVal);
+    safeResetIdle();
+}
+
+export function updateFilterDropdownUI() {
+    const count = activeTypeFilters.size;
+    // Desktop badge & button
+    const badge = document.getElementById('filter-count-badge');
+    const btn = document.getElementById('filter-dropdown-btn');
+    if (badge) {
+        if (count > 0) {
+            badge.textContent = count;
+            badge.style.display = 'inline-flex';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+    if (btn) {
+        btn.classList.toggle('has-filters', count > 0);
+    }
+
+    // Mobile badge & button
+    const phoneBadge = document.getElementById('phone-filter-count-badge');
+    const phoneBtn = document.getElementById('phone-filter-btn');
+    if (phoneBadge) {
+        if (count > 0) {
+            phoneBadge.textContent = count;
+            phoneBadge.style.display = 'inline-flex';
+        } else {
+            phoneBadge.style.display = 'none';
+        }
+    }
+    if (phoneBtn) {
+        phoneBtn.classList.toggle('has-filters', count > 0);
+    }
+
+    // Synchronize both desktop & mobile fdm-item active classes & checkboxes
+    document.querySelectorAll('.fdm-item').forEach(item => {
+        const type = item.dataset.type;
+        item.classList.toggle('active', activeTypeFilters.has(type));
+    });
+    document.querySelectorAll('.fdm-checkbox').forEach(cb => {
+        cb.checked = activeTypeFilters.has(cb.value);
+    });
+}
+
+export function toggleFilterDropdown(e) {
+    if (e) {
+        e.stopPropagation();
+        if (e.preventDefault) e.preventDefault();
+    }
+    const wrap = document.getElementById('filter-dropdown-wrap');
+    if (!wrap) return;
+    const isOpen = wrap.classList.toggle('open');
+    const btn = document.getElementById('filter-dropdown-btn');
+    if (btn) {
+        btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    }
+    safeResetIdle();
+}
+
+export function closeFilterDropdown() {
+    const wrap = document.getElementById('filter-dropdown-wrap');
+    if (wrap && wrap.classList.contains('open')) {
+        wrap.classList.remove('open');
+        const btn = document.getElementById('filter-dropdown-btn');
+        if (btn) btn.setAttribute('aria-expanded', 'false');
+    }
+}
+
+export function clearSearchInput() {
+    const input = document.getElementById('search-input');
+    const clearBtn = document.getElementById('search-clear-btn');
+    if (input) {
+        input.value = '';
+        input.focus();
+    }
+    if (clearBtn) clearBtn.style.display = 'none';
+    filterDirectory();
+    safeResetIdle();
+}
+
+if (typeof window !== 'undefined') {
+    window.addEventListener('click', (e) => {
+        const wrap = document.getElementById('filter-dropdown-wrap');
+        if (wrap && wrap.classList.contains('open') && !wrap.contains(e.target)) {
+            closeFilterDropdown();
+        }
+    });
 }
 
 export function quickSearch(term) {
@@ -174,56 +347,195 @@ export function buildDirectory(filter = '', category = currentCategory) {
     if (!dir) return;
     const lowerFilter = filter.toLowerCase().trim();
 
-    let html = '';
     const dirList = (typeof window !== 'undefined' && window.BUILDING_DIRECTORY && window.BUILDING_DIRECTORY.length > 0)
         ? window.BUILDING_DIRECTORY
         : BUILDING_DIRECTORY;
 
-    dirList.forEach((b, index) => {
-        // Category check
-        if (category && category !== 'all' && b.category !== category) {
-            return;
-        }
+    const hasTypeFilters = activeTypeFilters.size > 0;
 
-        const flatOffices = getFlatBuildingOffices(b.id);
-        const matchedOffice = lowerFilter ? flatOffices.find(off => off.toLowerCase().includes(lowerFilter)) : null;
-        const matchesNameOrDesc = lowerFilter && (b.name.toLowerCase().includes(lowerFilter) || (b.desc && b.desc.toLowerCase().includes(lowerFilter)));
+    // 1. Filter Buildings
+    let filteredBuildings = [];
+    if (!hasTypeFilters || activeTypeFilters.has('office') || activeTypeFilters.has('laboratory') || activeTypeFilters.has('infrastructure') || activeTypeFilters.has('conference') || activeTypeFilters.has('digital_agri')) {
+        filteredBuildings = dirList.filter((b) => {
+            // Screenhouses are sub-plots of Master Commodity Zones, not standalone buildings
+            if (b.isSubPlot || b.id.startsWith('plot17_') || b.id.startsWith('plot18_')) {
+                return false;
+            }
+            // Utility amenities (Water Tank, CR) are omitted from the default unfiltered view (strictly 39 numbered facilities)
+            if (!hasTypeFilters && !lowerFilter && (b.hasMarker === false || b.num === null)) {
+                return false;
+            }
+            if (hasTypeFilters && !activeTypeFilters.has(b.category)) {
+                return false;
+            }
+            if (category && category !== 'all' && b.category !== category) return false;
+            if (!lowerFilter) return true;
+            const matchedOffice = findMatchedOffice(b.id, lowerFilter);
+            return isBuildingMatched(b, lowerFilter) || !!matchedOffice;
+        });
+    }
 
-        if (lowerFilter && !matchesNameOrDesc && !matchedOffice) {
-            return;
-        }
+    // 2. Filter Embedded Conference Halls (ORED Conference, RSBSA Conference Room, R&D Conference Hall)
+    let matchedConferenceHalls = [];
+    const showConferenceHalls = hasTypeFilters ? activeTypeFilters.has('conference') : !!lowerFilter;
+    if (showConferenceHalls) {
+        matchedConferenceHalls = EMBEDDED_CONFERENCE_HALLS.filter(c => {
+            if (!lowerFilter) return true;
+            return matchesSearchText(c.name, lowerFilter) || matchesSearchText(c.desc, lowerFilter) || (c.targetOffice && isOfficeMatched(c.targetOffice, lowerFilter)) || lowerFilter.includes('conf');
+        });
+    }
 
-        const num = index + 1; // 1-based numbering matching 3D map pins
-        const bColor = b.color || (state.savedBuildingColors && state.savedBuildingColors[b.id] && state.savedBuildingColors[b.id].icon) || '#3b82f6';
-        const isSelected = state.selectedBuildingId === b.id;
+    // 3. Filter Plot Zones (Orchards, Trial Sites, Screenhouses)
+    let matchedPlots = [];
+    const showOrchard = hasTypeFilters ? activeTypeFilters.has('orchard') : false;
+    const showTrial = hasTypeFilters ? activeTypeFilters.has('trial_sites') : false;
+    const showNursery = hasTypeFilters ? activeTypeFilters.has('infrastructure') : false;
 
-        let subText = b.desc || 'DA-LARES Facility';
-        if (matchedOffice) {
-            subText = `<span class="dir-office-tag" title="${matchedOffice.replace(/"/g, '&quot;')}"><span class="dot-office">🏢</span><span class="office-name-text">${matchedOffice}</span></span>`;
-        } else if (flatOffices.length > 0) {
-            subText = `<span class="dir-offices-count">${flatOffices.length} offices inside</span>`;
-        }
+    if (showOrchard || showTrial || showNursery || lowerFilter) {
+        matchedPlots = FIELD_COMMODITY_ZONES.filter(z => {
+            const zCat = z.category; // 'orchard', 'crop', 'nursery'
+            if (hasTypeFilters) {
+                let catMatches = false;
+                if (showOrchard && zCat === 'orchard') catMatches = true;
+                if (showTrial && zCat === 'crop') catMatches = true;
+                if (showNursery && zCat === 'nursery') catMatches = true;
+                if (!catMatches) return false;
+            }
+            if (!lowerFilter) {
+                // When type filter is active with no search text, return all matched zones
+                return hasTypeFilters;
+            }
+            // If user typed a search text:
+            return isPlotZoneMatched(z, lowerFilter);
+        });
+    }
 
-        const adminBtn = state.isAdmin
-            ? `<button class="three-dots-btn" onclick="event.stopPropagation(); openColorPicker('${b.id}', '${b.name.replace(/'/g, "\\'")}')" style="background:none; border:none; cursor:pointer; font-size:16px; padding:4px 8px;" title="Customize Color">⋮</button>`
-            : '';
+    // 4. Filter Standalone Compound Gates
+    let matchedGates = [];
+    if (lowerFilter && (!hasTypeFilters || activeTypeFilters.has('infrastructure'))) {
+        const gatesList = (typeof window !== 'undefined' && window.STANDALONE_GATES)
+            ? Object.values(window.STANDALONE_GATES)
+            : (typeof STANDALONE_GATES !== 'undefined' ? Object.values(STANDALONE_GATES) : []);
+        matchedGates = gatesList.filter(g => {
+            return g.name.toLowerCase().includes(lowerFilter) ||
+                (g.desc && g.desc.toLowerCase().includes(lowerFilter)) ||
+                lowerFilter.includes('gate') ||
+                (lowerFilter.includes('entrance') && g.id.includes('entrance')) ||
+                (lowerFilter.includes('exit') && g.id.includes('exit'));
+        });
+    }
 
-        const officeArg = matchedOffice ? matchedOffice.replace(/'/g, "\\'") : '';
-        html += `<div class="dir-item ${isSelected ? 'active' : ''}" data-id="${b.id}" onclick="navigateTo('${b.id}', '${officeArg}')">
-            <div class="dir-item-icon" style="background:${bColor}22;color:${bColor}">
-                <span class="dir-item-icon-number">${num}</span>
-            </div>
-            <div class="dir-item-info">
-                <div class="dir-item-name">${b.name}</div>
-                <div class="dir-item-desc">${subText}</div>
-            </div>
-            ${adminBtn}
-            <div class="dir-item-arrow">→</div>
-        </div>`;
-    });
+    const totalCount = filteredBuildings.length + matchedConferenceHalls.length + matchedPlots.length + matchedGates.length;
 
-    if (!html) {
-        html = '<div style="padding: 24px; text-align: center; color: #64748b; font-size: 13px;">No facilities found matching your search.</div>';
+    let headerLabel = 'LARES BUILDINGS';
+    if (hasTypeFilters && lowerFilter) {
+        headerLabel = `FILTERED SEARCH (${totalCount})`;
+    } else if (hasTypeFilters) {
+        headerLabel = `FILTERED FACILITIES (${totalCount})`;
+    } else if (lowerFilter) {
+        headerLabel = `LARES SEARCH (${totalCount})`;
+    } else {
+        headerLabel = `LARES BUILDINGS (${totalCount})`;
+    }
+
+    let html = `<div style="padding: 12px 16px 8px; font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: 0.5px; display:flex; justify-content:space-between; align-items:center;">
+        <span>${headerLabel}</span>
+        <span style="font-size:10px; color:#38bdf8; font-weight:600;">Lipa City, Batangas</span>
+    </div>`;
+
+    if (totalCount === 0) {
+        html += '<div style="padding: 24px; text-align: center; color: #64748b; font-size: 13px;">No facilities or plots found matching your criteria.</div>';
+    } else {
+        // Render Buildings
+        filteredBuildings.forEach((b) => {
+            const hasNum = b.num !== null && b.num !== undefined;
+            const badgeContent = hasNum ? b.num : renderIconOrText(b.icon || 'building-2', 16);
+            const badgeClass = hasNum ? 'dir-item-icon-number' : 'dir-item-icon-emoji';
+
+            const matchedOffice = lowerFilter ? findMatchedOffice(b.id, lowerFilter) : null;
+
+            const bColor = (state.savedBuildingColors && state.savedBuildingColors[b.id] && state.savedBuildingColors[b.id].icon) || b.color || (DEFAULT_BUILDING_COLORS[b.id] && DEFAULT_BUILDING_COLORS[b.id].icon) || '#3b82f6';
+            const isSelected = state.selectedBuildingId === b.id;
+
+            const wfInfo = getBuildingWayfindingInfo(b.id, b.desc);
+            let subText = wfInfo.compactTag || b.desc || 'DA-LARES Facility';
+            if (b.id === 'plot22_water_tank' || b.id === 'plot22_comfort_room') {
+                subText = `<span class="dir-plot-tag">Plot 22</span> ${wfInfo.compactTag || b.desc || 'Facility'}`;
+            }
+            if (matchedOffice) {
+                const matchedLabel = getOfficeSearchSubtitle(matchedOffice, lowerFilter);
+                subText = `<span class="dir-office-tag" title="${matchedLabel.replace(/"/g, '&quot;')}"><span class="dot-office">${lucideIcon('building-2', 12)}</span><span class="office-name-text">${matchedLabel}</span></span>`;
+            } else if (lowerFilter) {
+                const bldgAliasSub = getBuildingSearchSubtitle(b, lowerFilter);
+                if (bldgAliasSub) {
+                    subText = `<span class="dir-office-tag" title="${bldgAliasSub.replace(/"/g, '&quot;')}"><span class="dot-office">${lucideIcon('landmark', 12)}</span><span class="office-name-text">${bldgAliasSub}</span></span>`;
+                }
+            }
+
+            const adminBtn = state.isAdmin
+                ? `<button class="three-dots-btn" onclick="event.stopPropagation(); openColorPicker('${b.id}', '${b.name.replace(/'/g, "\\'")}')" style="background:none; border:none; cursor:pointer; font-size:16px; padding:4px 8px;" title="Customize Color">⋮</button>`
+                : '';
+
+            const officeArg = matchedOffice ? matchedOffice.replace(/'/g, "\\'") : '';
+            html += `<div class="dir-item ${isSelected ? 'active' : ''}" data-id="${b.id}" onclick="navigateTo('${b.id}', '${officeArg}')">
+                <div class="dir-item-icon" style="background:${bColor}22;color:${bColor}">
+                    <span class="${badgeClass}">${badgeContent}</span>
+                </div>
+                <div class="dir-item-info">
+                    <div class="dir-item-name">${b.name}</div>
+                    <div class="dir-item-desc">${subText}</div>
+                </div>
+                ${adminBtn}
+                <div class="dir-item-arrow">→</div>
+            </div>`;
+        });
+
+        // Render Embedded Conference Halls
+        matchedConferenceHalls.forEach((item) => {
+            const isConfSelected = (state.selectedBuildingId === item.buildingId && state.activeSearchedOffice === item.targetOffice);
+            html += `<div class="dir-item ${isConfSelected ? 'active' : ''}" data-id="${item.buildingId}" onclick="navigateTo('${item.buildingId}', '${item.targetOffice.replace(/'/g, "\\'")}')">
+                <div class="dir-item-icon" style="background:rgba(139, 92, 246, 0.2); color:#a78bfa;">
+                    <span class="dir-item-icon-emoji">${lucideIcon('landmark', 16)}</span>
+                </div>
+                <div class="dir-item-info">
+                    <div class="dir-item-name">${item.name}</div>
+                    <div class="dir-item-desc"><span class="dir-conf-tag">Conference Hall</span> ${item.desc}</div>
+                </div>
+                <div class="dir-item-arrow">→</div>
+            </div>`;
+        });
+
+        // Render Standalone Compound Gates
+        matchedGates.forEach((gate) => {
+            const isGateSelected = (state.selectedBuildingId === gate.id);
+            html += `<div class="dir-item ${isGateSelected ? 'active' : ''}" data-id="${gate.id}" onclick="selectStandaloneGate('${gate.id}')">
+                <div class="dir-item-icon" style="background:${gate.color}22; color:${gate.color}; border: 1px solid ${gate.color}66;">
+                    <span class="dir-item-icon-emoji">${renderIconOrText(gate.icon || 'door-open', 16)}</span>
+                </div>
+                <div class="dir-item-info">
+                    <div class="dir-item-name">${gate.name}</div>
+                    <div class="dir-item-desc"><span class="dir-plot-tag" style="background:${gate.color}22; color:${gate.color};">GATE</span> ${gate.desc}</div>
+                </div>
+                <div class="dir-item-arrow">→</div>
+            </div>`;
+        });
+
+        // Render Plot Zones (Orchards / Trial Sites / Screenhouses)
+        matchedPlots.forEach((zone) => {
+            const isPlotSelected = (state.selectedPlotZoneId === zone.id || (typeof window !== 'undefined' && window.selectedPlotZoneId === zone.id));
+            const zoneColor = zone.color || '#10b981';
+            const tagLabel = zone.category === 'orchard' ? 'Orchard' : (zone.category === 'crop' ? 'Trial Site' : 'Facility');
+            html += `<div class="dir-item ${isPlotSelected ? 'active' : ''}" data-plot-id="${zone.id}" onclick="selectPlotZone('${zone.id}')">
+                <div class="dir-item-icon" style="background:${zoneColor}22; color:${zoneColor};">
+                    <span class="dir-item-icon-emoji">${zone.id === 'zone_mango_banana_jackfruit' ? lucideIcon('trees', 16) : renderIconOrText(zone.icon || 'sprout', 16)}</span>
+                </div>
+                <div class="dir-item-info">
+                    <div class="dir-item-name">${zone.name}</div>
+                    <div class="dir-item-desc"><span class="dir-plot-tag">${zone.plotRange ? zone.plotRange : tagLabel}</span> ${zone.description || ''}</div>
+                </div>
+                <div class="dir-item-arrow">→</div>
+            </div>`;
+        });
     }
 
     dir.innerHTML = html;
@@ -231,7 +543,12 @@ export function buildDirectory(filter = '', category = currentCategory) {
 }
 
 export function filterDirectory() {
-    const val = document.getElementById('search-input')?.value || '';
+    const input = document.getElementById('search-input');
+    const val = input ? input.value : '';
+    const clearBtn = document.getElementById('search-clear-btn');
+    if (clearBtn) {
+        clearBtn.style.display = val.trim() ? 'flex' : 'none';
+    }
     if (state.currentStationId === 'qares') {
         if (typeof window.filterQARESSearch === 'function') {
             window.filterQARESSearch(val);
@@ -244,10 +561,29 @@ export function filterDirectory() {
 
     // If building panel is open, dynamically update highlighted offices in real time
     const panel = document.getElementById('building-panel');
-    if (panel && panel.classList.contains('active') && state.selectedBuildingId) {
+    const currentBldgId = state.selectedBuildingId || window.selectedBuildingId || (panel ? panel.dataset.buildingId : null);
+    if (panel && panel.classList.contains('active') && currentBldgId) {
         const officesContainer = document.getElementById('bp-offices-container');
         if (officesContainer) {
-            officesContainer.innerHTML = renderBuildingOfficesHTML(state.selectedBuildingId, val);
+            officesContainer.innerHTML = renderBuildingOfficesHTML(currentBldgId, val);
+            const highlightedPill = officesContainer.querySelector('.office-pill.highlighted');
+            if (highlightedPill) {
+                setTimeout(() => {
+                    highlightedPill.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 120);
+            }
+        }
+    }
+
+    // Support mobile phone building panel offices container
+    const phoneOfficesContainer = document.getElementById('phone-bldg-offices-container');
+    if (phoneOfficesContainer && currentBldgId) {
+        phoneOfficesContainer.innerHTML = renderBuildingOfficesHTML(currentBldgId, val);
+        const highlightedPill = phoneOfficesContainer.querySelector('.office-pill.highlighted');
+        if (highlightedPill) {
+            setTimeout(() => {
+                highlightedPill.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 120);
         }
     }
 
@@ -358,3 +694,8 @@ window.collapseSidebarMenu = collapseSidebarMenu;
 window.openSidebarMenu = openSidebarMenu;
 window.updateSidebarToggleIcon = updateSidebarToggleIcon;
 window.isNavigationActive = isNavigationActive;
+window.toggleTypeFilter = toggleTypeFilter;
+window.resetTypeFilters = resetTypeFilters;
+window.toggleFilterDropdown = toggleFilterDropdown;
+window.closeFilterDropdown = closeFilterDropdown;
+window.clearSearchInput = clearSearchInput;

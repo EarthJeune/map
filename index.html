@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <title>DASH — Department of Agriculture Spatial Hub | 3D Interactive Map</title>
     <meta name="description"
-        content="Department of Agriculture Spatial Hub (DASH) — Interactive 3D campus wayfinding and masterplan connecting Department of Agriculture research stations.">
+        content="Department of Agriculture Spatial Hub (DASH) — Interactive 3D campus wayfinding and geospatial masterplan connecting Department of Agriculture CALABARZON research stations.">
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0a0f1c">
@@ -22,7 +22,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/main.css?v=93">
+    <link rel="stylesheet" href="css/main.css?v=186">
     <script>
         try {
             if (new URLSearchParams(window.location.search).get('admin') === '1' || localStorage.getItem('da_admin_mode') === 'true') {
@@ -31,6 +31,73 @@
             }
         } catch (e) { }
     </script>
+    <style>
+        .lucide-icon { display: inline-block; vertical-align: -0.15em; flex-shrink: 0; pointer-events: none; }
+        body { color: #e2e8f0; }
+        /* Unified Lucide Icon Color Scheme (matching Map Display Settings segmented/lighting/perf palette) */
+        .msp-icon { color: #94a3b8; display: inline-flex; align-items: center; justify-content: center; }
+        .msp-toggle-icon { color: #94a3b8; display: inline-flex; align-items: center; justify-content: center; transition: color 0.2s ease; }
+        .msp-toggle-row:has(input:checked) .msp-toggle-icon { color: #f8fafc; }
+        .bp-wf-icon { color: #94a3b8; display: inline-flex; align-items: center; }
+        .bp-wf-visual .bp-wf-icon, #pbi-visual-icon { color: #7dd3fc; }
+        .bp-wf-services .bp-wf-icon, #pbi-services-icon { color: #86efac; }
+        .pbi-icon { color: #94a3b8; display: inline-flex; align-items: center; }
+        #pbi-kiosk-origin-row .pbi-icon { color: #38bdf8; }
+        .fdm-item-icon { color: #94a3b8; display: inline-flex; align-items: center; justify-content: center; transition: color 0.15s ease; }
+        .fdm-item:hover .fdm-item-icon, .fdm-item.active .fdm-item-icon { color: #f8fafc; }
+        .station-item-icon, .psc-icon { color: #94a3b8; }
+        .station-dropdown-item.active .station-item-icon, .phone-station-card.active .psc-icon { color: #86efac; }
+        .mlo-icon, .mlm-option-icon { color: #94a3b8; }
+        .map-layer-option.active .mlo-icon, .mlm-option.active .mlm-option-icon { color: #f8fafc; }
+        .search-icon, .phone-search-icon, .bp-office-icon, .pbo-item-icon, .bp-offices-header-icon, .pbo-header-icon, .dir-office-match-icon, .bp-image-icon { color: #94a3b8; }
+        .dash-card-icon { color: #7dd3fc; }
+        .dash-welcome-card.highlighted .dash-card-icon, .arrived-card-icon, .pam-confetti { color: #86efac; }
+        .tbt-icon-wrapper, .ptnh-icon-wrap {
+            width: 46px !important;
+            height: 46px !important;
+            border-radius: 50% !important;
+            background: radial-gradient(circle at 30% 25%, rgba(16, 185, 129, 0.28), rgba(6, 78, 59, 0.6)) !important;
+            border: 1.5px solid rgba(52, 211, 153, 0.5) !important;
+            color: #6ee7b7 !important;
+            box-shadow: 0 0 18px rgba(16, 185, 129, 0.24), inset 0 1px 1px rgba(255, 255, 255, 0.14) !important;
+        }
+        .tbt-icon-wrapper svg, .ptnh-icon-wrap svg {
+            width: 22px !important;
+            height: 22px !important;
+            stroke-width: 2.5 !important;
+            filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.4));
+        }
+        .turn-by-turn-banner.arrived .tbt-icon-wrapper {
+            background: radial-gradient(circle at 30% 25%, rgba(56, 189, 248, 0.28), rgba(12, 74, 110, 0.6)) !important;
+            border-color: rgba(125, 211, 252, 0.55) !important;
+            color: #7dd3fc !important;
+            box-shadow: 0 0 18px rgba(56, 189, 248, 0.26), inset 0 1px 1px rgba(255, 255, 255, 0.14) !important;
+        }
+        .tbt-instruction, .ptnh-primary-step, .ptnh-secondary-step {
+            white-space: normal !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+            word-break: break-word;
+            line-height: 1.3 !important;
+        }
+        .toast-icon, .stc-icon-badge { color: #38bdf8; }
+
+        /* Distinct identity colors for map-mode buttons: Drone = amber, Mapbox = sky blue, Orbit = violet */
+        .lucide-drone { color: #fbbf24; }
+        #mlt-current-icon .lucide-map, .mlo-icon .lucide-map, .mlm-option-icon .lucide-map, .mvs-icon .lucide-map { color: #38bdf8; }
+        .map-layer-trigger-btn:has(.lucide-drone) { border-color: rgba(251, 191, 36, 0.45); box-shadow: 0 0 10px rgba(251, 191, 36, 0.18); }
+        .map-layer-trigger-btn:has(.lucide-map) { border-color: rgba(56, 189, 248, 0.45); box-shadow: 0 0 10px rgba(56, 189, 248, 0.18); }
+        .ctrl-orbit-btn, .ctrl-orbit-btn .lucide-rotate-3d { color: #a78bfa !important; }
+        .ctrl-orbit-btn.active {
+            background: linear-gradient(135deg, #7c3aed, #6d28d9) !important;
+            box-shadow: 0 0 14px rgba(167, 139, 250, 0.7), 0 0 0 2px #a78bfa !important;
+        }
+        .ctrl-orbit-btn.active, .ctrl-orbit-btn.active .lucide-rotate-3d { color: #ffffff !important; }
+        .orbit-toast-icon { color: #a78bfa; }
+
+        /* Keep sidebar dark navy background consistent even when low-perf-mode disables backdrop blur */
+        body.low-perf-mode .sidebar { background: rgba(10, 15, 28, 0.98) !important; }
+    </style>
 </head>
 
 <body>
@@ -61,22 +128,22 @@
         <div class="map-layer-flyout" id="map-layer-flyout">
             <button class="map-layer-option active" id="layer-opt-google" onclick="selectMapStyle('google')"
                 title="Switch to Aerial Drone View">
-                <span class="mlo-icon">🚁</span>
+                <span class="mlo-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-drone" aria-hidden="true"><path d="M12 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"/><path d="m10.5 10.5-4-4"/><path d="m13.5 10.5 4-4"/><path d="m10.5 13.5-4 4"/><path d="m13.5 13.5 4 4"/><circle cx="5.5" cy="5.5" r="2.5"/><circle cx="18.5" cy="5.5" r="2.5"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></span>
                 <span class="mlo-name">Aerial Drone View</span>
-                <span class="mlo-check">✓</span>
+                <span class="mlo-check"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-check" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
             </button>
             <button class="map-layer-option" id="layer-opt-mapbox" onclick="selectMapStyle('mapbox')"
                 title="Switch to Mapbox 3D View">
-                <span class="mlo-icon">🗺️</span>
+                <span class="mlo-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-map" aria-hidden="true"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></svg></span>
                 <span class="mlo-name">Mapbox View</span>
-                <span class="mlo-check">✓</span>
+                <span class="mlo-check"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-check" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
             </button>
         </div>
 
         <!-- Main Icon Trigger Button -->
         <button class="map-layer-trigger-btn" id="map-layer-trigger-btn" onclick="toggleMapLayerMenu()"
             title="Map View Options" aria-label="Toggle map view options">
-            <span class="mlt-icon" id="mlt-current-icon">🚁</span>
+            <span class="mlt-icon" id="mlt-current-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-drone" aria-hidden="true"><path d="M12 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"/><path d="m10.5 10.5-4-4"/><path d="m13.5 10.5 4-4"/><path d="m10.5 13.5-4 4"/><path d="m13.5 13.5 4 4"/><circle cx="5.5" cy="5.5" r="2.5"/><circle cx="18.5" cy="5.5" r="2.5"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></span>
         </button>
     </div>
 
@@ -85,7 +152,7 @@
         ontouchstart="event.stopPropagation()">
         <button class="map-settings-trigger-btn" id="map-settings-trigger-btn" onclick="toggleMapSettingsPanel(event)"
             title="Map Display Settings" aria-label="Toggle map display settings">
-            <span class="mst-icon">⚙️</span>
+            <span class="mst-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-settings" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span>
         </button>
     </div>
 
@@ -96,7 +163,7 @@
             onclick="toggleDroneCalibrationHUD(event)"
             title="🛰️ Drone Imagery Calibration (Admin Mode: Alt + Shift + D)"
             aria-label="Open Drone Calibration Tool">
-            <span class="adcb-icon">🛰️</span>
+            <span class="adcb-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-satellite" aria-hidden="true"><path d="M13 7 9 3 5 7l4 4"/><path d="m17 11 4 4-4 4-4-4"/><path d="m8 12 4 4 6-6-4-4Z"/><path d="m16 8 3-3"/><path d="M9 21a6 6 0 0 0-6-6"/></svg></span>
         </button>
     </div>
 
@@ -106,13 +173,13 @@
         ontouchstart="event.stopPropagation()">
         <div class="msp-header">
             <div class="msp-header-title">
-                <span class="msp-icon">⚙️</span>
+                <span class="msp-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-settings" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span>
                 <div>
                     <h3>Map Display Settings</h3>
                     <p>Customize layers, label style & lighting</p>
                 </div>
             </div>
-            <button class="msp-close-btn" onclick="closeMapSettingsPanel()" title="Close Settings">✕</button>
+            <button class="msp-close-btn" onclick="closeMapSettingsPanel()" title="Close Settings"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-x" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
         </div>
 
         <div class="msp-body">
@@ -126,7 +193,7 @@
                     <!-- 3D Buildings -->
                     <div class="msp-toggle-row">
                         <div class="msp-toggle-info">
-                            <span class="msp-toggle-icon">🏢</span>
+                            <span class="msp-toggle-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-building-2" aria-hidden="true"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg></span>
                             <div>
                                 <span class="msp-toggle-label">3D Buildings</span>
                                 <span class="msp-toggle-desc">Architectural models & extrusions</span>
@@ -142,7 +209,7 @@
                     <!-- Building Labels -->
                     <div class="msp-toggle-row">
                         <div class="msp-toggle-info">
-                            <span class="msp-toggle-icon">🏷️</span>
+                            <span class="msp-toggle-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-tag" aria-hidden="true"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg></span>
                             <div>
                                 <span class="msp-toggle-label">Building Labels</span>
                                 <span class="msp-toggle-desc">Campus numbered pin markers</span>
@@ -158,7 +225,7 @@
                     <!-- Perimeter Boundary -->
                     <div class="msp-toggle-row">
                         <div class="msp-toggle-info">
-                            <span class="msp-toggle-icon">📐</span>
+                            <span class="msp-toggle-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-ruler" aria-hidden="true"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/></svg></span>
                             <div>
                                 <span class="msp-toggle-label">Perimeter Boundary</span>
                                 <span class="msp-toggle-desc">Compound fence & property outline</span>
@@ -167,6 +234,22 @@
                         <label class="msp-switch">
                             <input type="checkbox" id="msp-toggle-boundary" checked
                                 onchange="handleLayerToggle('boundary', this.checked)">
+                            <span class="msp-slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- Agricultural Plots -->
+                    <div class="msp-toggle-row">
+                        <div class="msp-toggle-info">
+                            <span class="msp-toggle-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-wheat" aria-hidden="true"><path d="M2 22 16 8"/><path d="M3.47 12.53 5 11l1.53 1.53a3.5 3.5 0 0 1 0 4.94L5 19l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M7.47 8.53 9 7l1.53 1.53a3.5 3.5 0 0 1 0 4.94L9 15l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M11.47 4.53 13 3l1.53 1.53a3.5 3.5 0 0 1 0 4.94L13 11l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M20 2h2v2a4 4 0 0 1-4 4h-2V6a4 4 0 0 1 4-4Z"/><path d="M11.47 17.47 13 19l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L5 19l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/><path d="M15.47 13.47 17 15l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L9 15l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/><path d="M19.47 9.47 21 11l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L13 11l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/></svg></span>
+                            <div>
+                                <span class="msp-toggle-label">Agricultural Plots</span>
+                                <span class="msp-toggle-desc">Research zones & field crop boundaries</span>
+                            </div>
+                        </div>
+                        <label class="msp-switch">
+                            <input type="checkbox" id="msp-toggle-plots"
+                                onchange="handleLayerToggle('plots', this.checked)">
                             <span class="msp-slider"></span>
                         </label>
                     </div>
@@ -182,7 +265,7 @@
                 <div class="msp-segmented-control">
                     <button class="msp-seg-btn active" id="msp-seg-full" onclick="setLabelDisplayMode('full')"
                         type="button">
-                        <span class="msp-seg-icon">🏷️</span>
+                        <span class="msp-seg-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-tag" aria-hidden="true"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg></span>
                         <div class="msp-seg-labels">
                             <span class="msp-seg-text">Full Pill View</span>
                             <span class="msp-seg-sub">(1) Guard House</span>
@@ -190,7 +273,7 @@
                     </button>
                     <button class="msp-seg-btn" id="msp-seg-compact" onclick="setLabelDisplayMode('compact')"
                         type="button">
-                        <span class="msp-seg-icon">🔢</span>
+                        <span class="msp-seg-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-hash" aria-hidden="true"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg></span>
                         <div class="msp-seg-labels">
                             <span class="msp-seg-text">Compact Number</span>
                             <span class="msp-seg-sub">(1) Hover for Name</span>
@@ -208,62 +291,62 @@
                 <div class="msp-lighting-grid">
                     <button class="msp-light-btn" data-preset="dawn" onclick="setEnvironmentLighting('dawn')"
                         type="button">
-                        <span class="msp-light-icon">🌅</span>
+                        <span class="msp-light-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-sunrise" aria-hidden="true"><path d="M12 2v8"/><path d="m4.93 10.93 1.41 1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="m19.07 10.93-1.41 1.41"/><path d="M22 22H2"/><path d="m8 6 4-4 4 4"/><path d="M16 18a4 4 0 0 0-8 0"/></svg></span>
                         <span class="msp-light-name">Dawn</span>
                         <span class="msp-light-sub">Sunrise</span>
                     </button>
                     <button class="msp-light-btn" data-preset="day" onclick="setEnvironmentLighting('day')"
                         type="button">
-                        <span class="msp-light-icon">☀️</span>
+                        <span class="msp-light-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-sun" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg></span>
                         <span class="msp-light-name">Day</span>
                         <span class="msp-light-sub">Daylight</span>
                     </button>
                     <button class="msp-light-btn" data-preset="dusk" onclick="setEnvironmentLighting('dusk')"
                         type="button">
-                        <span class="msp-light-icon">🌇</span>
+                        <span class="msp-light-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-sunset" aria-hidden="true"><path d="M12 10V2"/><path d="m4.93 10.93 1.41 1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="m19.07 10.93-1.41 1.41"/><path d="M22 22H2"/><path d="m16 6-4 4-4-4"/><path d="M16 18a4 4 0 0 0-8 0"/></svg></span>
                         <span class="msp-light-name">Dusk</span>
                         <span class="msp-light-sub">Sunset</span>
                     </button>
                     <button class="msp-light-btn" data-preset="night" onclick="setEnvironmentLighting('night')"
                         type="button">
-                        <span class="msp-light-icon">🌙</span>
+                        <span class="msp-light-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-moon" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg></span>
                         <span class="msp-light-name">Night</span>
                         <span class="msp-light-sub">Dark Sky</span>
                     </button>
                     <button class="msp-light-btn active" data-preset="auto" onclick="setEnvironmentLighting('auto')"
                         type="button">
-                        <span class="msp-light-icon">⏱️</span>
+                        <span class="msp-light-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-timer" aria-hidden="true"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></svg></span>
                         <span class="msp-light-name">Auto</span>
                         <span class="msp-light-sub">Clock Sync</span>
                     </button>
                 </div>
             </div>
 
-            <!-- 4. Kiosk Hardware & Performance Profile -->
-            <div class="msp-section">
+            <!-- 4. Kiosk & Mobile Hardware / Battery Performance Profile -->
+            <div class="msp-section" id="msp-perf-section">
                 <div class="msp-section-header">
-                    <span class="msp-section-tag"
+                    <span class="msp-section-tag" id="msp-perf-tag"
                         style="background:rgba(16,185,129,0.15);color:#10b981;border-color:rgba(16,185,129,0.3);">HARDWARE</span>
-                    <h4>Kiosk Performance Profile</h4>
+                    <h4 id="msp-perf-title">Kiosk Performance Profile</h4>
                 </div>
                 <div class="msp-perf-grid" id="msp-perf-control">
-                    <button class="msp-perf-btn active" id="perf-btn-auto" onclick="setPerformanceProfile('auto')"
+                    <button class="msp-perf-btn" id="perf-btn-auto" onclick="setPerformanceProfile('auto')"
                         type="button" title="Automatically calibrate rendering based on GPU detection">
-                        <span class="msp-perf-icon">⚡</span>
-                        <span class="msp-perf-name">Auto</span>
-                        <span class="msp-perf-sub">Adaptive</span>
+                        <span class="msp-perf-icon" id="perf-icon-auto"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-zap" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg></span>
+                        <span class="msp-perf-name" id="perf-name-auto">Auto</span>
+                        <span class="msp-perf-sub" id="perf-sub-auto">Adaptive</span>
                     </button>
                     <button class="msp-perf-btn" id="perf-btn-eco" onclick="setPerformanceProfile('eco')" type="button"
                         title="Low-power mode optimized for Intel Core i3 / i5 Integrated Graphics">
-                        <span class="msp-perf-icon">🌿</span>
-                        <span class="msp-perf-name">Kiosk Eco</span>
-                        <span class="msp-perf-sub">i3 / i5 GPU</span>
+                        <span class="msp-perf-icon" id="perf-icon-eco"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-leaf" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg></span>
+                        <span class="msp-perf-name" id="perf-name-eco">Kiosk Eco</span>
+                        <span class="msp-perf-sub" id="perf-sub-eco">i3 / i5 GPU</span>
                     </button>
                     <button class="msp-perf-btn" id="perf-btn-high" onclick="setPerformanceProfile('high')"
                         type="button" title="Native retina resolution with full anti-aliasing">
-                        <span class="msp-perf-icon">💎</span>
-                        <span class="msp-perf-name">High</span>
-                        <span class="msp-perf-sub">Native DPI</span>
+                        <span class="msp-perf-icon" id="perf-icon-high"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-gem" aria-hidden="true"><path d="M6 3h12l4 6-10 13L2 9Z"/><path d="M11 3 8 9l4 13 4-13-3-6"/><path d="M2 9h20"/></svg></span>
+                        <span class="msp-perf-name" id="perf-name-high">High</span>
+                        <span class="msp-perf-sub" id="perf-sub-high">Native DPI</span>
                     </button>
                 </div>
                 <div class="msp-perf-status" id="msp-perf-status">
@@ -280,8 +363,8 @@
                 </div>
                 <button class="msp-admin-action-btn" onclick="closeMapSettingsPanel(); toggleDroneCalibrationHUD();"
                     type="button">
-                    <span>🛰️ Open Drone Calibration Controls</span>
-                    <span class="msp-admin-action-arrow">➔</span>
+                    <span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-satellite" aria-hidden="true"><path d="M13 7 9 3 5 7l4 4"/><path d="m17 11 4 4-4 4-4-4"/><path d="m8 12 4 4 6-6-4-4Z"/><path d="m16 8 3-3"/><path d="M9 21a6 6 0 0 0-6-6"/></svg> Open Drone Calibration Controls</span>
+                    <span class="msp-admin-action-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-arrow-right" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></span>
                 </button>
             </div>
         </div>
@@ -296,11 +379,11 @@
                 <span class="mlm-badge">MAP LAYER</span>
                 <h4 class="mlm-title">Choose Map View</h4>
             </div>
-            <button class="mlm-close-btn" onclick="closeMapLayerModal()" aria-label="Close">✕</button>
+            <button class="mlm-close-btn" onclick="closeMapLayerModal()" aria-label="Close"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-x" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
         </div>
         <div class="mlm-options">
             <button class="mlm-option active" id="mlm-opt-google" onclick="selectMapStyle('google')">
-                <div class="mlm-option-icon">🚁</div>
+                <div class="mlm-option-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-drone" aria-hidden="true"><path d="M12 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"/><path d="m10.5 10.5-4-4"/><path d="m13.5 10.5 4-4"/><path d="m10.5 13.5-4 4"/><path d="m13.5 13.5 4 4"/><circle cx="5.5" cy="5.5" r="2.5"/><circle cx="18.5" cy="5.5" r="2.5"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
                 <div class="mlm-option-info">
                     <span class="mlm-option-name">Aerial Drone View</span>
                     <span class="mlm-option-desc">High-Resolution Drone Imagery</span>
@@ -308,7 +391,7 @@
                 <div class="mlm-option-radio"></div>
             </button>
             <button class="mlm-option" id="mlm-opt-mapbox" onclick="selectMapStyle('mapbox')">
-                <div class="mlm-option-icon">🗺️</div>
+                <div class="mlm-option-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-map" aria-hidden="true"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></svg></div>
                 <div class="mlm-option-info">
                     <span class="mlm-option-name">Mapbox View</span>
                     <span class="mlm-option-desc">3D Digital Campus Masterplan</span>
@@ -321,7 +404,7 @@
     <!-- Google Maps-style Turn-by-Turn Live Navigation Banner -->
     <div class="turn-by-turn-banner" id="turn-by-turn-banner" onmousedown="event.stopPropagation()"
         ontouchstart="event.stopPropagation()">
-        <div class="tbt-icon-wrapper" id="tbt-icon">🚶</div>
+        <div class="tbt-icon-wrapper" id="tbt-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-footprints" aria-hidden="true"><path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z"/><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 1 0 4 0Z"/><path d="M16 17h4"/><path d="M4 13h4"/></svg></div>
         <div class="tbt-content">
             <div class="tbt-distance" id="tbt-distance">Starting…</div>
             <div class="tbt-instruction" id="tbt-instruction">Follow the path</div>
@@ -333,11 +416,11 @@
         ontouchstart="event.stopPropagation()">
         <span class="fcc-label">CAMERA</span>
         <button class="fcc-btn active" id="fcc-follow" onclick="setRouteCameraMode('follow')"
-            title="Camera locked to walker (Click to unlock free-form view)">🔒 Locked</button>
+            title="Camera locked to walker (Click to unlock free-form view)"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-lock" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Locked</button>
         <button class="fcc-btn" id="fcc-overview" onclick="setRouteCameraMode('overview')"
-            title="Side View perspective (follows walker)">🧭 Side View</button>
+            title="Side View perspective (follows walker)"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-compass" aria-hidden="true"><path d="m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z"/><circle cx="12" cy="12" r="10"/></svg> Side View</button>
         <button class="fcc-btn" id="fcc-topdown" onclick="setRouteCameraMode('topdown')"
-            title="Top View perspective (follows walker)">🗺️ Top View</button>
+            title="Top View perspective (follows walker)"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-map" aria-hidden="true"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></svg> Top View</button>
     </div>
 
     <!-- Floating Route Speed Controls (Under Camera View in portrait/mobile when menu is popped down) -->
@@ -352,31 +435,23 @@
             <button class="speed-pill" onclick="setRouteSpeed(6)" data-speed="6" title="6x Ultra speed">6x</button>
         </div>
     </div>
-
-    <!-- Dedicated Post-Arrival Action Bar for Kiosk Touchscreen (Comfort Reach Zone) -->
-    <div class="kiosk-arrival-action-bar" id="kiosk-arrival-action-bar" onmousedown="event.stopPropagation()"
-        ontouchstart="event.stopPropagation()">
-        <div class="kaa-header">
-            <span class="kaa-icon">🎉</span>
-            <div class="kaa-text-group">
-                <div class="kaa-title">You have arrived at <span id="kaa-dest-name">Destination</span></div>
-                <div class="kaa-subtitle" id="kaa-countdown-text">Returning to campus overview in 30s</div>
-            </div>
+            <button type="button" class="kaa-close-btn" onclick="window.clearArrivedCountdown()"
+                title="Dismiss notification"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-x" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
         </div>
         <div class="kaa-buttons">
             <button type="button" class="kaa-btn kaa-btn-primary" id="kaa-btn-details"
                 onclick="window.viewArrivedBuildingDetails()" title="View offices and facility information">
-                <span class="kaa-btn-icon">🏢</span>
+                <span class="kaa-btn-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-building-2" aria-hidden="true"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg></span>
                 <span>View Building Offices & Details</span>
             </button>
             <button type="button" class="kaa-btn kaa-btn-secondary" onclick="window.replayRoute()"
                 title="Replay walking route animation">
-                <span class="kaa-btn-icon">🔁</span>
+                <span class="kaa-btn-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-rotate-ccw" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></span>
                 <span>Replay Walk</span>
             </button>
             <button type="button" class="kaa-btn kaa-btn-tertiary" onclick="window.exitRouteMode()"
                 title="Return to main directory and campus map">
-                <span class="kaa-btn-icon">🗺️</span>
+                <span class="kaa-btn-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-map" aria-hidden="true"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></svg></span>
                 <span>Campus Overview</span>
             </button>
         </div>
@@ -432,7 +507,7 @@
                     title="Switch Research Station">
                     <div class="station-btn-text">
                         <h1 id="station-current-label">DA-LARES (Lipa)</h1>
-                        <p id="station-subtitle">DASH Wayfinding Map</p>
+                        <p id="station-subtitle">LIPA AGRICULTURAL RESEARCH &amp; EXPERIMENT STATION</p>
                     </div>
                     <svg class="station-chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -447,7 +522,7 @@
                     </div>
                     <div class="station-dropdown-item active" data-station="lares"
                         onclick="switchResearchStation('lares')">
-                        <div class="station-item-icon">🌾</div>
+                        <div class="station-item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-wheat" aria-hidden="true"><path d="M2 22 16 8"/><path d="M3.47 12.53 5 11l1.53 1.53a3.5 3.5 0 0 1 0 4.94L5 19l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M7.47 8.53 9 7l1.53 1.53a3.5 3.5 0 0 1 0 4.94L9 15l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M11.47 4.53 13 3l1.53 1.53a3.5 3.5 0 0 1 0 4.94L13 11l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M20 2h2v2a4 4 0 0 1-4 4h-2V6a4 4 0 0 1 4-4Z"/><path d="M11.47 17.47 13 19l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L5 19l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/><path d="M15.47 13.47 17 15l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L9 15l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/><path d="M19.47 9.47 21 11l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L13 11l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/></svg></div>
                         <div class="station-item-info">
                             <div class="station-item-title">DA-LARES</div>
                             <div class="station-item-sub">Lipa City, Batangas (Main Compound)</div>
@@ -455,22 +530,130 @@
                         <span class="station-item-status active-badge">Active</span>
                     </div>
                     <div class="station-dropdown-item" data-station="qares" onclick="switchResearchStation('qares')">
-                        <div class="station-item-icon">🌱</div>
+                        <div class="station-item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-sprout" aria-hidden="true"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></svg></div>
                         <div class="station-item-info">
                             <div class="station-item-title">DA-QARES</div>
                             <div class="station-item-sub">Tiaong, Quezon (Experiment Station)</div>
                         </div>
-                        <span class="station-item-status">Select</span>
+                        <span class="station-item-status dev-badge">Under Dev</span>
+                    </div>
+                    <div class="station-dropdown-item" data-station="rares" onclick="switchResearchStation('rares')">
+                        <div class="station-item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-trees" aria-hidden="true"><path d="M10 10v.2A3 3 0 0 1 8.9 16H5a3 3 0 0 1-1-5.8V10a3 3 0 0 1 6 0Z"/><path d="M7 16v6"/><path d="M13 19v3"/><path d="M12 19h8.3a1 1 0 0 0 .7-1.7L18 14h.3a1 1 0 0 0 .7-1.7L16 9h.2a1 1 0 0 0 .8-1.7L13 3l-1.4 1.4"/></svg></div>
+                        <div class="station-item-info">
+                            <div class="station-item-title">DA-RARES</div>
+                            <div class="station-item-sub">Tanay, Rizal (Upland Experiment Station)</div>
+                        </div>
+                        <span class="station-item-status dev-badge">Under Dev</span>
+                    </div>
+                    <div class="station-dropdown-item" data-station="cares" onclick="switchResearchStation('cares')">
+                        <div class="station-item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-leaf" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg></div>
+                        <div class="station-item-info">
+                            <div class="station-item-title">DA-CARES</div>
+                            <div class="station-item-sub">Naic, Cavite (Experiment Station)</div>
+                        </div>
+                        <span class="station-item-status dev-badge">Under Dev</span>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="search-container">
-            <div class="search-box">
-                <span class="search-icon">🔍</span>
-                <input type="text" id="search-input" placeholder="Search for a building or place…"
-                    oninput="filterDirectory()">
+            <div class="search-row">
+                <div class="search-box">
+                    <span class="search-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-search" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></span>
+                    <input type="text" id="search-input" placeholder="Search places, plots & offices..."
+                        oninput="filterDirectory()">
+                    <button type="button" class="search-clear-btn" id="search-clear-btn" onclick="clearSearchInput()"
+                        title="Clear search" style="display:none;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-x" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+                </div>
+                <div class="filter-dropdown-wrap" id="filter-dropdown-wrap">
+                    <button type="button" class="filter-dropdown-btn" id="filter-dropdown-btn"
+                        onclick="toggleFilterDropdown(event)" title="Filter facilities by type" aria-haspopup="true"
+                        aria-expanded="false">
+                        <svg class="filter-btn-icon" width="17" height="17" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                        </svg>
+                        <span class="filter-btn-text">Filter</span>
+                        <span class="filter-count-badge" id="filter-count-badge" style="display:none;">0</span>
+                    </button>
+                    <div class="filter-dropdown-menu" id="filter-dropdown-menu" onmousedown="event.stopPropagation()"
+                        ontouchstart="event.stopPropagation()">
+                        <div class="fdm-header">
+                            <span class="fdm-title">FILTER BY TYPE</span>
+                            <button type="button" class="fdm-reset-btn" id="fdm-reset-btn" onclick="resetTypeFilters()"
+                                title="Reset all filters">Reset</button>
+                        </div>
+                        <div class="fdm-options" id="fdm-options">
+                            <label class="fdm-item" data-type="infrastructure">
+                                <input type="checkbox" class="fdm-checkbox" value="infrastructure"
+                                    onchange="toggleTypeFilter('infrastructure', this.checked)">
+                                <span class="fdm-item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-hard-hat" aria-hidden="true"><path d="M2 18a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v2z"/><path d="M10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5"/><path d="M4 15v-3a6 6 0 0 1 6-6"/><path d="M14 6a6 6 0 0 1 6 6v3"/></svg></span>
+                                <div class="fdm-item-text">
+                                    <span class="fdm-item-name">Agri Infrastructure / Facilities</span>
+                                    <span class="fdm-item-desc">Warehouse, screenhouse, nursery, water tank,
+                                        motorpool</span>
+                                </div>
+                            </label>
+                            <label class="fdm-item" data-type="trial_sites">
+                                <input type="checkbox" class="fdm-checkbox" value="trial_sites"
+                                    onchange="toggleTypeFilter('trial_sites', this.checked)">
+                                <span class="fdm-item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-wheat" aria-hidden="true"><path d="M2 22 16 8"/><path d="M3.47 12.53 5 11l1.53 1.53a3.5 3.5 0 0 1 0 4.94L5 19l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M7.47 8.53 9 7l1.53 1.53a3.5 3.5 0 0 1 0 4.94L9 15l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M11.47 4.53 13 3l1.53 1.53a3.5 3.5 0 0 1 0 4.94L13 11l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M20 2h2v2a4 4 0 0 1-4 4h-2V6a4 4 0 0 1 4-4Z"/><path d="M11.47 17.47 13 19l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L5 19l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/><path d="M15.47 13.47 17 15l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L9 15l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/><path d="M19.47 9.47 21 11l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L13 11l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/></svg></span>
+                                <div class="fdm-item-text">
+                                    <span class="fdm-item-name">Agricultural Test / Trial Sites</span>
+                                    <span class="fdm-item-desc">Field crop variety trials, root crops, corn &
+                                        vegetables</span>
+                                </div>
+                            </label>
+                            <label class="fdm-item" data-type="orchard">
+                                <input type="checkbox" class="fdm-checkbox" value="orchard"
+                                    onchange="toggleTypeFilter('orchard', this.checked)">
+                                <span class="fdm-item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-trees" aria-hidden="true"><path d="M10 10v.2A3 3 0 0 1 8.9 16H5a3 3 0 0 1-1-5.8V10a3 3 0 0 1 6 0Z"/><path d="M7 16v6"/><path d="M13 19v3"/><path d="M12 19h8.3a1 1 0 0 0 .7-1.7L18 14h.3a1 1 0 0 0 .7-1.7L16 9h.2a1 1 0 0 0 .8-1.7L13 3l-1.4 1.5"/></svg></span>
+                                <div class="fdm-item-text">
+                                    <span class="fdm-item-name">Orchard</span>
+                                    <span class="fdm-item-desc">Citrus, mango, pomelo, makapuno & cacao groves</span>
+                                </div>
+                            </label>
+                            <label class="fdm-item" data-type="office">
+                                <input type="checkbox" class="fdm-checkbox" value="office"
+                                    onchange="toggleTypeFilter('office', this.checked)">
+                                <span class="fdm-item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-building-2" aria-hidden="true"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg></span>
+                                <div class="fdm-item-text">
+                                    <span class="fdm-item-name">Office Buildings</span>
+                                    <span class="fdm-item-desc">Tanco Hall, Admin, ORED, LARES, RAED, AMAD, etc.</span>
+                                </div>
+                            </label>
+                            <label class="fdm-item" data-type="laboratory">
+                                <input type="checkbox" class="fdm-checkbox" value="laboratory"
+                                    onchange="toggleTypeFilter('laboratory', this.checked)">
+                                <span class="fdm-item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-flask-conical" aria-hidden="true"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg></span>
+                                <div class="fdm-item-text">
+                                    <span class="fdm-item-name">Laboratories</span>
+                                    <span class="fdm-item-desc">Soils, Tissue Culture, Post-Harvest, RCPC, PGRC,
+                                        ILD</span>
+                                </div>
+                            </label>
+                            <label class="fdm-item" data-type="conference">
+                                <input type="checkbox" class="fdm-checkbox" value="conference"
+                                    onchange="toggleTypeFilter('conference', this.checked)">
+                                <span class="fdm-item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-landmark" aria-hidden="true"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg></span>
+                                <div class="fdm-item-text">
+                                    <span class="fdm-item-name">Conference Hall</span>
+                                    <span class="fdm-item-desc">Argosino Hall, ORED, and R&D Conference Halls</span>
+                                </div>
+                            </label>
+                            <label class="fdm-item" data-type="digital_agri">
+                                <input type="checkbox" class="fdm-checkbox" value="digital_agri"
+                                    onchange="toggleTypeFilter('digital_agri', this.checked)">
+                                <span class="fdm-item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-radio" aria-hidden="true"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></svg></span>
+                                <div class="fdm-item-text">
+                                    <span class="fdm-item-name">Digital Agriculture Project</span>
+                                    <span class="fdm-item-desc">Automated Weather Station (AWS)</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
             </div>
             <!-- Category Filter Chips (Active only for QARES standalone) -->
             <div class="kiosk-categories-bar" id="kiosk-categories-bar" style="display: none;"></div>
@@ -503,7 +686,7 @@
             <!-- Prominent QR Code Handoff Card during Active Directions -->
             <div class="route-qr-card" id="route-qr-card">
                 <div class="rqr-info">
-                    <span class="rqr-badge">📱 Mobile Navigation</span>
+                    <span class="rqr-badge"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-smartphone" aria-hidden="true"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg> Mobile Navigation</span>
                     <span class="rqr-title">Take route on your phone</span>
                     <span class="rqr-sub">Scan camera to open live turn-by-turn guidance</span>
                 </div>
@@ -512,7 +695,7 @@
 
             <!-- Arrived Card (shown on arrival) -->
             <div class="route-arrived-card" id="route-arrived-card" style="display: none;">
-                <div class="arrived-card-icon">🎉</div>
+                <div class="arrived-card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-party-popper" aria-hidden="true"><path d="M5.8 11.3 2 22l10.7-3.79"/><path d="M4 3h.01"/><path d="M22 8h.01"/><path d="M15 2h.01"/><path d="M22 20h.01"/><path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10"/><path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.7-.72 1.22-1.43 1.22H17"/><path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98C9.52 4.9 9 5.52 9 6.23V7"/><path d="M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z"/></svg></div>
                 <div class="arrived-card-title">You Have Arrived!</div>
                 <div class="arrived-card-desc" id="arrived-card-desc">You have reached your destination.</div>
                 <div class="arrived-countdown-bar">
@@ -546,21 +729,21 @@
             </div>
 
             <div class="route-actions">
-                <button class="route-replay-btn" onclick="replayRoute()" title="Replay walking route">🔄 Replay
+                <button class="route-replay-btn" onclick="replayRoute()" title="Replay walking route"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-rotate-ccw" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg> Replay
                     Walk</button>
-                <button class="route-close-btn" onclick="exitRouteMode()" title="Exit route navigation">✕ Exit
+                <button class="route-close-btn" onclick="exitRouteMode()" title="Exit route navigation"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-x" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> Exit
                     Route</button>
             </div>
         </div>
 
         <div class="settings-bar" style="display: none;">
             <button class="setting-chip active" id="chip-trees" onclick="toggleSettingChip(this, 'trees')"
-                title="Toggle 3D Trees" style="display:none;">🌲 3D Trees</button>
-            <button class="setting-chip active" id="chip-buildings" onclick="toggleSettingChip(this, 'buildings')">🏢
+                title="Toggle 3D Trees" style="display:none;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-trees" aria-hidden="true"><path d="M10 10v.2A3 3 0 0 1 8.9 16H5a3 3 0 0 1-1-5.8V10a3 3 0 0 1 6 0Z"/><path d="M7 16v6"/><path d="M13 19v3"/><path d="M12 19h8.3a1 1 0 0 0 .7-1.7L18 14h.3a1 1 0 0 0 .7-1.7L16 9h.2a1 1 0 0 0 .8-1.7L13 3l-1.4 1.5"/></svg> 3D Trees</button>
+            <button class="setting-chip active" id="chip-buildings" onclick="toggleSettingChip(this, 'buildings')"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-building-2" aria-hidden="true"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>
                 Buildings</button>
-            <button class="setting-chip active" id="chip-numbers" onclick="toggleSettingChip(this, 'numbers')">🏷️
+            <button class="setting-chip active" id="chip-numbers" onclick="toggleSettingChip(this, 'numbers')"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-tag" aria-hidden="true"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>
                 Building Names</button>
-            <button class="setting-chip active" id="chip-boundary" onclick="toggleSettingChip(this, 'boundary')">📐
+            <button class="setting-chip active" id="chip-boundary" onclick="toggleSettingChip(this, 'boundary')"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-ruler" aria-hidden="true"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/></svg>
                 Boundary</button>
         </div>
     </div>
@@ -573,7 +756,8 @@
         <div class="bp-drag-handle"></div>
         <div class="bp-header">
             <div class="bp-header-left">
-                <button type="button" class="bp-back-to-dir-btn" onclick="closeBuildingPanel()" title="Back to Directory">
+                <button type="button" class="bp-back-to-dir-btn" onclick="closeBuildingPanel()"
+                    title="Back to Directory">
                     <span class="bp-back-arrow">←</span>
                     <span class="bp-back-text">Directory</span>
                 </button>
@@ -583,51 +767,66 @@
                     <div class="bp-subtitle" id="bp-subtitle">Research Facility</div>
                 </div>
             </div>
-            <button class="bp-close" onclick="closeBuildingPanel()" title="Close">✕</button>
+            <button class="bp-close" onclick="closeBuildingPanel()" title="Close"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-x" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
         </div>
-        <div class="bp-image-area">
-            <img id="bp-real-image" src="" alt="Building"
-                style="display: none; width: 100%; height: 120px; object-fit: cover; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+        <div class="bp-image-area" id="bp-image-area">
+            <div class="bp-image-wrapper" id="bp-image-wrapper">
+                <img id="bp-real-image" src="" alt="Building"
+                    style="display: none; width: 100%; height: 130px; object-fit: cover; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12); cursor: pointer; transition: opacity 0.25s ease;">
+                <div class="bp-image-overlay-vignette" id="bp-image-vignette" style="display: none;"></div>
+                <div class="bp-image-badge" id="bp-image-badge" style="display: none;">
+                    <span class="bp-badge-dot"></span>
+                    <span id="bp-image-badge-text">Facility Overview</span>
+                </div>
+                <div class="bp-image-expand-hint" id="bp-image-expand-hint" style="display: none;"
+                    title="Click to view full photo">
+                    <span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-search" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg> Enlarge</span>
+                </div>
+            </div>
+            <div class="bp-image-views-bar" id="bp-image-views-bar" style="display: none;"></div>
             <div class="bp-image-placeholder" id="bp-image-placeholder">
-                <span class="bp-image-icon">📷</span>
+                <span class="bp-image-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-camera" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></span>
                 <span>No image available</span>
             </div>
         </div>
         <div class="bp-body">
-            <div class="bp-info-row">
-                <span class="bp-info-icon">📍</span>
-                <span class="bp-info-label">Section</span>
-                <span class="bp-info-value" id="bp-section">Compound</span>
-            </div>
-            <div class="bp-info-row">
-                <span class="bp-info-icon">🏢</span>
-                <span class="bp-info-label">Type</span>
-                <span class="bp-info-value" id="bp-type">Office Building</span>
-            </div>
-            <div class="bp-info-row">
-                <span class="bp-info-icon">📐</span>
-                <span class="bp-info-label">Coords</span>
-                <span class="bp-info-value" id="bp-coords">—</span>
+            <!-- Visitor-Friendly Wayfinding Section: Visual Landmark & Key Services -->
+            <div class="bp-wayfinding-block">
+                <div class="bp-wf-card bp-wf-visual">
+                    <div class="bp-wf-header">
+                        <span class="bp-wf-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-eye" aria-hidden="true"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg></span>
+                        <span class="bp-wf-title">HOW TO SPOT IT</span>
+                    </div>
+                    <p class="bp-wf-text" id="bp-visual-landmark">Visual description...</p>
+                </div>
+
+                <div class="bp-wf-card bp-wf-services">
+                    <div class="bp-wf-header">
+                        <span class="bp-wf-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-crosshair" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="22" x2="18" y1="12" y2="12"/><line x1="6" x2="2" y1="12" y2="12"/><line x1="12" x2="12" y1="6" y2="2"/><line x1="12" x2="12" y1="22" y2="18"/></svg></span>
+                        <span class="bp-wf-title">WHAT'S INSIDE & SERVICES</span>
+                    </div>
+                    <p class="bp-wf-text" id="bp-key-services">Key services description...</p>
+                </div>
             </div>
             <!-- Dynamic Offices Section -->
             <div id="bp-offices-container"></div>
         </div>
         <div class="bp-actions">
             <button class="bp-directions-btn" id="bp-directions-btn" onclick="getDirections()">
-                <span class="bp-dir-icon">🧭</span>
+                <span class="bp-dir-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-compass" aria-hidden="true"><path d="m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z"/><circle cx="12" cy="12" r="10"/></svg></span>
                 Get Directions
             </button>
 
             <!-- Mobile-specific live GPS start button -->
             <button class="bp-gps-nav-btn" id="bp-gps-nav-btn" onclick="startMobileGPSNavigation(selectedBuildingId)">
-                <span>📍</span> Start Walking with GPS
+                <span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-map-pin" aria-hidden="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg></span> Start Walking with GPS
             </button>
 
             <!-- QR Code Handoff Card (for Kiosk visitors to take route on phone) -->
             <div class="bp-qr-card" id="bp-qr-card">
                 <div class="bp-qr-card-header">
                     <div>
-                        <span class="bp-qr-badge">📱 Mobile Navigation</span>
+                        <span class="bp-qr-badge"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-smartphone" aria-hidden="true"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg> Mobile Navigation</span>
                         <div class="bp-qr-title">Walk with your Phone</div>
                         <div class="bp-qr-desc">Scan to follow directions as you walk</div>
                     </div>
@@ -640,7 +839,7 @@
                         <div class="bp-qr-step"><span class="step-num">1</span> Open phone camera</div>
                         <div class="bp-qr-step"><span class="step-num">2</span> Scan this QR code</div>
                         <div class="bp-qr-step"><span class="step-num">3</span> Follow live GPS path</div>
-                        <div class="bp-qr-zoom-hint" onclick="openQRZoomModal()">🔍 Tap QR to Enlarge</div>
+                        <div class="bp-qr-zoom-hint" onclick="openQRZoomModal()"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-search" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg> Tap QR to Enlarge</div>
                     </div>
                 </div>
             </div>
@@ -669,17 +868,103 @@
                     <span class="pscb-arrow">▾</span>
                 </button>
             </div>
-            <div class="phone-search-wrap">
-                <span class="phone-search-icon">🔍</span>
-                <input type="text" id="phone-search-input" placeholder="Search places, buildings & offices…"
-                    autocomplete="off" oninput="filterPhoneDirectory()">
-                <button class="phone-search-clear" id="phone-search-clear" onclick="clearPhoneSearch()"
-                    title="Clear search">✕</button>
-                <button class="phone-info-guide-btn" onclick="showDashWelcomeModal()"
-                    title="About DASH (Department of Agriculture Spatial Hub)">ℹ️</button>
+            <!-- Search & Filter Row for Mobile -->
+            <div class="phone-search-row">
+                <div class="phone-search-wrap">
+                    <span class="phone-search-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-search" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></span>
+                    <input type="text" id="phone-search-input" placeholder="Search places, plots & offices..."
+                        autocomplete="off" oninput="filterPhoneDirectory()">
+                    <button class="phone-search-clear" id="phone-search-clear" onclick="clearPhoneSearch()"
+                        title="Clear search" style="display:none;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-x" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+                </div>
+                <div class="phone-filter-wrap" id="phone-filter-wrap">
+                    <button type="button" class="phone-filter-btn" id="phone-filter-btn"
+                        onclick="togglePhoneFilterDropdown(event)" title="Filter facilities by type"
+                        aria-haspopup="true" aria-expanded="false">
+                        <svg class="phone-filter-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                        </svg>
+                        <span class="phone-filter-btn-text">Filter</span>
+                        <span class="phone-filter-count-badge" id="phone-filter-count-badge" style="display:none;">0</span>
+                    </button>
+                    <div class="phone-filter-dropdown" id="phone-filter-dropdown" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()">
+                        <div class="fdm-header">
+                            <span class="fdm-title">FILTER BY TYPE</span>
+                            <button type="button" class="fdm-reset-btn" id="phone-fdm-reset-btn" onclick="resetTypeFilters()"
+                                title="Reset all filters">Reset</button>
+                        </div>
+                        <div class="fdm-options" id="phone-fdm-options">
+                            <label class="fdm-item" data-type="infrastructure">
+                                <input type="checkbox" class="fdm-checkbox" value="infrastructure"
+                                    onchange="toggleTypeFilter('infrastructure', this.checked)">
+                                <span class="fdm-item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-hard-hat" aria-hidden="true"><path d="M2 18a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v2z"/><path d="M10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5"/><path d="M4 15v-3a6 6 0 0 1 6-6"/><path d="M14 6a6 6 0 0 1 6 6v3"/></svg></span>
+                                <div class="fdm-item-text">
+                                    <span class="fdm-item-name">Agri Infrastructure / Facilities</span>
+                                    <span class="fdm-item-desc">Warehouse, screenhouse, nursery, water tank, motorpool</span>
+                                </div>
+                            </label>
+                            <label class="fdm-item" data-type="trial_sites">
+                                <input type="checkbox" class="fdm-checkbox" value="trial_sites"
+                                    onchange="toggleTypeFilter('trial_sites', this.checked)">
+                                <span class="fdm-item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-wheat" aria-hidden="true"><path d="M2 22 16 8"/><path d="M3.47 12.53 5 11l1.53 1.53a3.5 3.5 0 0 1 0 4.94L5 19l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M7.47 8.53 9 7l1.53 1.53a3.5 3.5 0 0 1 0 4.94L9 15l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M11.47 4.53 13 3l1.53 1.53a3.5 3.5 0 0 1 0 4.94L13 11l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M20 2h2v2a4 4 0 0 1-4 4h-2V6a4 4 0 0 1 4-4Z"/><path d="M11.47 17.47 13 19l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L5 19l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/><path d="M15.47 13.47 17 15l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L9 15l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/><path d="M19.47 9.47 21 11l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L13 11l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/></svg></span>
+                                <div class="fdm-item-text">
+                                    <span class="fdm-item-name">Agricultural Test / Trial Sites</span>
+                                    <span class="fdm-item-desc">Field crop variety trials, root crops, corn & vegetables</span>
+                                </div>
+                            </label>
+                            <label class="fdm-item" data-type="orchard">
+                                <input type="checkbox" class="fdm-checkbox" value="orchard"
+                                    onchange="toggleTypeFilter('orchard', this.checked)">
+                                <span class="fdm-item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-trees" aria-hidden="true"><path d="M10 10v.2A3 3 0 0 1 8.9 16H5a3 3 0 0 1-1-5.8V10a3 3 0 0 1 6 0Z"/><path d="M7 16v6"/><path d="M13 19v3"/><path d="M12 19h8.3a1 1 0 0 0 .7-1.7L18 14h.3a1 1 0 0 0 .7-1.7L16 9h.2a1 1 0 0 0 .8-1.7L13 3l-1.4 1.5"/></svg></span>
+                                <div class="fdm-item-text">
+                                    <span class="fdm-item-name">Orchard</span>
+                                    <span class="fdm-item-desc">Citrus, mango, pomelo, makapuno & cacao groves</span>
+                                </div>
+                            </label>
+                            <label class="fdm-item" data-type="office">
+                                <input type="checkbox" class="fdm-checkbox" value="office"
+                                    onchange="toggleTypeFilter('office', this.checked)">
+                                <span class="fdm-item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-building-2" aria-hidden="true"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg></span>
+                                <div class="fdm-item-text">
+                                    <span class="fdm-item-name">Office Buildings</span>
+                                    <span class="fdm-item-desc">Tanco Hall, Admin, ORED, LARES, RAED, AMAD, etc.</span>
+                                </div>
+                            </label>
+                            <label class="fdm-item" data-type="laboratory">
+                                <input type="checkbox" class="fdm-checkbox" value="laboratory"
+                                    onchange="toggleTypeFilter('laboratory', this.checked)">
+                                <span class="fdm-item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-flask-conical" aria-hidden="true"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg></span>
+                                <div class="fdm-item-text">
+                                    <span class="fdm-item-name">Laboratories</span>
+                                    <span class="fdm-item-desc">Soils, Tissue Culture, Post-Harvest, RCPC, PGRC, ILD</span>
+                                </div>
+                            </label>
+                            <label class="fdm-item" data-type="conference">
+                                <input type="checkbox" class="fdm-checkbox" value="conference"
+                                    onchange="toggleTypeFilter('conference', this.checked)">
+                                <span class="fdm-item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-landmark" aria-hidden="true"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg></span>
+                                <div class="fdm-item-text">
+                                    <span class="fdm-item-name">Conference Hall</span>
+                                    <span class="fdm-item-desc">Argosino Hall, ORED, and R&D Conference Halls</span>
+                                </div>
+                            </label>
+                            <label class="fdm-item" data-type="digital_agri">
+                                <input type="checkbox" class="fdm-checkbox" value="digital_agri"
+                                    onchange="toggleTypeFilter('digital_agri', this.checked)">
+                                <span class="fdm-item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-radio" aria-hidden="true"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></svg></span>
+                                <div class="fdm-item-text">
+                                    <span class="fdm-item-name">Digital Agriculture Project</span>
+                                    <span class="fdm-item-desc">Automated Weather Station (AWS)</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <!-- Category Filter Chips for Phone View -->
-            <div class="phone-categories-bar" id="phone-categories-bar"></div>
+            <div class="phone-filter-backdrop" id="phone-filter-backdrop" onclick="closePhoneFilterDropdown()"></div>
+            <!-- Category Filter Chips for Phone View (QARES standalone only per Rule 7) -->
+            <div class="phone-categories-bar" id="phone-categories-bar" style="display: none;"></div>
             <div class="phone-directory-content">
                 <div class="phone-directory-list" id="phone-directory-list">
                     <!-- Populated dynamically by renderPhoneDirectory() -->
@@ -698,7 +983,7 @@
                     </div>
                 </div>
                 <button class="phone-sheet-close-btn" onclick="showPhoneDirectoryView()"
-                    title="Back to directory">✕</button>
+                    title="Back to directory"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-x" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
             </div>
             <div class="phone-bldg-scrollable">
                 <!-- 1. Google Maps Photo Mosaic / Gallery Form First -->
@@ -707,35 +992,35 @@
                 </div>
 
                 <!-- 2. Action Buttons Right Beneath Pictures -->
-                <div class="phone-bldg-actions-inline">
+                <div class="phone-bldg-actions-inline" id="phone-bldg-actions-inline">
                     <button class="phone-btn primary kiosk-btn" id="phone-route-btn" onclick="startPhoneAnimatedRoute()"
                         title="Start walking route from Argosino Kiosk">
-                        <span>🏛️</span> Use the Kiosk
+                        <span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-landmark" aria-hidden="true"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg></span> Use the Kiosk
                     </button>
                     <button class="phone-btn secondary gps-btn" id="phone-gps-btn" onclick="startPhoneLiveGPS()"
                         title="Live GPS turn-by-turn navigation">
-                        <span>📍</span> Guide me live (GPS)
+                        <span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-map-pin" aria-hidden="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg></span> Guide me live (GPS)
                     </button>
                 </div>
 
-                <!-- 3. Building Information & Facility Details -->
+                <!-- 3. Building Information & Wayfinding Details -->
                 <div class="phone-bldg-info-card">
-                    <div class="phone-bldg-info-row" id="pbi-section-row">
-                        <span class="pbi-icon">📍</span>
+                    <div class="phone-bldg-info-row" id="pbi-visual-row">
+                        <span class="pbi-icon" id="pbi-visual-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-eye" aria-hidden="true"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg></span>
                         <div class="pbi-text-group">
-                            <span class="pbi-lbl">Location Zone</span>
-                            <span class="pbi-val" id="phone-bldg-section">Compound</span>
+                            <span class="pbi-lbl" id="pbi-visual-lbl">HOW TO SPOT IT</span>
+                            <span class="pbi-val" id="phone-bldg-visual">Visual Landmark</span>
                         </div>
                     </div>
-                    <div class="phone-bldg-info-row" id="pbi-type-row" style="margin-top: 10px;">
-                        <span class="pbi-icon">🏢</span>
+                    <div class="phone-bldg-info-row" id="pbi-services-row" style="margin-top: 10px;">
+                        <span class="pbi-icon" id="pbi-services-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-crosshair" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="22" x2="18" y1="12" y2="12"/><line x1="6" x2="2" y1="12" y2="12"/><line x1="12" x2="12" y1="6" y2="2"/><line x1="12" x2="12" y1="22" y2="18"/></svg></span>
                         <div class="pbi-text-group">
-                            <span class="pbi-lbl">Facility Type</span>
-                            <span class="pbi-val" id="phone-bldg-type">Office / Facility</span>
+                            <span class="pbi-lbl" id="pbi-services-lbl">WHAT'S INSIDE & SERVICES</span>
+                            <span class="pbi-val" id="phone-bldg-services">Services and operations</span>
                         </div>
                     </div>
                     <div class="phone-bldg-info-row" id="pbi-kiosk-origin-row" style="margin-top: 10px;">
-                        <span class="pbi-icon">🏛️</span>
+                        <span class="pbi-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-landmark" aria-hidden="true"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg></span>
                         <div class="pbi-text-group">
                             <span class="pbi-lbl">Starting Point Option</span>
                             <span class="pbi-val" style="color:#38bdf8;">Argosino Hall Kiosk (Walkway Start)</span>
@@ -745,6 +1030,8 @@
 
                 <!-- Dynamic Mobile Offices & Units Card -->
                 <div id="phone-bldg-offices-container"></div>
+                <!-- Dynamic Mobile Sub-Plots Card -->
+                <div id="phone-bldg-subplots-container" style="display:none;"></div>
             </div>
         </div>
 
@@ -776,11 +1063,11 @@
                     <div class="phone-peek-action-btns">
                         <button class="phone-btn-mini subtle" id="phone-repeat-btn" onclick="replayPhoneRoute()"
                             title="Repeat route">
-                            <span>🔄</span> Repeat
+                            <span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-rotate-ccw" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></span> Repeat
                         </button>
                         <button class="phone-btn-mini danger" id="phone-cancel-btn" onclick="cancelPhoneRoute()"
                             title="Cancel route">
-                            <span>✕</span> Cancel
+                            <span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-x" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span> Cancel
                         </button>
                     </div>
                 </div>
@@ -795,11 +1082,11 @@
                     <div class="phone-peek-action-btns">
                         <button class="phone-btn-mini primary" id="phone-gps-center-btn" onclick="recenterOnUserGPS()"
                             title="Center on My Location">
-                            <span>🎯</span> Center
+                            <span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-crosshair" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="22" x2="18" y1="12" y2="12"/><line x1="6" x2="2" y1="12" y2="12"/><line x1="12" x2="12" y1="6" y2="2"/><line x1="12" x2="12" y1="22" y2="18"/></svg></span> Center
                         </button>
                         <button class="phone-btn-mini danger" id="phone-gps-exit-btn" onclick="cancelPhoneRoute()"
                             title="Exit Navigation">
-                            <span>✕</span> Exit
+                            <span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-x" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span> Exit
                         </button>
                     </div>
                 </div>
@@ -816,11 +1103,11 @@
 
     <!-- Floating Recenter FAB for Mobile Live GPS -->
     <button class="mobile-recenter-btn" id="mobile-recenter-btn" onclick="recenterOnUserGPS()"
-        title="Re-center on My Location">🎯</button>
+        title="Re-center on My Location"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-crosshair" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="22" x2="18" y1="12" y2="12"/><line x1="6" x2="2" y1="12" y2="12"/><line x1="12" x2="12" y1="6" y2="2"/><line x1="12" x2="12" y1="22" y2="18"/></svg></button>
 
     <!-- Floating Top Turn-by-Turn Navigation HUD (Google Maps Style) -->
     <div class="phone-top-nav-hud" id="phone-top-nav-hud" style="display: none;">
-        <div class="ptnh-icon-wrap" id="ptnh-maneuver-icon">⬆️</div>
+        <div class="ptnh-icon-wrap" id="ptnh-maneuver-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-arrow-up" aria-hidden="true"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg></div>
         <div class="ptnh-text-wrap">
             <div class="ptnh-primary-step" id="ptnh-primary-step">Follow the walkway</div>
             <div class="ptnh-secondary-step" id="ptnh-secondary-step">Proceed toward destination</div>
@@ -830,21 +1117,21 @@
 
     <!-- Mobile Live GPS Toast Notification -->
     <div class="mobile-gps-toast" id="mobile-gps-toast">
-        <span id="mobile-gps-toast-text">📍 Tracking your location…</span>
+        <span id="mobile-gps-toast-text"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-map-pin" aria-hidden="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg> Tracking your location…</span>
     </div>
 
     <!-- Centered Phone Arrival Pop-up Modal -->
     <div class="phone-arrived-modal-backdrop" id="phone-arrived-modal" style="display: none;">
         <div class="phone-arrived-modal-card">
-            <div class="pam-confetti">🎉</div>
+            <div class="pam-confetti"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-party-popper" aria-hidden="true"><path d="M5.8 11.3 2 22l10.7-3.79"/><path d="M4 3h.01"/><path d="M22 8h.01"/><path d="M15 2h.01"/><path d="M22 20h.01"/><path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10"/><path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.7-.72 1.22-1.43 1.22H17"/><path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98C9.52 4.9 9 5.52 9 6.23V7"/><path d="M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z"/></svg></div>
             <div class="pam-title" id="pam-title">Arrived at Destination!</div>
             <div class="pam-desc" id="pam-desc">You have reached your destination.</div>
             <div class="pam-actions">
                 <button class="pam-btn pam-btn-repeat" onclick="replayFromArrivalPopup()">
-                    <span>🔄</span> Repeat
+                    <span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-rotate-ccw" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></span> Repeat
                 </button>
                 <button class="pam-btn pam-btn-done" onclick="closePhoneArrivalPopup()">
-                    <span>✓</span> Done
+                    <span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-check" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span> Done
                 </button>
             </div>
         </div>
@@ -860,7 +1147,7 @@
             </div>
 
             <div class="dash-welcome-badge-row">
-                <span class="dash-welcome-agency-badge">🏛️ Department of Agriculture</span>
+                <span class="dash-welcome-agency-badge"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-landmark" aria-hidden="true"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg> Department of Agriculture</span>
                 <span class="dash-welcome-status-pill">3D Spatial Hub</span>
             </div>
 
@@ -869,30 +1156,30 @@
 
             <div class="dash-welcome-cards-list">
                 <div class="dash-welcome-card">
-                    <div class="dash-card-icon">🗺️</div>
+                    <div class="dash-card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-map" aria-hidden="true"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></svg></div>
                     <div class="dash-card-content">
                         <div class="dash-card-title">What is DASH?</div>
                         <div class="dash-card-desc">The official interactive 3D digital campus map and geospatial
-                            masterplan connecting Department of Agriculture research stations.</div>
+                            masterplan connecting Department of Agriculture CALABARZON research stations.</div>
                     </div>
                 </div>
 
                 <div class="dash-welcome-card">
-                    <div class="dash-card-icon">🧭</div>
+                    <div class="dash-card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-compass" aria-hidden="true"><path d="m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z"/><circle cx="12" cy="12" r="10"/></svg></div>
                     <div class="dash-card-content">
                         <div class="dash-card-title">What does our map do?</div>
-                        <div class="dash-card-desc">Explores authentic 3D campus architecture, locates research
-                            divisions, laboratories, and offices, and calculates real-time turn-by-turn walking routes.
+                        <div class="dash-card-desc">Explore authentic 3D campus architecture and aerial drone views, search research
+                            divisions, offices, laboratories, warehouses, screenhouses, and agricultural plots, and get real-time turn-by-turn walking routes.
                         </div>
                     </div>
                 </div>
 
                 <div class="dash-welcome-card highlighted">
-                    <div class="dash-card-icon">📲</div>
+                    <div class="dash-card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-smartphone" aria-hidden="true"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg></div>
                     <div class="dash-card-content">
                         <div class="dash-card-title">Touch Kiosk & Mobile QR Navigation</div>
-                        <div class="dash-card-desc">Touch the screen to explore directly, or scan the on-screen QR code
-                            with your phone camera to take live GPS walking guidance with you across campus.</div>
+                        <div class="dash-card-desc">Touch the kiosk screen to explore facilities and preview routes on-site, or scan the on-screen QR code
+                            with your phone camera to take live GPS turn-by-turn walking guidance with you across campus.</div>
                     </div>
                 </div>
             </div>
@@ -900,7 +1187,7 @@
             <div class="dash-welcome-actions">
                 <button class="dash-btn-proceed" id="dash-proceed-btn" onclick="handleDashWelcomeProceed()">
                     <span>Proceed to Campus Map</span>
-                    <span class="dash-btn-arrow">➔</span>
+                    <span class="dash-btn-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-arrow-right" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></span>
                 </button>
             </div>
         </div>
@@ -910,20 +1197,19 @@
     <div class="phone-station-modal-backdrop" id="phone-station-modal" style="display: none;"
         onclick="closePhoneStationModal(event)">
         <div class="phone-station-modal-sheet" onclick="event.stopPropagation()">
-            <div class="phone-station-modal-drag"></div>
             <div class="phone-station-modal-header">
                 <div>
-                    <span class="phone-station-modal-badge">🏛️ DEPARTMENT OF AGRICULTURE</span>
+                    <span class="phone-station-modal-badge"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-landmark" aria-hidden="true"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg> DEPARTMENT OF AGRICULTURE</span>
                     <h3 class="phone-station-modal-title">Select Research Station</h3>
                     <p class="phone-station-modal-sub">Department of Agriculture Spatial Hub (DASH)</p>
                 </div>
                 <button class="phone-station-modal-close" onclick="closePhoneStationModal(event)"
-                    title="Close">✕</button>
+                    title="Close"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-x" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
             </div>
             <div class="phone-station-list">
                 <div class="phone-station-card active" data-station="lares" onclick="handlePhoneSelectStation('lares')">
                     <div class="psc-icon-wrap">
-                        <span class="psc-icon">🌾</span>
+                        <span class="psc-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-wheat" aria-hidden="true"><path d="M2 22 16 8"/><path d="M3.47 12.53 5 11l1.53 1.53a3.5 3.5 0 0 1 0 4.94L5 19l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M7.47 8.53 9 7l1.53 1.53a3.5 3.5 0 0 1 0 4.94L9 15l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M11.47 4.53 13 3l1.53 1.53a3.5 3.5 0 0 1 0 4.94L13 11l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M20 2h2v2a4 4 0 0 1-4 4h-2V6a4 4 0 0 1 4-4Z"/><path d="M11.47 17.47 13 19l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L5 19l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/><path d="M15.47 13.47 17 15l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L9 15l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/><path d="M19.47 9.47 21 11l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L13 11l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/></svg></span>
                     </div>
                     <div class="psc-info">
                         <div class="psc-title-row">
@@ -938,18 +1224,91 @@
 
                 <div class="phone-station-card" data-station="qares" onclick="handlePhoneSelectStation('qares')">
                     <div class="psc-icon-wrap">
-                        <span class="psc-icon">🌱</span>
+                        <span class="psc-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-sprout" aria-hidden="true"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></svg></span>
                     </div>
                     <div class="psc-info">
                         <div class="psc-title-row">
                             <span class="psc-title">DA-QARES</span>
                             <span class="psc-province">Tiaong, Quezon</span>
                         </div>
-                        <div class="psc-desc">Quezon Agricultural Research & Experiment Station • High-Res Drone Ortho
+                        <div class="psc-desc">Quezon Agricultural Research & Experiment Station • Under Development
                         </div>
                     </div>
-                    <span class="psc-status">Select</span>
+                    <span class="psc-status dev-badge">Under Dev</span>
                 </div>
+
+                <div class="phone-station-card" data-station="rares" onclick="handlePhoneSelectStation('rares')">
+                    <div class="psc-icon-wrap">
+                        <span class="psc-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-trees" aria-hidden="true"><path d="M10 10v.2A3 3 0 0 1 8.9 16H5a3 3 0 0 1-1-5.8V10a3 3 0 0 1 6 0Z"/><path d="M7 16v6"/><path d="M13 19v3"/><path d="M12 19h8.3a1 1 0 0 0 .7-1.7L18 14h.3a1 1 0 0 0 .7-1.7L16 9h.2a1 1 0 0 0 .8-1.7L13 3l-1.4 1.4"/></svg></span>
+                    </div>
+                    <div class="psc-info">
+                        <div class="psc-title-row">
+                            <span class="psc-title">DA-RARES</span>
+                            <span class="psc-province">Tanay, Rizal</span>
+                        </div>
+                        <div class="psc-desc">Rizal Agricultural Research & Experiment Station • Under Development
+                        </div>
+                    </div>
+                    <span class="psc-status dev-badge">Under Dev</span>
+                </div>
+
+                <div class="phone-station-card" data-station="cares" onclick="handlePhoneSelectStation('cares')">
+                    <div class="psc-icon-wrap">
+                        <span class="psc-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-leaf" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg></span>
+                    </div>
+                    <div class="psc-info">
+                        <div class="psc-title-row">
+                            <span class="psc-title">DA-CARES</span>
+                            <span class="psc-province">Naic, Cavite</span>
+                        </div>
+                        <div class="psc-desc">Cavite Agricultural Research & Experiment Station • Under Development
+                        </div>
+                    </div>
+                    <span class="psc-status dev-badge">Under Dev</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Station Under Development Modal -->
+    <div class="station-dev-modal-backdrop" id="station-dev-modal" style="display: none;" onclick="closeStationDevModal(event)">
+        <div class="station-dev-card" onclick="event.stopPropagation()">
+            <button class="station-dev-close-btn" onclick="closeStationDevModal(event)" title="Close">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+            <div class="station-dev-icon-badge">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-construction"><rect x="2" y="6" width="20" height="8" rx="1"/><path d="M17 14v7"/><path d="M7 14v7"/><path d="M17 3v3"/><path d="M7 3v3"/><path d="M10 14 2.3 6.3"/><path d="m14 6 7.7 7.7"/><path d="m8 6 8 8"/></svg>
+            </div>
+            <div class="station-dev-badge">CAMPUS UNDER DEVELOPMENT</div>
+            <h3 class="station-dev-title" id="station-dev-title">DA-QARES (Tiaong, Quezon)</h3>
+            <div class="station-dev-sub" id="station-dev-sub">Quezon Agricultural Research & Experiment Station</div>
+
+            <p class="station-dev-desc">
+                The interactive 3D digital campus map and wayfinding system for this research station is currently <strong>under development</strong>.
+            </p>
+
+            <div class="station-dev-checklist">
+                <div class="station-dev-check-item">
+                    <span class="sdc-icon"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-box"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg></span>
+                    <span>3D Architectural building models in progress</span>
+                </div>
+                <div class="station-dev-check-item">
+                    <span class="sdc-icon"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-map-pin"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg></span>
+                    <span>Pedestrian road graph & pathfinding mapping</span>
+                </div>
+                <div class="station-dev-check-item">
+                    <span class="sdc-icon"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-satellite"><path d="M13 7 9 3 5 7l4 4"/><path d="m17 11 4 4-4 4-4-4"/><path d="m8 12 4 4 6-6-4-4Z"/><path d="m16 8 3-3"/><path d="M9 21a6 6 0 0 0-6-6"/></svg></span>
+                    <span>Drone orthomosaic survey & plot registration</span>
+                </div>
+            </div>
+
+            <div class="station-dev-actions">
+                <button type="button" class="station-dev-btn primary" onclick="closeStationDevModal(event)">
+                    <span>Continue on DA-LARES Map</span>
+                </button>
+                <button type="button" class="station-dev-btn admin-preview" id="station-dev-preview-btn" style="display: none;" onclick="proceedToDevStationPreview()">
+                    <span>Explore Preview (Admin)</span>
+                </button>
             </div>
         </div>
     </div>
@@ -957,9 +1316,9 @@
     <!-- QR Code Zoom Modal (Full Screen Enlarge) -->
     <div class="qr-zoom-modal-backdrop" id="qr-zoom-modal" style="display: none;" onclick="closeQRZoomModal(event)">
         <div class="qr-zoom-card" onclick="event.stopPropagation()">
-            <button class="qr-zoom-close-btn" onclick="closeQRZoomModal(event)" title="Close">✕</button>
+            <button class="qr-zoom-close-btn" onclick="closeQRZoomModal(event)" title="Close"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-x" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
             <div class="qr-zoom-header">
-                <span class="qr-zoom-badge">📱 Mobile Navigation</span>
+                <span class="qr-zoom-badge"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-smartphone" aria-hidden="true"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg> Mobile Navigation</span>
                 <div class="qr-zoom-title">Scan QR Code with Phone</div>
                 <div class="qr-zoom-subtitle">Point camera at QR code to open live route</div>
             </div>
@@ -967,9 +1326,9 @@
                 <div class="qr-zoom-box" id="qr-zoom-box"></div>
             </div>
             <div class="qr-zoom-footer">
-                <span>💡 Tip: Hold phone camera close to screen</span>
+                <span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-lightbulb" aria-hidden="true"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg> Tip: Hold phone camera close to screen</span>
                 <div class="qr-zoom-auto-exit" id="qr-zoom-auto-exit">
-                    <span class="qr-auto-exit-icon">⏱️</span>
+                    <span class="qr-auto-exit-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-timer" aria-hidden="true"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></svg></span>
                     <span>Auto-exit in <strong id="qr-countdown-num">25</strong>s if unattended</span>
                 </div>
             </div>
@@ -979,7 +1338,7 @@
     <!-- Fullscreen Photo Lightbox Modal -->
     <div class="photo-lightbox-modal" id="photo-lightbox-modal" style="display: none;"
         onclick="closePhotoLightbox(event)">
-        <button class="lightbox-close-btn" onclick="closePhotoLightbox(event)" title="Close photo">✕</button>
+        <button class="lightbox-close-btn" onclick="closePhotoLightbox(event)" title="Close photo"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-x" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
         <div class="lightbox-content" onclick="event.stopPropagation()">
             <img id="lightbox-img" src="" alt="Building Photo">
             <div class="lightbox-caption" id="lightbox-caption">Building Photo</div>
@@ -988,25 +1347,25 @@
 
     <!-- Kiosk Auto-Exit Floating Notification Toast -->
     <div class="kiosk-auto-exit-toast" id="kiosk-auto-exit-toast" style="display: none;">
-        <span class="toast-icon">👋</span>
+        <span class="toast-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-hand" aria-hidden="true"><path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg></span>
         <span id="kiosk-auto-exit-text">Auto-exiting session • Returning to You Are Here</span>
     </div>
 
     <!-- 1-Finger Orbit Mode Active Floating Toast Indicator -->
     <div class="orbit-toast-badge" id="orbit-toast-badge" style="display: none;"
         onclick="toggleOneFingerOrbitMode(false)">
-        <span class="orbit-toast-icon">🕹️</span>
+        <span class="orbit-toast-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-rotate-3d" aria-hidden="true"><path d="M16.466 7.5C15.643 4.237 13.952 2 12 2 9.239 2 7 6.477 7 12s2.239 10 5 10c.342 0 .677-.069 1-.2"/><path d="m15.194 13.707 3.814 1.86-1.86 3.814"/><path d="M19 15.57c-1.804.885-4.274 1.43-7 1.43-5.523 0-10-2.239-10-5s4.477-5 10-5c4.838 0 8.873 1.718 9.8 4"/></svg></span>
         <div class="orbit-toast-text">
             <span class="orbit-toast-title">1-Finger Orbit Active</span>
             <span class="orbit-toast-sub">Drag 1 finger to rotate & tilt • Tap to exit</span>
         </div>
-        <button class="orbit-toast-close" title="Exit 1-Finger Orbit Mode">✕</button>
+        <button class="orbit-toast-close" title="Exit 1-Finger Orbit Mode"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-x" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
     </div>
 
     <!-- Station Transition Curtain (Seamless Cross-Fade) -->
     <div class="station-transition-curtain" id="station-transition-curtain" aria-hidden="true">
         <div class="stc-card">
-            <div class="stc-icon-badge" id="stc-icon">🌱</div>
+            <div class="stc-icon-badge" id="stc-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-sprout" aria-hidden="true"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></svg></div>
             <div class="stc-title" id="stc-title">Connecting to DA-QARES</div>
             <div class="stc-sub" id="stc-sub">Quezon Agricultural Research & Experiment Station • Tiaong, Quezon</div>
             <div class="stc-shimmer-bar"></div>
@@ -1022,7 +1381,7 @@
         <span id="fps-badge" style="font-weight:700;color:#22c55e;">60 FPS</span>
     </div>
 
-    <script type="module" src="js/app.js?v=108"></script>
+    <script type="module" src="js/app.js?v=252"></script>
 </body>
 
 </html>

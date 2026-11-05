@@ -13,12 +13,12 @@ import {
 } from './data/config.js';
 
 import { STATIONS, getActiveStationDefaultView, getStationIntroViews } from './data/stations.js';
+import { lucideIcon } from './data/icons.js';
 
 import {
     DA_LARES_OUTER_PERIMETER,
     LARES_MASK,
     LARES_COMPOUND_OUTLINE,
-    LARES_TREES,
     LARES_BOUNDARY,
     LARES_UNIFIED_BOUNDARY
 } from './data/geo.js';
@@ -27,7 +27,7 @@ import {
     LARES_DRAWINGS,
     BUILDING_DIRECTORY,
     CUSTOM_3D_BUILDINGS
-} from './data/buildings.js?v=72';
+} from './data/buildings.js';
 
 import { state } from './data/state.js';
 
@@ -42,8 +42,11 @@ import {
 
 import {
     detectGpuHardware,
-    getOptimalPixelRatio
+    getOptimalPixelRatio,
+    notifyStyleTransitionGrace
 } from './performance.js';
+
+import { initPlotLayers } from './plot-layers.js';
 
 // Mapbox Map Instance
 mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
@@ -78,7 +81,7 @@ export const map = new mapboxgl.Map({
         [120.40, 13.30], // Southwest bounds (CALABARZON Region IV-A)
         [122.80, 15.00]  // Northeast bounds
     ],
-    antialias: !hardwareProfile.isLowEnd && !isInitialMobileDevice, // Disable expensive MSAA on low-end Intel HD Graphics & Mobile
+    antialias: !hardwareProfile.isLowEnd && !hardwareProfile.isIntegratedGpu && !isInitialMobileDevice, // Disable expensive 4x MSAA on integrated GPUs & Mobile
     pixelRatio: optimalRatio,
     maxTileCacheSize: (hardwareProfile.isLowEnd || isInitialMobileDevice) ? 40 : 80,
     fadeDuration: isInitialMobileDevice ? 0 : 50,
@@ -277,7 +280,7 @@ export function setupLayers() {
     if (!map.getSource('lares-roads-source')) {
         map.addSource('lares-roads-source', {
             type: 'geojson',
-            data: 'roads.json?v=72'
+            data: 'roads.json?v=81'
         });
     }
     if (!map.getLayer('lares-roads-casing')) {
@@ -337,15 +340,16 @@ export function setupLayers() {
         });
     }
     if (!map.getLayer('lares-mask-layer')) {
+        const isMapbox = (state.currentMapStyleMode === 'mapbox');
         map.addLayer({
             'id': 'lares-mask-layer',
             'type': 'fill',
             'source': 'lares-mask-source',
             'layout': {
-                'visibility': (!state.currentStationId || state.currentStationId === 'lares') ? 'visible' : 'none'
+                'visibility': (!isMapbox && (!state.currentStationId || state.currentStationId === 'lares')) ? 'visible' : 'none'
             },
             'paint': {
-                'fill-color': (state.currentMapStyleMode === 'mapbox') ? '#060a12' : '#0b1121',
+                'fill-color': '#0b1121',
                 'fill-opacity': 1.0
             }
         });
@@ -438,10 +442,13 @@ export function setupLayers() {
     // 9. Floating Section Badges — Mapbox view only (never in Google Maps view)
     removeSectionBadges();
 
-    // 10. Building Name Markers (LARES only)
-    removeMarkers();
+    // 10. Building Name Markers (LARES only — reuse existing DOM markers across style switches)
     if (state.currentStationId === 'lares') {
-        createMarkers();
+        if (!state.markers || state.markers.length === 0) {
+            createMarkers();
+        }
+    } else {
+        removeMarkers();
     }
 
     // Strip unused Mapbox base style layers to keep style graph ultra-lean (~110 layers removed)
@@ -459,6 +466,10 @@ export function setupLayers() {
 
     // Sync visual properties with current mode
     setMapStyleMode(state.currentMapStyleMode);
+
+    if (mapReady && (!state.currentStationId || state.currentStationId === 'lares')) {
+        try { initPlotLayers(); } catch (e) { }
+    }
 }
 
 // ==========================================
@@ -497,7 +508,7 @@ export function setupMapboxStandardLayers() {
     if (!map.getSource('lares-roads-source')) {
         map.addSource('lares-roads-source', {
             type: 'geojson',
-            data: 'roads.json?v=72'
+            data: 'roads.json?v=81'
         });
     }
     if (!map.getLayer('lares-roads-casing')) {
@@ -672,6 +683,9 @@ export function setupMapboxStandardLayers() {
         if (!map.getSource('lares-3d-trees-source')) {
             map.addSource('lares-3d-trees-source', {
                 type: 'geojson',
+                tolerance: 0,
+                buffer: 0,
+                maxzoom: 24,
                 data: 'trees.json?v=72'
             });
         }
@@ -715,20 +729,38 @@ export function setupMapboxStandardLayers() {
     removeSectionBadges();
     createEntranceArrowMarker();
 
-    // 7. Building Name Markers (numbered labels)
-    removeMarkers();
-    createMarkers();
+    // 7. Building Name Markers (reuse existing DOM markers if already mounted for LARES)
+    if (!state.markers || state.markers.length === 0) {
+        createMarkers();
+    }
 
-    // 8. Update UI state
+    // 8. Agricultural Plots Layer (22 research commodity blocks)
+    if (!state.currentStationId || state.currentStationId === 'lares') {
+        try {
+            initPlotLayers();
+        } catch (e) {
+            console.warn('Could not init plot layers in Mapbox Standard mode:', e);
+        }
+    }
+
+    // 9. Update UI state
     setMapStyleMode(state.currentMapStyleMode);
 }
 
 export function setup3DBuildingModelsLayer(map, isStandardMode) {
     if (!CUSTOM_3D_BUILDINGS || typeof CUSTOM_3D_BUILDINGS !== 'object') return;
 
+    // Station-scoped lazy loading: only load 3D models belonging to the active station
+    const activeStationId = state.currentStationId || 'lares';
+
     try {
-        // 1. Register GLB models with Mapbox
-        Object.keys(CUSTOM_3D_BUILDINGS).forEach(id => {
+        // 1. Register GLB models with Mapbox for active station only
+        const stationBuildingIds = Object.keys(CUSTOM_3D_BUILDINGS).filter(id => {
+            const b = CUSTOM_3D_BUILDINGS[id];
+            return (b.stationId || 'lares') === activeStationId;
+        });
+
+        stationBuildingIds.forEach(id => {
             const b = CUSTOM_3D_BUILDINGS[id];
             if (!map.hasModel(b.modelId)) {
                 map.addModel(b.modelId, b.modelUrl);
@@ -736,7 +768,7 @@ export function setup3DBuildingModelsLayer(map, isStandardMode) {
         });
 
         // 2. Prepare GeoJSON source for 3D building instances
-        const features = Object.keys(CUSTOM_3D_BUILDINGS).map(id => {
+        const features = stationBuildingIds.map(id => {
             const b = CUSTOM_3D_BUILDINGS[id];
             return {
                 type: 'Feature',
@@ -758,6 +790,9 @@ export function setup3DBuildingModelsLayer(map, isStandardMode) {
         if (!map.getSource(sourceId)) {
             map.addSource(sourceId, {
                 type: 'geojson',
+                tolerance: 0,
+                buffer: 0,
+                maxzoom: 24,
                 data: {
                     type: 'FeatureCollection',
                     features: features
@@ -806,7 +841,8 @@ export function setup3DBuildingModelsLayer(map, isStandardMode) {
                 minzoom: 14.5,
                 layout: {
                     'model-id': ['get', 'model'],
-                    'visibility': state.buildingsVisible ? 'visible' : 'none'
+                    // Keep 'none' until walker occlusion actually activates (saves duplicate 3D pass)
+                    'visibility': 'none'
                 },
                 paint: {
                     'model-scale': [1.0, 1.0, 1.0],
@@ -829,113 +865,6 @@ export function setup3DBuildingModelsLayer(map, isStandardMode) {
     }
 }
 
-export function ensureTreeIconLoaded(callback) {
-    if (map.hasImage('tree-icon')) {
-        if (callback) callback();
-        return;
-    }
-
-    function createBotanicalTreeCanvas() {
-        const canvas = document.createElement('canvas');
-        canvas.width = 128;
-        canvas.height = 160;
-        const ctx = canvas.getContext('2d');
-
-        // Soft shadow at base
-        ctx.beginPath();
-        ctx.ellipse(64, 154, 28, 6, 0, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(10, 25, 12, 0.4)';
-        ctx.fill();
-
-        // Trunk with wood gradient
-        const trunk = ctx.createLinearGradient(56, 80, 72, 152);
-        trunk.addColorStop(0, '#5a381e');
-        trunk.addColorStop(0.5, '#734624');
-        trunk.addColorStop(1, '#432712');
-        ctx.fillStyle = trunk;
-        ctx.beginPath();
-        ctx.moveTo(60, 85);
-        ctx.lineTo(68, 85);
-        ctx.lineTo(72, 152);
-        ctx.lineTo(56, 152);
-        ctx.closePath();
-        ctx.fill();
-
-        // Foliage puffs
-        const puffs = [
-            { x: 64, y: 72, r: 35, c1: '#1b4324', c2: '#0e2915' },
-            { x: 42, y: 76, r: 27, c1: '#1b4324', c2: '#0e2915' },
-            { x: 86, y: 76, r: 27, c1: '#1b4324', c2: '#0e2915' },
-            { x: 64, y: 52, r: 33, c1: '#2d6a37', c2: '#1b4324' },
-            { x: 40, y: 56, r: 25, c1: '#347a3e', c2: '#1e4d27' },
-            { x: 88, y: 56, r: 25, c1: '#2d6a37', c2: '#1b4324' },
-            { x: 54, y: 38, r: 25, c1: '#52b761', c2: '#2d6a37' },
-            { x: 74, y: 40, r: 23, c1: '#439d50', c2: '#23592d' },
-            { x: 64, y: 26, r: 19, c1: '#6ec97d', c2: '#347a3e' }
-        ];
-
-        puffs.forEach(p => {
-            ctx.save();
-            const grad = ctx.createRadialGradient(p.x - p.r * 0.3, p.y - p.r * 0.35, p.r * 0.1, p.x, p.y, p.r);
-            grad.addColorStop(0, p.c1);
-            grad.addColorStop(1, p.c2);
-            ctx.fillStyle = grad;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
-        });
-
-        return ctx.getImageData(0, 0, 128, 160);
-    }
-
-    map.loadImage('tree.png', (error, image) => {
-        if (!error && image) {
-            if (!map.hasImage('tree-icon')) map.addImage('tree-icon', image);
-        } else {
-            const imgData = createBotanicalTreeCanvas();
-            if (!map.hasImage('tree-icon')) {
-                map.addImage('tree-icon', { width: 128, height: 160, data: imgData.data });
-            }
-        }
-        if (callback) callback();
-    });
-}
-
-export function renderTreesLayer() {
-    if (!map.getSource('lares-trees-source')) {
-        map.addSource('lares-trees-source', {
-            type: 'geojson',
-            data: LARES_TREES
-        });
-    }
-    if (!map.getLayer('3d-trees')) {
-        map.addLayer({
-            'id': '3d-trees',
-            'type': 'symbol',
-            'source': 'lares-trees-source',
-            'layout': {
-                'icon-image': 'tree-icon',
-                'icon-size': [
-                    'interpolate', ['linear'], ['zoom'],
-                    14, ['*', ['get', 'scale'], 0.45],
-                    16, ['*', ['get', 'scale'], 0.85],
-                    18, ['*', ['get', 'scale'], 1.25],
-                    20, ['*', ['get', 'scale'], 1.7]
-                ],
-                'icon-pitch-alignment': 'viewport',
-                'icon-rotation-alignment': 'viewport',
-                'icon-anchor': 'bottom',
-                'icon-allow-overlap': true,
-                'icon-ignore-placement': true,
-                'visibility': state.treesVisible ? 'visible' : 'none'
-            }
-        });
-    } else {
-        try { map.setLayoutProperty('3d-trees', 'visibility', state.treesVisible ? 'visible' : 'none'); } catch (e) { }
-    }
-}
-
 map.on('style.load', setupLayers);
 
 // ==========================================
@@ -943,14 +872,29 @@ map.on('style.load', setupLayers);
 // ==========================================
 let mapReady = false;
 let isIntroAnimating = false;
+let currentIntroSequenceId = 0;
+let introStepTimeoutId = null;
+
+export function isCoordInStationBounds(coord, stationId) {
+    if (!coord || !STATIONS[stationId] || !STATIONS[stationId].bounds) return false;
+    const [[w, s], [e, n]] = STATIONS[stationId].bounds;
+    const lng = (typeof coord.lng === 'number') ? coord.lng : coord[0];
+    const lat = (typeof coord.lat === 'number') ? coord.lat : coord[1];
+    return lng >= (w - 0.02) && lng <= (e + 0.02) && lat >= (s - 0.02) && lat <= (n + 0.02);
+}
 
 export function stopIntroAnimation() {
+    currentIntroSequenceId++;
+    if (introStepTimeoutId) {
+        clearTimeout(introStepTimeoutId);
+        introStepTimeoutId = null;
+    }
     isIntroAnimating = false;
     state.isIntroAnimating = false;
     try { map.stop(); } catch (e) { }
 }
 
-export function playIntroAnimation(onComplete) {
+export function playIntroAnimation(onComplete, force = false) {
     const urlParams = new URLSearchParams(window.location.search);
     const isMobileMode = (typeof window !== 'undefined' && (
         window.innerWidth <= 768 ||
@@ -958,19 +902,22 @@ export function playIntroAnimation(onComplete) {
         /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|Mobile/i.test(navigator.userAgent)
     ));
 
-    if (urlParams.has('dest') || isMobileMode) {
-        isIntroAnimating = false;
-        state.isIntroAnimating = false;
-        map.jumpTo(getActiveStationDefaultView());
+    const stationId = state.currentStationId || 'lares';
+    const introViews = getStationIntroViews(stationId);
+
+    if (!force && (urlParams.has('dest') || isMobileMode)) {
+        stopIntroAnimation();
+        map.jumpTo(getActiveStationDefaultView(stationId));
         if (typeof onComplete === 'function') onComplete();
         return;
     }
 
-    // Cancel any in-flight camera movements
+    // Cancel any in-flight camera movements and invalidate previous sequences
     stopIntroAnimation();
+    const mySeqId = ++currentIntroSequenceId;
 
-    const stationId = state.currentStationId || 'lares';
-    const introViews = getStationIntroViews(stationId);
+    // Release bounds completely during intro fly-in so there is NEVER clamping
+    try { map.setMaxBounds(null); } catch (e) { }
 
     // 1. Position camera at station's start view (top-down 2D view zoomed out: pitch 0, bearing 0)
     map.jumpTo({
@@ -983,49 +930,50 @@ export function playIntroAnimation(onComplete) {
     isIntroAnimating = true;
     state.isIntroAnimating = true;
 
-    // Temporarily relax bounds during the cinematic fly-in so there is zero camera jitter or boundary snapping
-    try {
-        map.setMaxBounds([
-            [120.40, 13.30],
-            [122.80, 15.00]
-        ]);
-    } catch (e) { }
-
     // 2. Slowly zooms in until it gets to the 2D top-down view directly above You Are Here pin
     map.flyTo({
         center: introViews.target2D.center,
         zoom: introViews.target2D.zoom,
         pitch: introViews.target2D.pitch,
         bearing: introViews.target2D.bearing,
-        duration: 3600,
-        speed: 0.65,
+        duration: 3200,
+        speed: 0.7,
         curve: 1.0,
         essential: true
     });
 
     map.once('moveend', () => {
-        if (!isIntroAnimating) return;
-        setTimeout(() => {
-            if (!isIntroAnimating) return;
-            // 3. Then after reaching this zoom, transitions to the station's signature 3D perspective angle
+        if (mySeqId !== currentIntroSequenceId || !isIntroAnimating || state.currentStationId !== stationId) return;
+
+        introStepTimeoutId = setTimeout(() => {
+            introStepTimeoutId = null;
+            if (mySeqId !== currentIntroSequenceId || !isIntroAnimating || state.currentStationId !== stationId) return;
+
+            // 3. Then transitions to the station's signature 3D perspective angle
             map.flyTo({
                 center: introViews.final3D.center,
                 zoom: introViews.final3D.zoom,
                 pitch: introViews.final3D.pitch,
                 bearing: introViews.final3D.bearing,
-                duration: 2200,
+                duration: 2000,
                 essential: true
             });
+
             map.once('moveend', () => {
+                if (mySeqId !== currentIntroSequenceId || state.currentStationId !== stationId) return;
                 isIntroAnimating = false;
                 state.isIntroAnimating = false;
-                const activeBounds = introViews.bounds || (STATIONS[stationId] && STATIONS[stationId].bounds);
-                if (activeBounds) {
-                    try { map.setMaxBounds(activeBounds); } catch (e) { }
+
+                // Failsafe: Only clamp bounds if camera actually arrived within station bounds
+                const activeStation = STATIONS[stationId];
+                if (activeStation && activeStation.bounds && isCoordInStationBounds(map.getCenter(), stationId)) {
+                    try { map.setMaxBounds(activeStation.bounds); } catch (e) { }
+                } else {
+                    try { map.setMaxBounds(null); } catch (e) { }
                 }
                 if (typeof onComplete === 'function') onComplete();
             });
-        }, 450);
+        }, 350);
     });
 }
 
@@ -1038,20 +986,32 @@ export function revealMap() {
     setTimeout(() => document.getElementById('sidebar').classList.add('visible'), 500);
     setTimeout(() => document.getElementById('coords-badge').classList.add('visible'), 800);
 
-    playIntroAnimation();
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('dest')) {
+        state.hasInitialIntroPlayed = true;
+    }
+
+    // Initialize Agricultural Plot Layers for DA-LARES
+    if (!state.currentStationId || state.currentStationId === 'lares') {
+        try {
+            initPlotLayers();
+        } catch (e) {
+            console.warn('[Plots] Could not init plot layers:', e);
+        }
+    }
 }
 
-// Allow any user interaction to stop the intro animation smoothly
-['dragstart', 'rotatestart', 'pitchstart', 'zoomstart', 'mousedown', 'touchstart'].forEach(evt => {
+// Allow user interaction gestures to stop the intro animation smoothly
+['dragstart', 'rotatestart', 'pitchstart', 'zoomstart'].forEach(evt => {
     map.on(evt, (e) => {
         if (e && e.originalEvent && isIntroAnimating) {
-            isIntroAnimating = false;
-            state.isIntroAnimating = false;
-            map.stop();
+            stopIntroAnimation();
             const stationId = state.currentStationId || 'lares';
-            const station = STATIONS[stationId] || STATIONS.lares;
-            if (station && station.bounds) {
+            const station = STATIONS[stationId];
+            if (station && station.bounds && isCoordInStationBounds(map.getCenter(), stationId)) {
                 try { map.setMaxBounds(station.bounds); } catch (err) { }
+            } else {
+                try { map.setMaxBounds(null); } catch (err) { }
             }
         }
     });
@@ -1068,7 +1028,7 @@ class OrbitControl {
         btn.className = 'mapboxgl-ctrl-icon ctrl-orbit-btn';
         btn.type = 'button';
         btn.title = 'Toggle 1-Finger Orbit Mode (SketchUp Orbit)';
-        btn.innerHTML = '<span style="font-size: 16px; display: inline-block;">🕹️</span>';
+        btn.innerHTML = `<span style="display: inline-flex; align-items: center; justify-content: center;">${lucideIcon('rotate-3d', 16)}</span>`;
 
         btn.onclick = (e) => {
             e.stopPropagation();
@@ -1114,10 +1074,13 @@ class HeightLimitScaleControl extends mapboxgl.ScaleControl {
     }
 }
 
-map.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), 'top-right');
-map.addControl(new OrbitControl(), 'top-right');
-map.addControl(new HeightLimitScaleControl(), 'bottom-right');
-map.addControl(new mapboxgl.FullscreenControl({ container: document.documentElement }), 'top-right');
+if (!window._mapControlsAdded) {
+    window._mapControlsAdded = true;
+    map.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), 'top-right');
+    map.addControl(new OrbitControl(), 'top-right');
+    map.addControl(new HeightLimitScaleControl(), 'bottom-right');
+    map.addControl(new mapboxgl.FullscreenControl({ container: document.documentElement }), 'top-right');
+}
 
 // Strategy 1: full load
 map.on('load', () => {
@@ -1219,19 +1182,28 @@ export function toggleBuildings(btn) {
     if (chip && chip !== btn) chip.classList.toggle('active', state.buildingsVisible);
 
     const vis = state.buildingsVisible ? 'visible' : 'none';
+    const transVis = (state.buildingsVisible && state.activeRoute) ? 'visible' : 'none';
     try {
         if (map.getLayer('3d-drawings')) map.setLayoutProperty('3d-drawings', 'visibility', vis);
         if (map.getLayer('3d-drawings-roofs')) map.setLayoutProperty('3d-drawings-roofs', 'visibility', vis);
-        if (map.getLayer('3d-drawings-transparent')) map.setLayoutProperty('3d-drawings-transparent', 'visibility', vis);
-        if (map.getLayer('3d-drawings-roofs-transparent')) map.setLayoutProperty('3d-drawings-roofs-transparent', 'visibility', vis);
+        if (map.getLayer('3d-drawings-transparent')) map.setLayoutProperty('3d-drawings-transparent', 'visibility', transVis);
+        if (map.getLayer('3d-drawings-roofs-transparent')) map.setLayoutProperty('3d-drawings-roofs-transparent', 'visibility', transVis);
         if (map.getLayer('3d-buildings-models-layer')) map.setLayoutProperty('3d-buildings-models-layer', 'visibility', vis);
-        if (map.getLayer('3d-buildings-models-transparent')) map.setLayoutProperty('3d-buildings-models-transparent', 'visibility', vis);
+        if (map.getLayer('3d-buildings-models-transparent')) map.setLayoutProperty('3d-buildings-models-transparent', 'visibility', transVis);
         if (map.getLayer('3d-buildings-mapbox')) {
             map.setLayoutProperty('3d-buildings-mapbox', 'visibility', (state.buildingsVisible && state.currentMapStyleMode === 'mapbox') ? 'visible' : 'none');
         }
         if (map.getLayer('qares-footprints-3d')) map.setLayoutProperty('qares-footprints-3d', 'visibility', vis);
         if (map.getLayer('qares-footprints-roofs')) map.setLayoutProperty('qares-footprints-roofs', 'visibility', vis);
+        if (map.getLayer('qares-footprints-fill')) map.setLayoutProperty('qares-footprints-fill', 'visibility', 'none');
+        if (map.getLayer('qares-footprints-line')) map.setLayoutProperty('qares-footprints-line', 'visibility', 'none');
     } catch (e) { }
+
+
+    // Sync Map Settings panel checkbox
+    const cbBldg = document.getElementById('msp-toggle-buildings');
+    if (cbBldg) cbBldg.checked = state.buildingsVisible;
+
     safeResetIdle();
 }
 
@@ -1298,10 +1270,12 @@ export function selectMapStyle(mode) {
     const currentPitch = map.getPitch();
     const currentBearing = map.getBearing();
 
+    notifyStyleTransitionGrace(4500);
+
     if (mode === 'mapbox') {
-        map.setStyle('mapbox://styles/mapbox/standard');
+        map.setStyle('mapbox://styles/mapbox/standard', { diff: false });
     } else {
-        map.setStyle('mapbox://styles/mapbox/satellite-streets-v12');
+        map.setStyle('mapbox://styles/mapbox/satellite-streets-v12', { diff: false });
     }
 
     if (typeof window.resetOcclusion === 'function') {
@@ -1351,7 +1325,7 @@ export function setMapStyleMode(mode) {
     // Update top-right trigger icon
     const triggerIcon = document.getElementById('mlt-current-icon');
     if (triggerIcon) {
-        triggerIcon.textContent = isMapbox ? '🗺️' : '🚁';
+        triggerIcon.innerHTML = lucideIcon(isMapbox ? 'map' : 'drone', 18);
     }
 
     // Update UI buttons across kiosk and mobile
@@ -1367,14 +1341,14 @@ export function setMapStyleMode(mode) {
         floatBtn.classList.toggle('active', isMapbox);
         const icon = floatBtn.querySelector('.mvs-icon');
         const label = floatBtn.querySelector('.mvs-text');
-        if (icon) icon.textContent = isMapbox ? '🚁' : '🗺️';
+        if (icon) icon.innerHTML = lucideIcon(isMapbox ? 'drone' : 'map', 16);
         if (label) label.textContent = isMapbox ? 'Aerial Drone' : 'Mapbox 3D';
     }
 
     const phoneToggle = document.getElementById('phone-mapbox-toggle');
     if (phoneToggle) {
         phoneToggle.classList.toggle('active', isMapbox);
-        phoneToggle.textContent = isMapbox ? '🚁 Aerial Drone' : '🗺️ Mapbox 3D';
+        phoneToggle.innerHTML = `${lucideIcon(isMapbox ? 'drone' : 'map', 14)} ${isMapbox ? 'Aerial Drone' : 'Mapbox 3D'}`;
     }
 
     removeSectionBadges();
@@ -1391,8 +1365,13 @@ export function setMapStyleMode(mode) {
         if (map.getLayer('google-satellite-overlay-layer')) {
             map.setLayoutProperty('google-satellite-overlay-layer', 'visibility', (!isMapbox && state.gmapsOverlayOpacity > 0) ? 'visible' : 'none');
         }
+        const showLaresMask = !isMapbox && (!state.currentStationId || state.currentStationId === 'lares');
+        const showQaresMask = !isMapbox && (state.currentStationId === 'qares');
         if (map.getLayer('lares-mask-layer')) {
-            map.setPaintProperty('lares-mask-layer', 'fill-color', isMapbox ? '#060a12' : '#0b1121');
+            map.setLayoutProperty('lares-mask-layer', 'visibility', showLaresMask ? 'visible' : 'none');
+        }
+        if (map.getLayer('qares-mask-layer')) {
+            map.setLayoutProperty('qares-mask-layer', 'visibility', showQaresMask ? 'visible' : 'none');
         }
         if (map.getLayer('3d-trees-layer')) {
             map.setLayoutProperty('3d-trees-layer', 'visibility', (isMapbox && state.treesVisible) ? 'visible' : 'none');
@@ -1406,6 +1385,14 @@ export function setMapStyleMode(mode) {
         }
         if (map.getLayer('lares-roads-fill')) {
             map.setLayoutProperty('lares-roads-fill', 'visibility', showRoads ? 'visible' : 'none');
+        }
+        const bndVis = state.boundaryVisible !== false ? 'visible' : 'none';
+        const qaresShadowVis = (!isMapbox && bndVis === 'visible' && state.currentStationId === 'qares') ? 'visible' : 'none';
+        if (map.getLayer('qares-boundary-glow')) {
+            map.setLayoutProperty('qares-boundary-glow', 'visibility', qaresShadowVis);
+        }
+        if (map.getLayer('qares-boundary-casing')) {
+            map.setLayoutProperty('qares-boundary-casing', 'visibility', qaresShadowVis);
         }
     } catch (e) { }
     // Maintain atmospheric sky across mode toggles

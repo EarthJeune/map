@@ -1,13 +1,14 @@
 // DA-LARES Wayfinding — Phone Navigation & Arrival Controller
 
-import { BUILDING_DIRECTORY } from './data/buildings.js?v=72';
+import { BUILDING_DIRECTORY } from './data/buildings.js';
+import { lucideIcon } from './data/icons.js';
 import { DEFAULT_MAP_VIEW } from './data/config.js';
 import { getActiveStationDefaultView } from './data/stations.js';
 import { state } from './data/state.js';
 import { map } from './map-setup.js';
 import { computeRouteFromKiosk, drawRoute, clearRoute } from './routing.js';
 import { buildSteps } from './steps.js';
-import { setRouteSpeed, clearArrivedCountdown } from './walker.js';
+import { setRouteSpeed, clearArrivedCountdown, updateCameraControlsUI } from './walker.js';
 import { 
     getResponsiveMapPadding, 
     setPhoneSheetSnap, 
@@ -50,7 +51,7 @@ export function updatePhoneRouteUI(coords) {
     if (state.currentRouteSteps && state.currentRouteSteps.length > 0) {
         if (ptnhPrim) ptnhPrim.textContent = state.currentRouteSteps[0].text;
         if (ptnhSec) ptnhSec.textContent = state.currentRouteSteps.length > 1 ? state.currentRouteSteps[1].text : `Proceed toward ${destName}`;
-        if (ptnhIcon) ptnhIcon.innerHTML = state.currentRouteSteps[0].icon || '⬆️';
+        if (ptnhIcon) ptnhIcon.innerHTML = state.currentRouteSteps[0].icon || lucideIcon('arrow-up', 20);
         if (ptnhDist) ptnhDist.textContent = `${roundedTotal} m`;
     } else {
         if (ptnhPrim) ptnhPrim.textContent = 'Follow the walkway';
@@ -106,7 +107,7 @@ export function updatePhoneLiveNavUI(currentDist, totalDist, nextStep, remaining
     }
 
     if (nextStep) {
-        if (ptnhIcon) ptnhIcon.innerHTML = nextStep.icon || '⬆️';
+        if (ptnhIcon) ptnhIcon.innerHTML = nextStep.icon || lucideIcon('arrow-up', 20);
         if (ptnhDist) {
             if (remaining <= 10) ptnhDist.textContent = 'Now';
             else ptnhDist.textContent = `${rounded} m`;
@@ -158,6 +159,14 @@ export function startPhoneAnimatedRoute() {
     // Ensure speed bar is visible
     const speedBar = document.getElementById('phone-speed-bar');
     if (speedBar) speedBar.style.display = 'flex';
+
+    // Show camera view controls above peek sheet
+    const fcc = document.getElementById('floating-camera-controls');
+    if (fcc) {
+        fcc.classList.add('active');
+        fcc.classList.remove('dimmed', 'sheet-expanded-hidden', 'sheet-full-hidden');
+        if (typeof updateCameraControlsUI === 'function') updateCameraControlsUI();
+    }
 
     // Switch to route sheet view in peek mode
     updatePhoneRouteUI(routeCoords);
@@ -213,6 +222,8 @@ export function showPhoneArrival(buildingOrId) {
 
     const topHud = document.getElementById('phone-top-nav-hud');
     if (topHud) topHud.classList.remove('active');
+    const fcc = document.getElementById('floating-camera-controls');
+    if (fcc) fcc.classList.remove('active', 'dimmed');
 
     let building = buildingOrId;
     if (typeof buildingOrId === 'string') {

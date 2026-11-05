@@ -16,10 +16,15 @@
 }
 
 /* ==========================================================================
+
    GLOBAL MODERN ULTRA-AESTHETIC SCROLLBAR SYSTEM
+
    Eliminates all retro OS grey scrollbars, arrow buttons, and wide gutters.
+
    Replaces them with sleek, semi-translucent glass indicators.
+
    ========================================================================== */
+
 html,
 body,
 * {
@@ -65,11 +70,13 @@ body,
 }
 
 /* Touch and glass container utility to hide scrollbar while allowing smooth inertia */
+
 .no-scrollbar,
 .hide-scrollbar {
     -ms-overflow-style: none !important;
     scrollbar-width: none !important;
 }
+
 .no-scrollbar::-webkit-scrollbar,
 .hide-scrollbar::-webkit-scrollbar {
     display: none !important;
@@ -143,7 +150,7 @@ body {
     width: var(--sidebar-width, 400px);
     height: 100vh;
     overflow: visible;
-    background: rgba(10, 15, 28, .94);
+    background: #0a0f1c;
     backdrop-filter: blur(24px) saturate(1.6);
     -webkit-backdrop-filter: blur(24px) saturate(1.6);
     border-right: 1px solid rgba(255, 255, 255, .06);
@@ -175,6 +182,7 @@ body {
 }
 
 /* Sidebar Collapse / Expand Toggle Button */
+
 .sidebar-toggle-btn {
     position: absolute;
     top: 50%;
@@ -182,7 +190,7 @@ body {
     transform: translateY(-50%);
     width: 32px;
     height: 64px;
-    background: rgba(10, 15, 28, .94);
+    background: #0a0f1c;
     backdrop-filter: blur(24px) saturate(1.6);
     -webkit-backdrop-filter: blur(24px) saturate(1.6);
     border: 1px solid rgba(255, 255, 255, .12);
@@ -265,8 +273,11 @@ body {
 }
 
 /* ==========================================================================
+
    RESEARCH STATION SELECTOR DROPDOWN & TRANSITION STYLES
+
    ========================================================================== */
+
 .station-dropdown-container {
     position: relative;
     flex: 1;
@@ -318,15 +329,15 @@ body {
 }
 
 .station-btn-text p {
-    font-size: 9.5px;
+    font-size: 8.5px;
     font-weight: 600;
     color: #94a3b8;
-    letter-spacing: .5px;
+    letter-spacing: .3px;
     text-transform: uppercase;
     margin-top: 2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    line-height: 1.25;
+    word-break: normal;
 }
 
 .station-chevron-icon {
@@ -343,6 +354,7 @@ body {
 }
 
 /* Station Dropdown Flyout Menu */
+
 .station-dropdown-flyout {
     position: absolute;
     top: calc(100% + 8px);
@@ -413,6 +425,14 @@ body {
     flex-shrink: 0;
 }
 
+.station-item-icon svg,
+.station-item-icon .lucide-icon {
+    width: 18px !important;
+    height: 18px !important;
+    display: block !important;
+    margin: auto;
+}
+
 .station-dropdown-item.active .station-item-icon {
     background: rgba(34, 197, 94, 0.22);
 }
@@ -458,8 +478,11 @@ body {
 }
 
 /* ==========================================================================
+
    STATION TRANSITION CURTAIN (Glitch-Free Seamless Cross-Fade)
+
    ========================================================================== */
+
 .station-transition-curtain {
     position: fixed;
     inset: 0;
@@ -560,51 +583,362 @@ body {
     100% { left: 100%; }
 }
 
-
 /* Search */
+
 .search-container {
     padding: 16px 22px 12px;
     flex-shrink: 0;
 }
 
-.search-box {
+/* Search Row & Filter Dropdown Layout */
+
+.search-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     position: relative;
+    width: 100%;
 }
 
-.search-box input {
-    width: 100%;
-    padding: 14px 16px 14px 44px;
+.search-row .search-box {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 48px;
+    box-sizing: border-box;
+    padding: 0 14px;
     background: rgba(255, 255, 255, .06);
     border: 1px solid rgba(255, 255, 255, .1);
     border-radius: 14px;
-    color: #f1f5f9;
-    font-size: 14px;
-    font-family: inherit;
-    outline: none;
     transition: all .2s;
 }
 
-.search-box input::placeholder {
-    color: #64748b;
-}
-
-.search-box input:focus {
+.search-row .search-box:focus-within {
     border-color: #22c55e;
     background: rgba(255, 255, 255, .08);
     box-shadow: 0 0 0 3px rgba(34, 197, 94, .15);
 }
 
+.search-box input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    box-sizing: border-box;
+    padding: 0;
+    background: transparent;
+    border: none;
+    color: #f1f5f9;
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.search-box input::placeholder {
+    color: #64748b;
+    text-overflow: ellipsis;
+}
+
 .search-icon {
-    position: absolute;
-    left: 16px;
-    top: 50%;
-    transform: translateY(-50%);
     font-size: 16px;
     color: #64748b;
     pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.search-clear-btn {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.12);
+    color: #94a3b8;
+    font-size: 11px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+    padding: 0;
+    line-height: 1;
+}
+
+.search-clear-btn:hover {
+    background: rgba(255, 255, 255, 0.22);
+    color: #f1f5f9;
+}
+
+/* Filter Dropdown Trigger & Wrap */
+
+.filter-dropdown-wrap {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.filter-dropdown-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 48px;
+    box-sizing: border-box;
+    padding: 0 14px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    color: #94a3b8;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+}
+
+.filter-dropdown-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #f8fafc;
+}
+
+.filter-dropdown-wrap.open .filter-dropdown-btn,
+.filter-dropdown-btn.has-filters {
+    background: rgba(16, 185, 129, 0.14);
+    border-color: rgba(16, 185, 129, 0.45);
+    color: #10b981;
+}
+
+.filter-btn-icon {
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+}
+
+.filter-dropdown-wrap.open .filter-btn-icon {
+    transform: rotate(180deg);
+}
+
+.filter-count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    background: #10b981;
+    color: #022c22;
+    font-size: 11px;
+    font-weight: 800;
+    border-radius: 9px;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+    margin-left: 2px;
+}
+
+/* Filter Dropdown Menu Popover */
+
+.filter-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 320px;
+    max-width: calc(100vw - 40px);
+    background: rgba(15, 23, 42, 0.96);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 16px;
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    z-index: 1000;
+    overflow: hidden;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(-8px) scale(0.98);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.filter-dropdown-wrap.open .filter-dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
+}
+
+.fdm-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.fdm-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    color: #94a3b8;
+    text-transform: uppercase;
+}
+
+.fdm-reset-btn {
+    background: transparent;
+    border: none;
+    color: #38bdf8;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 3px 8px;
+    border-radius: 6px;
+    transition: all 0.15s;
+}
+
+.fdm-reset-btn:hover {
+    color: #0284c7;
+    background: rgba(56, 189, 248, 0.12);
+}
+
+.fdm-options {
+    max-height: 380px;
+    overflow-y: auto;
+    padding: 6px;
+}
+
+.fdm-options::-webkit-scrollbar {
+    width: 5px;
+}
+
+.fdm-options::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+}
+
+.fdm-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 10px;
+    border-left: 3px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+    margin-bottom: 2px;
+}
+
+.fdm-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.fdm-item.active {
+    background: rgba(16, 185, 129, 0.09);
+    border-left-color: #10b981;
+}
+
+.fdm-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+    border: 1.5px solid rgba(255, 255, 255, 0.28);
+    background: rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    margin-top: 2px;
+    flex-shrink: 0;
+    position: relative;
+    transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.fdm-checkbox:hover {
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.fdm-checkbox:checked {
+    background: #10b981;
+    border-color: #10b981;
+}
+
+.fdm-checkbox:checked::after {
+    content: '';
+    position: absolute;
+    width: 4px;
+    height: 8px;
+    border: solid #022c22;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg) translate(-0.5px, -1px);
+}
+
+.fdm-item-icon {
+    font-size: 16px;
+    margin-top: 1px;
+    flex-shrink: 0;
+}
+
+.fdm-item-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+}
+
+.fdm-item-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #f1f5f9;
+    line-height: 1.25;
+}
+
+.fdm-item.active .fdm-item-name {
+    color: #34d399;
+}
+
+.fdm-item-desc {
+    font-size: 11px;
+    color: #94a3b8;
+    line-height: 1.3;
+    margin-top: 2px;
+}
+
+/* Directory item tags for Plots and Conference Rooms */
+
+.dir-plot-tag {
+    display: inline-block;
+    padding: 1px 6px;
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    margin-right: 4px;
+    letter-spacing: 0.2px;
+}
+
+.dir-conf-tag {
+    display: inline-block;
+    padding: 1px 6px;
+    background: rgba(139, 92, 246, 0.18);
+    color: #c4b5fd;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    margin-right: 4px;
+    letter-spacing: 0.2px;
 }
 
 /* Kiosk Category Filter Chips */
+
 .kiosk-categories-bar {
     display: flex;
     flex-wrap: wrap;
@@ -668,6 +1002,7 @@ body {
 }
 
 /* Quick Search Suggestions — hidden for now (plain search only) */
+
 .kiosk-quick-tags {
     display: none !important;
     flex-wrap: wrap;
@@ -706,6 +1041,7 @@ body {
 }
 
 /* Category-based 3D Map Marker Highlighting */
+
 .bldg-map-marker.cat-dimmed {
     opacity: 0.22 !important;
     filter: grayscale(40%);
@@ -720,11 +1056,13 @@ body {
 }
 
 /* Hide Sidebar Header during Active Navigation to Reclaim 70px */
+
 .sidebar.route-active .sidebar-header {
     display: none !important;
 }
 
 /* Prominent QR Code Handoff Card in Directions */
+
 .route-qr-card {
     display: flex;
     align-items: center;
@@ -789,6 +1127,7 @@ body {
 }
 
 /* Building Directory */
+
 .directory {
     flex: 1;
     min-height: 0;
@@ -876,6 +1215,7 @@ body {
 }
 
 /* Route Info Panel & Active Route Mode */
+
 .sidebar.route-active .search-container,
 .sidebar.route-active #directory,
 .sidebar.route-active .settings-bar {
@@ -974,6 +1314,7 @@ body {
 }
 
 /* Arrived Summary Card — hidden in the menu so it never covers the directions */
+
 .route-arrived-card {
     display: none !important;
     flex-direction: column;
@@ -1017,6 +1358,7 @@ body {
 }
 
 /* Route Steps Container in Sidebar - The ONLY scroll area */
+
 .route-steps-container {
     flex: 1;
     min-height: 0;
@@ -1044,6 +1386,7 @@ body {
 }
 
 /* Hide all scrollbars inside the menu (content still scrolls by touch/drag/wheel) */
+
 .sidebar,
 .sidebar * {
     scrollbar-width: none;
@@ -1201,6 +1544,7 @@ body {
 }
 
 /* Speed Selector Bar */
+
 .route-speed-bar {
     display: flex;
     align-items: center;
@@ -1318,6 +1662,7 @@ body {
 }
 
 /* Turn-by-Turn Live Navigation Banner (Top Center) */
+
 .turn-by-turn-banner {
     position: absolute;
     top: 24px;
@@ -1337,7 +1682,7 @@ body {
     box-shadow: 0 16px 36px rgba(0, 0, 0, 0.55), 0 0 1px rgba(255, 255, 255, 0.2);
     user-select: none;
     min-width: 340px;
-    max-width: 600px;
+    max-width: min(760px, calc(100vw - var(--sidebar-offset, 380px) - 48px));
     transition: left 0.45s cubic-bezier(.22, 1, .36, 1), transform 0.25s ease, opacity 0.25s ease;
 }
 
@@ -1393,7 +1738,44 @@ body {
     line-height: 1.2;
 }
 
+/* Adaptive Long Destination Banner (Option 4 -> Option 1) */
+
+.turn-by-turn-banner.arrived.is-long-dest {
+    max-width: 660px;
+    padding: 10px 22px 10px 16px;
+    gap: 14px;
+}
+
+.turn-by-turn-banner.arrived.is-long-dest .tbt-icon-wrapper {
+    width: 44px;
+    height: 44px;
+    font-size: 22px;
+    border-radius: 12px;
+}
+
+.turn-by-turn-banner.arrived.is-long-dest .tbt-distance {
+    font-size: 19px;
+    color: #60a5fa;
+    letter-spacing: -0.01em;
+}
+
+.turn-by-turn-banner.arrived.is-long-dest .tbt-instruction {
+    font-size: 15px;
+    font-weight: 600;
+    color: #f1f5f9;
+    white-space: normal;
+    line-height: 1.25;
+    max-width: 540px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
+}
+
 /* Floating Camera Controls on the Map (Bottom Pill) */
+
 @keyframes fadeInDownCamera {
     from {
         opacity: 0;
@@ -1494,6 +1876,7 @@ body {
 }
 
 /* ---------- Floating Route Speed Controls (Under Camera View in Portrait/Mobile when menu is popped down) ---------- */
+
 .floating-speed-controls {
     position: absolute;
     bottom: 24px;
@@ -1578,6 +1961,7 @@ body {
 }
 
 /* Settings bar */
+
 .settings-bar {
     padding: 12px 22px;
     border-top: 1px solid rgba(255, 255, 255, .06);
@@ -1620,6 +2004,7 @@ body {
 }
 
 /* Google Maps-style Building Name Markers */
+
 .bldg-map-marker {
     display: inline-flex;
     align-items: center;
@@ -1681,8 +2066,35 @@ body {
     transition: opacity 0.2s ease;
 }
 
+.bldg-map-label-group {
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: center;
+    line-height: 1.15;
+}
+
+.bldg-map-gate-tag {
+    font-size: 9.5px;
+    font-weight: 600;
+    color: #38bdf8;
+    letter-spacing: 0.1px;
+    margin-top: 1px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+    white-space: nowrap;
+}
+
+.map-zoomed-out .bldg-map-gate-tag,
+body.map-zoomed-out .bldg-map-gate-tag,
+body.label-mode-compact .bldg-map-gate-tag {
+    display: none !important;
+}
+
 /* Field Plot & Orchard Markers */
+
 .plot-map-marker {
+    position: absolute !important;
+    top: 0;
+    left: 0;
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -1694,24 +2106,34 @@ body {
     cursor: pointer;
     white-space: nowrap;
     user-select: none;
-    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s, border-color 0.2s;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
     pointer-events: auto;
     z-index: 100;
 }
+
 .plot-map-marker:hover,
 .plot-map-marker.hovered {
-    transform: scale(1.1) translateY(-2px);
     border-color: #34d399;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6), 0 0 16px rgba(16, 185, 129, 0.5);
     z-index: 250 !important;
 }
+
+.plot-map-marker:hover .plot-marker-badge,
+.plot-map-marker.hovered .plot-marker-badge {
+    transform: scale(1.12);
+}
+
 .plot-map-marker.active {
     background: linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(5, 150, 105, 0.9));
     border-color: #6ee7b7;
     box-shadow: 0 0 22px rgba(16, 185, 129, 0.65);
-    transform: scale(1.12);
     z-index: 300 !important;
 }
+
+.plot-map-marker.active .plot-marker-badge {
+    transform: scale(1.15);
+}
+
 .plot-marker-badge {
     width: 22px;
     height: 22px;
@@ -1724,79 +2146,117 @@ body {
     flex-shrink: 0;
     transition: all 0.2s ease;
 }
+
 .plot-marker-info {
     display: flex;
     flex-direction: column;
     line-height: 1.1;
     transition: opacity 0.2s ease;
 }
+
 .plot-marker-name {
     font-size: 11px;
     font-weight: 700;
     color: #f8fafc;
 }
+
 .plot-marker-range {
     font-size: 9px;
     font-weight: 600;
     color: #94a3b8;
 }
 
-/* Clean Pin Strategy: Subtle Collapsed Circular Chip at Overview (Zero Sky Clutter) */
+/* Clean Pin Strategy: Subtle Collapsed Circular Chip at Overview (Zero Sky Clutter & Zero Teleportation) */
+
 .plot-map-marker.collapsed {
+    position: absolute !important;
+    top: 0;
+    left: 0;
     padding: 2px !important;
     border-radius: 50% !important;
-    width: 24px !important;
-    height: 24px !important;
-    min-width: 24px !important;
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    max-width: 28px !important;
+    overflow: visible !important;
     box-sizing: border-box !important;
+    display: inline-flex !important;
+    align-items: center !important;
     justify-content: center !important;
-    background: rgba(15, 23, 42, 0.88);
-    border: 1px solid rgba(255, 255, 255, 0.22);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
-    opacity: 0.78;
+    background: rgba(15, 23, 42, 0.94);
+    border: 1px solid rgba(16, 185, 129, 0.6);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 12px rgba(16, 185, 129, 0.3);
+    opacity: 0.88;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease !important;
 }
 
 .plot-map-marker.collapsed .plot-marker-badge {
-    width: 18px !important;
-    height: 18px !important;
-    font-size: 11px !important;
+    position: relative !important;
+    z-index: 2 !important;
+    flex-shrink: 0 !important;
+    width: 22px !important;
+    height: 22px !important;
+    font-size: 13px !important;
+    transition: transform 0.2s ease !important;
 }
 
 .plot-map-marker.collapsed .plot-marker-info {
-    display: none !important;
+    position: absolute !important;
+    left: -1px !important;
+    top: -1px !important;
+    height: 28px !important;
+    line-height: 1.15 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    padding: 0 14px 0 32px !important;
+    border-radius: 9999px !important;
+    background: rgba(15, 23, 42, 0.96) !important;
+    border: 1px solid rgba(16, 185, 129, 0.6) !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5), 0 0 14px rgba(16, 185, 129, 0.35) !important;
+    white-space: nowrap !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    z-index: 1 !important;
+    transform-origin: left center !important;
+    transform: scale(0.92) translateX(-4px) !important;
+    transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
-/* Instantly Bloom into Full Glowing Badge on Hover, Selection, or Polygon Hover */
+/* Instantly Bloom into Full Glowing Badge on Hover, Selection, or Polygon Hover — ZERO TELEPORTATION */
+
 .plot-map-marker.collapsed:hover,
 .plot-map-marker.collapsed.hovered,
 .plot-map-marker.collapsed.active {
-    width: auto !important;
-    height: auto !important;
-    min-width: auto !important;
-    padding: 3px 10px 3px 4px !important;
-    border-radius: 9999px !important;
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    max-width: 28px !important;
     opacity: 1 !important;
-    z-index: 350 !important;
+    z-index: 1000 !important;
     border-color: #34d399 !important;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.75), 0 0 16px rgba(16, 185, 129, 0.55) !important;
-    transform: scale(1.15) translateY(-3px) !important;
+    box-shadow: 0 0 16px rgba(52, 211, 153, 0.6) !important;
 }
 
 .plot-map-marker.collapsed:hover .plot-marker-badge,
 .plot-map-marker.collapsed.hovered .plot-marker-badge,
 .plot-map-marker.collapsed.active .plot-marker-badge {
-    width: 22px !important;
-    height: 22px !important;
-    font-size: 13px !important;
+    transform: scale(1.15) !important;
 }
 
 .plot-map-marker.collapsed:hover .plot-marker-info,
 .plot-map-marker.collapsed.hovered .plot-marker-info,
 .plot-map-marker.collapsed.active .plot-marker-info {
-    display: flex !important;
+    opacity: 1 !important;
+    transform: scale(1) translateX(0) !important;
+    pointer-events: auto !important;
+    transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 /* Auto-collapse name to numbered pin when zoomed far out to keep map clean */
+
 .map-zoomed-out .bldg-map-name,
 body.map-zoomed-out .bldg-map-name {
     display: none !important;
@@ -1816,6 +2276,7 @@ body.map-zoomed-out .bldg-map-marker {
 }
 
 /* Label Decluttering for active route */
+
 .bldg-map-marker.decluttered-dim {
     opacity: 0.15 !important;
     pointer-events: none !important;
@@ -1837,8 +2298,11 @@ body.map-zoomed-out .bldg-map-marker {
 }
 
 /* Pulsing Destination Pin Marker */
+
 .dest-pin-marker {
-    position: relative;
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 44px;
     height: 48px;
     display: flex;
@@ -1892,7 +2356,6 @@ body.map-zoomed-out .bldg-map-marker {
 }
 
 @keyframes bouncePin {
-
     0%,
     100% {
         transform: translateY(0);
@@ -1904,6 +2367,7 @@ body.map-zoomed-out .bldg-map-marker {
 }
 
 /* You Are Here pulse */
+
 @keyframes kiosk-pulse {
     0% {
         transform: translate(-50%, -50%) scale(1);
@@ -1920,7 +2384,9 @@ body.map-zoomed-out .bldg-map-marker {
 .kiosk-marker {
     width: 24px;
     height: 24px;
-    position: relative;
+    position: absolute;
+    top: 0;
+    left: 0;
     z-index: 99999 !important;
     pointer-events: auto;
 }
@@ -1931,9 +2397,11 @@ body.map-zoomed-out .bldg-map-marker {
         opacity: 0.85;
         box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.75);
     }
+
     50% {
         opacity: 0.45;
     }
+
     100% {
         transform: translate(-50%, -50%) scale(3.4);
         opacity: 0;
@@ -2007,9 +2475,11 @@ body.map-zoomed-out .bldg-map-marker {
 .kiosk-marker.admin-mode {
     cursor: grab;
 }
+
 .kiosk-marker.admin-mode:active {
     cursor: grabbing;
 }
+
 .kiosk-marker.admin-mode .kiosk-marker-label {
     pointer-events: auto;
     cursor: pointer;
@@ -2027,6 +2497,7 @@ body.map-zoomed-out .bldg-map-marker {
 }
 
 /* Divider, info-block etc kept for compatibility */
+
 .divider {
     height: 1px;
     background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .1), transparent);
@@ -2138,6 +2609,7 @@ body.map-zoomed-out .bldg-map-marker {
 }
 
 /* Automatically hide coordinates badge when active route navigation is running */
+
 .sidebar.route-active~.coords-badge,
 .coords-badge.route-hidden {
     opacity: 0 !important;
@@ -2156,7 +2628,6 @@ body.map-zoomed-out .bldg-map-marker {
 }
 
 @keyframes pulse-dot {
-
     0%,
     100% {
         opacity: 1;
@@ -2457,11 +2928,13 @@ body.admin-mode .three-dots-btn {
 }
 
 /* ========== BUILDING INFO PANEL ========== */
+
 .building-panel {
     position: fixed;
     top: 16px;
-    right: -420px;
-    width: 350px;
+    right: -480px;
+    width: 420px;
+    max-width: calc(100vw - 32px);
     max-height: calc(100vh - 32px);
     background: rgba(15, 23, 42, 0.94);
     backdrop-filter: blur(24px);
@@ -2477,6 +2950,7 @@ body.admin-mode .three-dots-btn {
     -ms-overflow-style: none;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
+
 .building-panel::-webkit-scrollbar {
     display: none;
 }
@@ -2574,6 +3048,126 @@ body.admin-mode .three-dots-btn {
     opacity: 0.6;
 }
 
+.bp-image-wrapper {
+    position: relative;
+    width: 100%;
+    height: 130px;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.bp-image-overlay-vignette {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(to top, rgba(15, 23, 42, 0.90) 0%, rgba(15, 23, 42, 0.25) 45%, rgba(0, 0, 0, 0) 100%);
+    border-radius: 10px;
+    z-index: 1;
+}
+
+.bp-image-badge {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    right: 86px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: rgba(15, 23, 42, 0.82);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    pointer-events: none;
+    z-index: 2;
+}
+
+.bp-image-badge .bp-badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #38bdf8;
+    box-shadow: 0 0 8px #38bdf8;
+    flex-shrink: 0;
+}
+
+.bp-image-badge #bp-image-badge-text {
+    font-size: 11px;
+    font-weight: 700;
+    color: #f8fafc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: 0.2px;
+}
+
+.bp-image-expand-hint {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: rgba(15, 23, 42, 0.82);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    font-size: 10px;
+    font-weight: 700;
+    color: #94a3b8;
+    cursor: pointer;
+    z-index: 2;
+    transition: all 0.15s ease;
+}
+
+.bp-image-expand-hint:hover {
+    color: #f8fafc;
+    border-color: rgba(255, 255, 255, 0.35);
+}
+
+.bp-image-views-bar {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+}
+
+.bp-image-views-bar::-webkit-scrollbar {
+    display: none;
+}
+
+.bp-view-chip {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: rgba(30, 41, 59, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #94a3b8;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+
+.bp-view-chip:hover {
+    background: rgba(51, 65, 85, 0.95);
+    color: #f8fafc;
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+.bp-view-chip.active {
+    background: rgba(14, 165, 233, 0.25);
+    color: #38bdf8;
+    border-color: #38bdf8;
+    font-weight: 700;
+}
+
 .bp-body {
     padding: 0 16px 6px;
     flex-shrink: 0;
@@ -2606,10 +3200,85 @@ body.admin-mode .three-dots-btn {
     font-weight: 500;
 }
 
+/* Visitor-Friendly Wayfinding Blocks (Visual Landmark + Key Services) */
+
+.bp-wayfinding-block {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 8px 0;
+}
+
+.bp-wf-card {
+    background: rgba(15, 23, 42, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 9px 12px;
+    transition: all 0.2s ease;
+}
+
+.bp-wf-card:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+    background: rgba(15, 23, 42, 0.85);
+}
+
+.bp-wf-visual {
+    border-left: 3px solid #38bdf8;
+}
+
+.bp-wf-services {
+    border-left: 3px solid #22c55e;
+}
+
+.bp-wf-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+
+.bp-wf-icon {
+    font-size: 13px;
+    line-height: 1;
+}
+
+.bp-wf-title {
+    font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: #94a3b8;
+}
+
+.bp-wf-visual .bp-wf-title {
+    color: #7dd3fc;
+}
+
+.bp-wf-services .bp-wf-title {
+    color: #86efac;
+}
+
+.bp-wf-text {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.45;
+    color: #e2e8f0;
+    font-weight: 400;
+}
+
 .bp-actions {
     padding: 8px 16px 12px;
     border-top: 1px solid rgba(255, 255, 255, 0.06);
     flex-shrink: 0;
+}
+
+/* Infographics Mode: Suppress Get Directions, GPS navigation, and QR cards for all plot zones */
+
+#building-panel.is-plot-panel .bp-actions,
+#building-panel.is-plot-panel .bp-directions-btn,
+#building-panel.is-plot-panel .bp-gps-nav-btn,
+#building-panel.is-plot-panel .bp-qr-card {
+    display: none !important;
 }
 
 .bp-directions-btn {
@@ -2645,6 +3314,7 @@ body.admin-mode .three-dots-btn {
 }
 
 /* Mobile GPS Button in Panel */
+
 .bp-gps-nav-btn {
     display: none;
     width: 100%;
@@ -2670,6 +3340,7 @@ body.admin-mode .three-dots-btn {
 }
 
 /* ========== QR CODE MOBILE HANDOFF CARD ========== */
+
 .bp-qr-card {
     margin-top: 8px;
     padding: 10px;
@@ -2775,6 +3446,7 @@ body.admin-mode .three-dots-btn {
 }
 
 /* Drag Handle for Bottom Sheet on Mobile */
+
 .bp-drag-handle {
     display: none;
     width: 44px;
@@ -2786,6 +3458,7 @@ body.admin-mode .three-dots-btn {
 }
 
 /* ========== LIVE USER GPS MARKER ========== */
+
 .user-gps-marker {
     position: absolute !important;
     top: 0 !important;
@@ -2865,6 +3538,7 @@ body.admin-mode .three-dots-btn {
 }
 
 /* Recenter on Me FAB for Mobile */
+
 .mobile-recenter-btn {
     position: absolute;
     bottom: calc(var(--safe-bottom) + 84px);
@@ -2930,6 +3604,7 @@ body.admin-mode .three-dots-btn {
 }
 
 /* Sidebar Backdrop for Mobile Drawer */
+
 .sidebar-backdrop {
     position: fixed;
     inset: 0;
@@ -2943,22 +3618,27 @@ body.admin-mode .three-dots-btn {
 }
 
 /* Strictly hide phone-specific bottom sheet & mobile floating controls on desktop / kiosk */
+
 .phone-bottom-sheet,
 .mobile-recenter-btn {
     display: none !important;
 }
 
 /* ========================================================
+
    RESPONSIVE DESIGN BREAKPOINTS
+
    ======================================================== */
 
 /* --- MOBILE PHONES & COMPACT VIEWPORTS (< 768px) --- */
+
 @media screen and (max-width: 768px) {
     :root {
         --sidebar-offset: 0px !important;
     }
 
     /* Hide Desktop / Kiosk-specific floating panels on phone mode */
+
     body.mode-phone .sidebar,
     body.mode-phone .sidebar-backdrop,
     body.mode-phone .building-panel,
@@ -2972,6 +3652,7 @@ body.admin-mode .three-dots-btn {
     }
 
     /* Map takes 100% of viewport */
+
     #map {
         width: 100vw !important;
         height: 100dvh !important;
@@ -2979,21 +3660,25 @@ body.admin-mode .three-dots-btn {
     }
 
     /* Mapbox attribution & logo clearance */
+
     .mapboxgl-ctrl-bottom-left {
         bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
         left: 10px !important;
         z-index: 85 !important;
         transition: bottom 0.25s ease;
     }
+
     .mapboxgl-ctrl-bottom-right {
         display: none !important;
     }
 
     /* Kiosk Marker on Phone: subtle pin without pulsing label */
+
     .kiosk-marker-label,
     .kiosk-marker-pulse {
         display: none !important;
     }
+
     .kiosk-marker-dot {
         width: 12px !important;
         height: 12px !important;
@@ -3001,12 +3686,66 @@ body.admin-mode .three-dots-btn {
         border: 2px solid #cbd5e1 !important;
     }
 
-    /* Completely hide floating camera controls on phone to eliminate button text overflow and screen clutter */
+    /* Mobile Phone: Floating Camera Controls sit cleanly right above the dropped-down sheet and stay anchored when sheet slides up */
     .floating-camera-controls {
-        display: none !important;
+        display: none;
+    }
+
+    .floating-camera-controls.active {
+        display: flex !important;
+        position: fixed !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        bottom: calc(var(--safe-bottom, 0px) + 138px) !important;
+        top: auto !important;
+        z-index: 90 !important;
+        padding: 4px 8px !important;
+        gap: 5px !important;
+        border-radius: 20px !important;
+        background: rgba(15, 23, 42, 0.92) !important;
+        backdrop-filter: blur(16px) !important;
+        -webkit-backdrop-filter: blur(16px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.14) !important;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+        transition: opacity 0.25s ease, transform 0.25s ease !important;
+    }
+
+    .floating-camera-controls .fcc-label {
+        font-size: 10px !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.5px !important;
+        color: #64748b !important;
+        margin-right: 2px !important;
+        margin-left: 2px !important;
+    }
+
+    .floating-camera-controls .fcc-btn {
+        height: 32px !important;
+        padding: 0 10px !important;
+        font-size: 11.5px !important;
+        font-weight: 600 !important;
+        gap: 5px !important;
+        border-radius: 16px !important;
+    }
+
+    .floating-camera-controls .fcc-btn svg {
+        width: 13px !important;
+        height: 13px !important;
+    }
+
+    /* Stays in place and fades out when sheet is slid up */
+    body:has(#phone-bottom-sheet.snap-half) .floating-camera-controls,
+    body:has(#phone-bottom-sheet.snap-full) .floating-camera-controls,
+    .floating-camera-controls.sheet-expanded-hidden,
+    .floating-camera-controls.sheet-full-hidden {
+        opacity: 0 !important;
+        pointer-events: none !important;
+        transform: translateX(-50%) scale(0.95) !important;
+        animation: none !important;
     }
 
     /* Centered Arrival Pop-up Modal */
+
     .phone-arrived-modal-backdrop {
         position: fixed;
         inset: 0;
@@ -3021,10 +3760,12 @@ body.admin-mode .three-dots-btn {
         opacity: 0;
         transition: opacity 0.25s ease;
     }
+
     .phone-arrived-modal-backdrop.active {
         display: flex !important;
         opacity: 1;
     }
+
     .phone-arrived-modal-card {
         width: 100%;
         max-width: 340px;
@@ -3037,9 +3778,11 @@ body.admin-mode .three-dots-btn {
         transform: scale(0.9);
         transition: transform 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
+
     .phone-arrived-modal-backdrop.active .phone-arrived-modal-card {
         transform: scale(1);
     }
+
     .pam-confetti {
         font-size: 52px;
         line-height: 1;
@@ -3047,10 +3790,12 @@ body.admin-mode .three-dots-btn {
         display: inline-block;
         animation: pamBounce 1s ease infinite alternate;
     }
+
     @keyframes pamBounce {
         0% { transform: translateY(0) rotate(-6deg) scale(1); }
         100% { transform: translateY(-8px) rotate(6deg) scale(1.08); }
     }
+
     .pam-title {
         font-size: 21px;
         font-weight: 800;
@@ -3059,17 +3804,20 @@ body.admin-mode .three-dots-btn {
         letter-spacing: -0.02em;
         line-height: 1.25;
     }
+
     .pam-desc {
         font-size: 14px;
         color: #94a3b8;
         margin: 0 0 22px;
         line-height: 1.4;
     }
+
     .pam-actions {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 12px;
     }
+
     .pam-btn {
         height: 48px;
         border-radius: 14px;
@@ -3083,14 +3831,17 @@ body.admin-mode .three-dots-btn {
         border: none;
         transition: transform 0.15s ease, filter 0.15s ease;
     }
+
     .pam-btn:active {
         transform: scale(0.96);
     }
+
     .pam-btn-repeat {
         background: rgba(255, 255, 255, 0.08);
         border: 1px solid rgba(255, 255, 255, 0.14);
         color: #f1f5f9;
     }
+
     .pam-btn-done {
         background: #22c55e;
         color: #020617;
@@ -3098,6 +3849,7 @@ body.admin-mode .three-dots-btn {
     }
 
     /* Floating Re-center FAB */
+
     .mobile-recenter-btn {
         position: fixed !important;
         bottom: calc(134px + env(safe-area-inset-bottom, 0px)) !important;
@@ -3118,55 +3870,99 @@ body.admin-mode .three-dots-btn {
         justify-content: center;
         transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
     }
+
     .mobile-recenter-btn.active {
         display: flex !important;
         animation: recenterPulse 1.6s infinite ease-in-out;
     }
 
     /* ====================================
+
        PHONE 3-SNAP BOTTOM SHEET COMPONENT
+
        ==================================== */
+
     .phone-bottom-sheet {
         position: fixed;
         left: 0;
         right: 0;
-        bottom: 0;
+        bottom: -40px;
         width: 100vw;
-        background: rgba(15, 23, 42, 0.95);
+        height: calc(92dvh - env(safe-area-inset-top, 0px) + 40px);
+        padding-bottom: 40px;
+        box-sizing: border-box;
+        background: rgba(15, 23, 42, 0.96);
         backdrop-filter: blur(24px);
         -webkit-backdrop-filter: blur(24px);
-        border-top: 1px solid rgba(255, 255, 255, 0.12);
+        border-top: 1px solid rgba(255, 255, 255, 0.14);
         border-radius: 24px 24px 0 0;
-        box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.7);
+        box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.72);
         z-index: 100;
         display: flex !important;
         flex-direction: column;
         overflow: hidden;
-        will-change: height;
-        transition: height 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
+        overscroll-behavior-y: contain;
+        will-change: transform;
+        transform: translate3d(0, calc(100% - 40px - 142px - env(safe-area-inset-bottom, 0px)), 0);
+        transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
     }
-    .phone-bottom-sheet.is-dragging {
+
+    .phone-bottom-sheet.is-dragging,
+    .phone-bottom-sheet.dragging {
         transition: none !important;
     }
 
-    /* 3 Snap Heights */
+    /* 3 GPU-Composited Snap Positions (Google Maps Style) */
+
     .phone-bottom-sheet.snap-peek {
-        height: calc(88px + env(safe-area-inset-bottom, 0px));
-    }
-    .phone-bottom-sheet.snap-peek.route-active {
-        height: calc(122px + env(safe-area-inset-bottom, 0px)) !important;
-    }
-    .phone-bottom-sheet.snap-half {
-        height: 50dvh;
-    }
-    .phone-bottom-sheet.snap-full {
-        height: calc(92dvh - env(safe-area-inset-top, 0px));
+        transform: translate3d(0, calc(100% - 40px - 142px - env(safe-area-inset-bottom, 0px)), 0);
     }
 
-    /* Drag Handle */
+    .phone-bottom-sheet.snap-peek.bldg-active {
+        transform: translate3d(0, calc(100% - 40px - 92px - env(safe-area-inset-bottom, 0px)), 0);
+    }
+
+    .phone-bottom-sheet.snap-peek.route-active {
+        transform: translate3d(0, calc(100% - 40px - 124px - env(safe-area-inset-bottom, 0px)), 0);
+    }
+
+    .phone-bottom-sheet.snap-half {
+        transform: translate3d(0, calc(100% - 40px - 50dvh), 0);
+    }
+
+    .phone-bottom-sheet.snap-full {
+        transform: translate3d(0, 0px, 0);
+    }
+
+    /* Whole-Sheet Gesture Zones & Scroll Handoff */
+
+    .phone-bottom-sheet .phone-station-banner,
+    .phone-bottom-sheet .phone-search-row,
+    .phone-bottom-sheet .phone-bldg-header,
+    .phone-bottom-sheet .phone-route-peek-panel {
+        touch-action: none;
+    }
+
+    .phone-bottom-sheet:not(.snap-full) .phone-directory-list,
+    .phone-bottom-sheet:not(.snap-full) .phone-bldg-scrollable,
+    .phone-bottom-sheet:not(.snap-full) .phone-route-scrollable {
+        overflow-y: hidden !important;
+        touch-action: none;
+    }
+
+    .phone-bottom-sheet.snap-full .phone-directory-list,
+    .phone-bottom-sheet.snap-full .phone-bldg-scrollable,
+    .phone-bottom-sheet.snap-full .phone-route-scrollable {
+        overflow-y: auto !important;
+        touch-action: pan-y;
+        overscroll-behavior-y: contain;
+    }
+
+    /* Drag Handle Pill */
+
     .sheet-drag-handle-zone {
         width: 100%;
-        padding: 8px 0 4px;
+        padding: 10px 0 8px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -3174,18 +3970,23 @@ body.admin-mode .three-dots-btn {
         touch-action: none;
         flex-shrink: 0;
     }
+
     .sheet-drag-handle-bar {
-        width: 44px;
-        height: 5px;
-        background: rgba(255, 255, 255, 0.3);
-        border-radius: 3px;
-        transition: background 0.2s;
+        width: 40px;
+        height: 4.5px;
+        background: rgba(255, 255, 255, 0.36);
+        border-radius: 999px;
+        transition: background 0.18s ease, width 0.18s ease;
     }
-    .sheet-drag-handle-zone:active .sheet-drag-handle-bar {
-        background: rgba(255, 255, 255, 0.6);
+
+    .sheet-drag-handle-zone:active .sheet-drag-handle-bar,
+    .phone-bottom-sheet.is-dragging .sheet-drag-handle-bar {
+        width: 48px;
+        background: rgba(255, 255, 255, 0.68);
     }
 
     /* Sheet Views Container */
+
     .sheet-view {
         display: none;
         flex: 1;
@@ -3193,11 +3994,28 @@ body.admin-mode .three-dots-btn {
         min-height: 0;
         overflow: hidden;
     }
+
     .sheet-view.active {
         display: flex;
     }
 
     /* --- 1. DIRECTORY / SEARCH VIEW --- */
+
+    .phone-search-row {
+        margin: 0 16px 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        position: relative;
+        flex-shrink: 0;
+    }
+
+    .phone-search-row .phone-search-wrap {
+        margin: 0;
+        flex: 1;
+        min-width: 0;
+    }
+
     .phone-search-wrap {
         margin: 0 16px 8px;
         height: 44px;
@@ -3210,6 +4028,147 @@ body.admin-mode .three-dots-btn {
         gap: 8px;
         flex-shrink: 0;
     }
+
+    .phone-filter-wrap {
+        position: relative;
+        flex-shrink: 0;
+    }
+
+    .phone-filter-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        height: 44px;
+        padding: 0 12px;
+        background: rgba(30, 41, 59, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 12px;
+        color: #94a3b8;
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .phone-filter-btn:hover,
+    .phone-filter-btn:active {
+        background: rgba(51, 65, 85, 0.9);
+        color: #f8fafc;
+    }
+
+    .phone-filter-btn.has-filters,
+    .phone-filter-wrap.open .phone-filter-btn {
+        background: rgba(16, 185, 129, 0.15);
+        border-color: rgba(16, 185, 129, 0.45);
+        color: #10b981;
+    }
+
+    .phone-filter-btn .phone-filter-icon {
+        flex-shrink: 0;
+        transition: transform 0.2s ease;
+    }
+
+    .phone-filter-wrap.open .phone-filter-icon {
+        transform: rotate(180deg);
+    }
+
+    .phone-filter-count-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 17px;
+        height: 17px;
+        padding: 0 5px;
+        background: #10b981;
+        color: #020617;
+        font-size: 11px;
+        font-weight: 800;
+        border-radius: 9999px;
+        line-height: 1;
+    }
+
+    .phone-filter-dropdown {
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        width: 320px;
+        max-width: calc(100vw - 32px);
+        background: rgba(15, 23, 42, 0.96);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 16px;
+        box-shadow: 0 20px 45px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05);
+        z-index: 1100;
+        overflow: hidden;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transform: translateY(-8px) scale(0.98);
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .phone-filter-wrap.open .phone-filter-dropdown,
+    .phone-filter-dropdown.open {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: translateY(0) scale(1);
+    }
+
+    .phone-filter-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1050;
+        background: rgba(0, 0, 0, 0.45);
+        display: none;
+    }
+
+    .phone-filter-backdrop.active {
+        display: block;
+    }
+
+    .phone-dir-plot-tag {
+        display: inline-block;
+        padding: 1px 6px;
+        background: rgba(245, 158, 11, 0.15);
+        color: #fbbf24;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 700;
+        margin-right: 4px;
+        letter-spacing: 0.2px;
+    }
+
+    .phone-dir-conf-tag {
+        display: inline-block;
+        padding: 1px 6px;
+        background: rgba(139, 92, 246, 0.18);
+        color: #c4b5fd;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 700;
+        margin-right: 4px;
+        letter-spacing: 0.2px;
+    }
+
+    .phone-dir-gate-tag {
+        display: inline-block;
+        padding: 1px 6px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 700;
+        margin-right: 4px;
+        letter-spacing: 0.2px;
+    }
+
     .phone-search-wrap input {
         flex: 1;
         background: transparent;
@@ -3219,13 +4178,16 @@ body.admin-mode .three-dots-btn {
         font-size: 15px;
         font-family: inherit;
     }
+
     .phone-search-wrap input::placeholder {
         color: #94a3b8;
     }
+
     .phone-search-icon {
         font-size: 16px;
         opacity: 0.7;
     }
+
     .phone-search-clear {
         background: transparent;
         border: none;
@@ -3234,6 +4196,7 @@ body.admin-mode .three-dots-btn {
         cursor: pointer;
         padding: 4px;
     }
+
     .phone-info-guide-btn {
         background: transparent;
         border: none;
@@ -3244,6 +4207,7 @@ body.admin-mode .three-dots-btn {
         line-height: 1;
         transition: transform 0.15s, opacity 0.15s;
     }
+
     .phone-info-guide-btn:active {
         opacity: 1;
         transform: scale(1.15);
@@ -3256,6 +4220,7 @@ body.admin-mode .three-dots-btn {
         overflow: hidden;
         padding: 0 16px calc(12px + env(safe-area-inset-bottom, 0px));
     }
+
     .phone-directory-chips {
         display: flex;
         gap: 8px;
@@ -3264,6 +4229,7 @@ body.admin-mode .three-dots-btn {
         padding-bottom: 2px;
         flex-shrink: 0;
     }
+
     .phone-dir-chip {
         padding: 6px 14px;
         border-radius: 20px;
@@ -3276,6 +4242,7 @@ body.admin-mode .three-dots-btn {
         white-space: nowrap;
         transition: all 0.2s;
     }
+
     .phone-dir-chip.active {
         background: #22c55e;
         color: #020617;
@@ -3291,6 +4258,7 @@ body.admin-mode .three-dots-btn {
         flex-direction: column;
         gap: 8px;
     }
+
     .phone-dir-item {
         display: flex;
         align-items: center;
@@ -3303,24 +4271,34 @@ body.admin-mode .three-dots-btn {
         min-height: 52px;
         transition: background 0.15s;
     }
+
     .phone-dir-item:active {
         background: rgba(255, 255, 255, 0.1);
     }
+
+    .phone-dir-item.active {
+        background: rgba(34, 197, 94, 0.12);
+        border-color: rgba(34, 197, 94, 0.35);
+    }
+
     .phone-dir-badge {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 800;
-        font-size: 14px;
+        font-size: 15px;
         flex-shrink: 0;
+        box-sizing: border-box;
     }
+
     .phone-dir-info {
         flex: 1;
         min-width: 0;
     }
+
     .phone-dir-name {
         font-size: 15px;
         font-weight: 700;
@@ -3329,6 +4307,7 @@ body.admin-mode .three-dots-btn {
         overflow: hidden;
         text-overflow: ellipsis;
     }
+
     .phone-dir-sub {
         font-size: 12px;
         color: #94a3b8;
@@ -3338,6 +4317,7 @@ body.admin-mode .three-dots-btn {
     }
 
     /* --- 2. BUILDING DETAILS VIEW --- */
+
     .phone-bldg-header {
         display: flex;
         align-items: center;
@@ -3346,24 +4326,28 @@ body.admin-mode .three-dots-btn {
         border-bottom: 1px solid rgba(255, 255, 255, 0.06);
         flex-shrink: 0;
     }
+
     .phone-bldg-header-left {
         display: flex;
         align-items: center;
         gap: 12px;
         min-width: 0;
     }
+
     .phone-bldg-badge {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
+        width: 38px;
+        height: 38px;
+        border-radius: 11px;
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 800;
-        font-size: 15px;
+        font-size: 16px;
         flex-shrink: 0;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        box-sizing: border-box;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
     }
+
     .phone-bldg-title {
         font-size: 17px;
         font-weight: 800;
@@ -3373,11 +4357,13 @@ body.admin-mode .three-dots-btn {
         overflow: hidden;
         text-overflow: ellipsis;
     }
+
     .phone-bldg-desc {
         font-size: 12px;
         color: #94a3b8;
         margin-top: 2px;
     }
+
     .phone-sheet-close-btn {
         width: 36px;
         height: 36px;
@@ -3397,12 +4383,14 @@ body.admin-mode .three-dots-btn {
         flex: 1;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
-        padding: 12px 16px;
+        padding: 12px 16px calc(24px + env(safe-area-inset-bottom, 0px));
         display: flex;
         flex-direction: column;
         gap: 12px;
     }
+
     /* --- GOOGLE MAPS STYLE PHOTO GALLERY / MOSAIC --- */
+
     .phone-bldg-gallery-grid {
         width: 100%;
         border-radius: 16px;
@@ -3414,6 +4402,7 @@ body.admin-mode .three-dots-btn {
     }
 
     /* Multi-photo mosaic: 1 big on left, 2 stacked on right */
+
     .phone-bldg-gallery-grid.mosaic {
         display: grid;
         grid-template-columns: 1.55fr 1fr;
@@ -3465,6 +4454,7 @@ body.admin-mode .three-dots-btn {
     }
 
     /* Single photo hero banner */
+
     .phone-bldg-gallery-grid.single-photo {
         height: 180px;
         display: block;
@@ -3487,6 +4477,7 @@ body.admin-mode .three-dots-btn {
     }
 
     /* Photos badge pill (e.g., "📷 Photos") */
+
     .pbg-badge-pill {
         position: absolute;
         bottom: 8px;
@@ -3509,6 +4500,7 @@ body.admin-mode .three-dots-btn {
     }
 
     /* No photo placeholder */
+
     .pbg-empty-card {
         padding: 22px 16px;
         text-align: center;
@@ -3522,12 +4514,14 @@ body.admin-mode .three-dots-btn {
         align-items: center;
         gap: 6px;
     }
+
     .pbg-empty-icon {
         font-size: 28px;
         opacity: 0.6;
     }
 
     /* Action Buttons inside Building Details scroll view, right under pictures */
+
     .phone-bldg-actions-inline {
         display: flex;
         gap: 10px;
@@ -3541,6 +4535,7 @@ body.admin-mode .three-dots-btn {
         box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
         border: 1px solid rgba(52, 211, 153, 0.3);
     }
+
     .phone-btn.gps-btn {
         background: linear-gradient(135deg, #0ea5e9, #2563eb);
         color: #ffffff;
@@ -3554,6 +4549,7 @@ body.admin-mode .three-dots-btn {
         border-radius: 14px;
         padding: 14px 16px;
     }
+
     .phone-bldg-info-row {
         display: flex;
         align-items: flex-start;
@@ -3561,17 +4557,20 @@ body.admin-mode .three-dots-btn {
         font-size: 13.5px;
         color: #cbd5e1;
     }
+
     .phone-bldg-info-row .pbi-icon {
         font-size: 18px;
         line-height: 1.2;
         flex-shrink: 0;
     }
+
     .pbi-text-group {
         display: flex;
         flex-direction: column;
         gap: 2px;
         min-width: 0;
     }
+
     .pbi-lbl {
         font-size: 11px;
         font-weight: 600;
@@ -3579,12 +4578,14 @@ body.admin-mode .three-dots-btn {
         letter-spacing: 0.5px;
         color: #64748b;
     }
+
     .phone-bldg-info-row .pbi-val {
         font-weight: 600;
         color: #f1f5f9;
     }
 
     /* Pinned Action Buttons at Bottom of Sheet */
+
     .phone-sheet-actions {
         padding: 10px 16px calc(12px + env(safe-area-inset-bottom, 0px));
         background: rgba(15, 23, 42, 0.98);
@@ -3593,6 +4594,7 @@ body.admin-mode .three-dots-btn {
         gap: 10px;
         flex-shrink: 0;
     }
+
     .phone-btn {
         flex: 1;
         min-height: 48px;
@@ -3608,25 +4610,30 @@ body.admin-mode .three-dots-btn {
         cursor: pointer;
         transition: transform 0.15s, opacity 0.15s;
     }
+
     .phone-btn:active {
         transform: scale(0.98);
     }
+
     .phone-btn.primary {
         background: linear-gradient(135deg, #22c55e, #16a34a);
         color: #ffffff;
         box-shadow: 0 4px 14px rgba(34, 197, 94, 0.4);
     }
+
     .phone-btn.secondary {
         background: linear-gradient(135deg, #2563eb, #1d4ed8);
         color: #ffffff;
         border: 1px solid rgba(96, 165, 250, 0.4);
         box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
     }
+
     .phone-btn.subtle {
         background: rgba(255, 255, 255, 0.08);
         color: #e2e8f0;
         border: 1px solid rgba(255, 255, 255, 0.12);
     }
+
     .phone-btn.danger {
         background: rgba(239, 68, 68, 0.15);
         color: #fca5a5;
@@ -3634,6 +4641,7 @@ body.admin-mode .three-dots-btn {
     }
 
     /* --- FLOATING TOP TURN-BY-TURN HUD (Google Maps Style) --- */
+
     .phone-top-nav-hud {
         position: fixed;
         top: calc(var(--safe-top) + 12px);
@@ -3715,6 +4723,7 @@ body.admin-mode .three-dots-btn {
     }
 
     /* --- 3. ACTIVE ROUTE VIEW BOTTOM SLIDER --- */
+
     .phone-route-peek-panel {
         padding: 4px 16px 10px;
         display: flex;
@@ -3867,6 +4876,7 @@ body.admin-mode .three-dots-btn {
     }
 
     /* Toggle between simulation speed bar and GPS live controls */
+
     .phone-gps-nav-controls {
         display: none;
         align-items: center;
@@ -3925,7 +4935,7 @@ body.admin-mode .three-dots-btn {
         flex: 1;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
-        padding: 6px 16px 12px;
+        padding: 6px 16px calc(24px + env(safe-area-inset-bottom, 0px));
         display: flex;
         flex-direction: column;
         gap: 10px;
@@ -3939,11 +4949,13 @@ body.admin-mode .three-dots-btn {
         color: #94a3b8;
         margin-top: 4px;
     }
+
     .phone-steps-list {
         display: flex;
         flex-direction: column;
         gap: 8px;
     }
+
     .phone-step-item {
         display: flex;
         align-items: flex-start;
@@ -3954,17 +4966,20 @@ body.admin-mode .three-dots-btn {
         font-size: 14px;
         color: #cbd5e1;
     }
+
     .phone-step-item.active {
         background: rgba(34, 197, 94, 0.12);
         border: 1px solid rgba(74, 222, 128, 0.3);
         color: #ffffff;
     }
+
     .phone-step-item .psi-icon {
         font-size: 18px;
         line-height: 1;
     }
 
     /* --- 4. ARRIVED VIEW --- */
+
     .phone-arrived-card {
         padding: 20px 16px;
         text-align: center;
@@ -3973,14 +4988,17 @@ body.admin-mode .three-dots-btn {
         align-items: center;
         gap: 8px;
     }
+
     .pac-icon {
         font-size: 40px;
     }
+
     .pac-title {
         font-size: 22px;
         font-weight: 800;
         color: #f8fafc;
     }
+
     .pac-sub {
         font-size: 14px;
         color: #94a3b8;
@@ -3988,18 +5006,24 @@ body.admin-mode .three-dots-btn {
 }
 
 /* ============================================================
+
    PHASE 4: PORTRAIT KIOSK LAYOUT (1080x1920)
+
    Top Map (58vh) + Bottom Touch Panel (42vh)
+
    Scoped under body.kiosk-portrait so landscape & phone are untouched.
+
    ============================================================ */
 
 /* ---------- Layout Shell ---------- */
+
 body.kiosk-portrait {
     --portrait-panel-height: 40vh;
     --sidebar-offset: 0px;  /* No left sidebar offset in portrait */
 }
 
 /* Map always fills the entire viewport — NO BLACK CUT-OFF VOID */
+
 body.kiosk-portrait #map {
     position: absolute;
     inset: 0;
@@ -4009,6 +5033,7 @@ body.kiosk-portrait #map {
 }
 
 /* ---------- Sidebar → Bottom Touch Panel ---------- */
+
 body.kiosk-portrait .sidebar {
     position: fixed;
     top: auto;
@@ -4032,6 +5057,7 @@ body.kiosk-portrait .sidebar.visible {
 }
 
 /* Vertical Drawer Toggle Handle — Attached tab on top edge of menu copying landscape */
+
 body.kiosk-portrait .sidebar-toggle-btn {
     display: flex !important;
     position: absolute;
@@ -4041,7 +5067,7 @@ body.kiosk-portrait .sidebar-toggle-btn {
     transform: translateX(-50%);
     width: 64px;
     height: 32px;
-    background: rgba(10, 15, 28, .94);
+    background: #0a0f1c;
     backdrop-filter: blur(24px) saturate(1.6);
     -webkit-backdrop-filter: blur(24px) saturate(1.6);
     border: 1px solid rgba(255, 255, 255, .12);
@@ -4086,6 +5112,7 @@ body.kiosk-portrait .sidebar-toggle-icon {
 }
 
 /* Fully closed collapsed state in portrait (zero leftover menu, only the attached arrow tab visible) */
+
 body.kiosk-portrait .sidebar.collapsed,
 body.kiosk-portrait .sidebar.visible.collapsed {
     transform: translateY(calc(100% + 24px)) !important;
@@ -4099,6 +5126,7 @@ body.kiosk-portrait .sidebar.visible.collapsed .sidebar-toggle-btn {
 }
 
 /* ---------- Sidebar Header — Horizontal compact row ---------- */
+
 body.kiosk-portrait .sidebar-header {
     padding: 20px 28px 14px;
     gap: 16px;
@@ -4120,20 +5148,67 @@ body.kiosk-portrait .sidebar-title p {
 }
 
 /* ---------- Search ---------- */
+
 body.kiosk-portrait .search-container {
     padding: 8px 28px 10px;
 }
 
-body.kiosk-portrait .search-box input {
-    padding: 16px 18px 16px 48px;
-    font-size: 16px;
-    border-radius: 16px;
+body.kiosk-portrait .search-row .search-box {
     height: 56px;
+    border-radius: 16px;
+    padding: 0 18px;
+    gap: 12px;
+}
+
+body.kiosk-portrait .search-box input {
+    font-size: 16px;
+    padding: 0;
+    height: 100%;
 }
 
 body.kiosk-portrait .search-icon {
-    left: 18px;
     font-size: 18px;
+}
+
+body.kiosk-portrait .search-clear-btn {
+    width: 26px;
+    height: 26px;
+    font-size: 13px;
+}
+
+body.kiosk-portrait .filter-dropdown-btn {
+    height: 56px;
+    border-radius: 16px;
+    padding: 0 16px;
+    font-size: 15px;
+}
+
+body.kiosk-portrait .filter-dropdown-menu {
+    width: 360px;
+}
+
+body.kiosk-portrait .fdm-item {
+    padding: 12px 14px;
+}
+
+body.kiosk-portrait .fdm-checkbox {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+}
+
+body.kiosk-portrait .fdm-checkbox:checked::after {
+    width: 5px;
+    height: 10px;
+    border-width: 0 2.5px 2.5px 0;
+}
+
+body.kiosk-portrait .fdm-item-name {
+    font-size: 14px;
+}
+
+body.kiosk-portrait .fdm-item-desc {
+    font-size: 12px;
 }
 
 body.kiosk-portrait .cat-chip {
@@ -4153,6 +5228,7 @@ body.kiosk-portrait .quick-tag {
 }
 
 /* ---------- Directory List — Scrollable area ---------- */
+
 body.kiosk-portrait .directory {
     padding: 4px 28px calc(36px + var(--safe-bottom));
     flex: 1;
@@ -4193,6 +5269,7 @@ body.kiosk-portrait .dir-item:active {
 }
 
 /* ---------- Settings Bar — Bottom of panel ---------- */
+
 body.kiosk-portrait .settings-bar {
     padding: 10px 28px 16px;
     gap: 10px;
@@ -4211,6 +5288,7 @@ body.kiosk-portrait .setting-chip {
 }
 
 /* ---------- Route Info — In bottom panel during navigation ---------- */
+
 body.kiosk-portrait .sidebar.route-active .route-info {
     padding: 16px 20px 20px;
     box-sizing: border-box;
@@ -4285,6 +5363,7 @@ body.kiosk-portrait .route-close-btn {
 }
 
 /* ---------- Building Panel — Sleek Docked Bottom Panel in Portrait Mode (Eliminates UI Sandwich) ---------- */
+
 body.kiosk-portrait .building-panel {
     position: fixed;
     bottom: 24px;
@@ -4321,6 +5400,7 @@ body.kiosk-portrait .building-panel.active {
 }
 
 /* Auto-collapse/hide bottom directory when building panel is active to guarantee ZERO UI stacking */
+
 body.kiosk-portrait:has(.building-panel.active) .sidebar,
 body.kiosk-portrait.has-active-bldg-panel .sidebar {
     transform: translateY(calc(100% + 40px)) !important;
@@ -4367,6 +5447,7 @@ body.kiosk-portrait .bp-title {
 }
 
 /* ---------- Turn-by-Turn Banner — Top of map area, centered ---------- */
+
 body.kiosk-portrait .turn-by-turn-banner {
     top: 20px;
     left: 50%;
@@ -4384,6 +5465,15 @@ body.kiosk-portrait .tbt-instruction {
     font-size: 18px;
 }
 
+body.kiosk-portrait .turn-by-turn-banner.arrived.is-long-dest .tbt-distance {
+    font-size: 20px;
+}
+
+body.kiosk-portrait .turn-by-turn-banner.arrived.is-long-dest .tbt-instruction {
+    font-size: 15px;
+    line-height: 1.3;
+}
+
 body.kiosk-portrait .tbt-icon-wrapper {
     width: 44px;
     height: 44px;
@@ -4391,6 +5481,7 @@ body.kiosk-portrait .tbt-icon-wrapper {
 }
 
 /* ---------- Floating Camera & Speed Controls — Floats above bottom panel in Portrait Kiosk ---------- */
+
 body.kiosk-portrait .floating-camera-controls {
     top: auto;
     bottom: calc(var(--portrait-panel-height) + 40px);
@@ -4403,12 +5494,14 @@ body.kiosk-portrait .floating-camera-controls {
 }
 
 /* When route is active in portrait mode: camera controls sit right above compact route panel */
+
 body.kiosk-portrait:has(.sidebar.route-active) .floating-camera-controls,
 body.kiosk-portrait.has-active-route .floating-camera-controls {
     bottom: calc(35vh + 36px) !important;
 }
 
 /* When the menu is popped DOWN (collapsed), Camera View is lowered */
+
 body.kiosk-portrait.sidebar-collapsed .floating-camera-controls.active,
 body.kiosk-portrait:has(.sidebar.collapsed) .floating-camera-controls.active {
     bottom: 96px !important;
@@ -4424,6 +5517,7 @@ body.kiosk-portrait:has(.sidebar.collapsed) .floating-camera-controls.active ~ .
 }
 
 /* When the menu is popped UP (sidebar NOT collapsed): speed controls stay inside menu */
+
 body.kiosk-portrait:not(.sidebar-collapsed) .floating-speed-controls {
     display: none !important;
 }
@@ -4450,12 +5544,14 @@ body.kiosk-portrait .floating-speed-controls .speed-pill {
 }
 
 /* ---------- Coords Badge — Hidden in kiosk mode to prevent screen noise ---------- */
+
 body.kiosk-portrait .coords-badge,
 body.mode-kiosk .coords-badge {
     display: none !important;
 }
 
 /* ---------- Mapbox Controls & Widgets — Clean Top-Right Stack (Both Landscape & Portrait) ---------- */
+
 .map-layer-widget,
 .map-view-switch-btn {
     display: flex;
@@ -4490,6 +5586,7 @@ body.mode-kiosk .coords-badge {
     flex-direction: column !important;
     align-items: center !important;
     width: 38px !important;
+    transition: top 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .mapboxgl-ctrl-top-right .mapboxgl-ctrl {
@@ -4497,24 +5594,31 @@ body.mode-kiosk .coords-badge {
     float: none !important;
 }
 
-body.kiosk-portrait .mapboxgl-ctrl-bottom-right,
-body.kiosk-portrait .mapboxgl-ctrl-bottom-left {
-    bottom: calc(var(--portrait-panel-height) + 36px);
-    transition: bottom 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-}
+/* Permanently anchor Mapbox watermark logo and scale bar controls directly at the bottom edge */
 
+.mapboxgl-ctrl-bottom-left,
+.mapboxgl-ctrl-bottom-right,
+body.kiosk-portrait .mapboxgl-ctrl-bottom-left,
+body.kiosk-portrait .mapboxgl-ctrl-bottom-right,
+body.kiosk-portrait.sidebar-collapsed .mapboxgl-ctrl-bottom-left,
 body.kiosk-portrait.sidebar-collapsed .mapboxgl-ctrl-bottom-right,
-body.kiosk-portrait.sidebar-collapsed .mapboxgl-ctrl-bottom-left {
-    bottom: 76px !important;
+body.kiosk-portrait.has-active-bldg-panel .mapboxgl-ctrl-bottom-left,
+body.kiosk-portrait.has-active-bldg-panel .mapboxgl-ctrl-bottom-right,
+body.has-active-bldg-panel .mapboxgl-ctrl-bottom-left,
+body.has-active-bldg-panel .mapboxgl-ctrl-bottom-right {
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+    transition: none !important;
 }
 
 /* ---------- Kiosk Marker Label — Larger for portrait touch ---------- */
+
 body.kiosk-portrait .kiosk-marker-label {
     font-size: 14px;
     padding: 6px 14px;
 }
 
 /* ---------- Arrived Card — Larger in portrait ---------- */
+
 body.kiosk-portrait .arrived-card-icon {
     font-size: 38px;
 }
@@ -4528,6 +5632,7 @@ body.kiosk-portrait .arrived-card-desc {
 }
 
 /* ---------- QR Card — Wider in portrait bottom panel ---------- */
+
 body.kiosk-portrait .bp-qr-card {
     margin-top: 8px;
 }
@@ -4538,6 +5643,7 @@ body.kiosk-portrait .bp-qr-box {
 }
 
 /* ---------- Dedicated Post-Arrival Action Bar (Comfort Reach Zone) ---------- */
+
 .kiosk-arrival-action-bar {
     display: none;
     position: fixed;
@@ -4572,121 +5678,8 @@ body.kiosk-portrait .kiosk-arrival-action-bar {
     width: min(540px, calc(100vw - 32px));
 }
 
-body.phone-mode .kiosk-arrival-action-bar {
-    display: none !important;
-}
-
-@keyframes arrivalPopUp {
-    from {
-        opacity: 0;
-        transform: translateX(-50%) translateY(24px) scale(0.96);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0) scale(1);
-    }
-}
-
-.kiosk-arrival-action-bar.active {
-    display: flex !important;
-}
-
-.kaa-header {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-}
-
-.kaa-icon {
-    font-size: 34px;
-    line-height: 1;
-    filter: drop-shadow(0 2px 8px rgba(34, 197, 94, 0.4));
-}
-
-.kaa-text-group {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.kaa-title {
-    font-size: 17px;
-    font-weight: 800;
-    color: #f8fafc;
-    letter-spacing: -0.2px;
-}
-
-.kaa-title span {
-    color: #4ade80;
-}
-
-.kaa-subtitle {
-    font-size: 13px;
-    color: #94a3b8;
-    font-weight: 500;
-}
-
-.kaa-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    width: 100%;
-}
-
-.kaa-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    height: 52px;
-    border-radius: 16px;
-    font-size: 15px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    width: 100%;
-    border: none;
-    outline: none;
-    -webkit-tap-highlight-color: transparent;
-}
-
-.kaa-btn-primary {
-    background: linear-gradient(135deg, #16a34a, #15803d);
-    color: #ffffff;
-    box-shadow: 0 4px 18px rgba(22, 163, 74, 0.4);
-}
-.kaa-btn-primary:hover, .kaa-btn-primary:active {
-    background: linear-gradient(135deg, #22c55e, #16a34a);
-    transform: translateY(-1px);
-    box-shadow: 0 6px 22px rgba(34, 197, 94, 0.5);
-}
-
-.kaa-btn-secondary {
-    background: rgba(255, 255, 255, 0.08);
-    color: #e2e8f0;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-}
-.kaa-btn-secondary:hover, .kaa-btn-secondary:active {
-    background: rgba(255, 255, 255, 0.15);
-    color: #ffffff;
-}
-
-.kaa-btn-tertiary {
-    background: transparent;
-    color: #94a3b8;
-    font-size: 14px;
-    height: 42px;
-}
-.kaa-btn-tertiary:hover, .kaa-btn-tertiary:active {
-    color: #cbd5e1;
-}
-
-.kaa-btn-icon {
-    font-size: 18px;
-    line-height: 1;
-}
-
 /* Compact Steps Styling in Route Panel */
+
 .route-steps-header-row {
     display: flex;
     align-items: center;
@@ -4746,6 +5739,7 @@ body.kiosk-portrait .sidebar.route-active .route-info {
 }
 
 /* ---------- Color Picker Modal — Center on screen ---------- */
+
 body.kiosk-portrait #color-picker-modal {
     top: 50%;
     left: 50%;
@@ -4753,8 +5747,11 @@ body.kiosk-portrait #color-picker-modal {
 }
 
 /* ==========================================================================
+
    Consolidated Map Settings Widget & Control Panel Popover (Right Toolbar)
+
    ========================================================================== */
+
 .map-settings-widget {
     position: absolute;
     top: calc(var(--safe-top, 0px) + 14px);
@@ -4786,12 +5783,14 @@ body.kiosk-portrait #color-picker-modal {
     user-select: none;
     -webkit-tap-highlight-color: transparent;
 }
+
 .map-settings-trigger-btn:hover {
     background: rgba(15, 23, 42, 0.98);
     border-color: rgba(56, 189, 248, 0.6);
     transform: scale(1.06);
     box-shadow: 0 8px 24px rgba(56, 189, 248, 0.25);
 }
+
 .map-settings-trigger-btn.active {
     border-color: #38bdf8;
     background: rgba(14, 116, 144, 0.4);
@@ -4800,6 +5799,7 @@ body.kiosk-portrait #color-picker-modal {
 }
 
 /* Backdrop */
+
 .map-settings-backdrop {
     position: fixed;
     inset: 0;
@@ -4811,12 +5811,14 @@ body.kiosk-portrait #color-picker-modal {
     opacity: 0;
     transition: opacity 0.2s ease;
 }
+
 .map-settings-backdrop.active {
     display: block;
     opacity: 1;
 }
 
 /* Popover Panel */
+
 .map-settings-panel {
     position: fixed;
     top: calc(var(--safe-top, 0px) + 60px);
@@ -4838,6 +5840,7 @@ body.kiosk-portrait #color-picker-modal {
     animation: mspPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     user-select: none;
 }
+
 .map-settings-panel.active {
     display: flex;
 }
@@ -4847,6 +5850,7 @@ body.kiosk-portrait #color-picker-modal {
         opacity: 0;
         transform: translateY(-8px) scale(0.95);
     }
+
     to {
         opacity: 1;
         transform: translateY(0) scale(1);
@@ -4861,15 +5865,18 @@ body.kiosk-portrait #color-picker-modal {
     padding: 18px 20px 14px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
+
 .msp-header-title {
     display: flex;
     align-items: center;
     gap: 12px;
 }
+
 .msp-header-title .msp-icon {
     font-size: 24px;
     line-height: 1;
 }
+
 .msp-header-title h3 {
     margin: 0;
     font-size: 15px;
@@ -4877,11 +5884,13 @@ body.kiosk-portrait #color-picker-modal {
     color: #f8fafc;
     letter-spacing: -0.01em;
 }
+
 .msp-header-title p {
     margin: 2px 0 0 0;
     font-size: 11px;
     color: #94a3b8;
 }
+
 .msp-close-btn {
     width: 30px;
     height: 30px;
@@ -4896,6 +5905,7 @@ body.kiosk-portrait #color-picker-modal {
     justify-content: center;
     transition: all 0.15s;
 }
+
 .msp-close-btn:hover {
     background: rgba(239, 68, 68, 0.2);
     border-color: rgba(239, 68, 68, 0.4);
@@ -4914,21 +5924,26 @@ body.kiosk-portrait #color-picker-modal {
     scrollbar-width: thin;
     scrollbar-color: rgba(56, 189, 248, 0.25) transparent;
 }
+
 .msp-body::-webkit-scrollbar {
     width: 4px;
 }
+
 .msp-body::-webkit-scrollbar-track {
     background: transparent !important;
     margin: 8px 0;
 }
+
 .msp-body::-webkit-scrollbar-thumb {
     background: rgba(56, 189, 248, 0.25);
     border-radius: 9999px;
     transition: background 0.2s ease;
 }
+
 .msp-body::-webkit-scrollbar-thumb:hover {
     background: rgba(56, 189, 248, 0.65);
 }
+
 .msp-body::-webkit-scrollbar-button {
     display: none !important;
     width: 0 !important;
@@ -4940,11 +5955,13 @@ body.kiosk-portrait #color-picker-modal {
     flex-direction: column;
     gap: 10px;
 }
+
 .msp-section-header {
     display: flex;
     align-items: center;
     gap: 8px;
 }
+
 .msp-section-tag {
     font-size: 9.5px;
     font-weight: 800;
@@ -4955,6 +5972,7 @@ body.kiosk-portrait #color-picker-modal {
     border-radius: 999px;
     border: 1px solid rgba(56, 189, 248, 0.2);
 }
+
 .msp-section-header h4 {
     margin: 0;
     font-size: 13px;
@@ -4963,6 +5981,7 @@ body.kiosk-portrait #color-picker-modal {
 }
 
 /* 1. Toggle Switches */
+
 .msp-toggle-list {
     display: flex;
     flex-direction: column;
@@ -4972,30 +5991,36 @@ body.kiosk-portrait #color-picker-modal {
     border-radius: 16px;
     padding: 6px 12px;
 }
+
 .msp-toggle-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 8px 4px;
 }
+
 .msp-toggle-row:not(:last-child) {
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
+
 .msp-toggle-info {
     display: flex;
     align-items: center;
     gap: 10px;
 }
+
 .msp-toggle-icon {
     font-size: 18px;
     line-height: 1;
 }
+
 .msp-toggle-label {
     display: block;
     font-size: 12.5px;
     font-weight: 600;
     color: #f8fafc;
 }
+
 .msp-toggle-desc {
     display: block;
     font-size: 10.5px;
@@ -5009,11 +6034,13 @@ body.kiosk-portrait #color-picker-modal {
     height: 24px;
     flex-shrink: 0;
 }
+
 .msp-switch input {
     opacity: 0;
     width: 0;
     height: 0;
 }
+
 .msp-slider {
     position: absolute;
     cursor: pointer;
@@ -5023,6 +6050,7 @@ body.kiosk-portrait #color-picker-modal {
     transition: 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     border-radius: 24px;
 }
+
 .msp-slider:before {
     position: absolute;
     content: "";
@@ -5035,16 +6063,19 @@ body.kiosk-portrait #color-picker-modal {
     border-radius: 50%;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
+
 .msp-switch input:checked + .msp-slider {
     background-color: #22c55e;
     border-color: #4ade80;
     box-shadow: 0 0 12px rgba(34, 197, 94, 0.45);
 }
+
 .msp-switch input:checked + .msp-slider:before {
     transform: translateX(20px);
 }
 
 /* 2. Segmented Control for Label Modes */
+
 .msp-segmented-control {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -5054,6 +6085,7 @@ body.kiosk-portrait #color-picker-modal {
     border-radius: 16px;
     padding: 4px;
 }
+
 .msp-seg-btn {
     display: flex;
     align-items: center;
@@ -5067,38 +6099,46 @@ body.kiosk-portrait #color-picker-modal {
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     color: #94a3b8;
 }
+
 .msp-seg-btn:hover {
     background: rgba(255, 255, 255, 0.05);
     color: #e2e8f0;
 }
+
 .msp-seg-btn.active {
     background: rgba(56, 189, 248, 0.12);
     border-color: rgba(56, 189, 248, 0.4);
     box-shadow: 0 2px 10px rgba(56, 189, 248, 0.15);
     color: #f8fafc;
 }
+
 .msp-seg-icon {
     font-size: 16px;
     line-height: 1;
 }
+
 .msp-seg-labels {
     display: flex;
     flex-direction: column;
 }
+
 .msp-seg-text {
     font-size: 12px;
     font-weight: 700;
 }
+
 .msp-seg-sub {
     font-size: 10px;
     color: #94a3b8;
     white-space: nowrap;
 }
+
 .msp-seg-btn.active .msp-seg-sub {
     color: #7dd3fc;
 }
 
 /* 3. Lighting Grid */
+
 .msp-lighting-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
@@ -5108,6 +6148,7 @@ body.kiosk-portrait #color-picker-modal {
     border-radius: 16px;
     padding: 6px;
 }
+
 .msp-light-btn {
     display: flex;
     flex-direction: column;
@@ -5121,37 +6162,44 @@ body.kiosk-portrait #color-picker-modal {
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     color: #94a3b8;
 }
+
 .msp-light-btn:hover {
     background: rgba(255, 255, 255, 0.06);
     color: #f8fafc;
 }
+
 .msp-light-btn.active {
     background: rgba(56, 189, 248, 0.15);
     border-color: rgba(56, 189, 248, 0.45);
     box-shadow: 0 0 14px rgba(56, 189, 248, 0.2);
     color: #ffffff;
 }
+
 .msp-light-icon {
     font-size: 18px;
     line-height: 1;
     margin-bottom: 4px;
 }
+
 .msp-light-name {
     font-size: 11px;
     font-weight: 700;
     line-height: 1;
 }
+
 .msp-light-sub {
     font-size: 9px;
     color: #64748b;
     margin-top: 3px;
     white-space: nowrap;
 }
+
 .msp-light-btn.active .msp-light-sub {
     color: #38bdf8;
 }
 
 /* 4. Hardware Performance Profile Grid */
+
 .msp-perf-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -5296,8 +6344,8 @@ body:not(.admin-mode) .msp-admin-only {
     transform: translateX(3px);
 }
 
-
 /* Compact Number-Only Label Styles */
+
 body.label-mode-compact .bldg-map-marker {
     width: 28px !important;
     height: 28px !important;
@@ -5379,11 +6427,97 @@ body.map-mode-mapbox.label-mode-compact .bldg-map-marker .bldg-map-name {
     box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18), 0 0 12px rgba(59, 130, 246, 0.25) !important;
 }
 
+/* Compact Mode for Agricultural Plot Pill Markers (Settings Alignment) */
+
+body.label-mode-compact .plot-map-marker {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    max-width: 28px !important;
+    padding: 2px !important;
+    border-radius: 50% !important;
+    gap: 0 !important;
+    overflow: visible !important;
+    box-sizing: border-box !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease !important;
+}
+
+body.label-mode-compact .plot-map-marker .plot-marker-badge {
+    position: relative !important;
+    z-index: 2 !important;
+    flex-shrink: 0 !important;
+    width: 22px !important;
+    height: 22px !important;
+    font-size: 13px !important;
+    transition: transform 0.2s ease !important;
+}
+
+body.label-mode-compact .plot-map-marker .plot-marker-info {
+    position: absolute !important;
+    left: -1px !important;
+    top: -1px !important;
+    height: 28px !important;
+    line-height: 1.15 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    padding: 0 14px 0 32px !important;
+    border-radius: 9999px !important;
+    background: rgba(15, 23, 42, 0.96) !important;
+    border: 1px solid rgba(16, 185, 129, 0.6) !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5), 0 0 14px rgba(16, 185, 129, 0.35) !important;
+    white-space: nowrap !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    z-index: 1 !important;
+    transform-origin: left center !important;
+    transform: scale(0.92) translateX(-4px) !important;
+    transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+body.label-mode-compact .plot-map-marker:hover,
+body.label-mode-compact .plot-map-marker.active {
+    z-index: 1000 !important;
+    border-color: #34d399 !important;
+    box-shadow: 0 0 14px rgba(52, 211, 153, 0.5) !important;
+}
+
+body.label-mode-compact .plot-map-marker:hover .plot-marker-badge,
+body.label-mode-compact .plot-map-marker.active .plot-marker-badge {
+    transform: scale(1.15) !important;
+}
+
+body.label-mode-compact .plot-map-marker:hover .plot-marker-info,
+body.label-mode-compact .plot-map-marker.active .plot-marker-info {
+    opacity: 1 !important;
+    transform: scale(1) translateX(0) !important;
+    pointer-events: auto !important;
+    transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+/* Sub-plot chips in building panel */
+
+.sub-plot-chip:hover {
+    background: rgba(51, 65, 85, 0.85) !important;
+    border-color: #38bdf8 !important;
+    transform: translateX(4px);
+}
+
 /* Responsive Overrides */
+
 body.kiosk-portrait .map-settings-widget {
     top: calc(var(--safe-top, 0px) + 14px);
     right: 14px;
 }
+
 body.kiosk-portrait .map-settings-panel {
     top: auto;
     bottom: calc(var(--portrait-panel-height, 460px) + 16px);
@@ -5396,8 +6530,11 @@ body.kiosk-portrait .map-settings-panel {
 }
 
 /* ==========================================================================
+
    Floating Map View Switcher Widget (Desktop/Kiosk Expandable Flyout & Mobile Pop-up)
+
    ========================================================================== */
+
 .map-layer-widget {
     position: absolute;
     top: calc(var(--safe-top, 0px) + 14px);
@@ -5411,6 +6548,7 @@ body.kiosk-portrait .map-settings-panel {
 }
 
 /* The circular trigger button */
+
 .map-layer-trigger-btn {
     width: 38px;
     height: 38px;
@@ -5432,12 +6570,14 @@ body.kiosk-portrait .map-settings-panel {
     position: relative;
     z-index: 2;
 }
+
 .map-layer-trigger-btn:hover {
     background: rgba(22, 34, 29, 0.95);
     border-color: rgba(34, 197, 94, 0.5);
     transform: scale(1.06);
     box-shadow: 0 8px 24px rgba(34, 197, 94, 0.25);
 }
+
 .map-layer-widget.expanded .map-layer-trigger-btn {
     border-color: #22c55e;
     background: rgba(22, 34, 29, 0.98);
@@ -5446,6 +6586,7 @@ body.kiosk-portrait .map-settings-panel {
 }
 
 /* The flyout menu expanding smoothly to the left */
+
 .map-layer-flyout {
     position: absolute;
     right: 46px;
@@ -5468,6 +6609,7 @@ body.kiosk-portrait .map-settings-panel {
     white-space: nowrap;
     z-index: 1;
 }
+
 .map-layer-widget.expanded .map-layer-flyout {
     opacity: 1;
     pointer-events: auto;
@@ -5475,6 +6617,7 @@ body.kiosk-portrait .map-settings-panel {
 }
 
 /* Flyout option items */
+
 .map-layer-option {
     display: inline-flex;
     align-items: center;
@@ -5491,34 +6634,56 @@ body.kiosk-portrait .map-settings-panel {
     transition: all 0.2s ease;
     white-space: nowrap;
 }
+
 .map-layer-option:hover {
     color: #f8fafc;
     background: rgba(255, 255, 255, 0.08);
 }
+
 .map-layer-option.active {
     background: linear-gradient(135deg, rgba(34, 197, 94, 0.22), rgba(21, 128, 61, 0.35));
     border-color: rgba(34, 197, 94, 0.55);
     color: #86efac;
     box-shadow: 0 2px 10px rgba(34, 197, 94, 0.2);
 }
+
 .mlo-icon {
     font-size: 15px;
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    line-height: 1;
 }
+
+.mlo-icon svg,
+.mlo-icon .lucide-icon {
+    width: 16px !important;
+    height: 16px !important;
+    display: block !important;
+    margin: auto;
+}
+
 .mlo-name {
     font-size: 12.5px;
     font-weight: 600;
 }
+
 .mlo-check {
     font-size: 12px;
     font-weight: bold;
     color: #22c55e;
     display: none;
 }
+
 .map-layer-option.active .mlo-check {
     display: inline;
 }
 
 /* Mobile Pop-up Modal Sheet */
+
 .map-layer-modal-backdrop {
     position: fixed;
     inset: 0;
@@ -5530,10 +6695,12 @@ body.kiosk-portrait .map-settings-panel {
     pointer-events: none;
     transition: opacity 0.25s ease;
 }
+
 .map-layer-modal-backdrop.active {
     opacity: 1;
     pointer-events: auto;
 }
+
 .map-layer-modal {
     position: fixed;
     bottom: 24px;
@@ -5553,11 +6720,13 @@ body.kiosk-portrait .map-settings-panel {
     pointer-events: none;
     transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
 .map-layer-modal.active {
     opacity: 1;
     pointer-events: auto;
     transform: translate(-50%, 0) scale(1);
 }
+
 .mlm-header {
     display: flex;
     justify-content: space-between;
@@ -5566,6 +6735,7 @@ body.kiosk-portrait .map-settings-panel {
     padding-bottom: 10px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
+
 .mlm-badge {
     font-size: 10px;
     font-weight: 800;
@@ -5573,12 +6743,14 @@ body.kiosk-portrait .map-settings-panel {
     color: #22c55e;
     text-transform: uppercase;
 }
+
 .mlm-title {
     margin: 2px 0 0 0;
     font-size: 17px;
     font-weight: 700;
     color: #f8fafc;
 }
+
 .mlm-close-btn {
     background: rgba(255, 255, 255, 0.08);
     border: none;
@@ -5593,15 +6765,18 @@ body.kiosk-portrait .map-settings-panel {
     justify-content: center;
     transition: all 0.2s ease;
 }
+
 .mlm-close-btn:hover {
     background: rgba(255, 255, 255, 0.18);
     color: #ffffff;
 }
+
 .mlm-options {
     display: flex;
     flex-direction: column;
     gap: 10px;
 }
+
 .mlm-option {
     display: flex;
     align-items: center;
@@ -5615,35 +6790,56 @@ body.kiosk-portrait .map-settings-panel {
     text-align: left;
     transition: all 0.2s ease;
 }
+
 .mlm-option:hover {
     background: rgba(255, 255, 255, 0.08);
 }
+
 .mlm-option.active {
     background: rgba(34, 197, 94, 0.15);
     border-color: rgba(34, 197, 94, 0.5);
     color: #ffffff;
 }
+
 .mlm-option-icon {
-    font-size: 24px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
+    line-height: 1;
 }
+
+.mlm-option-icon svg,
+.mlm-option-icon .lucide-icon {
+    width: 22px !important;
+    height: 22px !important;
+    display: block !important;
+    margin: auto;
+}
+
 .mlm-option-info {
     display: flex;
     flex-direction: column;
     flex: 1;
 }
+
 .mlm-option-name {
     font-size: 14px;
     font-weight: 600;
 }
+
 .mlm-option-desc {
     font-size: 11px;
     color: #94a3b8;
     margin-top: 2px;
 }
+
 .mlm-option.active .mlm-option-name {
     color: #86efac;
 }
+
 .mlm-option-radio {
     width: 18px;
     height: 18px;
@@ -5652,11 +6848,13 @@ body.kiosk-portrait .map-settings-panel {
     position: relative;
     flex-shrink: 0;
 }
+
 .mlm-option.active .mlm-option-radio {
     border-color: #22c55e;
     background: #22c55e;
     box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
 }
+
 .mlm-option.active .mlm-option-radio::after {
     content: '';
     position: absolute;
@@ -5666,6 +6864,7 @@ body.kiosk-portrait .map-settings-panel {
 }
 
 /* Portrait Kiosk adjustments */
+
 body.kiosk-portrait .map-layer-widget {
     top: 14px;
     right: 60px;
@@ -5673,39 +6872,126 @@ body.kiosk-portrait .map-layer-widget {
 }
 
 @media (max-width: 768px) {
-    .map-layer-widget {
-        top: calc(var(--safe-top, 0px) + 14px);
-        right: 60px;
-        left: auto;
+    /* 1. Hide Mapbox NavigationControl (Zoom In, Zoom Out, Compass) on mobile */
+    .mapboxgl-ctrl-group:has(.mapboxgl-ctrl-zoom-in),
+    .mapboxgl-ctrl-group:has(.mapboxgl-ctrl-compass),
+    .mapboxgl-ctrl-zoom-in,
+    .mapboxgl-ctrl-zoom-out,
+    .mapboxgl-ctrl-compass {
+        display: none !important;
     }
+
+    /* 2. Style Orbit and Fullscreen to match the 38px circular floating control buttons */
+    .ctrl-orbit-group,
+    .mapboxgl-ctrl-group:has(.mapboxgl-ctrl-fullscreen) {
+        width: 38px !important;
+        height: 38px !important;
+        border-radius: 50% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    .ctrl-orbit-btn,
+    .mapboxgl-ctrl-fullscreen {
+        width: 38px !important;
+        height: 38px !important;
+        border-radius: 50% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    /* 3. Parallel right-side control column: Settings, Map Layer (Drone/Map), Orbit, Fullscreen */
     .map-settings-widget {
-        top: calc(var(--safe-top, 0px) + 14px);
-        right: 14px;
-        left: auto;
+        display: flex !important;
+        top: calc(var(--safe-top, 0px) + 14px) !important;
+        right: 14px !important;
+        left: auto !important;
+        z-index: 160 !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        transition: top 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease !important;
     }
+
+    .map-layer-widget {
+        display: flex !important;
+        top: calc(var(--safe-top, 0px) + 60px) !important;
+        right: 14px !important;
+        left: auto !important;
+        z-index: 160 !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        transition: top 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease !important;
+    }
+
+    .mapboxgl-ctrl-top-right {
+        top: calc(var(--safe-top, 0px) + 106px) !important;
+        right: 14px !important;
+        left: auto !important;
+        z-index: 100 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        width: 38px !important;
+        transition: top 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+
+    .ctrl-orbit-group {
+        margin-top: 0 !important;
+    }
+
     .map-layer-flyout {
         display: none !important; /* On mobile, only use pop-up modal sheet! */
     }
-    body.phone-nav-active .map-layer-widget,
-    body.phone-nav-active .map-settings-widget {
+
+    /* Fade out top logo bar during active navigation so it never ghosts behind the HUD */
+    body.phone-nav-active .phone-top-bar {
         opacity: 0;
         pointer-events: none;
-        transform: translateY(-20px);
+        transform: translateY(-16px);
+        transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    /* Shift parallel right rail smoothly down below Top Nav HUD during active navigation */
+    body.phone-nav-active .map-settings-widget {
+        display: flex !important;
+        top: calc(var(--safe-top, 0px) + 88px) !important;
+        right: 14px !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+    }
+
+    body.phone-nav-active .map-layer-widget {
+        display: flex !important;
+        top: calc(var(--safe-top, 0px) + 134px) !important;
+        right: 14px !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        transform: translateY(0);
+    }
+
+    body.phone-nav-active .mapboxgl-ctrl-top-right {
+        top: calc(var(--safe-top, 0px) + 180px) !important;
+        right: 14px !important;
     }
 
     body.sidebar-collapsed .floating-camera-controls.active {
         bottom: 96px !important;
     }
+
     body.sidebar-collapsed .floating-speed-controls.active,
     body.sidebar-collapsed .floating-camera-controls.active ~ .floating-speed-controls {
         display: flex !important;
         bottom: 44px !important;
     }
+
     body:not(.sidebar-collapsed) .floating-speed-controls {
         display: none !important;
     }
 
     /* On mobile phone route sheet: when sheet is popped UP (snap-half or snap-full), speed bar vanishes */
+
     .phone-bottom-sheet.snap-half #phone-speed-bar,
     .phone-bottom-sheet.snap-full #phone-speed-bar {
         display: none !important;
@@ -5713,8 +6999,12 @@ body.kiosk-portrait .map-layer-widget {
 }
 
 /* --- CLAYMATION SCULPTED STOP-MOTION RUNNER / WALKER AVATAR --- */
+
 .route-walker-avatar {
-    position: relative;
+    position: absolute;
+    top: 0;
+    left: 0;
+    will-change: transform;
     width: 60px;
     height: 76px;
     display: flex;
@@ -5724,8 +7014,8 @@ body.kiosk-portrait .map-layer-widget {
     user-select: none;
     z-index: 120;
     /* White sticker silhouette border + soft grounding drop shadow for high contrast on satellite imagery */
-    filter: drop-shadow(0 0 2.5px #ffffff) 
-            drop-shadow(0 0 1.2px #ffffff) 
+    filter: drop-shadow(0 0 2.5px #ffffff)
+            drop-shadow(0 0 1.2px #ffffff)
             drop-shadow(0 6px 12px rgba(0, 0, 0, 0.75));
 }
 
@@ -5743,20 +7033,24 @@ body.kiosk-portrait .map-layer-widget {
 }
 
 /* Oval Contact Shadow directly under feet */
+
 .clay-shadow {
     transform-origin: 30px 72px;
     animation: clayShadowAnim var(--clay-speed) steps(4) infinite;
 }
+
 @keyframes clayShadowAnim {
     0%, 50%, 100% { rx: 16; ry: 4.5; opacity: 0.7; transform: scale(1); }
     25%, 75% { rx: 12; ry: 3.5; opacity: 0.38; transform: scale(0.85); }
 }
 
 /* Clay Torso & Head with Authentic Squash & Stretch */
+
 .clay-body-group {
     transform-origin: 30px 48px;
     animation: clayBodyBob var(--clay-speed) steps(4) infinite;
 }
+
 @keyframes clayBodyBob {
     0% { transform: translateY(0) rotate(var(--clay-lean)) scaleY(0.92) scaleX(1.08); }
     25% { transform: translateY(-5px) rotate(var(--clay-lean)) scaleY(1.08) scaleX(0.94); }
@@ -5766,18 +7060,22 @@ body.kiosk-portrait .map-layer-widget {
 }
 
 /* Chunky Limbs: stepped 8-12fps keyframes for claymation look */
+
 .clay-limb-front-leg {
     transform-origin: 30px 48px;
     animation: clayFrontLeg var(--clay-speed) steps(4) infinite;
 }
+
 .clay-limb-back-leg {
     transform-origin: 30px 48px;
     animation: clayBackLeg var(--clay-speed) steps(4) infinite;
 }
+
 .clay-limb-front-arm {
     transform-origin: 30px 29px;
     animation: clayFrontArm var(--clay-speed) steps(4) infinite;
 }
+
 .clay-limb-back-arm {
     transform-origin: 30px 29px;
     animation: clayBackArm var(--clay-speed) steps(4) infinite;
@@ -5790,6 +7088,7 @@ body.kiosk-portrait .map-layer-widget {
     75% { transform: rotate(-4deg); }
     100% { transform: rotate(var(--leg-fwd)); }
 }
+
 @keyframes clayBackLeg {
     0% { transform: rotate(var(--leg-back)); }
     25% { transform: rotate(-4deg); }
@@ -5805,6 +7104,7 @@ body.kiosk-portrait .map-layer-widget {
     75% { transform: rotate(4deg); }
     100% { transform: rotate(var(--arm-back)); }
 }
+
 @keyframes clayBackArm {
     0% { transform: rotate(var(--arm-fwd)); }
     25% { transform: rotate(4deg); }
@@ -5814,39 +7114,48 @@ body.kiosk-portrait .map-layer-widget {
 }
 
 /* --- IDLE ANIMATION (Breathing, Looking around & Friendly waving at start or destination) --- */
+
 .route-walker-avatar.mode-idle .clay-body-group {
     animation: clayIdleBreath 1.8s steps(6) infinite alternate;
 }
+
 @keyframes clayIdleBreath {
     0% { transform: translateY(0) scaleY(1) scaleX(1); }
     100% { transform: translateY(-2.5px) scaleY(1.05) scaleX(0.97); }
 }
+
 .route-walker-avatar.mode-idle .clay-head-group {
     animation: clayIdleHeadLook 3.2s steps(4) infinite;
     transform-origin: 30px 15px;
 }
+
 @keyframes clayIdleHeadLook {
     0%, 30% { transform: rotate(0deg); }
     40%, 65% { transform: rotate(-7deg) translateX(-1px); }
     75%, 100% { transform: rotate(6deg) translateX(1px); }
 }
+
 .route-walker-avatar.mode-idle .clay-limb-front-leg,
 .route-walker-avatar.mode-idle .clay-limb-back-leg {
     animation: none;
     transform: rotate(0deg);
 }
+
 .route-walker-avatar.mode-idle .clay-limb-front-arm {
     animation: clayIdleArmWave 1.4s steps(4) infinite alternate;
 }
+
 @keyframes clayIdleArmWave {
     0% { transform: rotate(-10deg); }
     50% { transform: rotate(-45deg); }
     100% { transform: rotate(-75deg); }
 }
+
 .route-walker-avatar.mode-idle .clay-limb-back-arm {
     animation: none;
     transform: rotate(10deg);
 }
+
 .route-walker-avatar.mode-idle .clay-shadow {
     animation: none;
     rx: 16;
@@ -5855,36 +7164,45 @@ body.kiosk-portrait .map-layer-widget {
 }
 
 /* --- ARRIVAL CELEBRATION (Victory Hop at destination) --- */
+
 .route-walker-avatar.mode-celebrate .clay-body-group {
     animation: clayVictoryHop 0.72s steps(4) infinite;
 }
+
 @keyframes clayVictoryHop {
     0% { transform: translateY(0) scaleY(0.92) scaleX(1.08); }
     40% { transform: translateY(-16px) scaleY(1.1) scaleX(0.95); }
     60% { transform: translateY(-14px) scaleY(1.05) scaleX(0.97); }
     100% { transform: translateY(0) scaleY(0.92) scaleX(1.08); }
 }
+
 .route-walker-avatar.mode-celebrate .clay-limb-front-arm,
 .route-walker-avatar.mode-celebrate .clay-limb-back-arm {
     animation: clayArmsVictory 0.72s steps(2) infinite alternate;
 }
+
 @keyframes clayArmsVictory {
     0% { transform: rotate(-130deg); }
     100% { transform: rotate(-160deg); }
 }
+
 .route-walker-avatar.mode-celebrate .clay-limb-front-leg {
     animation: clayLegsVictory 0.72s steps(2) infinite alternate;
 }
+
 .route-walker-avatar.mode-celebrate .clay-limb-back-leg {
     animation: clayLegsVictory 0.72s steps(2) infinite alternate-reverse;
 }
+
 @keyframes clayLegsVictory {
     0% { transform: rotate(14deg); }
     100% { transform: rotate(-14deg); }
 }
+
 .route-walker-avatar.mode-celebrate .clay-shadow {
     animation: clayVictoryShadow 0.72s steps(4) infinite;
 }
+
 @keyframes clayVictoryShadow {
     0% { rx: 17; opacity: 0.75; transform: scale(1.1); }
     50% { rx: 9; opacity: 0.22; transform: scale(0.6); }
@@ -5892,6 +7210,7 @@ body.kiosk-portrait .map-layer-widget {
 }
 
 /* Dust Puffs & Speed Sparks for 4x / 6x */
+
 .route-walker-avatar .dust-puff {
     position: absolute;
     bottom: 4px;
@@ -5900,10 +7219,12 @@ body.kiosk-portrait .map-layer-widget {
     opacity: 0;
     pointer-events: none;
 }
+
 .route-walker-avatar.speed-4x .dust-puff,
 .route-walker-avatar.speed-6x .dust-puff {
     animation: puffAnim var(--clay-speed) steps(2) infinite;
 }
+
 @keyframes puffAnim {
     0% { opacity: 0; transform: translateX(0) scale(0.6); }
     50% { opacity: 0.95; transform: translateX(-6px) scale(1.05); }
@@ -5918,10 +7239,12 @@ body.kiosk-portrait .map-layer-widget {
     opacity: 0;
     pointer-events: none;
 }
+
 .route-walker-avatar.speed-6x .speed-lines {
     opacity: 1;
     animation: sparkFlicker 0.1s steps(2) infinite;
 }
+
 @keyframes sparkFlicker {
     0% { opacity: 0.2; transform: translateX(0); }
     50% { opacity: 1; transform: translateX(-5px); }
@@ -5929,6 +7252,7 @@ body.kiosk-portrait .map-layer-widget {
 }
 
 /* Speed multiplier configurations */
+
 .route-walker-avatar.speed-1x {
     --clay-speed: 0.76s;
     --clay-lean: 3deg;
@@ -5937,6 +7261,7 @@ body.kiosk-portrait .map-layer-widget {
     --arm-fwd: 28deg;
     --arm-back: -24deg;
 }
+
 .route-walker-avatar.speed-2x {
     --clay-speed: 0.44s;
     --clay-lean: 10deg;
@@ -5945,6 +7270,7 @@ body.kiosk-portrait .map-layer-widget {
     --arm-fwd: 44deg;
     --arm-back: -36deg;
 }
+
 .route-walker-avatar.speed-4x {
     --clay-speed: 0.24s;
     --clay-lean: 20deg;
@@ -5953,6 +7279,7 @@ body.kiosk-portrait .map-layer-widget {
     --arm-fwd: 58deg;
     --arm-back: -48deg;
 }
+
 .route-walker-avatar.speed-6x {
     --clay-speed: 0.14s;
     --clay-lean: 28deg;
@@ -5963,6 +7290,7 @@ body.kiosk-portrait .map-layer-widget {
 }
 
 /* Mobile GPS Permission Request / Denied Banner */
+
 .phone-gps-permission-card {
     position: fixed;
     top: calc(var(--safe-top) + 14px);
@@ -5994,19 +7322,23 @@ body.kiosk-portrait .map-layer-widget {
     justify-content: space-between;
     gap: 10px;
 }
+
 .pgpc-title-wrap {
     display: flex;
     align-items: center;
     gap: 8px;
 }
+
 .pgpc-icon {
     font-size: 18px;
 }
+
 .pgpc-title {
     font-size: 14px;
     font-weight: 700;
     color: #ffffff;
 }
+
 .pgpc-close-btn {
     background: none;
     border: none;
@@ -6016,11 +7348,13 @@ body.kiosk-portrait .map-layer-widget {
     padding: 4px;
     line-height: 1;
 }
+
 .pgpc-desc {
     font-size: 12px;
     color: #cbd5e1;
     line-height: 1.4;
 }
+
 .pgpc-tip {
     font-size: 11px;
     color: #38bdf8;
@@ -6030,12 +7364,14 @@ body.kiosk-portrait .map-layer-widget {
     padding: 8px 10px;
     line-height: 1.45;
 }
+
 .pgpc-actions {
     display: flex;
     gap: 8px;
     margin-top: 4px;
     flex-wrap: wrap;
 }
+
 .pgpc-btn {
     flex: 1 1 calc(50% - 4px);
     min-width: 100px;
@@ -6051,14 +7387,17 @@ body.kiosk-portrait .map-layer-widget {
     gap: 6px;
     transition: all 0.2s;
 }
+
 .pgpc-btn.primary {
     background: linear-gradient(135deg, #0ea5e9, #2563eb);
     color: #ffffff;
     box-shadow: 0 4px 14px rgba(14, 165, 233, 0.4);
 }
+
 .pgpc-btn.primary:active {
     transform: scale(0.97);
 }
+
 .pgpc-btn.secondary {
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.15);
@@ -6066,6 +7405,7 @@ body.kiosk-portrait .map-layer-widget {
 }
 
 /* --- FULLSCREEN PHOTO LIGHTBOX --- */
+
 .photo-lightbox-modal {
     position: fixed;
     inset: 0;
@@ -6080,10 +7420,12 @@ body.kiosk-portrait .map-layer-widget {
     padding: 20px;
     animation: fadeInLightbox 0.25s ease-out;
 }
+
 @keyframes fadeInLightbox {
     from { opacity: 0; transform: scale(0.96); }
     to { opacity: 1; transform: scale(1); }
 }
+
 .lightbox-close-btn {
     position: absolute;
     top: calc(var(--safe-top, 16px) + 16px);
@@ -6102,9 +7444,11 @@ body.kiosk-portrait .map-layer-widget {
     z-index: 10;
     transition: background 0.15s;
 }
+
 .lightbox-close-btn:active {
     background: rgba(255, 255, 255, 0.35);
 }
+
 .lightbox-content {
     max-width: 96vw;
     max-height: 84vh;
@@ -6113,6 +7457,7 @@ body.kiosk-portrait .map-layer-widget {
     align-items: center;
     gap: 12px;
 }
+
 .lightbox-content img {
     max-width: 100%;
     max-height: 75vh;
@@ -6121,6 +7466,7 @@ body.kiosk-portrait .map-layer-widget {
     box-shadow: 0 16px 40px rgba(0, 0, 0, 0.85);
     border: 1px solid rgba(255, 255, 255, 0.12);
 }
+
 .lightbox-caption {
     color: #e2e8f0;
     font-size: 14px;
@@ -6130,6 +7476,7 @@ body.kiosk-portrait .map-layer-widget {
 }
 
 /* --- MOBILE WELCOME / ONBOARDING MODAL --- */
+
 .phone-welcome-modal-backdrop {
     position: fixed;
     inset: 0;
@@ -6143,17 +7490,21 @@ body.kiosk-portrait .map-layer-widget {
     padding: 16px;
     animation: fadeInModal 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
 .phone-welcome-modal-backdrop.closing {
     animation: fadeOutModal 0.25s ease-in forwards;
 }
+
 @keyframes fadeInModal {
     from { opacity: 0; transform: scale(0.94); }
     to { opacity: 1; transform: scale(1); }
 }
+
 @keyframes fadeOutModal {
     from { opacity: 1; transform: scale(1); }
     to { opacity: 0; transform: scale(0.95); }
 }
+
 .phone-welcome-modal-card {
     width: 100%;
     max-width: 440px;
@@ -6167,12 +7518,14 @@ body.kiosk-portrait .map-layer-widget {
     flex-direction: column;
     gap: 14px;
 }
+
 .pwm-badge-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
 }
+
 .pwm-logo-badge {
     font-size: 13px;
     font-weight: 800;
@@ -6183,11 +7536,13 @@ body.kiosk-portrait .map-layer-widget {
     border-radius: 20px;
     border: 1px solid rgba(56, 189, 248, 0.25);
 }
+
 .pwm-status-pill {
     font-size: 11px;
     color: #94a3b8;
     font-weight: 500;
 }
+
 .pwm-title {
     margin: 0;
     font-size: 20px;
@@ -6196,18 +7551,21 @@ body.kiosk-portrait .map-layer-widget {
     line-height: 1.25;
     letter-spacing: -0.3px;
 }
+
 .pwm-subtitle {
     margin: -8px 0 0;
     font-size: 12.5px;
     color: #94a3b8;
     line-height: 1.4;
 }
+
 .pwm-cards-list {
     display: flex;
     flex-direction: column;
     gap: 10px;
     margin-top: 2px;
 }
+
 .pwm-info-card {
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -6217,40 +7575,48 @@ body.kiosk-portrait .map-layer-widget {
     align-items: flex-start;
     gap: 12px;
 }
+
 .pwm-info-card.highlighted {
     background: rgba(56, 189, 248, 0.08);
     border: 1px solid rgba(56, 189, 248, 0.3);
 }
+
 .pwm-card-icon {
     font-size: 20px;
     line-height: 1;
     padding-top: 2px;
     flex-shrink: 0;
 }
+
 .pwm-card-content {
     display: flex;
     flex-direction: column;
     gap: 2px;
 }
+
 .pwm-card-title {
     font-size: 13px;
     font-weight: 700;
     color: #f1f5f9;
 }
+
 .pwm-info-card.highlighted .pwm-card-title {
     color: #38bdf8;
 }
+
 .pwm-card-desc {
     font-size: 11.5px;
     color: #cbd5e1;
     line-height: 1.4;
 }
+
 .pwm-actions {
     display: flex;
     flex-direction: column;
     gap: 8px;
     margin-top: 6px;
 }
+
 .pwm-btn-continue {
     width: 100%;
     height: 48px;
@@ -6268,13 +7634,16 @@ body.kiosk-portrait .map-layer-widget {
     box-shadow: 0 4px 16px rgba(14, 165, 233, 0.4);
     transition: transform 0.15s;
 }
+
 .pwm-btn-continue:active {
     transform: scale(0.98);
 }
+
 .pwm-btn-arrow {
     font-size: 16px;
     transition: transform 0.2s;
 }
+
 .pwm-btn-skip {
     background: none;
     border: none;
@@ -6287,16 +7656,19 @@ body.kiosk-portrait .map-layer-widget {
     text-decoration: underline;
     text-underline-offset: 3px;
 }
+
 .pwm-btn-skip:active {
     color: #e2e8f0;
 }
 
 /* Mapbox 3D Masterplan Mode Styles */
+
 body.map-mode-mapbox #map {
     background-color: #060a12;
 }
 
 /* Section Badges in Mapbox Masterplan Mode */
+
 .sec-custom-badge {
     display: inline-flex;
     align-items: center;
@@ -6318,6 +7690,7 @@ body.map-mode-mapbox #map {
     white-space: nowrap;
     transition: opacity 0.3s ease, transform 0.3s ease;
 }
+
 .sec-badge-circle {
     width: 13px;
     height: 13px;
@@ -6327,9 +7700,13 @@ body.map-mode-mapbox #map {
     display: inline-block;
     flex-shrink: 0;
 }
+
 .sec-dot-blue { background: #3b82f6; }
+
 .sec-dot-orange { background: #f97316; }
+
 .sec-dot-green { background: #22c55e; }
+
 .sec-text-part {
     font-weight: 700;
     color: #ffffff;
@@ -6337,6 +7714,7 @@ body.map-mode-mapbox #map {
 }
 
 /* Entrance Arrow Marker */
+
 .entrance-arrow-marker {
     pointer-events: none;
     user-select: none;
@@ -6344,39 +7722,48 @@ body.map-mode-mapbox #map {
     filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.8));
     display: none;
 }
+
 body.map-mode-mapbox .entrance-arrow-marker {
     display: block;
 }
 
 /* In Mapbox Standard mode, adapt markers for light background */
+
 body.map-mode-mapbox .bldg-map-marker {
     background: rgba(255, 255, 255, 0.92);
     border: 1px solid rgba(0, 0, 0, 0.12);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
+
 body.map-mode-mapbox .bldg-map-name {
     color: #1e293b;
     text-shadow: none;
 }
+
 body.map-mode-mapbox .bldg-map-marker:hover {
     background: rgba(255, 255, 255, 0.98);
     border-color: #3b82f6;
     box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
 }
+
 body.map-mode-mapbox .bldg-map-marker.active {
     background: linear-gradient(135deg, rgba(34, 197, 94, 0.95), rgba(16, 185, 129, 0.9));
     border-color: #4ade80;
 }
+
 body.map-mode-mapbox .bldg-map-marker.active .bldg-map-name {
     color: #ffffff;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 /* ============================================================
+
    PHASE 2: MODE DETECTION & ISOLATION (KIOSK vs PHONE)
+
    ============================================================ */
 
 /* --- KIOSK MODE ISOLATION --- */
+
 body.mode-kiosk #phone-bottom-sheet,
 body.mode-kiosk #phone-welcome-modal,
 body.mode-kiosk #phone-top-nav-hud,
@@ -6390,16 +7777,211 @@ body.mode-kiosk .sidebar {
 }
 
 /* --- PHONE MODE ISOLATION --- */
+
 body.mode-phone .sidebar,
 body.mode-phone .turn-by-turn-banner,
-body.mode-phone .floating-camera-controls,
+body.mode-phone .floating-speed-controls,
 body.mode-phone #building-panel,
 body.mode-phone #color-picker-modal {
     display: none !important;
 }
 
+body.mode-phone .floating-camera-controls {
+    display: none;
+}
+
+body.mode-phone .floating-camera-controls.active {
+    display: flex !important;
+    position: fixed !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    bottom: calc(var(--safe-bottom, 0px) + 138px) !important;
+    top: auto !important;
+    z-index: 90 !important;
+    padding: 4px 8px !important;
+    gap: 5px !important;
+    border-radius: 20px !important;
+    background: rgba(15, 23, 42, 0.92) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+    transition: opacity 0.25s ease, transform 0.25s ease !important;
+}
+
+body.mode-phone .floating-camera-controls .fcc-label {
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.5px !important;
+    color: #64748b !important;
+    margin-right: 2px !important;
+    margin-left: 2px !important;
+}
+
+body.mode-phone .floating-camera-controls .fcc-btn {
+    height: 32px !important;
+    padding: 0 10px !important;
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+    gap: 5px !important;
+    border-radius: 16px !important;
+}
+
+body.mode-phone .floating-camera-controls .fcc-btn svg {
+    width: 13px !important;
+    height: 13px !important;
+}
+
+body.mode-phone:has(#phone-bottom-sheet.snap-half) .floating-camera-controls,
+body.mode-phone:has(#phone-bottom-sheet.snap-full) .floating-camera-controls,
+body.mode-phone .floating-camera-controls.sheet-expanded-hidden,
+body.mode-phone .floating-camera-controls.sheet-full-hidden {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transform: translateX(-50%) scale(0.95) !important;
+    animation: none !important;
+}
+
+body.mode-phone.has-active-route .phone-top-bar,
+body.mode-phone.phone-nav-active .phone-top-bar {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-16px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+body.mode-phone .mapboxgl-ctrl-group:has(.mapboxgl-ctrl-zoom-in),
+body.mode-phone .mapboxgl-ctrl-group:has(.mapboxgl-ctrl-compass),
+body.mode-phone .mapboxgl-ctrl-zoom-in,
+body.mode-phone .mapboxgl-ctrl-zoom-out,
+body.mode-phone .mapboxgl-ctrl-compass {
+    display: none !important;
+}
+
+body.mode-phone .ctrl-orbit-group,
+body.mode-phone .mapboxgl-ctrl-group:has(.mapboxgl-ctrl-fullscreen) {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+body.mode-phone .ctrl-orbit-btn,
+body.mode-phone .mapboxgl-ctrl-fullscreen {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+body.mode-phone .map-settings-widget {
+    display: flex !important;
+    top: calc(var(--safe-top, 0px) + 14px) !important;
+    right: 14px !important;
+    left: auto !important;
+    z-index: 160 !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    transition: top 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease !important;
+}
+
+body.mode-phone .map-layer-widget {
+    display: flex !important;
+    top: calc(var(--safe-top, 0px) + 60px) !important;
+    right: 14px !important;
+    left: auto !important;
+    z-index: 160 !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    transition: top 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease !important;
+}
+
+body.mode-phone .mapboxgl-ctrl-top-right {
+    top: calc(var(--safe-top, 0px) + 106px) !important;
+    right: 14px !important;
+    left: auto !important;
+    z-index: 100 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    width: 38px !important;
+    transition: top 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+body.mode-phone .ctrl-orbit-group {
+    margin-top: 0 !important;
+}
+
+body.mode-phone.has-active-route .map-settings-widget,
+body.mode-phone.phone-nav-active .map-settings-widget {
+    display: flex !important;
+    top: calc(var(--safe-top, 0px) + 88px) !important;
+    right: 14px !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+body.mode-phone.has-active-route .map-layer-widget,
+body.mode-phone.phone-nav-active .map-layer-widget {
+    display: flex !important;
+    top: calc(var(--safe-top, 0px) + 134px) !important;
+    right: 14px !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    transform: translateY(0);
+    transition: top 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+}
+
+body.mode-phone.has-active-route .mapboxgl-ctrl-top-right,
+body.mode-phone.phone-nav-active .mapboxgl-ctrl-top-right {
+    top: calc(var(--safe-top, 0px) + 180px) !important;
+    right: 14px !important;
+}
+
 body.mode-phone #phone-bottom-sheet {
     display: flex !important;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: -40px;
+    width: 100vw;
+    height: calc(92dvh - env(safe-area-inset-top, 0px) + 40px);
+    padding-bottom: 40px;
+    box-sizing: border-box;
+    flex-direction: column;
+    overflow: hidden;
+    overscroll-behavior-y: contain;
+    will-change: transform;
+    transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+body.mode-phone #phone-bottom-sheet.is-dragging,
+body.mode-phone #phone-bottom-sheet.dragging {
+    transition: none !important;
+}
+
+body.mode-phone #phone-bottom-sheet.snap-peek {
+    transform: translate3d(0, calc(100% - 40px - 142px - env(safe-area-inset-bottom, 0px)), 0);
+}
+
+body.mode-phone #phone-bottom-sheet.snap-peek.bldg-active {
+    transform: translate3d(0, calc(100% - 40px - 92px - env(safe-area-inset-bottom, 0px)), 0);
+}
+
+body.mode-phone #phone-bottom-sheet.snap-peek.route-active {
+    transform: translate3d(0, calc(100% - 40px - 124px - env(safe-area-inset-bottom, 0px)), 0);
+}
+
+body.mode-phone #phone-bottom-sheet.snap-half {
+    transform: translate3d(0, calc(100% - 40px - 50dvh), 0);
+}
+
+body.mode-phone #phone-bottom-sheet.snap-full {
+    transform: translate3d(0, 0px, 0);
 }
 
 body.mode-phone .kiosk-marker-label {
@@ -6407,6 +7989,7 @@ body.mode-phone .kiosk-marker-label {
 }
 
 /* --- DIAGNOSTIC HUD OVERLAY (?debug=1) --- */
+
 .gps-debug-hud {
     position: fixed;
     top: 14px;
@@ -6449,8 +8032,11 @@ body.mode-phone .kiosk-marker-label {
 }
 
 /* ==========================================================================
+
    DA-LARES FACILITY OFFICES & OPERATIONAL UNITS STYLING
+
    ========================================================================== */
+
 .bldg-offices-card {
     background: rgba(255, 255, 255, 0.035);
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -6542,7 +8128,15 @@ body.mode-phone .kiosk-marker-label {
     font-size: 12px;
     font-weight: 500;
     color: #e2e8f0;
+    line-height: 1.35;
+    max-width: 100%;
+    box-sizing: border-box;
     transition: all 0.15s ease;
+}
+
+.office-pill .op-name {
+    min-width: 0;
+    overflow-wrap: break-word;
 }
 
 .office-pill:hover {
@@ -6561,6 +8155,7 @@ body.mode-phone .kiosk-marker-label {
 }
 
 /* --- Highlighting for Searched Office in Menu --- */
+
 .office-pill.highlighted {
     background: linear-gradient(135deg, rgba(34, 197, 94, 0.28) 0%, rgba(16, 185, 129, 0.18) 100%) !important;
     border: 1.5px solid #22c55e !important;
@@ -6596,9 +8191,63 @@ body.mode-phone .kiosk-marker-label {
         box-shadow: 0 0 12px rgba(34, 197, 94, 0.45), inset 0 0 6px rgba(34, 197, 94, 0.2);
         border-color: #22c55e;
     }
+
     50% {
         box-shadow: 0 0 22px rgba(34, 197, 94, 0.8), inset 0 0 12px rgba(34, 197, 94, 0.35);
         border-color: #4ade80;
+    }
+}
+
+/* Conference Hall & Venue Pill Styles */
+
+.op-pill-icon {
+    font-size: 13px;
+    line-height: 1;
+    margin-right: 2px;
+    flex-shrink: 0;
+}
+
+.office-pill.is-conference {
+    border-color: rgba(168, 85, 247, 0.3);
+}
+
+.office-pill.is-conference .op-dot {
+    background: #a855f7;
+}
+
+.office-pill.highlighted.is-conference {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.32) 0%, rgba(139, 92, 246, 0.2) 100%) !important;
+    border: 1.5px solid #a855f7 !important;
+    box-shadow: 0 0 16px rgba(168, 85, 247, 0.55), inset 0 0 8px rgba(168, 85, 247, 0.25) !important;
+    animation: confHighlightPulse 2s ease-in-out infinite;
+    color: #ffffff !important;
+}
+
+.office-pill.highlighted.is-conference:hover {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.42) 0%, rgba(139, 92, 246, 0.3) 100%) !important;
+    border-color: #c084fc !important;
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.75), inset 0 0 10px rgba(168, 85, 247, 0.35) !important;
+}
+
+.office-pill.highlighted.is-conference .op-dot {
+    background: #c084fc !important;
+    box-shadow: 0 0 8px #c084fc, 0 0 2px #ffffff !important;
+}
+
+.office-pill.highlighted.is-conference .op-name {
+    color: #ffffff !important;
+    text-shadow: 0 0 8px rgba(168, 85, 247, 0.75);
+}
+
+@keyframes confHighlightPulse {
+    0%, 100% {
+        box-shadow: 0 0 12px rgba(168, 85, 247, 0.5), inset 0 0 6px rgba(168, 85, 247, 0.22);
+        border-color: #a855f7;
+    }
+
+    50% {
+        box-shadow: 0 0 24px rgba(168, 85, 247, 0.85), inset 0 0 12px rgba(168, 85, 247, 0.4);
+        border-color: #c084fc;
     }
 }
 
@@ -6617,6 +8266,7 @@ body.mode-phone .kiosk-marker-label {
 }
 
 /* Directory search tags for offices */
+
 .dir-office-tag,
 .phone-dir-office-tag {
     color: #38bdf8 !important;
@@ -6653,14 +8303,17 @@ body.mode-phone .kiosk-marker-label {
 }
 
 /* --- QR CODE ZOOM MODAL & ENLARGE STYLES --- */
+
 .bp-qr-box, .rqr-box {
     cursor: pointer !important;
     transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s !important;
 }
+
 .bp-qr-box:hover, .rqr-box:hover {
     transform: scale(1.04) !important;
     box-shadow: 0 4px 16px rgba(56, 189, 248, 0.3) !important;
 }
+
 .bp-qr-zoom-hint {
     font-size: 10px;
     color: #38bdf8;
@@ -6676,9 +8329,197 @@ body.mode-phone .kiosk-marker-label {
     gap: 4px;
     transition: background 0.15s, transform 0.15s;
 }
+
 .bp-qr-zoom-hint:hover {
     background: rgba(56, 189, 248, 0.25);
     transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   STATION UNDER DEVELOPMENT MODAL & STATUS BADGES
+   ========================================================================== */
+
+.station-dev-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 2500;
+    background: rgba(2, 6, 23, 0.82);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.station-dev-card {
+    position: relative;
+    width: 100%;
+    max-width: 440px;
+    background: linear-gradient(180deg, rgba(26, 34, 52, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75), 0 0 36px rgba(245, 158, 11, 0.18);
+    border-radius: 24px;
+    padding: 28px 24px 22px;
+    text-align: center;
+    box-sizing: border-box;
+    animation: scaleInModal 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.station-dev-close-btn {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.06);
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.station-dev-close-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+}
+
+.station-dev-icon-badge {
+    width: 60px;
+    height: 60px;
+    border-radius: 20px;
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
+}
+
+.station-dev-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 9999px;
+    background: rgba(245, 158, 11, 0.16);
+    border: 1px solid rgba(245, 158, 11, 0.45);
+    color: #fbbf24;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+.station-dev-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0 0 4px;
+}
+
+.station-dev-sub {
+    font-size: 12px;
+    font-weight: 500;
+    color: #94a3b8;
+    margin-bottom: 14px;
+}
+
+.station-dev-desc {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #cbd5e1;
+    margin: 0 0 16px;
+    padding: 0 8px;
+}
+
+.station-dev-checklist {
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin-bottom: 18px;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.station-dev-check-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: #e2e8f0;
+    font-weight: 500;
+}
+
+.station-dev-check-item .sdc-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    background: rgba(245, 158, 11, 0.12);
+    flex-shrink: 0;
+}
+
+.station-dev-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.station-dev-btn {
+    width: 100%;
+    height: 44px;
+    border-radius: 14px;
+    font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.station-dev-btn.primary {
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    border: 1px solid rgba(74, 222, 128, 0.5);
+    color: #ffffff;
+    box-shadow: 0 4px 16px rgba(22, 163, 74, 0.35);
+}
+
+.station-dev-btn.primary:hover {
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    box-shadow: 0 6px 20px rgba(22, 163, 74, 0.5);
+    transform: translateY(-1px);
+}
+
+.station-dev-btn.admin-preview {
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    color: #fbbf24;
+}
+
+.station-dev-btn.admin-preview:hover {
+    background: rgba(245, 158, 11, 0.22);
+    color: #fef08a;
+}
+
+/* Badges in station dropdown and mobile cards */
+.station-item-status.dev-badge,
+.psc-status.dev-badge {
+    background: rgba(245, 158, 11, 0.15) !important;
+    border: 1px solid rgba(245, 158, 11, 0.45) !important;
+    color: #fbbf24 !important;
 }
 
 .qr-zoom-modal-backdrop {
@@ -6694,10 +8535,12 @@ body.mode-phone .kiosk-marker-label {
     padding: 20px;
     animation: fadeInQRZoom 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
 @keyframes fadeInQRZoom {
     from { opacity: 0; transform: scale(0.94); }
     to { opacity: 1; transform: scale(1); }
 }
+
 .qr-zoom-card {
     position: relative;
     background: #0f172a;
@@ -6712,6 +8555,7 @@ body.mode-phone .kiosk-marker-label {
     align-items: center;
     text-align: center;
 }
+
 .qr-zoom-close-btn {
     position: absolute;
     top: 14px;
@@ -6729,12 +8573,19 @@ body.mode-phone .kiosk-marker-label {
     justify-content: center;
     transition: background 0.15s, color 0.15s;
 }
+
 .qr-zoom-close-btn:hover {
     background: rgba(239, 68, 68, 0.2);
     color: #f87171;
     border-color: rgba(239, 68, 68, 0.4);
 }
+
 .qr-zoom-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    line-height: 1;
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.5px;
@@ -6745,18 +8596,21 @@ body.mode-phone .kiosk-marker-label {
     border: 1px solid rgba(56, 189, 248, 0.2);
     text-transform: uppercase;
 }
+
 .qr-zoom-title {
     font-size: 18px;
     font-weight: 700;
     color: #f8fafc;
     margin-top: 10px;
 }
+
 .qr-zoom-subtitle {
     font-size: 12px;
     color: #94a3b8;
     margin-top: 4px;
     line-height: 1.4;
 }
+
 .qr-zoom-box-wrapper {
     margin-top: 18px;
     background: #ffffff;
@@ -6764,6 +8618,7 @@ body.mode-phone .kiosk-marker-label {
     border-radius: 20px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 }
+
 .qr-zoom-box {
     width: 230px;
     height: 230px;
@@ -6771,10 +8626,12 @@ body.mode-phone .kiosk-marker-label {
     align-items: center;
     justify-content: center;
 }
+
 .qr-zoom-box canvas, .qr-zoom-box img {
     width: 230px !important;
     height: 230px !important;
 }
+
 .qr-zoom-footer {
     margin-top: 16px;
     font-size: 11.5px;
@@ -6785,6 +8642,7 @@ body.mode-phone .kiosk-marker-label {
     align-items: center;
     gap: 8px;
 }
+
 .qr-zoom-auto-exit {
     font-size: 11px;
     color: #94a3b8;
@@ -6798,15 +8656,50 @@ body.mode-phone .kiosk-marker-label {
     font-weight: 500;
     transition: border-color 0.2s, background 0.2s;
 }
+
 .qr-zoom-auto-exit .qr-auto-exit-icon {
     font-size: 12px;
 }
+
 .qr-zoom-auto-exit strong {
     color: #38bdf8;
     font-weight: 700;
 }
 
+.qr-zoom-badge {
+    padding: 5px 12px;
+    border-radius: 999px;
+}
+
+.qr-zoom-badge svg {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+    display: block;
+}
+
+.qr-zoom-footer > span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+.qr-zoom-footer > span svg,
+.qr-zoom-auto-exit .qr-auto-exit-icon svg {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+    display: block;
+}
+
+.qr-zoom-auto-exit .qr-auto-exit-icon {
+    display: inline-flex;
+    align-items: center;
+}
+
 /* ---------- Kiosk Auto-Exit Floating Notification Toast ---------- */
+
 .kiosk-auto-exit-toast {
     position: fixed;
     top: 24px;
@@ -6832,23 +8725,27 @@ body.mode-phone .kiosk-marker-label {
     letter-spacing: 0.2px;
     transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
 .kiosk-auto-exit-toast.visible {
     opacity: 1;
     transform: translate(-50%, 0);
 }
+
 .kiosk-auto-exit-toast .toast-icon {
     font-size: 18px;
     line-height: 1;
 }
+
 body.kiosk-portrait .kiosk-auto-exit-toast {
     top: 18px;
     padding: 8px 18px;
     font-size: 12.5px;
 }
 
-
 /* =============================================================
+
    360° CIRCULAR COMPASS ROTATION TOOL WIDGET (Single-Finger Dial)
+
    ============================================================= */
 
 .rotation-tool-widget {
@@ -6878,6 +8775,7 @@ body.kiosk-portrait .kiosk-auto-exit-toast {
         opacity: 0;
         transform: scale(0.88) translateY(18px);
     }
+
     to {
         opacity: 1;
         transform: scale(1) translateY(0);
@@ -6929,9 +8827,13 @@ body.kiosk-portrait .kiosk-auto-exit-toast {
     pointer-events: none;
     letter-spacing: 0.5px;
 }
+
 .rt-n { top: 8px; left: 50%; transform: translateX(-50%); color: #f59e0b; font-size: 14px; text-shadow: 0 0 8px rgba(245, 158, 11, 0.6); }
+
 .rt-e { right: 10px; top: 50%; transform: translateY(-50%); }
+
 .rt-s { bottom: 8px; left: 50%; transform: translateX(-50%); }
+
 .rt-w { left: 10px; top: 50%; transform: translateY(-50%); }
 
 .rt-compass-ring {
@@ -7021,6 +8923,7 @@ body.kiosk-portrait .kiosk-auto-exit-toast {
 }
 
 /* ---------- 1-Finger Orbit Mode Accessibility Joystick Control ---------- */
+
 .ctrl-orbit-group {
     margin-top: 10px !important;
 }
@@ -7059,6 +8962,7 @@ body.kiosk-portrait .kiosk-auto-exit-toast {
 }
 
 /* ---------- 1-Finger Orbit Active Floating Toast Badge ---------- */
+
 .orbit-toast-badge {
     position: fixed;
     top: 24px;
@@ -7136,8 +9040,11 @@ body.kiosk-portrait .orbit-toast-badge {
 }
 
 /* ==========================================================================
+
    Presentation Comparison Pill Banner (Legacy vs Upgraded 3D Map)
+
    ========================================================================== */
+
 .comparison-pill-banner {
     position: fixed;
     top: 18px;
@@ -7217,6 +9124,7 @@ body.kiosk-portrait .orbit-toast-badge {
 }
 
 /* Mobile responsive adjustments */
+
 @media (max-width: 768px) {
     .comparison-pill-banner {
         left: 50% !important;
@@ -7225,13 +9133,16 @@ body.kiosk-portrait .orbit-toast-badge {
         padding: 5px 10px 5px 6px;
         gap: 8px;
     }
+
     .cpb-desc {
         display: none;
     }
+
     .cpb-tag {
         font-size: 9px;
         padding: 3px 8px;
     }
+
     .cpb-link-btn {
         font-size: 10px;
         padding: 4px 10px;
@@ -7239,10 +9150,13 @@ body.kiosk-portrait .orbit-toast-badge {
 }
 
 /* ==========================================================================
+
    Admin Mode: Drone Orthomosaic Alignment & Calibration Control
+
    ========================================================================== */
 
 /* Hidden for normal kiosk visitors */
+
 html:not(.admin-mode) body:not(.admin-mode) .admin-drone-calib-widget,
 html:not(.admin-mode) body:not(.admin-mode) .admin-drone-calib-btn,
 html:not(.admin-mode) body:not(.admin-mode) .drone-calib-hud,
@@ -7252,6 +9166,7 @@ html:not(.admin-mode) body:not(.admin-mode) .msp-admin-only {
 }
 
 /* Top-Right Admin Toolbar Widget */
+
 .admin-drone-calib-widget {
     position: absolute;
     top: calc(var(--safe-top, 0px) + 14px);
@@ -7302,8 +9217,8 @@ body.kiosk-portrait .admin-drone-calib-widget {
     transform: scale(1.08);
 }
 
-
 /* Floating Admin Trigger Button */
+
 .admin-drone-calib-btn {
     position: fixed;
     bottom: 24px;
@@ -7340,6 +9255,7 @@ body.kiosk-portrait .admin-drone-calib-widget {
 }
 
 /* Floating Calibration HUD Window */
+
 .drone-calib-hud {
     position: fixed;
     top: 80px;
@@ -7421,6 +9337,7 @@ body.kiosk-portrait .admin-drone-calib-widget {
 }
 
 /* Status Banner */
+
 .dcal-status {
     display: flex;
     align-items: center;
@@ -7463,6 +9380,7 @@ body.kiosk-portrait .admin-drone-calib-widget {
 }
 
 /* Readout Card */
+
 .dcal-readout-card {
     background: rgba(15, 23, 42, 0.8);
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -7509,6 +9427,7 @@ body.kiosk-portrait .admin-drone-calib-widget {
 }
 
 /* Sliders */
+
 .dcal-controls-section {
     display: flex;
     flex-direction: column;
@@ -7539,6 +9458,7 @@ body.kiosk-portrait .admin-drone-calib-widget {
 
 .dcal-slider {
     -webkit-appearance: none;
+    appearance: none;
     width: 100%;
     height: 6px;
     border-radius: 3px;
@@ -7564,6 +9484,7 @@ body.kiosk-portrait .admin-drone-calib-widget {
 }
 
 /* Google Maps Comparison Overlay Section */
+
 .dcal-overlay-section {
     background: rgba(30, 41, 59, 0.45);
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -7635,6 +9556,7 @@ body.kiosk-portrait .admin-drone-calib-widget {
 }
 
 /* Directional D-Pad */
+
 .dcal-dpad-section {
     background: rgba(30, 41, 59, 0.45);
     border: 1px solid rgba(255, 255, 255, 0.06);
@@ -7749,6 +9671,7 @@ body.kiosk-portrait .admin-drone-calib-widget {
 }
 
 /* Auto-Apply Toggle */
+
 .dcal-toggle-label {
     display: flex;
     align-items: center;
@@ -7767,6 +9690,7 @@ body.kiosk-portrait .admin-drone-calib-widget {
 }
 
 /* Actions */
+
 .dcal-actions {
     display: flex;
     gap: 6px;
@@ -7824,8 +9748,8 @@ body.kiosk-portrait .admin-drone-calib-widget {
     box-shadow: 0 6px 18px rgba(14, 165, 233, 0.45);
 }
 
-
 /* Calibration Toast */
+
 .dcal-toast {
     position: fixed;
     top: 24px;
@@ -7853,6 +9777,7 @@ body.kiosk-portrait .admin-drone-calib-widget {
 }
 
 /* Mobile responsive */
+
 @media (max-width: 768px) {
     .drone-calib-hud {
         top: 60px;
@@ -7860,6 +9785,7 @@ body.kiosk-portrait .admin-drone-calib-widget {
         left: 12px;
         width: auto;
     }
+
     .admin-drone-calib-btn {
         left: 16px;
         bottom: 80px;
@@ -7867,10 +9793,13 @@ body.kiosk-portrait .admin-drone-calib-widget {
 }
 
 /* ============================================================
+
    DASH (DEPARTMENT OF AGRICULTURE SPATIAL HUB) BRANDING & MODAL
+
    ============================================================ */
 
 /* Sidebar Header DASH Badge */
+
 .dash-header-badge {
     cursor: pointer;
     transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease, border-color 0.25s ease;
@@ -7887,11 +9816,13 @@ body.kiosk-portrait .admin-drone-calib-widget {
     flex-shrink: 0;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45), 0 0 12px rgba(43, 220, 57, 0.2);
 }
+
 .dash-header-badge:hover {
     transform: scale(1.08);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6), 0 0 22px rgba(43, 220, 57, 0.6);
     border-color: rgba(43, 220, 57, 0.9);
 }
+
 .dash-badge-img {
     width: 100%;
     height: 100%;
@@ -7900,6 +9831,7 @@ body.kiosk-portrait .admin-drone-calib-widget {
 }
 
 /* System-Wide DASH Welcome & Intro Modal */
+
 .dash-welcome-modal-backdrop {
     position: fixed;
     inset: 0;
@@ -7913,28 +9845,31 @@ body.kiosk-portrait .admin-drone-calib-widget {
     padding: 16px;
     animation: fadeInDashModal 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
 .dash-welcome-modal-backdrop.closing {
     animation: fadeOutDashModal 0.25s ease-in forwards;
 }
+
 @keyframes fadeInDashModal {
     from { opacity: 0; transform: scale(0.94); }
     to { opacity: 1; transform: scale(1); }
 }
+
 @keyframes fadeOutDashModal {
     from { opacity: 1; transform: scale(1); }
     to { opacity: 0; transform: scale(0.95); }
 }
 
 .dash-welcome-modal-card {
-    width: 100%;
-    max-width: 480px;
-    max-height: 92vh;
+    width: 92%;
+    max-width: 760px;
+    max-height: 90vh;
     overflow-y: auto;
     background: linear-gradient(170deg, rgba(18, 26, 43, 0.98), rgba(10, 15, 26, 0.99));
     border: 1.5px solid rgba(43, 220, 57, 0.45);
     border-radius: 24px;
-    padding: 24px 22px 22px;
-    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 35px rgba(0, 102, 20, 0.35);
+    padding: 26px 30px 24px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 40px rgba(0, 102, 20, 0.35);
     color: #f8fafc;
     display: flex;
     flex-direction: column;
@@ -7953,13 +9888,15 @@ body.kiosk-portrait .admin-drone-calib-widget {
     cursor: pointer;
     transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+
 .dash-welcome-emblem-wrap:hover {
     transform: scale(1.04);
 }
+
 .dash-welcome-emblem-img {
     height: 100%;
     width: auto;
-    max-width: 220px;
+    max-width: 260px;
     object-fit: contain;
     filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.45));
 }
@@ -7970,6 +9907,7 @@ body.kiosk-portrait .admin-drone-calib-widget {
     justify-content: space-between;
     gap: 8px;
 }
+
 .dash-welcome-agency-badge {
     font-size: 11.5px;
     font-weight: 800;
@@ -7981,6 +9919,7 @@ body.kiosk-portrait .admin-drone-calib-widget {
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
+
 .dash-welcome-status-pill {
     font-size: 11px;
     color: #94a3b8;
@@ -7989,15 +9928,16 @@ body.kiosk-portrait .admin-drone-calib-widget {
 
 .dash-welcome-title {
     margin: 0;
-    font-size: 22px;
+    font-size: 24px;
     font-weight: 800;
     color: #ffffff;
     line-height: 1.2;
     letter-spacing: -0.3px;
 }
+
 .dash-welcome-subtitle {
     margin: -6px 0 0;
-    font-size: 13px;
+    font-size: 13.5px;
     color: #ffad00;
     font-weight: 600;
     line-height: 1.4;
@@ -8006,83 +9946,284 @@ body.kiosk-portrait .admin-drone-calib-widget {
 .dash-welcome-cards-list {
     display: flex;
     flex-direction: column;
-    gap: 9px;
+    gap: 10px;
     margin-top: 2px;
 }
 
 .dash-welcome-card {
     display: flex;
     align-items: flex-start;
-    gap: 12px;
-    padding: 12px 14px;
+    gap: 14px;
+    padding: 13px 16px;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 14px;
     transition: background 0.2s, border-color 0.2s;
 }
+
 .dash-welcome-card.highlighted {
     background: rgba(0, 102, 20, 0.18);
     border-color: rgba(43, 220, 57, 0.35);
 }
+
 .dash-card-icon {
-    font-size: 20px;
+    font-size: 22px;
     line-height: 1;
     flex-shrink: 0;
     margin-top: 2px;
 }
+
 .dash-card-title {
-    font-size: 13px;
+    font-size: 13.5px;
     font-weight: 700;
     color: #ffffff;
     margin-bottom: 2px;
 }
+
 .dash-card-desc {
-    font-size: 11.5px;
+    font-size: 12px;
     color: #cbd5e1;
-    line-height: 1.45;
+    line-height: 1.48;
 }
 
 .dash-welcome-actions {
     margin-top: 6px;
 }
+
 .dash-btn-proceed {
     width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 14px 20px;
+    padding: 15px 22px;
     background: linear-gradient(135deg, #008722 0%, #005a16 100%);
     border: 1.5px solid rgba(43, 220, 57, 0.6);
     border-radius: 14px;
     color: #ffffff;
-    font-size: 15px;
+    font-size: 15.5px;
     font-weight: 800;
     letter-spacing: 0.2px;
     cursor: pointer;
     box-shadow: 0 4px 18px rgba(0, 102, 20, 0.45);
     transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+
 .dash-btn-proceed:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 24px rgba(43, 220, 57, 0.6);
 }
+
 .dash-btn-proceed:active {
     transform: translateY(0);
 }
+
 .dash-btn-arrow {
     font-size: 16px;
     transition: transform 0.2s;
 }
+
 .dash-btn-proceed:hover .dash-btn-arrow {
     transform: translateX(4px);
 }
 
+/* Landscape PC / Widescreen Monitor */
+
+@media (min-width: 900px) {
+    .dash-welcome-modal-card {
+        max-width: 840px;
+        padding: 30px 38px 26px;
+        gap: 15px;
+    }
+
+    .dash-welcome-title {
+        font-size: 26px;
+    }
+
+    .dash-welcome-subtitle {
+        font-size: 14.5px;
+    }
+
+    .dash-welcome-card {
+        padding: 14px 18px;
+        gap: 14px;
+    }
+
+    .dash-card-icon {
+        font-size: 24px;
+    }
+
+    .dash-card-title {
+        font-size: 14.5px;
+    }
+
+    .dash-card-desc {
+        font-size: 12.5px;
+        line-height: 1.5;
+    }
+
+    .dash-btn-proceed {
+        padding: 16px 24px;
+        font-size: 16px;
+    }
+}
+
+/* Dedicated Portrait Kiosk Monitor (e.g. 1080x1920 Totem Kiosk Display) */
+
+@media (orientation: portrait) and (min-width: 720px) {
+    .dash-welcome-modal-card {
+        width: 88%;
+        max-width: 760px;
+        padding: 36px 38px 30px;
+        gap: 18px;
+        border-radius: 28px;
+        box-shadow: 0 30px 75px rgba(0, 0, 0, 0.9), 0 0 50px rgba(43, 220, 57, 0.35);
+    }
+
+    .dash-welcome-emblem-wrap {
+        height: 145px;
+        margin-bottom: 6px;
+    }
+
+    .dash-welcome-agency-badge {
+        font-size: 12.5px;
+        padding: 5px 12px;
+    }
+
+    .dash-welcome-status-pill {
+        font-size: 12px;
+    }
+
+    .dash-welcome-title {
+        font-size: 28px;
+    }
+
+    .dash-welcome-subtitle {
+        font-size: 15.5px;
+    }
+
+    .dash-welcome-cards-list {
+        gap: 13px;
+        margin-top: 4px;
+    }
+
+    .dash-welcome-card {
+        padding: 18px 22px;
+        gap: 16px;
+        border-radius: 18px;
+    }
+
+    .dash-card-icon {
+        font-size: 26px;
+    }
+
+    .dash-card-title {
+        font-size: 16px;
+        margin-bottom: 4px;
+    }
+
+    .dash-card-desc {
+        font-size: 13.5px;
+        line-height: 1.55;
+    }
+
+    .dash-btn-proceed {
+        padding: 18px 28px;
+        font-size: 17.5px;
+        border-radius: 16px;
+    }
+}
+
+/* Compact Mobile Screens */
+
+@media (max-width: 599px) {
+    .dash-welcome-modal-card {
+        width: 95%;
+        max-width: 440px;
+        padding: 20px 18px 18px;
+        gap: 12px;
+        border-radius: 20px;
+    }
+
+    .dash-welcome-emblem-wrap {
+        height: 105px;
+    }
+
+    .dash-welcome-title {
+        font-size: 20px;
+    }
+
+    .dash-welcome-card {
+        padding: 11px 12px;
+        gap: 10px;
+    }
+}
+
+/* Landscape monitors with constrained height (e.g. 1366x768 laptop or 1600x900) */
+
+@media (orientation: landscape) and (max-height: 850px) {
+    .dash-welcome-modal-card {
+        max-width: 820px;
+        padding: 18px 28px 16px;
+        gap: 10px;
+    }
+
+    .dash-welcome-emblem-wrap {
+        height: 85px;
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+
+    .dash-welcome-badge-row {
+        gap: 6px;
+    }
+
+    .dash-welcome-title {
+        font-size: 22px;
+    }
+
+    .dash-welcome-subtitle {
+        font-size: 13px;
+        margin-top: -8px;
+    }
+
+    .dash-welcome-cards-list {
+        gap: 8px;
+    }
+
+    .dash-welcome-card {
+        padding: 10px 14px;
+        gap: 12px;
+    }
+
+    .dash-card-icon {
+        font-size: 20px;
+    }
+
+    .dash-card-title {
+        font-size: 13.5px;
+        margin-bottom: 1px;
+    }
+
+    .dash-card-desc {
+        font-size: 11.5px;
+        line-height: 1.4;
+    }
+
+    .dash-btn-proceed {
+        padding: 12px 20px;
+        font-size: 15px;
+    }
+}
+
 /* ============================================================
+
    MOBILE PHONE STATION SWITCHER (TOP BAR, BANNER & MODAL)
+
    ============================================================ */
 
 /* 1. Floating Top Bar on Mobile */
+
 .phone-top-bar {
     display: none;
 }
@@ -8093,19 +10234,20 @@ body.kiosk-portrait .admin-drone-calib-widget {
         position: fixed;
         top: calc(var(--safe-top, 0px) + 12px);
         left: 14px;
-        right: 116px;
+        right: 62px;
         z-index: 105;
         gap: 10px;
         align-items: center;
         pointer-events: none;
     }
 }
+
 body.mode-phone .phone-top-bar {
     display: flex;
     position: fixed;
     top: calc(var(--safe-top, 0px) + 12px);
     left: 14px;
-    right: 116px;
+    right: 62px;
     z-index: 105;
     gap: 10px;
     align-items: center;
@@ -8127,9 +10269,11 @@ body.mode-phone .phone-top-bar {
     flex-shrink: 0;
     transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+
 .phone-top-badge:active {
     transform: scale(0.92);
 }
+
 .phone-top-logo {
     width: 82%;
     height: 82%;
@@ -8156,26 +10300,31 @@ body.mode-phone .phone-top-bar {
     max-width: calc(100% - 54px);
     transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
 }
+
 .phone-station-pill:active {
     transform: scale(0.95);
     border-color: rgba(56, 189, 248, 0.8);
     background: rgba(30, 41, 59, 0.95);
 }
+
 .phone-station-pill-dot {
     color: #22c55e;
     font-size: 11px;
     animation: pulseGlowGreen 2s infinite ease-in-out;
 }
+
 @keyframes pulseGlowGreen {
     0%, 100% { opacity: 1; filter: drop-shadow(0 0 2px #22c55e); }
     50% { opacity: 0.5; filter: none; }
 }
+
 .phone-station-pill-name {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     letter-spacing: -0.2px;
 }
+
 .phone-station-pill-chevron {
     font-size: 10px;
     color: #94a3b8;
@@ -8183,6 +10332,7 @@ body.mode-phone .phone-top-bar {
 }
 
 /* 2. Station Banner inside Phone Directory Bottom Sheet */
+
 .phone-station-banner {
     display: flex;
     align-items: center;
@@ -8197,11 +10347,13 @@ body.mode-phone .phone-top-bar {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
     transition: all 0.2s ease;
 }
+
 .phone-station-banner:active {
     transform: scale(0.98);
     border-color: rgba(56, 189, 248, 0.6);
     background: rgba(30, 41, 59, 0.9);
 }
+
 .phone-station-banner-tag {
     display: block;
     font-size: 9.5px;
@@ -8211,12 +10363,14 @@ body.mode-phone .phone-top-bar {
     text-transform: uppercase;
     margin-bottom: 2px;
 }
+
 .phone-station-banner-name {
     font-size: 14px;
     font-weight: 800;
     color: #f8fafc;
     line-height: 1.2;
 }
+
 .phone-station-change-btn {
     display: inline-flex;
     align-items: center;
@@ -8231,11 +10385,13 @@ body.mode-phone .phone-top-bar {
     pointer-events: none;
     flex-shrink: 0;
 }
+
 .pscb-arrow {
     font-size: 10px;
 }
 
 /* 3. Mobile Station Switcher Modal / Action Sheet */
+
 .phone-station-modal-backdrop {
     position: fixed;
     inset: 0;
@@ -8248,9 +10404,11 @@ body.mode-phone .phone-top-bar {
     justify-content: center;
     animation: fadeInModalBackdrop 0.22s ease-out forwards;
 }
+
 .phone-station-modal-backdrop.closing {
     animation: fadeOutModalBackdrop 0.2s ease-in forwards;
 }
+
 .phone-station-modal-backdrop.closing .phone-station-modal-sheet {
     animation: slideDownModalSheet 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
@@ -8261,17 +10419,13 @@ body.mode-phone .phone-top-bar {
     background: #0b1329;
     border-top: 1.5px solid rgba(255, 255, 255, 0.14);
     border-radius: 24px 24px 0 0;
-    padding: 12px 18px calc(24px + env(safe-area-inset-bottom, 0px));
+    padding: 20px 18px calc(24px + env(safe-area-inset-bottom, 0px));
     box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.85);
     animation: slideUpModalSheet 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .phone-station-modal-drag {
-    width: 36px;
-    height: 4px;
-    background: rgba(255, 255, 255, 0.25);
-    border-radius: 2px;
-    margin: 2px auto 14px;
+    display: none !important;
 }
 
 .phone-station-modal-header {
@@ -8282,6 +10436,7 @@ body.mode-phone .phone-top-bar {
     padding-bottom: 12px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
+
 .phone-station-modal-badge {
     font-size: 10px;
     font-weight: 800;
@@ -8291,6 +10446,7 @@ body.mode-phone .phone-top-bar {
     display: block;
     margin-bottom: 3px;
 }
+
 .phone-station-modal-title {
     font-size: 18px;
     font-weight: 800;
@@ -8298,11 +10454,13 @@ body.mode-phone .phone-top-bar {
     margin: 0 0 2px 0;
     letter-spacing: -0.3px;
 }
+
 .phone-station-modal-sub {
     font-size: 12px;
     color: #94a3b8;
     margin: 0;
 }
+
 .phone-station-modal-close {
     width: 32px;
     height: 32px;
@@ -8317,6 +10475,7 @@ body.mode-phone .phone-top-bar {
     justify-content: center;
     transition: background 0.15s;
 }
+
 .phone-station-modal-close:hover {
     background: rgba(255, 255, 255, 0.15);
     color: #ffffff;
@@ -8339,9 +10498,11 @@ body.mode-phone .phone-top-bar {
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
 .phone-station-card:active {
     transform: scale(0.98);
 }
+
 .phone-station-card.active {
     background: rgba(34, 197, 94, 0.12);
     border-color: rgba(34, 197, 94, 0.6);
@@ -8359,43 +10520,62 @@ body.mode-phone .phone-top-bar {
     justify-content: center;
     flex-shrink: 0;
 }
+
 .phone-station-card.active .psc-icon-wrap {
     background: rgba(34, 197, 94, 0.2);
     border-color: rgba(34, 197, 94, 0.5);
 }
+
 .psc-icon {
-    font-size: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    line-height: 1;
+}
+
+.psc-icon svg,
+.psc-icon .lucide-icon {
+    width: 22px !important;
+    height: 22px !important;
+    display: block !important;
+    margin: auto;
 }
 
 .psc-info {
     flex: 1;
     min-width: 0;
 }
+
 .psc-title-row {
     display: flex;
     align-items: baseline;
     gap: 8px;
     margin-bottom: 2px;
+    flex-wrap: wrap;
 }
+
 .psc-title {
     font-size: 15px;
     font-weight: 800;
     color: #f8fafc;
 }
+
 .psc-province {
     font-size: 11px;
     color: #94a3b8;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
 }
+
 .psc-desc {
     font-size: 11.5px;
     color: #cbd5e1;
-    line-height: 1.35;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    line-height: 1.4;
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: break-word;
+    margin-top: 2px;
 }
 
 .psc-status {
@@ -8408,6 +10588,7 @@ body.mode-phone .phone-top-bar {
     color: #94a3b8;
     flex-shrink: 0;
 }
+
 .psc-status.active {
     background: #22c55e;
     border-color: #22c55e;
@@ -8420,20 +10601,461 @@ body.mode-phone .phone-top-bar {
     from { opacity: 0; }
     to { opacity: 1; }
 }
+
 @keyframes fadeOutModalBackdrop {
     from { opacity: 1; }
     to { opacity: 0; }
 }
+
 @keyframes slideUpModalSheet {
     from { transform: translateY(100%); }
     to { transform: translateY(0); }
 }
+
 @keyframes slideDownModalSheet {
     from { transform: translateY(0); }
     to { transform: translateY(100%); }
 }
 
+/* ==========================================================================
 
+   Spotlight HUD Badge & Ground Selection Beacon for Sub-Plots
 
+   ========================================================================== */
 
-
+.spotlight-beacon {
+    pointer-events: none;
+    z-index: 180;
+}
+
+.spotlight-beacon-wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transform: translateY(0);
+    animation: spotlightDropIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes spotlightDropIn {
+    0% {
+        opacity: 0;
+        transform: translateY(-24px) scale(0.85);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Floating Glassmorphic HUD Badge */
+
+.spotlight-hud-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    border-radius: 20px;
+    background: rgba(10, 15, 28, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1.5px solid var(--spotlight-color, #38bdf8);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.75), 0 0 18px var(--spotlight-color, rgba(56, 189, 248, 0.5));
+    white-space: nowrap;
+}
+
+.spotlight-hud-icon {
+    font-size: 16px;
+    filter: drop-shadow(0 0 6px var(--spotlight-color, #38bdf8));
+}
+
+.spotlight-hud-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+}
+
+.spotlight-hud-title {
+    font-size: 12.5px;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: 0.3px;
+}
+
+.spotlight-hud-sub {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--spotlight-color, #38bdf8);
+    max-width: 190px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Vertical Stalk Pointer */
+
+.spotlight-stem {
+    width: 2.5px;
+    height: 18px;
+    background: linear-gradient(to bottom, var(--spotlight-color, #38bdf8), rgba(255, 255, 255, 0.8));
+    box-shadow: 0 0 8px var(--spotlight-color, #38bdf8);
+}
+
+.spotlight-anchor-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--spotlight-color, #38bdf8);
+    border: 2px solid #ffffff;
+    box-shadow: 0 0 12px var(--spotlight-color, #38bdf8);
+    margin-top: -3px;
+}
+
+/* Ground Pulsing Ripple Beacon */
+
+.spotlight-pulse-ring {
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid var(--spotlight-color, #38bdf8);
+    background: radial-gradient(circle, var(--spotlight-color, rgba(56, 189, 248, 0.35)) 0%, transparent 70%);
+    animation: spotlightRipple 1.8s infinite ease-out;
+}
+
+@keyframes spotlightRipple {
+    0% {
+        width: 10px;
+        height: 10px;
+        opacity: 1;
+        bottom: -3px;
+    }
+
+    100% {
+        width: 60px;
+        height: 60px;
+        opacity: 0;
+        bottom: -28px;
+    }
+}
+
+/* Active State on Sub-Plot Chips in Drawer */
+
+.sub-plot-chip.active {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.22) 0%, rgba(30, 41, 59, 0.95) 100%) !important;
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 18px rgba(56, 189, 248, 0.35) !important;
+    transform: translateX(4px);
+}
+
+.sub-plot-chip.active .op-name {
+    color: #38bdf8 !important;
+}
+
+.sub-plot-chip.active .op-dot {
+    box-shadow: 0 0 10px #38bdf8, 0 0 20px #38bdf8 !important;
+    transform: scale(1.3);
+}
+
+/* ==============================================================================
+
+   LOW-END HARDWARE & LEGACY PC OPTIMIZATION SUITE (body.low-perf-mode)
+
+   Eliminates expensive multi-pass Gaussian blur shaders, simplifies heavy
+
+   continuous CSS box-shadow animations, and enables zero-cost opaque UI
+
+   to deliver a rock-solid 60 FPS on older Intel HD Graphics, Celerons & Pis.
+
+   ============================================================================== */
+
+body.low-perf-mode,
+body.low-perf-mode *,
+body.low-perf-mode *::before,
+body.low-perf-mode *::after {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* Opaque sleek fallbacks for glassmorphism panels (eliminates GPU framebuffer copy & blurs) */
+
+body.low-perf-mode .sidebar,
+body.low-perf-mode .sidebar-header,
+body.low-perf-mode .station-dropdown-flyout,
+body.low-perf-mode .dash-welcome-content,
+body.low-perf-mode #building-panel,
+body.low-perf-mode .coords-badge,
+body.low-perf-mode .route-banner,
+body.low-perf-mode .kiosk-top-bar,
+body.low-perf-mode .kiosk-bottom-controls,
+body.low-perf-mode .phone-dock-glass,
+body.low-perf-mode .phone-header-glass,
+body.low-perf-mode .photo-lightbox-modal,
+body.low-perf-mode .station-transition-curtain,
+body.low-perf-mode .qr-zoom-modal-card {
+    background-color: #0a0f1c !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45) !important;
+}
+
+body.low-perf-mode .search-box,
+body.low-perf-mode .kiosk-cat-chip,
+body.low-perf-mode .kiosk-ctrl-btn,
+body.low-perf-mode .layer-toggle-btn,
+body.low-perf-mode .station-dropdown-btn,
+body.low-perf-mode .orbit-toast {
+    background-color: #111827 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* Disable continuous GPU-choking pulse and box-shadow re-rasterization */
+
+body.low-perf-mode .kiosk-marker-pulse,
+body.low-perf-mode .spotlight-pulse-ring,
+body.low-perf-mode .gps-marker-pulse,
+body.low-perf-mode .stc-shimmer-bar {
+    display: none !important;
+    animation: none !important;
+}
+
+body.low-perf-mode .kiosk-marker-dot,
+body.low-perf-mode .dest-pin-pulse {
+    box-shadow: 0 0 0 2px #ffffff, 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+    animation: none !important;
+}
+
+/* Faster UI transitions to prevent thread hitching on legacy single/dual-core CPUs */
+
+body.low-perf-mode .sidebar,
+body.low-perf-mode #building-panel,
+body.low-perf-mode .station-dropdown-flyout {
+    transition-duration: 0.15s !important;
+}
+
+/* ==============================================================================
+
+   Standalone Floating Gate Callout Badges (Road Surface / Barriers)
+
+   ============================================================================== */
+
+/* ==========================================================================
+
+   AUTHENTIC MAPBOX GATE BARRIER STYLING (Matching Mapbox Basemap Image 1)
+
+   No bulky pill box, no flinging transforms, 100% stable Mapbox marker.
+
+   ========================================================================== */
+
+.mapbox-gate-marker,
+.gate-callout-badge {
+    cursor: pointer;
+    user-select: none;
+    pointer-events: auto;
+    white-space: nowrap;
+    z-index: 25;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* Mapbox GL controls root marker translation. Absolutely NO transform or transition:transform here! */
+    transition: none !important;
+}
+
+.mapbox-gate-marker.active,
+.gate-callout-badge.active {
+    z-index: 120 !important;
+}
+
+/* Subtle, authentic Maki gate icon */
+
+.mapbox-gate-symbol {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1.5px solid rgba(255, 255, 255, 0.35);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+    color: #ffffff;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.maki-gate-svg {
+    display: block;
+    width: 14px;
+    height: 14px;
+}
+
+/* Category Accents for Gate Barriers */
+
+.mapbox-gate-marker.gate-entrance .mapbox-gate-symbol,
+.gate-callout-badge.gate-entrance .mapbox-gate-symbol {
+    color: #10b981;
+    border-color: #10b981;
+}
+
+.mapbox-gate-marker.gate-exit .mapbox-gate-symbol,
+.gate-callout-badge.gate-exit .mapbox-gate-symbol {
+    color: #f59e0b;
+    border-color: #f59e0b;
+}
+
+.mapbox-gate-marker.gate-bilateral .mapbox-gate-symbol,
+.gate-callout-badge.gate-bilateral .mapbox-gate-symbol {
+    color: #38bdf8;
+    border-color: #38bdf8;
+}
+
+/* Hover Elevation on Symbol Only (Never on Root Marker) */
+
+.mapbox-gate-marker:hover .mapbox-gate-symbol,
+.gate-callout-badge:hover .mapbox-gate-symbol {
+    transform: scale(1.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+}
+
+/* Active Standalone Selection State */
+
+.mapbox-gate-marker.active .mapbox-gate-symbol,
+.gate-callout-badge.active .mapbox-gate-symbol {
+    transform: scale(1.22);
+}
+
+.mapbox-gate-marker.gate-entrance.active .mapbox-gate-symbol,
+.gate-callout-badge.gate-entrance.active .mapbox-gate-symbol {
+    border-color: #10b981 !important;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.45), 0 0 14px rgba(16, 185, 129, 0.75) !important;
+}
+
+.mapbox-gate-marker.gate-exit.active .mapbox-gate-symbol,
+.gate-callout-badge.gate-exit.active .mapbox-gate-symbol {
+    border-color: #f59e0b !important;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.45), 0 0 14px rgba(245, 158, 11, 0.75) !important;
+}
+
+.mapbox-gate-marker.gate-bilateral.active .mapbox-gate-symbol,
+.gate-callout-badge.gate-bilateral.active .mapbox-gate-symbol {
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.45), 0 0 14px rgba(56, 189, 248, 0.75) !important;
+}
+
+/* Mapbox-Native Typography: Clean text directly on map surface with text halo (NO pill box) */
+
+.mapbox-gate-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin-top: 3px;
+    text-align: center;
+    pointer-events: none;
+    color: #ffffff;
+    text-shadow: 0 0 3px rgba(0, 0, 0, 0.95), 0 1px 2px rgba(0, 0, 0, 0.95), 0 0 8px rgba(0, 0, 0, 0.8);
+}
+
+.mapbox-gate-marker.gate-entrance .mapbox-gate-label,
+.gate-callout-badge.gate-entrance .mapbox-gate-label {
+    color: #6ee7b7;
+}
+
+.mapbox-gate-marker.gate-exit .mapbox-gate-label,
+.gate-callout-badge.gate-exit .mapbox-gate-label {
+    color: #fde047;
+}
+
+.mapbox-gate-marker.gate-bilateral .mapbox-gate-label,
+.gate-callout-badge.gate-bilateral .mapbox-gate-label {
+    color: #7dd3fc;
+}
+
+/* ==========================================================================
+
+   Mapbox Standard Mode — 100% Matching Native Mapbox Basemap (Image 1)
+
+   Light slate-grey Maki gate icon directly integrated onto boundary line
+
+   ========================================================================== */
+
+body.map-mode-mapbox .mapbox-gate-symbol {
+    background: #e2e8f0 !important;
+    border: 1.5px solid #64748b !important;
+    color: #475569 !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15) !important;
+}
+
+body.map-mode-mapbox .mapbox-gate-marker:hover .mapbox-gate-symbol,
+body.map-mode-mapbox .gate-callout-badge:hover .mapbox-gate-symbol {
+    background: #f8fafc !important;
+    border-color: #334155 !important;
+    color: #1e293b !important;
+}
+
+body.map-mode-mapbox .mapbox-gate-marker.active .mapbox-gate-symbol,
+body.map-mode-mapbox .gate-callout-badge.active .mapbox-gate-symbol {
+    background: #ffffff !important;
+}
+
+body.map-mode-mapbox .mapbox-gate-marker.gate-entrance.active .mapbox-gate-symbol,
+body.map-mode-mapbox .gate-callout-badge.gate-entrance.active .mapbox-gate-symbol {
+    border-color: #059669 !important;
+    color: #059669 !important;
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.35), 0 0 10px rgba(5, 150, 105, 0.5) !important;
+}
+
+body.map-mode-mapbox .mapbox-gate-marker.gate-exit.active .mapbox-gate-symbol,
+body.map-mode-mapbox .gate-callout-badge.gate-exit.active .mapbox-gate-symbol {
+    border-color: #d97706 !important;
+    color: #d97706 !important;
+    box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.35), 0 0 10px rgba(217, 119, 6, 0.5) !important;
+}
+
+body.map-mode-mapbox .mapbox-gate-marker.gate-bilateral.active .mapbox-gate-symbol,
+body.map-mode-mapbox .gate-callout-badge.gate-bilateral.active .mapbox-gate-symbol {
+    border-color: #0284c7 !important;
+    color: #0284c7 !important;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.35), 0 0 10px rgba(2, 132, 199, 0.5) !important;
+}
+
+body.map-mode-mapbox .mapbox-gate-label {
+    color: #1e293b !important;
+    text-shadow: 0 0 3px #ffffff, 0 1px 2px #ffffff, 0 0 6px #ffffff !important;
+}
+
+body.map-mode-mapbox .mapbox-gate-marker.gate-entrance .mapbox-gate-label,
+body.map-mode-mapbox .gate-callout-badge.gate-entrance .mapbox-gate-label {
+    color: #065f46 !important;
+}
+
+body.map-mode-mapbox .mapbox-gate-marker.gate-exit .mapbox-gate-label,
+body.map-mode-mapbox .gate-callout-badge.gate-exit .mapbox-gate-label {
+    color: #92400e !important;
+}
+
+body.map-mode-mapbox .mapbox-gate-marker.gate-bilateral .mapbox-gate-label,
+body.map-mode-mapbox .gate-callout-badge.gate-bilateral .mapbox-gate-label {
+    color: #0369a1 !important;
+}
+
+.map-zoomed-out .mapbox-gate-label,
+body.map-zoomed-out .mapbox-gate-label,
+body.label-mode-compact .mapbox-gate-label {
+    display: none !important;
+}
+
+/* Mapbox Gate Badge in Building Panel */
+
+.bp-number.bp-number-gate {
+    background: transparent !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.bp-number.bp-number-gate svg {
+    width: 34px;
+    height: 24px;
+}

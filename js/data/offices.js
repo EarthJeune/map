@@ -1,22 +1,23 @@
 // DA-LARES Building Offices & Operational Units Directory
+import { lucideIcon } from './icons.js';
 
 export const BUILDING_OFFICES = {
     'tanco_hall_building': [
         'PMED Office of the Chief',
         'AMIA',
-        'CSO',
-        'GAD',
+        'Civil Society Organizations',
+        'Gender and Development',
         'PPS',
-        'MNE',
+        'MNE / MES',
         'PMED',
-        'BAC'
+        'Bidding and Awards Committee'
     ],
     'admin_building': [
         {
             floor: 'Ground Floor',
             offices: [
-                'GSS',
-                'PROPERTY',
+                'General Services Section (GSS)',
+                'Property',
                 'Budget 1',
                 'Budget 2',
                 'Records',
@@ -28,7 +29,7 @@ export const BUILDING_OFFICES = {
             offices: [
                 'Accounting',
                 'Personnel',
-                'Admin and Finance',
+                'Admin and Finance (AFD)',
                 'Office of the Admin'
             ]
         }
@@ -44,14 +45,14 @@ export const BUILDING_OFFICES = {
     'lares_building': [
         'Office of the Center Chief',
         'RAFC',
-        'Rice',
+        'Rice Program',
         'HVCDP',
-        'Organic Agriculture',
-        'FOD / Nupap',
+        'Organic Agriculture Program',
+        'FOD / NUPAP',
         'Halal / 4k',
-        'Saad',
+        'SAAD',
         'Sagip Saka',
-        'Livestock'
+        'Livestock Program'
     ],
     'raed_building': [
         'RAED Chief Office',
@@ -60,12 +61,21 @@ export const BUILDING_OFFICES = {
         'SRES'
     ],
     'multi_purpose_administrative_building': [
-        'FMR',
+        'Farm to Market Road (FMR)',
         'MIS Data Center',
         'BAC Extension Office'
     ],
+    'mis_rafis_building': [
+        'Office of the Chief - MIS',
+        'Office of the Chief - RAFIS'
+    ],
+    'rsbsa_building': [
+        'RSBSA Operations Office',
+        'DRRM'
+    ],
     'rnd_building': [
-        'Office of the Chief - Research Division'
+        'Office of the Chief - Research Division',
+        'R&D Conference Hall'
     ]
 };
 
@@ -90,24 +100,590 @@ export function getFlatBuildingOffices(buildingId) {
     return [];
 }
 
+// Full-name & acronym search aliases for office badges
+export const OFFICE_SEARCH_ALIASES = {
+    // Tanco Hall Building
+    'AMIA': [
+        'Adaptation and Mitigation Initiative in Agriculture (AMIA)'
+    ],
+    'Civil Society Organizations': [
+        'CSO',
+        'Civil Society Organizations (CSO)'
+    ],
+    'Gender and Development': [
+        'GAD',
+        'Gender and Development (GAD)'
+    ],
+    'PPS': [
+        'Planning and Programming Section (PPS)'
+    ],
+    'MNE / MES': [
+        'Monitoring and Evaluation Section (MNE / MES)',
+        'MNE',
+        'MES',
+        'MNE/MES'
+    ],
+    'PMED': [
+        'Planning, Monitoring and Evaluation Division (PMED)'
+    ],
+    'Bidding and Awards Committee': [
+        'BAC',
+        'Bidding and Awards Committee (BAC)',
+        'Bidding and Awards Comittee',
+        'Bids and Awards Committee (BAC)'
+    ],
+
+    // Admin Building
+    'General Services Section (GSS)': [
+        'GSS',
+        'General Services Section'
+    ],
+    'Admin and Finance (AFD)': [
+        'Administrative and Finance Division (AFD)',
+        'AFD'
+    ],
+
+    // ORED Building
+    'ORED Staff': [
+        'Office of the Regional Executive Director (ORED) Staff'
+    ],
+    'RTD for Research': [
+        'Regional Technical Director (RTD) for Research'
+    ],
+    'ORED Conference': [
+        'Office of the Regional Executive Director (ORED) Conference Hall'
+    ],
+    'RTD for Operations': [
+        'Regional Technical Director (RTD) for Operations'
+    ],
+    'RED Office': [
+        'Regional Executive Director (RED) Office',
+        'Office of the Regional Executive Director (ORED)'
+    ],
+
+    // LARES Building
+    'RAFC': [
+        'Regional Agricultural and Fishery Council (RAFC)',
+        'Regional Agricultural and Fisheries Council (RAFC)'
+    ],
+    'HVCDP': [
+        'High Value Crops Development Program (HVCDP)'
+    ],
+    'FOD / NUPAP': [
+        'Field Operations Division (FOD) / National Urban and Peri-Urban Agriculture Program (NUPAP)',
+        'Field Operations Division (FOD)',
+        'National Urban and Peri-Urban Agriculture Program (NUPAP)',
+        'FOD /NUPAP',
+        'FOD/NUPAP'
+    ],
+    'Halal / 4k': [
+        'Halal Food Industry Development Program / 4k',
+        'Halal Food Industry Development Program',
+        'Kabuhayan at Kaunlaran ng Kababayang Katutubo (4K) Program'
+    ],
+    'SAAD': [
+        'Special Area for Agricultural Development (SAAD) Program'
+    ],
+
+    // RAED Building
+    'RAED Chief Office': [
+        'Regional Agricultural Engineering Division (RAED) Chief Office'
+    ],
+    'EPDSS': [
+        'Engineering Plans, Designs and Specifications Section (EPDSS)'
+    ],
+    'PPMS': [
+        'Programs and Projects Management Section (PPMS)'
+    ],
+    'SRES': [
+        'Standards Regulation and Enforcement Section (SRES)'
+    ],
+
+    // Multi-Purpose Administrative Building
+    'Farm to Market Road (FMR)': [
+        'Farm-to-Market Road (FMR) Development Program'
+    ],
+    'MIS Data Center': [
+        'Management Information Systems (MIS) Data Center',
+        'Management Information System (MIS) Data Center'
+    ],
+    'BAC Extension Office': [
+        'Bidding and Awards Committee (BAC) Extension Office',
+        'Bids and Awards Committee (BAC) Extension Office'
+    ],
+
+    // MIS / RAFIS Building
+    'Office of the Chief - MIS': [
+        'Management Information Systems (MIS) — Office of the Chief',
+        'Management Information System (MIS)'
+    ],
+    'Office of the Chief - RAFIS': [
+        'Regional Agriculture and Fisheries Information Section (RAFIS) — Office of the Chief',
+        'Regional Agricultural and Fisheries Information Section (RAFIS)'
+    ],
+
+    // RSBSA Building
+    'RSBSA Operations Office': [
+        'Registry System for Basic Sectors in Agriculture (RSBSA) Operations Office'
+    ],
+    'DRRM': [
+        'Disaster Risk Reduction and Management (DRRM)',
+        'Disaster Risk Reduction and Management Information System (DRRMIS)'
+    ],
+
+    // R&D Multipurpose Building
+    'Office of the Chief - Research Division': [
+        'Research and Development (R&D) Division — Office of the Chief'
+    ],
+    'R&D Conference Hall': [
+        'Research and Development (R&D) Conference Hall',
+        'RnD Conference Hall'
+    ]
+};
+
+// Full-name & acronym search aliases for campus buildings (including standalone facilities)
+// Note: Index 0 is the canonical display badge ("ACRONYM — Full Official Meaning") shown when a building matches via full-name/acronym search.
+export const BUILDING_SEARCH_ALIASES = {
+    'ored_building': [
+        'ORED — Office of the Regional Executive Director',
+        'Office of the Regional Executive Director (ORED)',
+        'Regional Executive Director (RED)'
+    ],
+    'admin_building': [
+        'STIARC — Southern Tagalog Integrated Agricultural Research Center',
+        'Southern Tagalog Integrated Agricultural Research Center (STIARC) Multi-Function Administrative Building',
+        'Administrative Building',
+        'Administrative and Finance Division (AFD)',
+        'STIARC'
+    ],
+    'amad_building': [
+        'AMAD — Agribusiness and Marketing Assistance Division',
+        'Agribusiness and Marketing Assistance Division (AMAD)',
+        'Agri-Business and Marketing Assistance Division'
+    ],
+    'lares_building': [
+        'LARES — Lipa Agricultural Research and Experiment Station',
+        'Lipa Agricultural Research and Experiment Station (LARES)',
+        'Southern Tagalog Integrated Agricultural Research Center (STIARC)'
+    ],
+    'ild_building': [
+        'ILD — Integrated Laboratories Division',
+        'Integrated Laboratories Division (ILD)',
+        'Integrated Laboratory Division (ILD)'
+    ],
+    'f2c2_building': [
+        'F2C2 — Farm and Fisheries Clustering and Consolidation Program',
+        'Farm and Fisheries Clustering and Consolidation (F2C2) Program',
+        'Farm and Fishery Clustering and Consolidation Program',
+        'Farmers and Fisherfolk Clustering and Consolidation (F2C2)'
+    ],
+    'seaguard_building': [
+        'CGUARD — Corn Germplasm Utilization through Advanced Research and Development',
+        'Corn Germplasm Utilization through Advanced Research and Development (CGUARD)',
+        'CALABARZON CGUARD Crop Research & Varietal Laboratory',
+        'CGUARD',
+        'C-GUARD'
+    ],
+    'raed_building': [
+        'RAED — Regional Agricultural Engineering Division',
+        'Regional Agricultural Engineering Division (RAED)'
+    ],
+    'canteen': [
+        'DA Canteen — Department of Agriculture Canteen',
+        'Department of Agriculture Canteen'
+    ],
+    'tanco_hall_building': [
+        'PMED — Planning, Monitoring and Evaluation Division',
+        'Planning, Monitoring and Evaluation Division (PMED)',
+        'Arturo R. Tanco Hall'
+    ],
+    'mis_rafis_building': [
+        'MIS / RAFIS — Management Information Systems & Regional Agriculture and Fisheries Information Section',
+        'Management Information Systems (MIS)',
+        'Management Information System (MIS)',
+        'Regional Agriculture and Fisheries Information Section (RAFIS)',
+        'Regional Agricultural and Fisheries Information Section (RAFIS)',
+        'Information and Communications Technology Service (ICTS)'
+    ],
+    'rnd_building': [
+        'R&D — Research and Development Multipurpose Building',
+        'Research and Development (R&D) Multipurpose Building',
+        'RnD Multipurpose Building'
+    ],
+    'laboratory_building': [
+        'DA-BAR — Bureau of Agricultural Research Post-Harvest Facility',
+        'Post-Harvest Laboratory Building',
+        'Bureau of Agricultural Research (DA-BAR) Post-Harvest Facility'
+    ],
+    'prdp_building': [
+        'PRDP — Philippine Rural Development Project Scale-Up (RPCO 4A)',
+        'Philippine Rural Development Project (PRDP) Scale-Up',
+        'Philippine Rural Development Program (PRDP)',
+        'Regional Project Coordination Office 4A (RPCO 4A)',
+        'RPCO IVA',
+        'Intensified Building Up of Infrastructure and Logistics for Development (I-BUILD)',
+        'Investments in Rural Enterprises and Agriculture and Fisheries Productivity (I-REAP)',
+        'I-BUILD',
+        'I-REAP',
+        'I-PLAN',
+        'I-SUPPORT'
+    ],
+    'multi_purpose_administrative_building': [
+        'MPAB — Multi-Purpose Administrative Building (FMR)',
+        'Farm to Market Road (FMR) Development Program',
+        'MPAB'
+    ],
+    'pgrc_building': [
+        'PGRC — Plant Genetic Resources Center',
+        'Plant Genetic Resources Center (PGRC)',
+        'Plant Genetic Resource Center (PGRC)'
+    ],
+    'corn/casava_building': [
+        'Office of the Regional Corn and Cassava Program',
+        'Corn and Casava Facility'
+    ],
+    'rsbsa_building': [
+        'RSBSA — Registry System for Basic Sectors in Agriculture',
+        'Registry System for Basic Sectors in Agriculture (RSBSA)',
+        'Registry System for the Basic Sectors in Agriculture (RSBSA)'
+    ],
+    'tissue_culture_building': [
+        'TC — Tissue Culture Laboratory',
+        'TC Laboratory',
+        'Plant Tissue Culture (TC) Laboratory'
+    ],
+    'rsl_building': [
+        'RSL — Regional Soils Laboratory',
+        'Regional Soils Laboratory (RSL)',
+        'Regional Soil Laboratory (RSL)',
+        'RSL Building'
+    ],
+    'rcpc_building': [
+        'RCPC — Regional Crop Protection Center CALABARZON',
+        'Regional Crop Protection Center (RCPC) CALABARZON',
+        'Regional Crop Protection Centre (RCPC)'
+    ],
+    'automated_weather_station': [
+        'AWS — Automated Weather Station',
+        'Automated Weather Station (AWS)',
+        'Agrometeorological Weather Station',
+        'AWS'
+    ],
+    'plot22_comfort_room': [
+        'Plot 22 Comfort Room',
+        'CR — Comfort Room',
+        'Comfort Room (CR)',
+        'CR',
+        'Restroom'
+    ],
+    'plot22_water_tank': [
+        'LARES — Lipa Agricultural Research and Experiment Station Water Tank',
+        'Lipa Agricultural Research and Experiment Station (LARES) Water Tank'
+    ],
+    'lares_agricultural_supplies_storage': [
+        'LARES — Lipa Agricultural Research and Experiment Station Supplies Storage',
+        'Lipa Agricultural Research and Experiment Station (LARES) Agricultural Supplies Storage'
+    ],
+    'warehouse_1': [
+        'LARES — Lipa Agricultural Research and Experiment Station Fertilizer & Pesticide Storage',
+        'Lipa Agricultural Research and Experiment Station (LARES) Synthetic Fertilizer & Pesticide Storage'
+    ],
+    'lares_farm_machinery_shed_1': [
+        'LARES — Lipa Agricultural Research and Experiment Station Farm Machinery Shed 1',
+        'Lipa Agricultural Research and Experiment Station (LARES) Farm Machinery Shed 1'
+    ],
+    'lares_organic_fertilizer_storage': [
+        'LARES — Lipa Agricultural Research and Experiment Station Organic Fertilizer Storage',
+        'Lipa Agricultural Research and Experiment Station (LARES) Organic Fertilizer Storage'
+    ],
+    'warehouse_3': [
+        'LARES — Lipa Agricultural Research and Experiment Station Corn Seed Processing',
+        'Lipa Agricultural Research and Experiment Station (LARES) Corn Seed Processing Facility'
+    ],
+    'warehouse_4': [
+        'LARES — Lipa Agricultural Research and Experiment Station Farm Machinery Shed 2',
+        'Lipa Agricultural Research and Experiment Station (LARES) Farm Machinery Shed 2'
+    ]
+};
+
+// Full-name & acronym search aliases for commodity plot zones
+export const PLOT_ZONE_SEARCH_ALIASES = {
+    'zone_tc_makapuno_screenhouse': [
+        'Tissue Culture Makapuno & Banana Screenhouse',
+        'Tissue-Cultured Makapuno & Banana Screenhouse',
+        'TC'
+    ],
+    'zone_cguard_corn': [
+        'Corn Germplasm Utilization through Advanced Research and Development (CGUARD) Corn',
+        'CALABARZON CGUARD Corn',
+        'C-GUARD Corn'
+    ]
+};
+
+const SEARCH_STOPWORDS = new Set([
+    'the', 'of', 'for', 'and', 'in', 'to', 'at', 'on', 'by', 'through', 'with', 'a', 'an'
+]);
+
+function stemSearchWord(w) {
+    if (!w || w.length < 4) return w;
+    if (w.length === 4) return w;
+    return w
+        .replace(/ultural$/, 'ultur')
+        .replace(/ulture$/, 'ultur')
+        .replace(/ories$/, 'ory')
+        .replace(/ies$/, 'y')
+        .replace(/s$/, '');
+}
+
+export function matchesSearchText(text, rawQuery) {
+    if (!text || !rawQuery) return false;
+    const normQuery = String(rawQuery).trim().toLowerCase();
+    const normText = String(text).trim().toLowerCase();
+    if (!normText || !normQuery) return false;
+
+    // 1. Exact match (case-insensitive)
+    if (normText === normQuery) return true;
+
+    // 2. Non-alphanumeric acronym tokens like "r&d"
+    if (/[^a-z0-9\s]/.test(normQuery) && normQuery.length >= 2 && normText.includes(normQuery)) {
+        return true;
+    }
+
+    // 3. Word-prefix match (handles 1–3 char acronyms like TC, CR, AWS, RED, RSL, ILD, MIS, FMR, GAD, CSO, PPS, BAC, 4K cleanly without mid-word false positives)
+    const words = normText.split(/[\s/,\-_()|•—–&]+/).filter(Boolean);
+    if (words.some(w => w.startsWith(normQuery))) return true;
+
+    // 4. Multi-character / phrase / stem-normalized matching (>= 4 chars)
+    if (normQuery.length >= 4) {
+        if (normText.includes(normQuery)) return true;
+
+        const cleanQuery = normQuery.replace(/[\s/,\-_()|•—–&]+/g, ' ').trim();
+        if (cleanQuery.length >= 3) {
+            const cleanText = normText.replace(/[\s/,\-_()|•—–&]+/g, ' ').trim();
+            if (cleanText.includes(cleanQuery)) return true;
+
+            // Match when mid-phrase parenthetical acronyms like "(RTD)" or "(SAAD)" are omitted by the user
+            const strippedParens = normText
+                .replace(/\([^)]*\)/g, ' ')
+                .replace(/[\s/,\-_()|•—–&]+/g, ' ')
+                .trim();
+            if (strippedParens.includes(cleanQuery)) return true;
+
+            // Single-word stem match (e.g. "laboratories" <-> "laboratory", "agricultural" <-> "agriculture", "soils" <-> "soil")
+            const rawTokens = cleanQuery.split(' ').filter(Boolean);
+            const stemmedWords = words.map(stemSearchWord);
+            if (rawTokens.length === 1) {
+                const sq = stemSearchWord(rawTokens[0]);
+                if (sq.length >= 4 && stemmedWords.some(sw => sw.startsWith(sq) || sq.startsWith(sw))) {
+                    return true;
+                }
+            }
+
+            // 5. Multi-word token matching (ignores minor articles/prepositions like "the"/"for"/"through" and normalizes singular/plural stems)
+            if (rawTokens.length >= 2) {
+                const contentTokens = rawTokens.filter(t => !SEARCH_STOPWORDS.has(t));
+                const tokensToCheck = contentTokens.length > 0 ? contentTokens : rawTokens;
+                const allTokensMatch = tokensToCheck.every(tok => {
+                    if (words.some(w => w.startsWith(tok))) return true;
+                    if (tok.length >= 4 && cleanText.includes(tok)) return true;
+                    const st = stemSearchWord(tok);
+                    if (st.length >= 4 && stemmedWords.some(sw => sw.startsWith(st) || st.startsWith(sw))) return true;
+                    return false;
+                });
+                if (allTokensMatch) return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+function matchesSingleOfficeText(text, normQuery) {
+    return matchesSearchText(text, normQuery);
+}
+
 /**
- * Determines if an office name matches the target or search query
+ * Determines if an office name (or any of its full-name search aliases) matches the target or search query
  */
 export function isOfficeMatched(officeName, targetOrQuery) {
     if (!officeName || !targetOrQuery) return false;
-    const normOffice = String(officeName).trim().toLowerCase();
     const normQuery = String(targetOrQuery).trim().toLowerCase();
     if (!normQuery) return false;
 
-    // 1. Exact match (case-insensitive)
-    if (normOffice === normQuery) return true;
+    if (matchesSingleOfficeText(officeName, normQuery)) return true;
 
-    // 2. Query is at least 2 characters and is contained in office name
-    if (normQuery.length >= 2 && normOffice.includes(normQuery)) return true;
+    const aliases = OFFICE_SEARCH_ALIASES[officeName];
+    if (Array.isArray(aliases) && aliases.some(alias => matchesSingleOfficeText(alias, normQuery))) {
+        return true;
+    }
 
-    // 3. Word starts with query (e.g. acronyms or words)
-    const words = normOffice.split(/[\s/,\-_()]+/);
-    if (words.some(w => w.startsWith(normQuery))) return true;
+    return false;
+}
+
+/**
+ * Finds the best-matching office within a building (or flat office list), ranking exact and more specific matches ahead of broader sibling aliases
+ */
+export function findMatchedOffice(buildingIdOrOffices, query) {
+    const normQuery = String(query || '').trim().toLowerCase();
+    if (!normQuery) return null;
+
+    const flatOffices = Array.isArray(buildingIdOrOffices)
+        ? buildingIdOrOffices
+        : getFlatBuildingOffices(buildingIdOrOffices);
+
+    let bestOffice = null;
+    let bestScore = -Infinity;
+
+    for (const off of flatOffices) {
+        if (!off) continue;
+        const normOff = String(off).trim().toLowerCase();
+        let score = -Infinity;
+
+        if (normOff === normQuery) {
+            score = 1000;
+        } else if (matchesSingleOfficeText(off, normQuery)) {
+            score = 800 - normOff.length;
+        } else {
+            const aliases = OFFICE_SEARCH_ALIASES[off];
+            if (Array.isArray(aliases)) {
+                for (const alias of aliases) {
+                    if (!matchesSingleOfficeText(alias, normQuery)) continue;
+                    const normAlias = String(alias).trim().toLowerCase();
+                    const strippedAlias = normAlias.replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim();
+                    const aliasScore = (normAlias === normQuery || strippedAlias === normQuery)
+                        ? 600
+                        : (400 - normAlias.length);
+                    if (aliasScore > score) score = aliasScore;
+                }
+            }
+        }
+
+        if (score > bestScore) {
+            bestScore = score;
+            bestOffice = off;
+        }
+    }
+
+    return bestOffice;
+}
+
+/**
+ * Returns display label for directory search tag (appends full name when matched via alias)
+ */
+export function getOfficeSearchSubtitle(officeName, query) {
+    if (!officeName) return '';
+    const normQuery = String(query || '').trim().toLowerCase();
+    if (!normQuery || matchesSingleOfficeText(officeName, normQuery)) {
+        return officeName;
+    }
+    const aliases = OFFICE_SEARCH_ALIASES[officeName];
+    if (Array.isArray(aliases) && aliases.length > 0 && aliases.some(alias => matchesSingleOfficeText(alias, normQuery))) {
+        return `${officeName} — ${aliases[0]}`;
+    }
+    return officeName;
+}
+
+/**
+ * Determines if a building matches the search query across its name, description, or full-name/acronym aliases
+ */
+export function isBuildingMatched(building, query) {
+    if (!building || !query) return false;
+    const normQuery = String(query).trim().toLowerCase();
+    if (!normQuery) return true;
+
+    if (matchesSearchText(building.name, normQuery)) return true;
+    if (building.desc && matchesSearchText(building.desc, normQuery)) return true;
+
+    const aliases = BUILDING_SEARCH_ALIASES[building.id];
+    if (Array.isArray(aliases) && aliases.some(alias => matchesSearchText(alias, normQuery))) {
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Returns full-name / acronym subtitle when a building matches via its official full meaning or acronym rather than its display title
+ */
+export function getBuildingSearchSubtitle(building, query) {
+    if (!building || !query) return '';
+    const normQuery = String(query).trim().toLowerCase();
+    if (!normQuery || matchesSearchText(building.name, normQuery)) return '';
+
+    const aliases = BUILDING_SEARCH_ALIASES[building.id];
+    if (Array.isArray(aliases) && aliases.length > 0) {
+        if (matchesSearchText(aliases[0], normQuery)) {
+            return aliases[0];
+        }
+        const matchedAlias = aliases.find(alias => matchesSearchText(alias, normQuery));
+        if (matchedAlias) {
+            return matchedAlias.length <= 8 ? aliases[0] : matchedAlias;
+        }
+    }
+    if (building.desc && matchesSearchText(building.desc, normQuery)) {
+        return building.desc.split('|')[0].trim();
+    }
+    return '';
+}
+
+/**
+ * Determines if a commodity plot zone matches the search query (including full-name/acronym aliases)
+ */
+export function isPlotZoneMatched(zone, query) {
+    if (!zone || !query) return false;
+    const normQuery = String(query).trim().toLowerCase();
+    if (!normQuery) return true;
+
+    if (matchesSearchText(zone.name, normQuery)) return true;
+    if (zone.description && matchesSearchText(zone.description, normQuery)) return true;
+    if (zone.plotRange && matchesSearchText(zone.plotRange, normQuery)) return true;
+
+    const aliases = PLOT_ZONE_SEARCH_ALIASES[zone.id];
+    if (Array.isArray(aliases) && aliases.some(alias => matchesSearchText(alias, normQuery))) {
+        return true;
+    }
+
+    if (Array.isArray(zone.subPlots) && zone.subPlots.some(sp =>
+        (sp.name && matchesSearchText(sp.name, normQuery)) ||
+        (sp.label && matchesSearchText(sp.label, normQuery)) ||
+        (sp.crop && matchesSearchText(sp.crop, normQuery))
+    )) {
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Determines if an office or room is a conference venue / hall
+ */
+export function isConferenceRoom(officeName) {
+    if (!officeName) return false;
+    const lower = String(officeName).trim().toLowerCase();
+    return lower.includes('conference') || lower.includes('hall') || lower.includes('auditorium');
+}
+
+/**
+ * Determines if an office matches any currently active filter category
+ */
+export function isOfficeMatchedByFilter(officeName, activeFilters) {
+    if (!officeName || !activeFilters || activeFilters.size === 0) return false;
+    const lower = String(officeName).trim().toLowerCase();
+
+    // 1. Conference Hall filter: highlights any conference hall or meeting room
+    if (activeFilters.has('conference') && isConferenceRoom(officeName)) {
+        return true;
+    }
+
+    // 2. Office Buildings filter: in mixed buildings (e.g. RSBSA, ORED, R&D), highlights administrative offices
+    if (activeFilters.has('office') && !activeFilters.has('conference') && !isConferenceRoom(officeName)) {
+        return true;
+    }
+
+    // 3. Laboratory filter
+    if (activeFilters.has('laboratory') && (lower.includes('lab') || lower.includes('research') || lower.includes('experiment'))) {
+        return true;
+    }
 
     return false;
 }
@@ -134,11 +710,11 @@ export function renderBuildingOfficesHTML(buildingId, highlightQuery = '') {
         return `
             <div class="bldg-offices-card">
                 <div class="bldg-offices-header">
-                    <span class="bldg-offices-icon">🏢</span>
+                    <span class="bldg-offices-icon">${lucideIcon('building-2', 14)}</span>
                     <span class="bldg-offices-title">Offices & Units</span>
                 </div>
                 <div class="bldg-offices-pending">
-                    <span class="pending-icon">⏳</span>
+                    <span class="pending-icon">${lucideIcon('building-2', 14)}</span>
                     <span>${data.message || 'Offices information pending update'}</span>
                 </div>
             </div>
@@ -146,6 +722,10 @@ export function renderBuildingOfficesHTML(buildingId, highlightQuery = '') {
     }
 
     if (!Array.isArray(data) || data.length === 0) return '';
+
+    // Determine active type filters from global state or window
+    const activeFilters = (typeof window !== 'undefined' && window.activeTypeFilters) ? window.activeTypeFilters : null;
+    const hasTypeFilters = !!(activeFilters && activeFilters.size > 0);
 
     // Determine effective search query if not explicitly passed
     let activeQuery = (highlightQuery || '').trim();
@@ -175,8 +755,13 @@ export function renderBuildingOfficesHTML(buildingId, highlightQuery = '') {
                         </div>
                         <div class="bldg-offices-pills">
                             ${group.offices.map(off => {
-                                const isMatched = activeQuery && isOfficeMatched(off, activeQuery);
-                                return `<div class="office-pill ${isMatched ? 'highlighted' : ''}"><span class="op-dot"></span><span class="op-name">${off}</span></div>`;
+                                const isMatchedByQuery = Boolean(activeQuery && isOfficeMatched(off, activeQuery));
+                                const isMatchedByFilter = Boolean(hasTypeFilters && isOfficeMatchedByFilter(off, activeFilters));
+                                const isMatched = isMatchedByQuery || isMatchedByFilter;
+                                const isConf = isConferenceRoom(off);
+                                const pillIcon = isConf ? lucideIcon('landmark', 13) : '';
+                                const fullTitle = (OFFICE_SEARCH_ALIASES[off] && OFFICE_SEARCH_ALIASES[off][0]) ? ` title="${OFFICE_SEARCH_ALIASES[off][0].replace(/"/g, '&quot;')}"` : '';
+                                return `<div class="office-pill ${isMatched ? 'highlighted' : ''} ${isConf ? 'is-conference' : ''}"${fullTitle}><span class="op-dot"></span>${pillIcon ? `<span class="op-pill-icon">${pillIcon}</span>` : ''}<span class="op-name">${off}</span></div>`;
                             }).join('')}
                         </div>
                     </div>
@@ -187,8 +772,13 @@ export function renderBuildingOfficesHTML(buildingId, highlightQuery = '') {
         contentHTML = `
             <div class="bldg-offices-pills">
                 ${data.map(off => {
-                    const isMatched = activeQuery && isOfficeMatched(off, activeQuery);
-                    return `<div class="office-pill ${isMatched ? 'highlighted' : ''}"><span class="op-dot"></span><span class="op-name">${off}</span></div>`;
+                    const isMatchedByQuery = Boolean(activeQuery && isOfficeMatched(off, activeQuery));
+                    const isMatchedByFilter = Boolean(hasTypeFilters && isOfficeMatchedByFilter(off, activeFilters));
+                    const isMatched = isMatchedByQuery || isMatchedByFilter;
+                    const isConf = isConferenceRoom(off);
+                    const pillIcon = isConf ? lucideIcon('landmark', 13) : '';
+                    const fullTitle = (OFFICE_SEARCH_ALIASES[off] && OFFICE_SEARCH_ALIASES[off][0]) ? ` title="${OFFICE_SEARCH_ALIASES[off][0].replace(/"/g, '&quot;')}"` : '';
+                    return `<div class="office-pill ${isMatched ? 'highlighted' : ''} ${isConf ? 'is-conference' : ''}"${fullTitle}><span class="op-dot"></span>${pillIcon ? `<span class="op-pill-icon">${pillIcon}</span>` : ''}<span class="op-name">${off}</span></div>`;
                 }).join('')}
             </div>
         `;
@@ -200,7 +790,7 @@ export function renderBuildingOfficesHTML(buildingId, highlightQuery = '') {
         <div class="bldg-offices-card">
             <div class="bldg-offices-header">
                 <div style="display:flex;align-items:center;gap:7px;">
-                    <span class="bldg-offices-icon">🏢</span>
+                    <span class="bldg-offices-icon">${lucideIcon('building-2', 14)}</span>
                     <span class="bldg-offices-title">Offices & Units</span>
                 </div>
                 <span class="bldg-offices-total">${totalCount} Total</span>

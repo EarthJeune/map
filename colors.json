@@ -1,0 +1,186 @@
+{
+  "admin_building": {
+    "roof": "#706665",
+    "icon": "#EF6F6C"
+  },
+  "amad_building": {
+    "roof": "#c7a59b",
+    "icon": "#C1666B"
+  },
+  "argosino_hall": {
+    "roof": "#87907f",
+    "icon": "#B4C86E"
+  },
+  "automated_weather_station": {
+    "roof": "#4B6B7C",
+    "icon": "#0096C7"
+  },
+  "bac_building": {
+    "roof": "#598897",
+    "icon": "#4F7942"
+  },
+  "canteen": {
+    "roof": "#616a65",
+    "icon": "#3E8E5C"
+  },
+  "corn/casava_building": {
+    "roof": "#717e86",
+    "icon": "#6C5B7B"
+  },
+  "custom_1790134560844": {
+    "roof": "#b3a8a6",
+    "icon": "#3b82f6"
+  },
+  "dorm": {
+    "roof": "#88918e",
+    "icon": "#2B4570"
+  },
+  "exit_guard_house_1": {
+    "roof": "#616066",
+    "icon": "#ff8000"
+  },
+  "exit_guard_house_2": {
+    "roof": "#877d7c",
+    "icon": "#E07A2F"
+  },
+  "f2c2_building": {
+    "roof": "#6c6667",
+    "icon": "#D4A373"
+  },
+  "fmr": {
+    "roof": "#5f796e",
+    "icon": "#4A6FA5"
+  },
+  "fod_building": {
+    "roof": "#757b77",
+    "icon": "#F4D06F"
+  },
+  "guard_house": {
+    "roof": "#977977",
+    "icon": "#D64550"
+  },
+  "guest_house": {
+    "roof": "#5d6164",
+    "icon": "#E893CF"
+  },
+  "ild_building": {
+    "roof": "#758c92",
+    "icon": "#E8A87C"
+  },
+  "laboratory_building": {
+    "roof": "#8e8c7f",
+    "icon": "#3AAFA9"
+  },
+  "lares_building": {
+    "roof": "#6e7b72",
+    "icon": "#F2A65A"
+  },
+  "mis_building": {
+    "roof": "#858b7c",
+    "icon": "#A4C3A2"
+  },
+  "mis_data_center": {
+    "roof": "#373e2e",
+    "icon": "#3D5A80"
+  },
+  "mis_rafis_building": {
+    "roof": "#858b7c",
+    "icon": "#2C7873"
+  },
+  "motorpool_barracks": {
+    "roof": "#705655",
+    "icon": "#D65DB1"
+  },
+  "multi_purpose_administrative_building": {
+    "roof": "#5f796e",
+    "icon": "#4A6FA5"
+  },
+  "mushroom_laboratory": {
+    "roof": "#7A5C4D",
+    "icon": "#B05B3B"
+  },
+  "ored_building": {
+    "roof": "#55686e",
+    "icon": "#E07A5F"
+  },
+  "pgrc_building": {
+    "roof": "#9da190",
+    "icon": "#9D8DF1"
+  },
+  "pmed_building": {
+    "roof": "#56696f",
+    "icon": "#89C4B0"
+  },
+  "prdp_building": {
+    "roof": "#546060",
+    "icon": "#7EC8E3"
+  },
+  "raed_building": {
+    "roof": "#627c71",
+    "icon": "#6B9080"
+  },
+  "rafis_building": {
+    "roof": "#858b7c",
+    "icon": "#2C7873"
+  },
+  "rcpc_building": {
+    "roof": "#778890",
+    "icon": "#C77DBE"
+  },
+  "rnd_building": {
+    "roof": "#847a71",
+    "icon": "#5FB4D1"
+  },
+  "rsbsa_building": {
+    "roof": "#76685f",
+    "icon": "#8E7CC3"
+  },
+  "rsl_building": {
+    "roof": "#a2afa6",
+    "icon": "#F4A6C6"
+  },
+  "seaguard_building": {
+    "roof": "#785b60",
+    "icon": "#FFB627"
+  },
+  "tanco_hall_building": {
+    "roof": "#56696f",
+    "icon": "#4F7942"
+  },
+  "tissue_culture_building": {
+    "roof": "#7a898e",
+    "icon": "#5D3A9B"
+  },
+  "vacant": {
+    "roof": "#4c7955",
+    "icon": "#5C80BC"
+  },
+  "warehouse_1": {
+    "roof": "#5C7062",
+    "icon": "#4D7C5D"
+  },
+  "warehouse_2": {
+    "roof": "#67785E",
+    "icon": "#658E52"
+  },
+  "warehouse_3": {
+    "roof": "#737F5A",
+    "icon": "#829F4B"
+  },
+  "warehouse_4": {
+    "roof": "#808258",
+    "icon": "#A3A847"
+  },
+  "warehouse_5": {
+    "roof": "#8C7D52",
+    "icon": "#C29B38"
+  },
+  "warehouse_6": {
+    "roof": "#917050",
+    "icon": "#D4843B"
+  },
+  "warehouse_7": {
+    "roof": "#8A5F52",
+    "icon": "#C86446"
+  }
+}

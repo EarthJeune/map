@@ -3,7 +3,8 @@
 // markers, and boundaries with high-resolution drone orthomosaics in Admin Mode.
 
 import { state } from './data/state.js';
-import { CUSTOM_3D_BUILDINGS, LARES_DRAWINGS, BUILDING_DIRECTORY } from './data/buildings.js?v=72';
+import { CUSTOM_3D_BUILDINGS, LARES_DRAWINGS, BUILDING_DIRECTORY } from './data/buildings.js';
+import { lucideIcon } from './data/icons.js';
 
 // Precise geodetic conversion factors at DA-LARES latitude (~13.958° N)
 const METERS_PER_DEG_LAT = 111139.0;
@@ -19,10 +20,24 @@ let cachedBuildingFeatures = null;
 let cachedDrawingFeatures = null;
 let cachedTreesData = null;
 
+export function syncAdminDroneDOM() {
+    const existingBtn = document.getElementById('admin-drone-calib-btn');
+    if (existingBtn) existingBtn.remove();
+
+    if (state.isAdmin) {
+        buildDroneCalibrationHUD();
+    } else {
+        isHudOpen = false;
+        const existingHud = document.getElementById('drone-calib-hud');
+        if (existingHud) existingHud.remove();
+        const existingToast = document.getElementById('dcal-toast');
+        if (existingToast) existingToast.remove();
+    }
+}
+
 export function initDroneCalibration() {
-    // 1. Build the HUD and Admin trigger buttons synchronously in DOM
-    buildDroneCalibrationHUD();
-    buildAdminTriggerButton();
+    // 1. Mount HUD in DOM strictly when Admin Mode is active (visitors get zero admin DOM elements)
+    syncAdminDroneDOM();
 
     // 2. Fetch saved calibration asynchronously in background
     fetchSavedOffset();
@@ -54,7 +69,7 @@ async function fetchSavedOffset() {
                 state.savedDroneOffset.dy = data.dy;
             }
             if (typeof data.autoApply === 'boolean') state.droneOffset.autoApply = data.autoApply;
-            
+
             const sliderX = document.getElementById('dcal-slider-x');
             const sliderY = document.getElementById('dcal-slider-y');
             if (sliderX) sliderX.value = state.droneOffset.dx;
@@ -76,7 +91,7 @@ async function fetchSavedOffset() {
                     state.savedDroneOffset.dy = parsed.dy;
                 }
                 if (typeof parsed.autoApply === 'boolean') state.droneOffset.autoApply = parsed.autoApply;
-                
+
                 const sliderX = document.getElementById('dcal-slider-x');
                 const sliderY = document.getElementById('dcal-slider-y');
                 if (sliderX) sliderX.value = state.droneOffset.dx;
@@ -84,7 +99,7 @@ async function fetchSavedOffset() {
                 updateHudReadout(state.droneOffset.dx, state.droneOffset.dy);
                 syncDroneOffsetOnStyleChange();
             }
-        } catch (err) {}
+        } catch (err) { }
     }
 }
 
@@ -145,7 +160,7 @@ function executeLayerShift(dx, dy, force = false) {
                 type: 'FeatureCollection',
                 features: shiftedModelFeatures
             });
-        } catch (e) {}
+        } catch (e) { }
     }
 
     // B. 2D Building Drawings & Roofs
@@ -179,13 +194,15 @@ function executeLayerShift(dx, dy, force = false) {
                 type: 'FeatureCollection',
                 features: shiftedFeatures
             });
-        } catch (e) {}
+        } catch (e) { }
     }
 
-    // C. Building Pin Markers
+    // C. Building Pin Markers (Look up by canonical building ID, NOT array index, since sub-plots are filtered out of state.markers)
     if (state.markers && state.markers.length > 0 && typeof BUILDING_DIRECTORY !== 'undefined') {
-        state.markers.forEach((m, idx) => {
-            const b = BUILDING_DIRECTORY[idx];
+        state.markers.forEach((m) => {
+            const el = m.getElement ? m.getElement() : null;
+            const bId = el ? el.dataset.id : null;
+            const b = bId ? BUILDING_DIRECTORY.find(item => item.id === bId) : null;
             if (b && m && typeof m.setLngLat === 'function') {
                 m.setLngLat([b.coords[0] + dLng, b.coords[1] + dLat]);
             }
@@ -198,7 +215,7 @@ function executeLayerShift(dx, dy, force = false) {
         if (!cachedTreesData) {
             try {
                 cachedTreesData = JSON.parse(JSON.stringify(treesSource._data));
-            } catch (e) {}
+            } catch (e) { }
         }
         if (cachedTreesData && cachedTreesData.features) {
             const shiftedTrees = cachedTreesData.features.map(f => ({
@@ -210,7 +227,7 @@ function executeLayerShift(dx, dy, force = false) {
             }));
             try {
                 treesSource.setData({ type: 'FeatureCollection', features: shiftedTrees });
-            } catch (e) {}
+            } catch (e) { }
         }
     }
 }
@@ -238,7 +255,7 @@ export async function saveDroneCalibration() {
 
     try {
         localStorage.setItem('da_drone_offset', JSON.stringify(payload));
-    } catch (e) {}
+    } catch (e) { }
 
     try {
         const res = await fetch('/api/drone-offset', {
@@ -250,7 +267,7 @@ export async function saveDroneCalibration() {
             showToast(`✅ Drone alignment saved (${payload.dx >= 0 ? '+' : ''}${payload.dx.toFixed(2)}m, ${payload.dy >= 0 ? '+' : ''}${payload.dy.toFixed(2)}m)`);
             return;
         }
-    } catch (e) {}
+    } catch (e) { }
 
     showToast(`✅ Saved locally (${payload.dx >= 0 ? '+' : ''}${payload.dx.toFixed(2)}m, ${payload.dy >= 0 ? '+' : ''}${payload.dy.toFixed(2)}m)`);
 }
@@ -277,7 +294,7 @@ export async function resetToDefaultCalibration() {
 
     try {
         localStorage.setItem('da_drone_offset', JSON.stringify(payload));
-    } catch (e) {}
+    } catch (e) { }
 
     try {
         await fetch('/api/drone-offset', {
@@ -285,7 +302,7 @@ export async function resetToDefaultCalibration() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-    } catch (e) {}
+    } catch (e) { }
 
     showToast('🔄 Calibration reset to default (0.00m)');
 }
@@ -411,12 +428,12 @@ function buildDroneCalibrationHUD() {
     hud.innerHTML = `
         <div class="dcal-header" id="dcal-header">
             <div class="dcal-title">
-                <span class="dcal-icon">🛰️</span>
+                <span class="dcal-icon">${lucideIcon('satellite', 16)}</span>
                 <span>Drone View Calibration</span>
             </div>
             <div class="dcal-header-actions">
                 <button class="dcal-btn-icon" id="dcal-min-btn" title="Minimize / Expand">_</button>
-                <button class="dcal-btn-icon" id="dcal-close-btn" title="Close Panel">✕</button>
+                <button class="dcal-btn-icon" id="dcal-close-btn" title="Close Panel">${lucideIcon('x', 15)}</button>
             </div>
         </div>
 
@@ -470,7 +487,7 @@ function buildDroneCalibrationHUD() {
             <!-- Google Maps Comparison Overlay Section -->
             <div class="dcal-overlay-section">
                 <div class="dcal-slider-header">
-                    <span class="dcal-overlay-title">🗺️ Old Google Maps Satellite Overlay</span>
+                    <span class="dcal-overlay-title">${lucideIcon('map', 14)} Old Google Maps Satellite Overlay</span>
                     <span id="dcal-opacity-num" class="dcal-num">0%</span>
                 </div>
                 <input type="range" id="dcal-slider-opacity" min="0" max="1" step="0.02" value="0" class="dcal-slider dcal-slider-opacity">
@@ -481,7 +498,7 @@ function buildDroneCalibrationHUD() {
                     <button type="button" class="dcal-opacity-chip" data-opacity="0.75">75%</button>
                     <button type="button" class="dcal-opacity-chip" data-opacity="1.0">100%</button>
                 </div>
-                <div class="dcal-overlay-hint">💡 Blend old Google Satellite on top of drone shot to cross-reference alignment.</div>
+                <div class="dcal-overlay-hint">${lucideIcon('lightbulb', 13)} Blend old Google Satellite on top of drone shot to cross-reference alignment.</div>
             </div>
 
             <!-- Directional Nudge D-Pad -->
@@ -504,7 +521,7 @@ function buildDroneCalibrationHUD() {
                     <button class="dcal-dpad-btn" id="dcal-btn-down" title="Nudge South (▼)">▼</button>
                     <div></div>
                 </div>
-                <div class="dcal-hint">💡 Tip: Use Keyboard Arrow Keys to nudge. Hold Shift for 1.0m.</div>
+                <div class="dcal-hint">${lucideIcon('lightbulb', 13)} Tip: Use Keyboard Arrow Keys to nudge. Hold Shift for 1.0m.</div>
             </div>
 
             <!-- Auto-Apply Toggle -->
@@ -515,9 +532,9 @@ function buildDroneCalibrationHUD() {
 
             <!-- Action Buttons -->
             <div class="dcal-actions">
-                <button class="dcal-btn dcal-btn-reset" id="dcal-btn-reset" title="Reset all offsets and overlay back to factory 0.00m default">🔄 Reset to Default</button>
-                <button class="dcal-btn dcal-btn-revert" id="dcal-btn-revert" title="Revert to last saved calibration">↩️ Revert</button>
-                <button class="dcal-btn dcal-btn-save" id="dcal-btn-save" title="Save this alignment as permanent offset">💾 Save Alignment</button>
+                <button class="dcal-btn dcal-btn-reset" id="dcal-btn-reset" title="Reset all offsets and overlay back to factory 0.00m default">${lucideIcon('rotate-ccw', 14)} Reset to Default</button>
+                <button class="dcal-btn dcal-btn-revert" id="dcal-btn-revert" title="Revert to last saved calibration">${lucideIcon('rotate-ccw', 14)} Revert</button>
+                <button class="dcal-btn dcal-btn-save" id="dcal-btn-save" title="Save this alignment as permanent offset">${lucideIcon('save', 14)} Save Alignment</button>
             </div>
         </div>
     `;
@@ -621,31 +638,20 @@ function buildDroneCalibrationHUD() {
 }
 
 
-// Build Admin floating toggle button
-function buildAdminTriggerButton() {
-    if (document.getElementById('admin-drone-calib-btn')) return;
-
-    const btn = document.createElement('button');
-    btn.id = 'admin-drone-calib-btn';
-    btn.className = 'admin-drone-calib-btn';
-    btn.innerHTML = `
-        <span class="adcb-icon">🛰️</span>
-        <span class="adcb-text">Drone Calibration</span>
-    `;
-    btn.title = 'Open Drone Imagery Alignment Tool (Admin Mode)';
-    btn.addEventListener('click', toggleDroneCalibrationHUD);
-
-    document.body.appendChild(btn);
-}
-
 export function toggleDroneCalibrationHUD() {
-    const hud = document.getElementById('drone-calib-hud');
+    if (!state.isAdmin) return;
+
+    let hud = document.getElementById('drone-calib-hud');
+    if (!hud) {
+        buildDroneCalibrationHUD();
+        hud = document.getElementById('drone-calib-hud');
+    }
     if (!hud) return;
 
     isHudOpen = (hud.style.display === 'none' || hud.style.display === '');
     hud.style.display = isHudOpen ? 'block' : 'none';
 
-    const triggerBtn = document.getElementById('admin-drone-calib-btn');
+    const triggerBtn = document.getElementById('admin-drone-calib-trigger-btn');
     if (triggerBtn) {
         triggerBtn.classList.toggle('active', isHudOpen);
     }
@@ -774,6 +780,7 @@ function showToast(msg) {
 // Global window registration
 if (typeof window !== 'undefined') {
     window.initDroneCalibration = initDroneCalibration;
+    window.syncAdminDroneDOM = syncAdminDroneDOM;
     window.applyDroneOffset = applyDroneOffset;
     window.saveDroneCalibration = saveDroneCalibration;
     window.resetDroneCalibration = resetDroneCalibration;

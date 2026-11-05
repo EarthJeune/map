@@ -63,7 +63,7 @@ pool.getConnection((err, connection) => {
         
         connection.query(createSettingsTable, (err) => {
             if (!err) {
-                const defaultCoords = JSON.stringify([121.16198, 13.958679]);
+                const defaultCoords = JSON.stringify([121.16643361549615, 13.958120847881375]);
                 connection.query(`INSERT IGNORE INTO settings (\`key\`, \`value\`) VALUES ('kiosk_pin', ?)`, [defaultCoords]);
                 const defaultQARESCoords = JSON.stringify([121.3713315, 13.9432268]);
                 connection.query(`INSERT IGNORE INTO settings (\`key\`, \`value\`) VALUES ('qares_kiosk_pin', ?)`, [defaultQARESCoords]);
@@ -97,7 +97,7 @@ app.get('/api/pin', async (req, res) => {
     const isQares = (station === 'qares');
     const key = isQares ? 'qares_kiosk_pin' : 'kiosk_pin';
     const fallbackFile = isQares ? 'qares_pin.json' : 'pin.json';
-    const defaultCoords = isQares ? [121.3713315, 13.9432268] : [121.16198, 13.958679];
+    const defaultCoords = isQares ? [121.3713315, 13.9432268] : [121.16643361549615, 13.958120847881375];
 
     try {
         const rows = await query(`SELECT \`value\` FROM settings WHERE \`key\` = ?`, [key]);
@@ -260,8 +260,9 @@ app.get('/api/tunnel', async (req, res) => {
     });
 });
 
-// API endpoint to get building colors
+// API endpoint to get building colors (with local colors.json fallback)
 app.get('/api/colors', async (req, res) => {
+    const fallbackPath = path.join(__dirname, 'colors.json');
     try {
         const rows = await query(`SELECT building_id, roof_color, number_color FROM building_colors`);
         const colorsObj = {};
@@ -271,15 +272,28 @@ app.get('/api/colors', async (req, res) => {
                 icon: row.number_color
             };
         });
-        res.json(colorsObj);
+        try {
+            fs.writeFileSync(fallbackPath, JSON.stringify(colorsObj, null, 2), 'utf8');
+        } catch (e) {}
+        return res.json(colorsObj);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        try {
+            if (fs.existsSync(fallbackPath)) {
+                const cached = JSON.parse(fs.readFileSync(fallbackPath, 'utf8'));
+                return res.json(cached);
+            }
+        } catch (e) {}
+        return res.json({});
     }
 });
 
 // API endpoint to update building colors
 app.post('/api/colors', async (req, res) => {
     const colors = req.body;
+    const fallbackPath = path.join(__dirname, 'colors.json');
+    try {
+        fs.writeFileSync(fallbackPath, JSON.stringify(colors, null, 2), 'utf8');
+    } catch (e) {}
     try {
         // Iterate through the colors object and upsert each into the building_colors table
         for (const [building_id, colorData] of Object.entries(colors)) {
@@ -293,7 +307,7 @@ app.post('/api/colors', async (req, res) => {
         }
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.json({ success: true, fallback: true });
     }
 });
 
@@ -401,6 +415,138 @@ app.post('/api/qares/buildings', (req, res) => {
     }
 });
 
+app.get('/api/qares/boundary', (req, res) => {
+    try {
+        const filePath = path.join(__dirname, 'qares_boundary.json');
+        if (fs.existsSync(filePath)) {
+            const data = fs.readFileSync(filePath, 'utf8');
+            res.json(JSON.parse(data));
+        } else {
+            res.json({ type: 'FeatureCollection', name: 'QARES Official Deeded Survey Boundaries', features: [] });
+        }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/qares/boundary', (req, res) => {
+    try {
+        const data = req.body;
+        if (!data || !data.features) {
+            return res.status(400).json({ error: 'Invalid GeoJSON: features array expected' });
+        }
+        const filePath = path.join(__dirname, 'qares_boundary.json');
+        if (fs.existsSync(filePath)) {
+            try {
+                const bDir = path.join(__dirname, 'archive', 'backups');
+                if (!fs.existsSync(bDir)) fs.mkdirSync(bDir, { recursive: true });
+                const ts = new Date().toISOString().replace(/[:.]/g, '-');
+                fs.copyFileSync(filePath, path.join(bDir, `qares_boundary_backup_${ts}.json`));
+            } catch (e) {}
+        }
+        fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+        console.log(`[QARES] Saved qares_boundary.json with ${data.features.length} features.`);
+
+        // Automatically sync QARES_MASK in js/data/geo.js
+        updateQaresMaskInGeoJs(data);
+
+        res.json({ success: true, count: data.features.length });
+    } catch (err) {
+        console.error('Error saving qares_boundary.json:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+function updateQaresMaskInGeoJs(boundaryGeoJson) {
+    try {
+        let front = null;
+        let flint = null;
+        for (const f of boundaryGeoJson.features) {
+            const id = (f.properties && f.properties.id) || f.id;
+            if (id === 'qares_front' && f.geometry && f.geometry.type === 'Polygon') {
+                front = f.geometry.coordinates[0];
+            }
+            if (id === 'qares_flint' && f.geometry && f.geometry.type === 'Polygon') {
+                flint = f.geometry.coordinates[0];
+            }
+        }
+        if (!front || !flint) return;
+
+        const bridgeEastNorth = [121.37061209525696, 13.944254361703344];
+        const bridgeEastMid   = [121.3705593874083, 13.944142160808177];
+        const bridgeWestNorth = [121.37047394506597, 13.94430713756418];
+        const bridgeWestMid1  = [121.37042437050941, 13.944201606477387];
+        const bridgeWestMid2  = [121.37042414140082, 13.944201113871262];
+
+        function lineIntersect(p1, p2, p3, p4) {
+            const xd = [p1[0] - p2[0], p3[0] - p4[0]];
+            const yd = [p1[1] - p2[1], p3[1] - p4[1]];
+            const div = xd[0] * yd[1] - xd[1] * yd[0];
+            if (div === 0) return null;
+            const d1 = p1[0] * p2[1] - p1[1] * p2[0];
+            const d2 = p3[0] * p4[1] - p3[1] * p4[0];
+            return [(d1 * xd[1] - xd[0] * d2) / div, (d1 * yd[1] - yd[0] * d2) / div];
+        }
+
+        const eastIntersect = lineIntersect(front[2], front[3], bridgeEastMid, bridgeEastNorth) || [121.37051705867479, 13.944052054016835];
+        const westIntersect = lineIntersect(front[3], front[4], [121.37037, 13.94408], bridgeWestNorth) || [121.370380891412, 13.944103798967703];
+
+        const hole = [
+            front[0],
+            front[1],
+            front[2],
+            eastIntersect,
+            bridgeEastMid,
+            bridgeEastNorth
+        ];
+
+        for (let i = 1; i < flint.length - 1; i++) {
+            hole.push(flint[i]);
+        }
+        hole.push(flint[0]);
+
+        hole.push(bridgeWestNorth);
+        hole.push(bridgeWestMid1);
+        hole.push(bridgeWestMid2);
+        hole.push(westIntersect);
+
+        for (let i = 4; i < front.length; i++) {
+            hole.push(front[i]);
+        }
+
+        const maskObj = {
+            type: 'FeatureCollection',
+            features: [{
+                type: 'Feature',
+                geometry: {
+                    type: 'Polygon',
+                    coordinates: [
+                        [[-180, -85], [180, -85], [180, 85], [-180, 85], [-180, -85]],
+                        hole
+                    ]
+                },
+                properties: {
+                    station: 'qares',
+                    description: 'DA-QARES Compound Vignette Mask with Walkway Bridge'
+                }
+            }]
+        };
+
+        const geoPath = path.join(__dirname, 'js', 'data', 'geo.js');
+        if (fs.existsSync(geoPath)) {
+            let geoContent = fs.readFileSync(geoPath, 'utf8');
+            const maskRegex = /export const QARES_MASK = \{.*?\};/s;
+            if (maskRegex.test(geoContent)) {
+                geoContent = geoContent.replace(maskRegex, `export const QARES_MASK = ${JSON.stringify(maskObj)};`);
+                fs.writeFileSync(geoPath, geoContent, 'utf8');
+                console.log('[QARES] Automatically synced QARES_MASK in js/data/geo.js');
+            }
+        }
+    } catch (e) {
+        console.warn('[QARES] Notice updating geo.js mask:', e);
+    }
+}
+
 // API endpoint to get trees.json
 app.get('/api/trees', (req, res) => {
     try {
@@ -469,15 +615,72 @@ app.post('/api/buildings', (req, res) => {
         const BUILDINGS_WITH_3D = new Set([
             'mis_rafis_building', 'tanco_hall_building', 'argosino_hall', 'canteen',
             'raed_building', 'guard_house', 'amad_building', 'pgrc_building',
-            'prdp_building', 'ored_building', 'admin_building', 'lares_building',
+            'prdp_building', 'lares_agricultural_supplies_storage', 'ored_building', 'admin_building', 'lares_building',
             'laboratory_building', 'f2c2_building', 'ild_building', 'seaguard_building',
             'corn/casava_building', 'rsbsa_building', 'tissue_culture_building',
             'rcpc_building', 'motorpool_barracks', 'rnd_building', 'rsl_building',
             'exit_guard_house_1', 'exit_guard_house_2', 'multi_purpose_administrative_building',
-            'dorm', 'guest_house', 'mushroom_laboratory'
+            'dorm', 'guest_house', 'mushroom_laboratory', 'warehouse_1', 'lares_farm_machinery_shed_1', 'lares_organic_fertilizer_storage', 'warehouse_3', 'warehouse_4', 'warehouse_5', 'warehouse_6', 'warehouse_7'
         ]);
+
+        // Geo-centroid matching dictionary for known campus structures to prevent stale browser autosaves from corrupting facility identities
+        const KNOWN_GEO_FACILITIES = [
+            { id: 'admin_building', name: 'Admin Building', center: [121.166338, 13.958735], category: 'office', isSubPlot: false, hasMarker: true },
+            { id: 'plot17_screenhouse_1', name: 'Plot 17 Screenhouse 1', center: [121.167294, 13.959152], category: 'trial_sites', isSubPlot: true, hasMarker: false },
+            { id: 'plot17_screenhouse_2', name: 'Plot 17 Screenhouse 2', center: [121.167348, 13.959108], category: 'trial_sites', isSubPlot: true, hasMarker: false },
+            { id: 'plot17_screenhouse_3', name: 'Plot 17 Screenhouse 3', center: [121.167370, 13.959051], category: 'trial_sites', isSubPlot: true, hasMarker: false },
+            { id: 'plot17_screenhouse_4', name: 'Plot 17 Screenhouse 4', center: [121.167362, 13.958975], category: 'trial_sites', isSubPlot: true, hasMarker: false },
+            { id: 'plot17_screenhouse_5', name: 'Plot 17 Screenhouse 5', center: [121.167424, 13.958847], category: 'trial_sites', isSubPlot: true, hasMarker: false },
+            { id: 'plot18_greenhouse_complex', name: 'Plot 18 Research Greenhouse Complex', center: [121.167581, 13.959046], category: 'trial_sites', isSubPlot: true, hasMarker: false },
+            { id: 'plot18_screenhouse_9', name: 'Screenhouse 9 & Potting Headhouse', center: [121.167742, 13.959223], category: 'trial_sites', isSubPlot: true, hasMarker: false },
+            { id: 'plot18_screenhouse_9_headhouse', name: 'Screenhouse 9 Headhouse', center: [121.167711, 13.959295], category: 'trial_sites', isSubPlot: true, hasMarker: false },
+            { id: 'plot22_water_tank', name: 'LARES Water Tank', center: [121.168991, 13.959770], category: 'infrastructure', isSubPlot: true, hasMarker: false },
+            { id: 'plot22_comfort_room', name: 'Plot 22 Comfort Room', center: [121.168946, 13.959749], category: 'infrastructure', isSubPlot: true, hasMarker: false },
+            { id: 'warehouse_1', name: 'LARES Synthetic Fertilizer Storage / LARES Pesticide Storage', center: [121.166837, 13.959600], category: 'infrastructure', isSubPlot: false, hasMarker: true },
+            { id: 'lares_farm_machinery_shed_1', name: 'LARES Farm Machinery Shed 1', center: [121.166871, 13.959707], category: 'infrastructure', isSubPlot: false, hasMarker: true },
+            { id: 'lares_organic_fertilizer_storage', name: 'LARES Organic Fertilizer Storage', center: [121.166833, 13.959801], category: 'infrastructure', isSubPlot: false, hasMarker: true },
+            { id: 'warehouse_3', name: 'LARES Corn Seed Processing Facility', center: [121.166836, 13.959944], category: 'infrastructure', isSubPlot: false, hasMarker: true },
+            { id: 'warehouse_4', name: 'LARES Farm Machinery Shed 2', center: [121.166872, 13.960008], category: 'infrastructure', isSubPlot: false, hasMarker: true },
+            { id: 'warehouse_5', name: 'Rice Banner Warehouse', center: [121.167183, 13.960020], category: 'infrastructure', isSubPlot: false, hasMarker: true },
+            { id: 'warehouse_6', name: 'Cassava Dryer', center: [121.167383, 13.960092], category: 'infrastructure', isSubPlot: false, hasMarker: true },
+            { id: 'warehouse_7', name: 'Corn Banner Warehouse', center: [121.167564, 13.960170], category: 'infrastructure', isSubPlot: false, hasMarker: true },
+            { id: 'warehouse_7_annex', name: 'Warehouse 7 Annex', center: [121.167451, 13.960198], category: 'infrastructure', isSubPlot: false, hasMarker: false },
+            { id: 'lares_agricultural_supplies_storage', name: 'LARES Agricultural Supplies Storage', center: [121.166915, 13.959457], category: 'infrastructure', isSubPlot: false, hasMarker: true },
+            { id: 'prdp_building', name: 'PRDP Building', center: [121.166907, 13.959350], category: 'infrastructure', isSubPlot: false, hasMarker: true }
+        ];
+
+        function getCentroid(coords) {
+            const pts = coords && coords[0] ? coords[0] : [];
+            if (!pts.length) return [0, 0];
+            let lng = 0, lat = 0;
+            pts.forEach(c => { lng += c[0]; lat += c[1]; });
+            return [lng / pts.length, lat / pts.length];
+        }
+
+        function distM(c1, c2) {
+            const dx = (c1[0] - c2[0]) * 111000 * Math.cos(c1[1] * Math.PI / 180);
+            const dy = (c1[1] - c2[1]) * 111000;
+            return Math.hypot(dx, dy);
+        }
+
+        // Sanitize incoming features: restore canonical IDs and prevent duplicate dummy pills
         for (const f of data.features) {
-            if (f.properties && BUILDINGS_WITH_3D.has(f.properties.id)) {
+            f.properties = f.properties || {};
+            if (f.geometry && f.geometry.coordinates) {
+                const c = getCentroid(f.geometry.coordinates);
+                for (const kf of KNOWN_GEO_FACILITIES) {
+                    if (distM(c, kf.center) < 10) {
+                        // Strict canonical enforcement: auto-correct corrupted or mismatched IDs
+                        f.properties.id = kf.id;
+                        f.properties.name = kf.name;
+                        f.properties.category = kf.category;
+                        f.properties.isSubPlot = kf.isSubPlot;
+                        f.properties.hasMarker = kf.hasMarker;
+                        break;
+                    }
+                }
+            }
+            if (BUILDINGS_WITH_3D.has(f.properties.id)) {
                 f.properties.has_3d_model = true;
             }
         }
@@ -620,10 +823,18 @@ function initStationMbtiles(stationKey, candidates, label) {
 initStationMbtiles('lares', laresCandidates, 'DA-LARES');
 initStationMbtiles('qares', qaresCandidates, 'DA-QARES');
 
+const TRANSPARENT_1X1_PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQABpfZFQAAAAABJRU5ErkJggg==', 'base64');
+
 function handleStationTileRequest(stationKey, req, res) {
     const st = stationsDb[stationKey];
     if (!st || !st.stmt) {
-        return res.status(404).end();
+        res.writeHead(200, {
+            'Content-Type': 'image/png',
+            'Content-Length': TRANSPARENT_1X1_PNG.length,
+            'Cache-Control': 'public, max-age=86400, immutable',
+            'Access-Control-Allow-Origin': '*'
+        });
+        return res.end(TRANSPARENT_1X1_PNG);
     }
 
     const z = parseInt(req.params.z, 10);
@@ -654,7 +865,14 @@ function handleStationTileRequest(stationKey, req, res) {
 
     st.stmt.get([z, x, tileRow], (err, row) => {
         if (err || !row || !row.tile_data) {
-            return res.status(404).end();
+            // Return transparent 1x1 PNG instead of 404 to avoid browser console error spam
+            res.writeHead(200, {
+                'Content-Type': 'image/png',
+                'Content-Length': TRANSPARENT_1X1_PNG.length,
+                'Cache-Control': 'public, max-age=86400, immutable',
+                'Access-Control-Allow-Origin': '*'
+            });
+            return res.end(TRANSPARENT_1X1_PNG);
         }
 
         if (st.cache.size >= TILE_CACHE_MAX) {

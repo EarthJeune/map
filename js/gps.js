@@ -1,7 +1,9 @@
 // DA-LARES Wayfinding — Live Mobile GPS Engine & Sensor Fusion Optimization Module
 // High-precision road snapping, Kalman-style jitter filtering, haptics, and compass sync
 
-import { BUILDING_DIRECTORY } from './data/buildings.js?v=72';
+import { BUILDING_DIRECTORY, getBuildingById } from './data/buildings.js';
+import { DA_LARES_OUTER_PERIMETER, QARES_MASK } from './data/geo.js';
+import { lucideIcon } from './data/icons.js';
 import { state } from './data/state.js';
 import { map, stopIntroAnimation } from './map-setup.js';
 import { stopOrbit } from './idle.js';
@@ -23,7 +25,7 @@ import {
     showPhoneArrival,
     startPhoneAnimatedRoute
 } from './phone-nav.js';
-import { updateOcclusion, resetOcclusion } from './occlusion.js?v=81';
+import { updateOcclusion, resetOcclusion } from './occlusion.js';
 import { isPhoneMode, isKioskMode } from './mode.js';
 
 // ============================================================
@@ -159,6 +161,37 @@ let headingAnimFrame = null;
 let lastHeadingFrameTime = 0;
 
 let activeTouchCount = 0;
+const CAMPUS_GATE_BUFFER_METERS = 20;
+let isOffCampusFallbackActive = false;
+let userDismissedOffCampusPrompt = false;
+
+export function evaluateCampusPerimeter(coord, toleranceMeters = CAMPUS_GATE_BUFFER_METERS) {
+    if (!Array.isArray(coord) || coord.length < 2 || isNaN(coord[0]) || isNaN(coord[1])) {
+        return { inside: false, distanceOutsideMeters: Infinity };
+    }
+    try {
+        const pt = turf.point(coord);
+        const isQares = state.currentStationId === 'qares';
+        const ring = isQares
+            ? (QARES_MASK?.features?.[0]?.geometry?.coordinates?.[1] || DA_LARES_OUTER_PERIMETER)
+            : DA_LARES_OUTER_PERIMETER;
+
+        const poly = turf.polygon([ring]);
+        if (turf.booleanPointInPolygon(pt, poly)) {
+            return { inside: true, distanceOutsideMeters: 0 };
+        }
+        const boundaryLine = turf.lineString(ring);
+        const distMeters = turf.pointToLineDistance(pt, boundaryLine, { units: 'meters' });
+        return {
+            inside: distMeters <= toleranceMeters,
+            distanceOutsideMeters: distMeters
+        };
+    } catch (e) {
+        const fallbackCenter = turf.point(state.KIOSK_COORDS || [121.1665, 13.9582]);
+        const d = turf.distance(turf.point(coord), fallbackCenter, { units: 'meters' });
+        return { inside: d <= 450, distanceOutsideMeters: d };
+    }
+}
 
 // Haptic feedback helpers
 export function triggerHapticArrival() {
@@ -311,6 +344,8 @@ export function requestDeviceOrientationPermission(callback) {
         state.compassPermissionGranted = true;
         bindCompassListeners();
         if (callback) callback(true);
+    } else {
+        if (callback) callback(false);
     }
 }
 
@@ -354,22 +389,28 @@ export function requestUserInitialLocation() {
         initialFound = true;
         const userLng = pos.coords.longitude;
         const userLat = pos.coords.latitude;
-        state.lastKnownGPSCoords = [userLng, userLat];
-        updateUserGPSMarker(userLng, userLat);
-        showMobileToast('📍 Location found! Tap any building to navigate.', 3000);
+        const userCoord = [userLng, userLat];
+        state.lastKnownGPSCoords = userCoord;
+        const perimStatus = evaluateCampusPerimeter(userCoord);
 
-        const userPt = turf.point([userLng, userLat]);
-        const compoundCenter = turf.point([121.1665, 13.9582]);
-        const distFromCompoundMeters = turf.distance(userPt, compoundCenter, { units: 'meters' });
-        // Only re-center on user coordinates if NO building is actively selected!
-        // When arriving via QR scan for a specific building, leave the camera orbiting the destination building!
-        if (!state.selectedBuildingId && distFromCompoundMeters <= 2500) {
-            map.easeTo({
-                center: [userLng, userLat],
-                zoom: 18.8,
-                pitch: 0,
-                duration: 900
-            });
+        if (perimStatus.inside) {
+            updateUserGPSMarker(userLng, userLat);
+            showMobileToast('📍 Location found! Tap any building to navigate.', 3000);
+            // Only re-center on user coordinates if NO building is actively selected!
+            // When arriving via QR scan for a specific building, leave the camera orbiting the destination building!
+            if (!state.selectedBuildingId) {
+                map.easeTo({
+                    center: userCoord,
+                    zoom: 18.8,
+                    pitch: 0,
+                    duration: 900
+                });
+            }
+        } else {
+            const distLabel = perimStatus.distanceOutsideMeters >= 1000
+                ? `${(perimStatus.distanceOutsideMeters / 1000).toFixed(1)} km`
+                : `${Math.round(perimStatus.distanceOutsideMeters)} m`;
+            showMobileToast(`📍 Outside campus boundary (${distLabel} away). Showing campus preview.`, 3500);
         }
     };
 
@@ -418,10 +459,13 @@ export function startPhoneLiveGPS(buildingId) {
     state.offRouteCounter = 0;
     state.lastRecalcTime = 0;
     state.minDestDistance = null;
+    isOffCampusFallbackActive = false;
+    userDismissedOffCampusPrompt = false;
+    dismissOffCampusPromptCard(false);
     document.body.classList.add('phone-gps-active');
     updateRecenterStateUI(true);
 
-    const building = BUILDING_DIRECTORY.find(b => b.id === buildingId);
+    const building = getBuildingById(buildingId) || BUILDING_DIRECTORY.find(b => b.id === buildingId);
     const bldgName = building ? building.name : 'Destination';
     state.currentRouteDestName = bldgName;
 
@@ -439,7 +483,7 @@ export function startPhoneLiveGPS(buildingId) {
     if (ptnhPrim) ptnhPrim.textContent = 'Locating your GPS position…';
     if (ptnhSec) ptnhSec.textContent = `Connecting to phone satellite for ${bldgName}`;
     if (ptnhDist) ptnhDist.textContent = 'GPS';
-    if (ptnhIcon) ptnhIcon.innerHTML = '📍';
+    if (ptnhIcon) ptnhIcon.innerHTML = lucideIcon('map-pin', 20);
     if (topHud) topHud.classList.add('active');
 
     setPhoneSheetView('route');
@@ -447,10 +491,10 @@ export function startPhoneLiveGPS(buildingId) {
 
     state.activeFullRouteCoords = null;
 
-    // 2. Immediately fly camera straight to blue ping if available!
+    // 2. Immediately fly camera straight to blue ping only if user is inside campus boundary!
     const pingCoord = state.lastKnownGPSCoords || (state.userGPSMarker ? [state.userGPSMarker.getLngLat().lng, state.userGPSMarker.getLngLat().lat] : null);
 
-    if (pingCoord) {
+    if (pingCoord && evaluateCampusPerimeter(pingCoord).inside) {
         map.flyTo({
             center: pingCoord,
             zoom: 19.3,
@@ -476,20 +520,23 @@ export function startPhoneLiveGPS(buildingId) {
 
     acquireWakeLock();
     setupGPSLayers();
-    startContinuousTracking(buildingId);
 
-    navigator.geolocation.getCurrentPosition(
-        (pos) => handleGPSPositionUpdate(pos, buildingId),
-        (err) => {
-            console.warn('Initial GPS query note:', err);
-            if (err && err.code === 1) {
-                showGPSPermissionCard(buildingId);
-            }
-        },
-        { enableHighAccuracy: true, maximumAge: 0, timeout: 12000 }
-    );
+    // Request Compass (DeviceOrientation) synchronously on user tap first,
+    // then immediately request GPS Location once answered so iOS Safari never drops either dialog.
+    requestDeviceOrientationPermission(() => {
+        startContinuousTracking(buildingId);
 
-    requestDeviceOrientationPermission();
+        navigator.geolocation.getCurrentPosition(
+            (pos) => handleGPSPositionUpdate(pos, buildingId),
+            (err) => {
+                console.warn('Initial GPS query note:', err);
+                if (err && err.code === 1) {
+                    showGPSPermissionCard(buildingId);
+                }
+            },
+            { enableHighAccuracy: true, maximumAge: 0, timeout: 12000 }
+        );
+    });
 }
 
 export function startContinuousTracking(buildingId) {
@@ -582,6 +629,8 @@ export function stopPhoneLiveGPS() {
     markerTargetLngLat = null;
     lastCameraFollowLngLat = null;
     lastTrimmedCoord = null;
+    isOffCampusFallbackActive = false;
+    dismissOffCampusPromptCard(false);
 
     state.isMobileGPSActive = false;
     state.isUserFollowingGPS = false;
@@ -721,7 +770,7 @@ export function handleDeviceHeading(e) {
 }
 
 export function computeAndDrawRouteFromGPS(startCoord, buildingId) {
-    const building = BUILDING_DIRECTORY.find(b => b.id === buildingId);
+    const building = getBuildingById(buildingId) || BUILDING_DIRECTORY.find(b => b.id === buildingId);
     const roadGraph = state.roadGraph || (typeof window !== 'undefined' ? window.roadGraph : null);
     const buildingEntrances = (typeof window !== 'undefined' && window.BUILDING_ENTRANCES) ? window.BUILDING_ENTRANCES : {};
 
@@ -809,6 +858,7 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
 
     const compoundCenter = turf.point([121.1665, 13.9582]);
     const distFromCompoundMeters = turf.distance(userPt, compoundCenter, { units: 'meters' });
+    const perimStatus = evaluateCampusPerimeter(userCoord);
 
     if (isDebugMode) {
         updateDebugHUD({
@@ -819,6 +869,54 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
                 ? pos.coords.heading
                 : (rawCompassHeading || 0)
         });
+    }
+
+    // Off-campus perimeter check: prevent floating marker / camera pan into black mask outside DA-LARES
+    if (!perimStatus.inside) {
+        state.lastKnownGPSCoords = userCoord;
+        if (state.userGPSMarker) {
+            state.userGPSMarker.remove();
+            state.userGPSMarker = null;
+            markerCurrentLngLat = null;
+        }
+        if (!isOffCampusFallbackActive || !state.activeFullRouteCoords || !map.getSource('route-source')) {
+            isOffCampusFallbackActive = true;
+            const distLabel = perimStatus.distanceOutsideMeters >= 1000
+                ? `${(perimStatus.distanceOutsideMeters / 1000).toFixed(1)} km`
+                : `${Math.round(perimStatus.distanceOutsideMeters)} m`;
+            const stationLabel = state.currentStationId === 'qares' ? 'DA-QARES' : 'DA-LARES';
+            showMobileToast(`📍 Outside ${stationLabel} (${distLabel} away). Showing campus route from Kiosk — live GPS activates when you enter.`, 4500);
+            const kCoords = computeRouteFromKiosk(targetBuildingId);
+            state.activeFullRouteCoords = kCoords;
+            state.activeRouteCoords = kCoords;
+            state.currentRouteSteps = buildSteps(kCoords, BUILDING_DIRECTORY, targetBuildingId);
+            const targetBldg = getBuildingById(targetBuildingId) || BUILDING_DIRECTORY.find(b => b.id === targetBuildingId);
+            state.currentRouteDestName = targetBldg ? targetBldg.name : 'Destination';
+            updatePhoneRouteUI(kCoords);
+            drawRoute(kCoords, { animated: false });
+            if (!userDismissedOffCampusPrompt) {
+                showOffCampusPromptCard(userCoord, perimStatus.distanceOutsideMeters, targetBuildingId);
+            }
+            if (kCoords && kCoords.length >= 2) {
+                try {
+                    const bbox = turf.bbox(turf.lineString(kCoords));
+                    map.fitBounds(bbox, {
+                        padding: getResponsiveMapPadding(),
+                        pitch: 45,
+                        duration: 900,
+                        maxZoom: 18.8
+                    });
+                } catch (e) { }
+            }
+        }
+        return;
+    }
+
+    const justEnteredCampus = isOffCampusFallbackActive;
+    if (justEnteredCampus) {
+        isOffCampusFallbackActive = false;
+        lastCameraFollowLngLat = null;
+        dismissOffCampusPromptCard(false);
     }
 
     // 2. Sensor Fusion: Course Over Ground (movement bearing) when walking actively
@@ -872,20 +970,11 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
     const isRouteFromKiosk = state.activeFullRouteCoords && state.activeFullRouteCoords.length > 0 &&
         (Math.abs(state.activeFullRouteCoords[0][0] - state.KIOSK_COORDS[0]) < 0.00005 && Math.abs(state.activeFullRouteCoords[0][1] - state.KIOSK_COORDS[1]) < 0.00005);
 
-    if (!state.activeFullRouteCoords || !map.getSource('route-source') || (state.isMobileGPSActive && isRouteFromKiosk)) {
-        if (distFromCompoundMeters > 1500) {
-            showMobileToast(`📍 Connected to phone GPS (${(distFromCompoundMeters / 1000).toFixed(1)} km away). Route shown from Argosino Kiosk.`, 4000);
-            const kCoords = computeRouteFromKiosk(targetBuildingId);
-            state.activeFullRouteCoords = kCoords;
-            state.currentRouteSteps = buildSteps(kCoords, BUILDING_DIRECTORY, targetBuildingId);
-            const targetBldg = BUILDING_DIRECTORY.find(b => b.id === targetBuildingId);
-            state.currentRouteDestName = targetBldg ? targetBldg.name : 'Destination';
-            updatePhoneRouteUI(kCoords);
-            drawRoute(kCoords, { animated: false });
-        } else {
-            showMobileToast('📍 Connected to phone GPS. Route started from your location.', 3000);
-            computeAndDrawRouteFromGPS(userCoord, targetBuildingId);
-        }
+    if (justEnteredCampus || !state.activeFullRouteCoords || !map.getSource('route-source') || (state.isMobileGPSActive && isRouteFromKiosk)) {
+        showMobileToast(justEnteredCampus
+            ? '📍 Entered campus! Live GPS route started from your location.'
+            : '📍 Connected to phone GPS. Route started from your location.', 3000);
+        computeAndDrawRouteFromGPS(userCoord, targetBuildingId);
         return;
     }
 
@@ -910,7 +999,7 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
             const userSnappedOnRoute = turf.nearestPointOnLine(fullLine, userPt);
             const startPt = turf.point(state.activeFullRouteCoords[0]);
             const destPt = turf.point(state.activeFullRouteCoords[state.activeFullRouteCoords.length - 1]);
-            const targetBldg = BUILDING_DIRECTORY.find(b => b.id === targetBuildingId);
+            const targetBldg = getBuildingById(targetBuildingId) || BUILDING_DIRECTORY.find(b => b.id === targetBuildingId);
             const targetCoord = targetBldg ? targetBldg.coords : state.activeFullRouteCoords[state.activeFullRouteCoords.length - 1];
             const actualDistToDest = turf.distance(userPt, turf.point(targetCoord), { units: 'meters' });
 
@@ -938,7 +1027,7 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
 
             const shouldTriggerReroute = isFarOffRoute || (state.offRouteCounter >= 2) || (isWalkingAway && state.offRouteCounter >= 2);
 
-            if (shouldTriggerReroute && distFromCompoundMeters <= 1500) {
+            if (shouldTriggerReroute && perimStatus.inside) {
                 if (nowTime - (state.lastRecalcTime || 0) > 2500) {
                     state.lastRecalcTime = nowTime;
                     state.offRouteCounter = 0;
@@ -1051,10 +1140,10 @@ export function showGPSPermissionCard(buildingId) {
     card.innerHTML = `
         <div class="pgpc-header">
             <div class="pgpc-title-wrap">
-                <span class="pgpc-icon">📍</span>
+                <span class="pgpc-icon">${lucideIcon('map-pin', 18)}</span>
                 <span class="pgpc-title">Location Permission Notice</span>
             </div>
-            <button class="pgpc-close-btn" onclick="dismissGPSPermissionCard()" title="Close">✕</button>
+            <button class="pgpc-close-btn" onclick="dismissGPSPermissionCard()" title="Close">${lucideIcon('x', 16)}</button>
         </div>
         <div class="pgpc-desc">
             Your phone reported that location access is restricted. If you already tapped "Allow" in your browser:
@@ -1065,9 +1154,9 @@ export function showGPSPermissionCard(buildingId) {
             • <strong>Android:</strong> Swipe down your notification panel and turn <strong>ON</strong> the main <strong>Location</strong> icon.
         </div>
         <div class="pgpc-actions">
-            <button class="pgpc-btn primary" onclick="retryPhoneGPS('${bId}')">🔄 Retry GPS</button>
-            <button class="pgpc-btn" style="background:#0284c7;color:#fff;" onclick="startTapToPlaceLocation('${bId}')">📍 Tap Map to Start</button>
-            <button class="pgpc-btn secondary" onclick="dismissGPSPermissionCard(true)">🏛️ Use the Kiosk</button>
+            <button class="pgpc-btn primary" onclick="retryPhoneGPS('${bId}')">${lucideIcon('rotate-ccw', 14)} Retry GPS</button>
+            <button class="pgpc-btn" style="background:#0284c7;color:#fff;" onclick="startTapToPlaceLocation('${bId}')">${lucideIcon('map-pin', 14)} Tap Map to Start</button>
+            <button class="pgpc-btn secondary" onclick="dismissGPSPermissionCard(true)">${lucideIcon('landmark', 14)} Use the Kiosk</button>
         </div>
     `;
 }
@@ -1079,6 +1168,64 @@ export function dismissGPSPermissionCard(startRoute = false) {
     if (startRoute && state.selectedBuildingId) {
         startPhoneAnimatedRoute();
     }
+}
+
+export function showOffCampusPromptCard(userCoord, distOutsideMeters, buildingId) {
+    let card = document.getElementById('phone-offcampus-gmaps-card');
+    if (!card) {
+        card = document.createElement('div');
+        card.id = 'phone-offcampus-gmaps-card';
+        card.className = 'phone-gps-permission-card';
+        document.body.appendChild(card);
+    }
+    const isQares = state.currentStationId === 'qares';
+    const stationLabel = isQares ? 'DA-QARES' : 'DA-LARES';
+    // Main Entrance Gate coordinates: DA-LARES [121.165745, 13.958380], DA-QARES [121.3713315, 13.9432268]
+    const gateLatLng = isQares ? '13.9432268,121.3713315' : '13.958380,121.165745';
+    const originParam = (Array.isArray(userCoord) && userCoord.length >= 2)
+        ? `&origin=${userCoord[1]},${userCoord[0]}`
+        : '';
+    const gmapsUrl = `https://www.google.com/maps/dir/?api=1${originParam}&destination=${gateLatLng}&travelmode=driving`;
+
+    const distLabel = distOutsideMeters >= 1000
+        ? `${(distOutsideMeters / 1000).toFixed(1)} km`
+        : `${Math.round(distOutsideMeters)} m`;
+    const bId = buildingId || state.selectedBuildingId || '';
+    const targetBldg = getBuildingById(bId) || BUILDING_DIRECTORY.find(b => b.id === bId);
+    const destName = targetBldg ? targetBldg.name : 'your destination';
+
+    card.innerHTML = `
+        <div class="pgpc-header">
+            <div class="pgpc-title-wrap">
+                <span class="pgpc-icon">${lucideIcon('compass', 18)}</span>
+                <span class="pgpc-title">Outside ${stationLabel} (${distLabel} away)</span>
+            </div>
+            <button class="pgpc-close-btn" onclick="dismissOffCampusPromptCard(true)" title="Close">${lucideIcon('x', 16)}</button>
+        </div>
+        <div class="pgpc-desc">
+            You are currently outside the <strong>${stationLabel}</strong> campus boundary. Our 3D Live GPS guides along internal campus roads &amp; walkways.
+        </div>
+        <div class="pgpc-tip">
+            <strong>Need directions to the Main Gate first?</strong><br>
+            Use <strong>Google Maps</strong> to reach the ${stationLabel} Main Entrance. Once you enter the gate, keep this page open and Live GPS will automatically guide you to <strong>${destName}</strong>!
+        </div>
+        <div class="pgpc-actions">
+            <a href="${gmapsUrl}" target="_blank" rel="noopener noreferrer" class="pgpc-btn primary" style="text-decoration:none;">
+                ${lucideIcon('map', 15)} Open in Google Maps
+            </a>
+            <button class="pgpc-btn secondary" onclick="dismissOffCampusPromptCard(true)">
+                ${lucideIcon('eye', 15)} Preview Campus Route
+            </button>
+        </div>
+    `;
+}
+
+export function dismissOffCampusPromptCard(markDismissed = true) {
+    if (markDismissed) {
+        userDismissedOffCampusPrompt = true;
+    }
+    const card = document.getElementById('phone-offcampus-gmaps-card');
+    if (card) card.remove();
 }
 
 export function startTapToPlaceLocation(buildingId) {
@@ -1136,7 +1283,7 @@ export function updateRecenterStateUI(isFollowing) {
     const fabBtn = document.getElementById('mobile-recenter-btn');
     if (centerBtn) {
         centerBtn.classList.toggle('needs-recenter', !isFollowing);
-        centerBtn.innerHTML = isFollowing ? '<span>🎯</span> Center' : '<span>🎯</span> Re-center';
+        centerBtn.innerHTML = isFollowing ? `<span>${lucideIcon('crosshair', 14)}</span> Center` : `<span>${lucideIcon('crosshair', 14)}</span> Re-center`;
     }
     if (fabBtn) {
         fabBtn.classList.toggle('active', !isFollowing && state.isMobileGPSActive);
@@ -1149,6 +1296,25 @@ export function recenterOnUserGPS(opts = {}) {
         state.autoRecenterTimer = null;
     }
     if (state.lastKnownGPSCoords) {
+        if (!evaluateCampusPerimeter(state.lastKnownGPSCoords).inside) {
+            state.isUserFollowingGPS = true;
+            updateRecenterStateUI(true);
+            if (state.activeFullRouteCoords && state.activeFullRouteCoords.length >= 2) {
+                try {
+                    const bbox = turf.bbox(turf.lineString(state.activeFullRouteCoords));
+                    map.fitBounds(bbox, {
+                        padding: getResponsiveMapPadding(),
+                        pitch: 45,
+                        duration: 800,
+                        maxZoom: 18.8
+                    });
+                } catch (e) { }
+            }
+            if (!opts.auto) {
+                showMobileToast('📍 Outside campus boundary — centered on campus route');
+            }
+            return;
+        }
         state.isUserFollowingGPS = true;
         updateRecenterStateUI(true);
         map.flyTo({
@@ -1203,6 +1369,8 @@ window.startMobileGPSNavigation = startMobileGPSNavigation;
 window.stopPhoneLiveGPS = stopPhoneLiveGPS;
 window.stopMobileGPSNavigation = stopMobileGPSNavigation;
 window.dismissGPSPermissionCard = dismissGPSPermissionCard;
+window.showOffCampusPromptCard = showOffCampusPromptCard;
+window.dismissOffCampusPromptCard = dismissOffCampusPromptCard;
 window.retryPhoneGPS = retryPhoneGPS;
 window.startTapToPlaceLocation = startTapToPlaceLocation;
 window.recenterOnUserGPS = recenterOnUserGPS;

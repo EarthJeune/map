@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>QARES Deeded Boundary & Parcel Editor — Tiaong, Quezon</title>
+<meta name="viewport" content="initial-scale=1,maximum-scale=1">
+<link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+<script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.js"></script>
+<link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.css" type="text/css">
+<script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { 
+    margin: 0; padding: 0; 
+    background: #080d1a; 
+    color: #f8fafc; 
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
+    overflow: hidden;
+  }
+  #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+
+  /* Floating UI Control Panel */
+  .panel { 
+    position: absolute; top: 16px; left: 16px; z-index: 10; 
+    background: rgba(11, 17, 32, 0.94); 
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    padding: 18px 20px; 
+    border-radius: 14px; 
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.75), 0 0 24px rgba(34, 197, 94, 0.18); 
+    border: 1px solid rgba(255, 255, 255, 0.12); 
+    width: 375px;
+    max-height: calc(100vh - 32px);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .panel::-webkit-scrollbar { width: 5px; }
+  .panel::-webkit-scrollbar-thumb { background: rgba(34, 197, 94, 0.35); border-radius: 9999px; }
+
+  .header-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.35);
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    width: fit-content;
+    letter-spacing: 0.3px;
+  }
+  h3 { 
+    margin: 0 0 4px 0; 
+    font-size: 17px; 
+    font-weight: 800;
+    color: #f8fafc; 
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  p.desc { 
+    margin: 0 0 12px 0; 
+    font-size: 11.5px; 
+    color: #94a3b8; 
+    line-height: 1.45;
+  }
+
+  .section-label {
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1.1px;
+    color: #4ade80;
+    margin: 12px 0 6px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* Segmented Parcel Switcher */
+  .parcel-switcher {
+    display: flex;
+    background: rgba(30, 41, 59, 0.7);
+    padding: 3px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    gap: 3px;
+    margin-bottom: 10px;
+  }
+  .parcel-btn {
+    flex: 1;
+    padding: 7px 6px;
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 10.5px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+  }
+  .parcel-btn:hover { color: #f8fafc; background: rgba(255, 255, 255, 0.06); }
+  .parcel-btn.active {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #ffffff;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+  }
+
+  /* Base Layer Switcher */
+  .layer-switcher {
+    display: flex;
+    background: rgba(30, 41, 59, 0.7);
+    padding: 3px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    gap: 3px;
+    margin-bottom: 8px;
+  }
+  .layer-btn {
+    flex: 1;
+    padding: 6px 8px;
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    transition: all 0.2s ease;
+  }
+  .layer-btn:hover { color: #f8fafc; background: rgba(255, 255, 255, 0.06); }
+  .layer-btn.active {
+    background: linear-gradient(135deg, #0284c7, #0369a1);
+    color: #ffffff;
+    font-weight: 700;
+  }
+
+  /* Sliders & Toggles */
+  .slider-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #cbd5e1;
+    margin-bottom: 4px;
+  }
+  .slider-num { font-family: 'JetBrains Mono', monospace; color: #4ade80; font-weight: 700; }
+  .range-input {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.12);
+    outline: none;
+    cursor: pointer;
+    accent-color: #10b981;
+    margin-bottom: 10px;
+  }
+
+  .toggle-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .toggle-btn {
+    padding: 7px 10px;
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 7px;
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.2s ease;
+  }
+  .toggle-btn.active {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: #10b981;
+    color: #4ade80;
+  }
+
+  /* Telemetry Info Card */
+  .telemetry-card {
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+  .telemetry-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .telemetry-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #38bdf8;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .telemetry-badge {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    background: rgba(56, 189, 248, 0.15);
+    color: #38bdf8;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+  }
+  .telemetry-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    font-size: 11px;
+  }
+  .telemetry-item {
+    background: rgba(2, 6, 23, 0.5);
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  .telemetry-label {
+    font-size: 9.5px;
+    color: #64748b;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+  .telemetry-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #f1f5f9;
+  }
+
+  /* Vertex micro-nudge control */
+  .nudge-controls {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    margin-top: 8px;
+  }
+  .nudge-btn {
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #e2e8f0;
+    padding: 5px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: center;
+  }
+  .nudge-btn:hover { background: #334155; }
+
+  /* Action Buttons */
+  .btn-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 4px;
+  }
+  .btn-save {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #ffffff;
+    font-weight: 700;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-size: 12.5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+    transition: all 0.2s ease;
+  }
+  .btn-save:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .btn-save:active { transform: translateY(0); }
+
+  .btn-row {
+    display: flex;
+    gap: 6px;
+  }
+  .btn-secondary {
+    flex: 1;
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #cbd5e1;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+  }
+  .btn-secondary:hover { background: rgba(51, 65, 85, 0.9); color: #ffffff; }
+
+  /* Collapsible Output Textarea */
+  details summary {
+    font-size: 11px;
+    color: #94a3b8;
+    cursor: pointer;
+    margin-top: 10px;
+    padding: 4px 0;
+    font-weight: 600;
+  }
+  textarea.geojson-output {
+    width: 100%;
+    height: 140px;
+    background: rgba(2, 6, 23, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #4ade80;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    border-radius: 8px;
+    padding: 8px;
+    margin-top: 6px;
+    resize: vertical;
+    outline: none;
+  }
+
+  /* Crosshair indicator & cursor coordinates badge */
+  .cursor-coords-badge {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #38bdf8;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  /* Notification Toast */
+  #toast {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #10b981;
+    color: #ffffff;
+    padding: 10px 20px;
+    border-radius: 30px;
+    font-size: 13px;
+    font-weight: 700;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    z-index: 9999;
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translate(-50%, -10px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+  }
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div class="panel">
+  <div class="header-badge">📍 DA-QARES BOUNDARY SURVEYOR</div>
+  <h3>QARES Deeded Boundary Editor</h3>
+  <p class="desc">Interactive vertex editor for official QARES deeded survey boundaries. Drag vertices to align with high-resolution drone orthomosaics and export back to the system.</p>
+
+  <!-- Parcel Focus Switcher -->
+  <div class="section-label">
+    <span>Focus Parcel</span>
+    <span id="parcelVertexCount" style="color: #94a3b8; font-weight: normal; font-family: monospace;">18 Vertices</span>
+  </div>
+  <div class="parcel-switcher">
+    <button class="parcel-btn active" data-parcel="all" onclick="focusParcel('all')">🌐 All</button>
+    <button class="parcel-btn" data-parcel="front" onclick="focusParcel('front')">🟢 Front</button>
+    <button class="parcel-btn" data-parcel="flint" onclick="focusParcel('flint')">🔵 Flint</button>
+    <button class="parcel-btn" data-parcel="pnr" onclick="focusParcel('pnr')">🛤️ PNR</button>
+  </div>
+
+  <!-- Basemap Switcher -->
+  <div class="section-label">Base Imagery Layer</div>
+  <div class="layer-switcher">
+    <button class="layer-btn active" id="btn-drone" onclick="switchBaseLayer('drone')">🛸 Drone Ortho</button>
+    <button class="layer-btn" id="btn-satellite" onclick="switchBaseLayer('satellite')">🛰️ Satellite</button>
+    <button class="layer-btn" id="btn-streets" onclick="switchBaseLayer('streets')">🗺️ Streets</button>
+  </div>
+
+  <!-- Orthomosaic Opacity Slider -->
+  <div class="slider-row">
+    <span>Drone Orthomosaic Opacity</span>
+    <span class="slider-num" id="orthoOpacityVal">100%</span>
+  </div>
+  <input type="range" class="range-input" min="0" max="100" value="100" id="orthoOpacitySlider" oninput="updateOrthoOpacity(this.value)">
+
+  <!-- Reference Overlays -->
+  <div class="section-label">Reference Overlays</div>
+  <div class="toggle-grid">
+    <button class="toggle-btn active" id="toggleBuildings" onclick="toggleOverlay('buildings')">
+      <span>🏢 3D Buildings</span>
+      <span class="indicator">ON</span>
+    </button>
+    <button class="toggle-btn active" id="toggleRoads" onclick="toggleOverlay('roads')">
+      <span>🛣️ Road Network</span>
+      <span class="indicator">ON</span>
+    </button>
+  </div>
+
+  <!-- Telemetry Card -->
+  <div class="telemetry-card">
+    <div class="telemetry-header">
+      <div class="telemetry-title">
+        <span id="telemetryIcon">📐</span>
+        <span id="telemetryName">Compound Survey Metrics</span>
+      </div>
+      <div class="telemetry-badge" id="telemetryId">qares_boundary</div>
+    </div>
+    <div class="telemetry-grid">
+      <div class="telemetry-item">
+        <div class="telemetry-label">Land Area (Hectares)</div>
+        <div class="telemetry-value" id="valAreaHa">0.00 ha</div>
+      </div>
+      <div class="telemetry-item">
+        <div class="telemetry-label">Land Area (Sq Meters)</div>
+        <div class="telemetry-value" id="valAreaSqm">0 m²</div>
+      </div>
+      <div class="telemetry-item">
+        <div class="telemetry-label">Perimeter Length</div>
+        <div class="telemetry-value" id="valPerimeter">0 m</div>
+      </div>
+      <div class="telemetry-item">
+        <div class="telemetry-label">Boundary Vertices</div>
+        <div class="telemetry-value" id="valVertices">0 pts</div>
+      </div>
+    </div>
+
+    <!-- Micro-Nudge Vertex Tool -->
+    <div id="vertexNudgeSection" style="margin-top: 10px; display: none;">
+      <div class="telemetry-label" style="display:flex; justify-content:space-between;">
+        <span>Selected Vertex Coordinate</span>
+        <span id="selectedVertexIndex" style="color:#38bdf8;">Pt #1</span>
+      </div>
+      <div style="font-family:'JetBrains Mono',monospace; font-size:10px; color:#4ade80; margin-bottom:4px;" id="selectedVertexCoord">
+        [121.3679496, 13.9439905]
+      </div>
+      <div class="nudge-controls">
+        <button class="nudge-btn" onclick="nudgeVertex(0, 0.00002)">▲ North</button>
+        <button class="nudge-btn" onclick="nudgeVertex(0, -0.00002)">▼ South</button>
+        <button class="nudge-btn" onclick="nudgeVertex(-0.00002, 0)">◄ West</button>
+        <button class="nudge-btn" onclick="nudgeVertex(0.00002, 0)">► East</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Persistence Actions -->
+  <div class="btn-stack">
+    <button class="btn-save" id="btnSaveServer" onclick="saveBoundaryToServer()">
+      💾 Save to Codebase (qares_boundary.json)
+    </button>
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="copyGeoJSON()">📋 Copy GeoJSON</button>
+      <button class="btn-secondary" onclick="downloadGeoJSON()">⬇️ Download File</button>
+      <button class="btn-secondary" onclick="resetFromFile()">🔄 Reload</button>
+    </div>
+  </div>
+
+  <!-- Raw Output Accordion -->
+  <details>
+    <summary>Inspect Formatted GeoJSON Output</summary>
+    <textarea class="geojson-output" id="rawOutput" readonly></textarea>
+  </details>
+</div>
+
+<div class="cursor-coords-badge" id="cursorCoords">13.946580° N, 121.371780° E</div>
+<div id="toast">✅ Notification</div>
+
+<script>
+mapboxgl.accessToken = 'pk.eyJ1IjoiZWFydGgwMzA3IiwiYSI6ImNtdWFqNTR5czAxNmEyd29lMm42YjZlMDkifQ.xdPOP5RVPdn6YNka-ZdwoQ';
+
+// QARES Coordinates in Tiaong, Quezon
+const QARES_CENTER = [121.37178, 13.94658];
+let activeBaseLayer = 'drone';
+let selectedFeature = null;
+let selectedVertex = null;
+
+// Parcel Centers & Bounding Boxes
+const PARCEL_VIEWS = {
+  all: { center: [121.37178, 13.94658], zoom: 16.2, pitch: 0 },
+  front: { center: [121.3702, 13.9438], zoom: 17.5, pitch: 15 },
+  flint: { center: [121.3721, 13.9472], zoom: 16.8, pitch: 15 },
+  pnr: { center: [121.3705, 13.9442], zoom: 17.2, pitch: 0 }
+};
+
+// Initialize Map
+const map = new mapboxgl.Map({
+  container: 'map',
+  style: {
+    'version': 8,
+    'sources': {
+      'google-satellite': {
+        'type': 'raster',
+        'tiles': ['https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'],
+        'tileSize': 256,
+        'maxzoom': 22
+      },
+      'qares-drone-source': {
+        'type': 'raster',
+        'tiles': ['/api/tiles/qares/{z}/{x}/{y}.png'],
+        'tileSize': 256,
+        'minzoom': 14,
+        'maxzoom': 22,
+        'bounds': [121.366888, 13.941220, 121.376150, 13.950960]
+      }
+    },
+    'layers': [
+      {
+        'id': 'google-satellite-layer',
+        'type': 'raster',
+        'source': 'google-satellite'
+      },
+      {
+        'id': 'qares-ortho-layer',
+        'type': 'raster',
+        'source': 'qares-drone-source',
+        'layout': { 'visibility': 'visible' },
+        'paint': { 'raster-opacity': 1.0 }
+      }
+    ]
+  },
+  center: QARES_CENTER,
+  zoom: 16.2,
+  pitch: 0,
+  bearing: 0
+});
+
+map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+map.addControl(new mapboxgl.ScaleControl({ maxWidth: 100, unit: 'metric' }), 'bottom-left');
+
+// Custom MapboxDraw Styles for Boundary Lines & Vertices
+const drawStyles = [
+  // Polygon fill - inactive
+  {
+    'id': 'gl-draw-polygon-fill-inactive',
+    'type': 'fill',
+    'filter': ['all', ['==', '$type', 'Polygon'], ['!=', 'mode', 'static']],
+    'paint': {
+      'fill-color': '#10b981',
+      'fill-opacity': 0.12
+    }
+  },
+  // Polygon fill - active
+  {
+    'id': 'gl-draw-polygon-fill-active',
+    'type': 'fill',
+    'filter': ['all', ['==', '$type', 'Polygon'], ['==', 'active', 'true']],
+    'paint': {
+      'fill-color': '#38bdf8',
+      'fill-opacity': 0.22
+    }
+  },
+  // Polygon boundary casing
+  {
+    'id': 'gl-draw-polygon-stroke-casing',
+    'type': 'line',
+    'filter': ['all', ['==', '$type', 'Polygon']],
+    'paint': {
+      'line-color': '#060a12',
+      'line-width': 5,
+      'line-opacity': 0.7
+    }
+  },
+  // Polygon boundary outline - inactive
+  {
+    'id': 'gl-draw-polygon-stroke-inactive',
+    'type': 'line',
+    'filter': ['all', ['==', '$type', 'Polygon'], ['!=', 'active', 'true']],
+    'paint': {
+      'line-color': '#10b981',
+      'line-width': 2.5
+    }
+  },
+  // Polygon boundary outline - active
+  {
+    'id': 'gl-draw-polygon-stroke-active',
+    'type': 'line',
+    'filter': ['all', ['==', '$type', 'Polygon'], ['==', 'active', 'true']],
+    'paint': {
+      'line-color': '#38bdf8',
+      'line-width': 3
+    }
+  },
+  // LineStrings (PNR Railway Corridor)
+  {
+    'id': 'gl-draw-line-inactive',
+    'type': 'line',
+    'filter': ['all', ['==', '$type', 'LineString'], ['!=', 'active', 'true']],
+    'paint': {
+      'line-color': '#f59e0b',
+      'line-width': 3.5,
+      'line-dasharray': [2, 1]
+    }
+  },
+  {
+    'id': 'gl-draw-line-active',
+    'type': 'line',
+    'filter': ['all', ['==', '$type', 'LineString'], ['==', 'active', 'true']],
+    'paint': {
+      'line-color': '#fbbf24',
+      'line-width': 4
+    }
+  },
+  // Inactive vertex points
+  {
+    'id': 'gl-draw-point-inactive',
+    'type': 'circle',
+    'filter': ['all', ['==', 'meta', 'vertex'], ['==', '$type', 'Point'], ['!=', 'active', 'true']],
+    'paint': {
+      'circle-radius': 6,
+      'circle-color': '#10b981',
+      'circle-stroke-width': 2,
+      'circle-stroke-color': '#ffffff'
+    }
+  },
+  // Active vertex points (selected)
+  {
+    'id': 'gl-draw-point-active',
+    'type': 'circle',
+    'filter': ['all', ['==', 'meta', 'vertex'], ['==', '$type', 'Point'], ['==', 'active', 'true']],
+    'paint': {
+      'circle-radius': 8,
+      'circle-color': '#f59e0b',
+      'circle-stroke-width': 2.5,
+      'circle-stroke-color': '#ffffff'
+    }
+  },
+  // Midpoint handles (for inserting new vertices)
+  {
+    'id': 'gl-draw-polygon-midpoint',
+    'type': 'circle',
+    'filter': ['all', ['==', 'meta', 'midpoint'], ['==', '$type', 'Point']],
+    'paint': {
+      'circle-radius': 5,
+      'circle-color': '#38bdf8',
+      'circle-stroke-width': 1.5,
+      'circle-stroke-color': '#ffffff'
+    }
+  }
+];
+
+const draw = new MapboxDraw({
+  displayControlsDefault: false,
+  controls: {
+    polygon: true,
+    line_string: true,
+    trash: true
+  },
+  userProperties: true,
+  styles: drawStyles
+});
+map.addControl(draw, 'top-right');
+
+// Toast notification helper
+function showToast(msg, isSuccess = true) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.style.background = isSuccess ? '#10b981' : '#ef4444';
+  toast.style.display = 'block';
+  setTimeout(() => { toast.style.display = 'none'; }, 3200);
+}
+
+// Compute spherical polygon area fallback if Turf is unavailable
+function fallbackPolygonArea(coords) {
+  const R = 6378137;
+  let area = 0;
+  if (coords.length > 2) {
+    for (let i = 0; i < coords.length - 1; i++) {
+      const p1 = coords[i];
+      const p2 = coords[i + 1];
+      area += (p2[0] - p1[0]) * (Math.PI / 180) * (2 + Math.sin(p1[1] * Math.PI / 180) + Math.sin(p2[1] * Math.PI / 180));
+    }
+    area = Math.abs(area * R * R / 2);
+  }
+  return area;
+}
+
+// Calculate Metrics (Area, Perimeter, Vertices)
+function updateTelemetry(features) {
+  if (!features || features.length === 0) {
+    document.getElementById('valAreaHa').textContent = '0.00 ha';
+    document.getElementById('valAreaSqm').textContent = '0 m²';
+    document.getElementById('valPerimeter').textContent = '0 m';
+    document.getElementById('valVertices').textContent = '0 pts';
+    document.getElementById('parcelVertexCount').textContent = '0 Vertices';
+    return;
+  }
+
+  let totalArea = 0;
+  let totalPerimeter = 0;
+  let totalVertices = 0;
+
+  features.forEach(f => {
+    if (f.geometry.type === 'Polygon') {
+      const ring = f.geometry.coordinates[0] || [];
+      totalVertices += (ring.length > 1 ? ring.length - 1 : ring.length);
+      
+      if (window.turf && turf.area) {
+        try {
+          totalArea += turf.area(f);
+          const line = turf.polygonToLine(f);
+          if (line) totalPerimeter += turf.length(line, { units: 'meters' });
+        } catch (e) {
+          totalArea += fallbackPolygonArea(ring);
+        }
+      } else {
+        totalArea += fallbackPolygonArea(ring);
+      }
+    } else if (f.geometry.type === 'LineString') {
+      const pts = f.geometry.coordinates || [];
+      totalVertices += pts.length;
+      if (window.turf && turf.length) {
+        try {
+          totalPerimeter += turf.length(f, { units: 'meters' });
+        } catch (e) {}
+      }
+    }
+  });
+
+  const ha = (totalArea / 10000).toFixed(2);
+  const sqm = Math.round(totalArea).toLocaleString();
+  const perim = Math.round(totalPerimeter).toLocaleString();
+
+  document.getElementById('valAreaHa').textContent = `${ha} ha`;
+  document.getElementById('valAreaSqm').textContent = `${sqm} m²`;
+  document.getElementById('valPerimeter').textContent = `${perim} m`;
+  document.getElementById('valVertices').textContent = `${totalVertices} pts`;
+  document.getElementById('parcelVertexCount').textContent = `${totalVertices} Vertices`;
+}
+
+// Update JSON Output and Telemetry
+function updateDrawOutput() {
+  const data = draw.getAll();
+  data.name = 'QARES Official Deeded Survey Boundaries';
+  
+  // Format JSON
+  const jsonStr = JSON.stringify(data, null, 2);
+  document.getElementById('rawOutput').value = jsonStr;
+  localStorage.setItem('qares_boundary_autosave', jsonStr);
+
+  updateTelemetry(data.features);
+}
+
+// MapboxDraw event hooks
+map.on('draw.create', updateDrawOutput);
+map.on('draw.delete', updateDrawOutput);
+map.on('draw.update', updateDrawOutput);
+
+map.on('draw.selectionchange', (e) => {
+  const feats = e.features;
+  const nudgeSec = document.getElementById('vertexNudgeSection');
+
+  if (feats && feats.length > 0) {
+    selectedFeature = feats[0];
+    const p = selectedFeature.properties || {};
+    document.getElementById('telemetryName').textContent = p.name || selectedFeature.id || 'Selected Geometry';
+    document.getElementById('telemetryId').textContent = selectedFeature.id || p.id || 'feature';
+    document.getElementById('telemetryIcon').textContent = selectedFeature.geometry.type === 'Polygon' ? '🟢' : '🛤️';
+
+    // Show single-feature telemetry
+    updateTelemetry([selectedFeature]);
+
+    // Check if in direct_select vertex editing mode
+    if (nudgeSec) {
+      if (selectedFeature.geometry.type === 'Polygon' && selectedFeature.geometry.coordinates[0]) {
+        const coords = selectedFeature.geometry.coordinates[0];
+        nudgeSec.style.display = 'block';
+        document.getElementById('selectedVertexCoord').textContent = JSON.stringify(coords[0]);
+      } else {
+        nudgeSec.style.display = 'none';
+      }
+    }
+  } else {
+    selectedFeature = null;
+    document.getElementById('telemetryName').textContent = 'Compound Survey Metrics';
+    document.getElementById('telemetryId').textContent = 'qares_boundary';
+    document.getElementById('telemetryIcon').textContent = '📐';
+    if (nudgeSec) nudgeSec.style.display = 'none';
+    updateDrawOutput();
+  }
+});
+
+// Nudge selected vertex
+window.nudgeVertex = function(dlng, dlat) {
+  if (!selectedFeature) return;
+  const data = draw.getAll();
+  const feat = data.features.find(f => f.id === selectedFeature.id);
+  if (!feat) return;
+
+  if (feat.geometry.type === 'Polygon') {
+    const ring = feat.geometry.coordinates[0];
+    if (ring && ring.length > 0) {
+      ring[0][0] = parseFloat((ring[0][0] + dlng).toFixed(7));
+      ring[0][1] = parseFloat((ring[0][1] + dlat).toFixed(7));
+      // Keep closed
+      ring[ring.length - 1] = [ring[0][0], ring[0][1]];
+      draw.set(data);
+      updateDrawOutput();
+      document.getElementById('selectedVertexCoord').textContent = JSON.stringify(ring[0]);
+    }
+  }
+};
+
+// Focus Parcel View
+window.focusParcel = function(parcelKey) {
+  document.querySelectorAll('.parcel-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.parcel === parcelKey);
+  });
+
+  const cfg = PARCEL_VIEWS[parcelKey] || PARCEL_VIEWS.all;
+  map.flyTo({
+    center: cfg.center,
+    zoom: cfg.zoom,
+    pitch: cfg.pitch,
+    speed: 1.2,
+    curve: 1.4
+  });
+
+  // Select feature in draw
+  const data = draw.getAll();
+  if (parcelKey === 'front') {
+    const frontFeat = data.features.find(f => (f.properties && f.properties.id === 'qares_front') || (f.id === 'qares_front'));
+    if (frontFeat) draw.changeMode('direct_select', { featureId: frontFeat.id });
+  } else if (parcelKey === 'flint') {
+    const flintFeat = data.features.find(f => (f.properties && f.properties.id === 'qares_flint') || (f.id === 'qares_flint'));
+    if (flintFeat) draw.changeMode('direct_select', { featureId: flintFeat.id });
+  } else if (parcelKey === 'pnr') {
+    const pnrFeat = data.features.find(f => (f.properties && f.properties.id === 'qares_pnr_railway') || (f.id === 'qares_pnr_railway'));
+    if (pnrFeat) draw.changeMode('direct_select', { featureId: pnrFeat.id });
+  } else {
+    draw.changeMode('simple_select', { featureIds: [] });
+  }
+};
+
+// Basemap Switcher
+window.switchBaseLayer = function(layerId) {
+  activeBaseLayer = layerId;
+  document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`btn-${layerId}`).classList.add('active');
+
+  if (layerId === 'drone') {
+    map.setLayoutProperty('qares-ortho-layer', 'visibility', 'visible');
+    map.setLayoutProperty('google-satellite-layer', 'visibility', 'visible');
+  } else if (layerId === 'satellite') {
+    map.setLayoutProperty('qares-ortho-layer', 'visibility', 'none');
+    map.setLayoutProperty('google-satellite-layer', 'visibility', 'visible');
+  } else {
+    map.setLayoutProperty('qares-ortho-layer', 'visibility', 'none');
+    map.setLayoutProperty('google-satellite-layer', 'visibility', 'none');
+  }
+};
+
+// Drone Ortho Opacity
+window.updateOrthoOpacity = function(val) {
+  const opacity = parseFloat(val) / 100;
+  document.getElementById('orthoOpacityVal').textContent = `${val}%`;
+  if (map.getLayer('qares-ortho-layer')) {
+    map.setPaintProperty('qares-ortho-layer', 'raster-opacity', opacity);
+  }
+};
+
+// Reference Overlay Toggles (Buildings & Roads)
+window.toggleOverlay = function(type) {
+  const btn = document.getElementById(type === 'buildings' ? 'toggleBuildings' : 'toggleRoads');
+  const isCurrentlyActive = btn.classList.contains('active');
+  const newVis = isCurrentlyActive ? 'none' : 'visible';
+  btn.classList.toggle('active', !isCurrentlyActive);
+  btn.querySelector('.indicator').textContent = !isCurrentlyActive ? 'ON' : 'OFF';
+
+  if (type === 'buildings') {
+    ['ref-buildings-fill', 'ref-buildings-line'].forEach(id => {
+      if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', newVis);
+    });
+  } else if (type === 'roads') {
+    ['ref-roads-layer', 'ref-roads-casing'].forEach(id => {
+      if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', newVis);
+    });
+  }
+};
+
+// Cursor coordinates inspector
+map.on('mousemove', (e) => {
+  const lng = e.lngLat.lng.toFixed(7);
+  const lat = e.lngLat.lat.toFixed(7);
+  document.getElementById('cursorCoords').textContent = `${lat}° N, ${lng}° E`;
+});
+
+// Load QARES Boundary into Draw
+function loadBoundaryData(geojson) {
+  if (!geojson || !geojson.features) return;
+  draw.deleteAll();
+  
+  // Ensure every feature has an id
+  geojson.features.forEach((f, idx) => {
+    if (!f.id) {
+      f.id = (f.properties && f.properties.id) ? f.properties.id : `qares_boundary_${idx}`;
+    }
+  });
+
+  draw.add(geojson);
+  updateDrawOutput();
+}
+
+// Reset from file
+window.resetFromFile = function() {
+  if (!confirm('Reload official boundary from qares_boundary.json? Unsaved edits will be discarded.')) return;
+  localStorage.removeItem('qares_boundary_autosave');
+  fetch('/api/qares/boundary?t=' + Date.now())
+    .then(r => r.json())
+    .then(data => {
+      loadBoundaryData(data);
+      showToast('🔄 Reloaded original deeded boundaries from file.');
+    })
+    .catch(err => showToast('Failed to load boundary: ' + err.message, false));
+};
+
+// Copy GeoJSON to clipboard
+window.copyGeoJSON = function() {
+  const output = document.getElementById('rawOutput');
+  output.select();
+  document.execCommand('copy');
+  showToast('📋 Copied QARES Boundary GeoJSON to clipboard!');
+};
+
+// Download GeoJSON file
+window.downloadGeoJSON = function() {
+  const data = draw.getAll();
+  data.name = 'QARES Official Deeded Survey Boundaries';
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'qares_boundary.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('⬇️ Downloaded qares_boundary.json!');
+};
+
+// Save Directly to Server
+window.saveBoundaryToServer = async function() {
+  const btn = document.getElementById('btnSaveServer');
+  btn.textContent = '⏳ Saving to Server...';
+  btn.disabled = true;
+
+  const data = draw.getAll();
+  data.name = 'QARES Official Deeded Survey Boundaries';
+
+  try {
+    const res = await fetch('/api/qares/boundary', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      let errMsg = `HTTP ${res.status}`;
+      try {
+        const json = JSON.parse(text);
+        if (json.error) errMsg = json.error;
+      } catch (e) {
+        if (res.status === 404) errMsg = 'Endpoint not found. Please ensure server.js is running.';
+      }
+      throw new Error(errMsg);
+    }
+
+    const json = await res.json();
+    if (json.success) {
+      btn.textContent = `✅ Saved ${json.count} Features!`;
+      btn.style.background = '#10b981';
+      showToast(`✅ Successfully saved qares_boundary.json with ${json.count} deeded survey features!`);
+      localStorage.setItem('qares_boundary_autosave', JSON.stringify(data, null, 2));
+      setTimeout(() => {
+        btn.textContent = '💾 Save to Codebase (qares_boundary.json)';
+        btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+        btn.disabled = false;
+      }, 3000);
+    } else {
+      showToast('❌ Error: ' + (json.error || 'Failed to save'), false);
+      btn.textContent = '❌ Error Saving';
+      btn.disabled = false;
+    }
+  } catch (err) {
+    showToast('❌ Save error: ' + err.message, false);
+    btn.textContent = '❌ Error Saving';
+    btn.disabled = false;
+  }
+};
+
+// Map on Load: Add Reference Layers and Load Boundary GeoJSON
+map.on('load', () => {
+  // 1. Reference Buildings Layer (from qares_buildings.json)
+  map.addSource('ref-buildings-src', {
+    type: 'geojson',
+    data: 'qares_buildings.json'
+  });
+  map.addLayer({
+    id: 'ref-buildings-fill',
+    type: 'fill',
+    source: 'ref-buildings-src',
+    paint: {
+      'fill-color': ['coalesce', ['get', 'color'], '#38bdf8'],
+      'fill-opacity': 0.45
+    }
+  });
+  map.addLayer({
+    id: 'ref-buildings-line',
+    type: 'line',
+    source: 'ref-buildings-src',
+    paint: {
+      'line-color': '#ffffff',
+      'line-width': 1.2,
+      'line-opacity': 0.8
+    }
+  });
+
+  // 2. Reference Roads Network (from qares_roads.json)
+  map.addSource('ref-roads-src', {
+    type: 'geojson',
+    data: 'qares_roads.json'
+  });
+  map.addLayer({
+    id: 'ref-roads-casing',
+    type: 'line',
+    source: 'ref-roads-src',
+    filter: ['==', '$type', 'LineString'],
+    paint: {
+      'line-color': '#0f172a',
+      'line-width': 4,
+      'line-opacity': 0.8
+    }
+  });
+  map.addLayer({
+    id: 'ref-roads-layer',
+    type: 'line',
+    source: 'ref-roads-src',
+    filter: ['==', '$type', 'LineString'],
+    paint: {
+      'line-color': '#34d399',
+      'line-width': 2.2,
+      'line-opacity': 0.9,
+      'line-dasharray': [3, 2]
+    }
+  });
+
+  // 3. Load Boundary Data: check autosave or fetch from server
+  const autosave = localStorage.getItem('qares_boundary_autosave');
+  if (autosave) {
+    try {
+      const data = JSON.parse(autosave);
+      if (data && data.features && data.features.length > 0) {
+        loadBoundaryData(data);
+        showToast('Restored QARES boundaries from local autosave.');
+        return;
+      }
+    } catch (e) {}
+  }
+
+  fetch('/api/qares/boundary?t=' + Date.now())
+    .then(r => r.json())
+    .then(data => {
+      loadBoundaryData(data);
+    })
+    .catch(e => {
+      console.warn('Notice: Loading boundary directly from static file fallback...');
+      fetch('qares_boundary.json')
+        .then(r => r.json())
+        .then(loadBoundaryData);
+    });
+});
+</script>
+</body>
+</html>

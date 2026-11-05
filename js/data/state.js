@@ -5,6 +5,7 @@
 
 import { SAVED_MAIN_KIOSK_COORDS } from './config.js';
 import { STATIONS, DEFAULT_STATION_ID } from './stations.js';
+import { DEFAULT_BUILDING_COLORS } from './buildings.js';
 
 const urlParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
 const urlViewParam = urlParams.get('view');
@@ -23,6 +24,12 @@ function detectInitialStationId() {
     return DEFAULT_STATION_ID;
 }
 
+try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.removeItem('da_current_station');
+    }
+} catch (e) {}
+
 const initialStationId = detectInitialStationId();
 
 export const state = {
@@ -38,7 +45,8 @@ export const state = {
     // Map & Style
     map: null,
     mapReady: false,
-    isIntroAnimating: true,
+    isIntroAnimating: false,
+    hasInitialIntroPlayed: false,
     currentMapStyleMode: (urlViewParam === 'mapbox') ? 'mapbox' : 'google',
     treesVisible: true,
     buildingsVisible: true,
@@ -49,6 +57,16 @@ export const state = {
     isMapSettingsOpen: false,
     markersVisible: true,
     boundaryVisible: true,
+    plotsVisible: (typeof localStorage !== 'undefined' && localStorage.getItem('da_plots_visible') !== null)
+        ? (localStorage.getItem('da_plots_visible') === 'true')
+        : false,
+    performanceProfile: (typeof localStorage !== 'undefined' && (() => {
+        try { return localStorage.getItem('da_kiosk_perf_profile'); } catch (e) { return null; }
+    })()) || 'auto',
+    mobilePerformanceProfile: (typeof localStorage !== 'undefined' && (() => {
+        try { return localStorage.getItem('da_mobile_perf_profile'); } catch (e) { return null; }
+    })()) || 'auto',
+    lowPerformanceMode: false,
     droneOffset: { dx: 0, dy: 0, autoApply: true },
     savedDroneOffset: { dx: 0, dy: 0 },
     gmapsOverlayOpacity: 0.0,
@@ -56,6 +74,7 @@ export const state = {
     // Markers & Overlays
     markers: [],
     sectionBadges: [],
+    gateMarkers: [],
     entranceArrowMarker: null,
     kioskMarkerInstance: null,
     qaresKioskMarkerInstance: null,
@@ -66,7 +85,7 @@ export const state = {
     // Building Selection & Customization
     selectedBuildingId: null,
     activeSearchedOffice: '',
-    savedBuildingColors: {},
+    savedBuildingColors: JSON.parse(JSON.stringify(DEFAULT_BUILDING_COLORS)),
     activeColorId: null,
 
     // Routing & Pathfinding

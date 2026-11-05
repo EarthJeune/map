@@ -1,4 +1,5 @@
 import { DEFAULT_MAP_VIEW, IDLE_TIMEOUT, SAVED_MAIN_KIOSK_COORDS } from './data/config.js';
+import { lucideIcon } from './data/icons.js';
 import { getActiveStationDefaultView } from './data/stations.js';
 import { state } from './data/state.js';
 import { map } from './map-setup.js';
@@ -34,11 +35,11 @@ export function createKioskMarker() {
 
     const prefix = isQares ? 'QARES • ' : '';
     if (state.isAdmin) {
-        const dragNotice = isDraggable ? '🔓 (Drag to move)' : '🔒 (Admin)';
+        const dragNotice = isDraggable ? `${lucideIcon('unlock', 12)} (Drag to move)` : `${lucideIcon('lock', 12)} (Admin)`;
         const bgStyle = isDraggable ? 'background:#eab308;color:#000;border:1px solid #ca8a04;' : '';
-        el.innerHTML = `<div class="kiosk-marker-pulse"></div><div class="kiosk-marker-dot"></div><div class="kiosk-marker-label" style="cursor:pointer;pointer-events:auto;${bgStyle}" onclick="toggleKioskLock(event)">📍 ${prefix}You Are Here ${dragNotice}</div>`;
+        el.innerHTML = `<div class="kiosk-marker-pulse"></div><div class="kiosk-marker-dot"></div><div class="kiosk-marker-label" style="cursor:pointer;pointer-events:auto;${bgStyle}" onclick="toggleKioskLock(event)">${lucideIcon('map-pin', 13)} ${prefix}You Are Here ${dragNotice}</div>`;
     } else {
-        el.innerHTML = `<div class="kiosk-marker-pulse"></div><div class="kiosk-marker-dot"></div><div class="kiosk-marker-label" style="pointer-events:none;cursor:default;user-select:none;">📍 ${prefix}You Are Here</div>`;
+        el.innerHTML = `<div class="kiosk-marker-pulse"></div><div class="kiosk-marker-dot"></div><div class="kiosk-marker-label" style="pointer-events:none;cursor:default;user-select:none;">${lucideIcon('map-pin', 13)} ${prefix}You Are Here</div>`;
     }
 
     const marker = new mapboxgl.Marker({
@@ -123,6 +124,8 @@ if (typeof window !== 'undefined') {
 }
 
 let idleAnimFrame = null;
+let idleStartTimeout = null;
+let manual360Frame = null;
 let autoExitToastTimer = null;
 
 export function showAutoExitToast(msg = 'Auto-exiting session • Returning to You Are Here', duration = 2600) {
@@ -226,7 +229,7 @@ export function autoExitActiveSession(reason = 'afk') {
     try {
         if (typeof openSidebarMenu === 'function') openSidebarMenu();
         if (state.currentStationId === 'lares') {
-            if (typeof filterByCategory === 'function') filterByCategory('all');
+            if (typeof filterByCategory === 'function') filterByCategory('all', true);
             else buildDirectory();
         }
     } catch (e) {
@@ -272,9 +275,16 @@ export function resetIdle() {
 }
 
 export function startIdleRotation() {
-    if (!isKioskMode()) return;
+    if (!isKioskMode() || (typeof document !== 'undefined' && document.hidden)) return;
 
-    // Stop any existing animation loop
+    // If already continuously rotating in idle mode, do not interrupt or reset the orbit
+    if (state.idleRotating && idleAnimFrame) return;
+
+    // Stop any existing animation loop or pending start timer
+    if (idleStartTimeout) {
+        clearTimeout(idleStartTimeout);
+        idleStartTimeout = null;
+    }
     if (idleAnimFrame) {
         cancelAnimationFrame(idleAnimFrame);
         idleAnimFrame = null;
@@ -283,64 +293,109 @@ export function startIdleRotation() {
     // Auto-exit any active route, modals, or panels before returning to You Are Here animation
     autoExitActiveSession('idle_timeout');
 
+    // Ensure no background idleTimer remains armed while idle rotation is active
+    if (state.idleTimer) {
+        clearTimeout(state.idleTimer);
+        state.idleTimer = null;
+    }
+
     state.idleRotating = true;
 
     // Station-aware default view: flies to QARES pin in QARES, or LARES pin in LARES
     const defaultView = getActiveStationDefaultView();
 
-    map.flyTo({
-        center: defaultView.center,
-        zoom: defaultView.zoom,
-        pitch: defaultView.pitch,
-        bearing: defaultView.bearing,
-        duration: 1800,
-        essential: true
-    });
+    // Check if camera is already parked at defaultView center/zoom/pitch so we don't snap bearing
+    const curCenter = map.getCenter();
+    const distLng = Math.abs(curCenter.lng - defaultView.center[0]);
+    const distLat = Math.abs(curCenter.lat - defaultView.center[1]);
+    const isAlreadyAtDefault = (
+        distLng < 0.00015 &&
+        distLat < 0.00015 &&
+        Math.abs(map.getZoom() - defaultView.zoom) < 0.35 &&
+        Math.abs(map.getPitch() - defaultView.pitch) < 4
+    );
 
-    let lastRotTime = 0;
+    const flyDuration = isAlreadyAtDefault ? 0 : 1800;
+    if (!isAlreadyAtDefault) {
+        map.flyTo({
+            center: defaultView.center,
+            zoom: defaultView.zoom,
+            pitch: defaultView.pitch,
+            bearing: defaultView.bearing,
+            padding: { top: 0, bottom: 0, left: 0, right: 0 },
+            duration: flyDuration,
+            essential: true
+        });
+    }
+
     const idleStartTime = Date.now();
     const IDLE_ROTATION_ECO_LIMIT_MS = 5 * 60 * 1000; // 5 minutes max continuous rotation before resting
 
-    // Paced, delta-time smoothed screensaver loop (~30 FPS budget to prevent 100% GPU saturation on i3/i5 kiosks)
-    function rotateStep(now) {
+    const beginContinuousIdleOrbit = () => {
         if (!state.idleRotating) return;
-
-        // Thermal / Eco-Rest: After 5 minutes unattended, smoothly park camera at You Are Here
-        if (Date.now() - idleStartTime > IDLE_ROTATION_ECO_LIMIT_MS) {
-            stopIdleRotation();
-            state.isEcoRestMode = true;
-            const restView = getActiveStationDefaultView();
-            map.easeTo({
-                center: restView.center,
-                zoom: restView.zoom,
-                pitch: restView.pitch,
-                bearing: restView.bearing,
-                duration: 1200
-            });
-            showAutoExitToast('💡 Kiosk Eco-Rest Active • Touch screen to explore', 5000);
-            return;
-        }
-
-        if (!lastRotTime || (now - lastRotTime) >= 16) {
-            const dt = lastRotTime ? Math.min(now - lastRotTime, 64) : 16.67;
-            lastRotTime = now;
-            const bearingStep = 0.10 * (dt / 16.67);
-            map.setBearing(map.getBearing() + bearingStep);
-        }
-        idleAnimFrame = requestAnimationFrame(rotateStep);
-    }
-
-    setTimeout(() => {
-        state.idleRotating = true;
         if (idleAnimFrame) cancelAnimationFrame(idleAnimFrame);
-        lastRotTime = performance.now();
+
+        let lastRotTime = performance.now();
+        const orbitStartStamp = lastRotTime;
+        let currentBearing = map.getBearing();
+
+        function rotateStep(now) {
+            if (!state.idleRotating || (typeof document !== 'undefined' && document.hidden)) {
+                stopIdleRotation();
+                return;
+            }
+
+            // Thermal / Eco-Rest: After 5 minutes unattended, smoothly park camera at You Are Here
+            if (Date.now() - idleStartTime > IDLE_ROTATION_ECO_LIMIT_MS) {
+                stopIdleRotation();
+                state.isEcoRestMode = true;
+                const restView = getActiveStationDefaultView();
+                map.easeTo({
+                    center: restView.center,
+                    zoom: restView.zoom,
+                    pitch: restView.pitch,
+                    bearing: restView.bearing,
+                    duration: 1200
+                });
+                showAutoExitToast('💡 Kiosk Eco-Rest Active • Touch screen to explore', 5000);
+                return;
+            }
+
+            const dt = Math.max(0, Math.min(now - lastRotTime, 64));
+            lastRotTime = now;
+
+            // Smooth 600ms ease-in ramp so orbit starts gently without a sudden speed jump
+            const elapsed = now - orbitStartStamp;
+            const easeFactor = Math.min(1.0, elapsed / 600);
+
+            // Continuous 6.0 deg/sec (0.10 deg per 16.67ms frame) with zero wrap-around stutter
+            const bearingStep = (0.10 * (dt / 16.67)) * easeFactor;
+            currentBearing = (currentBearing + bearingStep) % 360;
+            map.setBearing(currentBearing);
+
+            idleAnimFrame = requestAnimationFrame(rotateStep);
+        }
+
         idleAnimFrame = requestAnimationFrame(rotateStep);
-    }, 1900);
+    };
+
+    if (flyDuration === 0) {
+        beginContinuousIdleOrbit();
+    } else {
+        idleStartTimeout = setTimeout(() => {
+            idleStartTimeout = null;
+            beginContinuousIdleOrbit();
+        }, flyDuration);
+    }
 }
 
 export function stopIdleRotation() {
     state.idleRotating = false;
     state.isEcoRestMode = false;
+    if (idleStartTimeout) {
+        clearTimeout(idleStartTimeout);
+        idleStartTimeout = null;
+    }
     if (idleAnimFrame) {
         cancelAnimationFrame(idleAnimFrame);
         idleAnimFrame = null;
@@ -389,25 +444,32 @@ export function orbitBuilding(center, options = {}) {
     });
 
     state.orbitTimeout = setTimeout(() => {
-        if (!state.isOrbiting) return;
+        state.orbitTimeout = null;
+        if (!state.isOrbiting || !map) return;
+
         let lastOrbitTime = performance.now();
+        const orbitStartStamp = lastOrbitTime;
+        let currentBearing = map.getBearing();
 
         function orbitStep(now) {
             if (!state.isOrbiting || !map) return;
-            const dt = Math.min(now - lastOrbitTime, 64);
+            const dt = Math.max(0, Math.min(now - lastOrbitTime, 64));
             lastOrbitTime = now;
 
-            // True V-synced 60 FPS smooth rotation using synchronous setBearing
-            // Eliminates rotateTo() animation controller allocations and 30ms judder
-            const step = (0.16 * dt) / 16.67;
-            map.setBearing(map.getBearing() + step);
+            // Smooth 500ms ease-in ramp so rotation begins seamlessly right after flyTo
+            const elapsed = now - orbitStartStamp;
+            const easeFactor = Math.min(1.0, elapsed / 500);
+
+            // True V-synced 60 FPS continuous rotation (9.6 deg/sec = 37.5s per full 360° turn)
+            const step = ((0.16 * dt) / 16.67) * easeFactor;
+            currentBearing = (currentBearing + step) % 360;
+            map.setBearing(currentBearing);
 
             state.orbitAnimFrame = requestAnimationFrame(orbitStep);
         }
 
-        lastOrbitTime = performance.now();
         state.orbitAnimFrame = requestAnimationFrame(orbitStep);
-    }, duration + 50);
+    }, duration);
 }
 
 export function stopOrbit() {
@@ -476,9 +538,16 @@ export function toggle360Rotation() {
     state.is360Spinning = true;
     update360ButtonUI(true);
 
-    function step() {
-        if (!state.is360Spinning) return;
-        map.rotateTo(map.getBearing() + 0.22, { duration: 0 });
+    let lastSpinTime = performance.now();
+    let currentBearing = map.getBearing();
+
+    function step(now) {
+        if (!state.is360Spinning || !map) return;
+        const dt = Math.max(0, Math.min(now - lastSpinTime, 64));
+        lastSpinTime = now;
+        const delta = (0.22 * dt) / 16.67;
+        currentBearing = (currentBearing + delta) % 360;
+        map.setBearing(currentBearing);
         manual360Frame = requestAnimationFrame(step);
     }
 
@@ -564,3 +633,19 @@ window.stop360Rotation = stop360Rotation;
 window.startManualRotate = startManualRotate;
 window.stopManualRotate = stopManualRotate;
 window.rotateDegrees = rotateDegrees;
+
+
+// Page Visibility API: cleanly suspend screensaver and timers when tab is hidden or minimized
+if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            if (state.idleTimer) {
+                clearTimeout(state.idleTimer);
+                state.idleTimer = null;
+            }
+            stopIdleRotation();
+        } else {
+            resetIdle();
+        }
+    });
+}

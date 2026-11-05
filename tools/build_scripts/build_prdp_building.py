@@ -1,27 +1,16 @@
 """
-build_prdp_building.py — Authentic Bespoke 3D Model of the DA-LARES PRDP Building
-(Philippine Rural Development Project Scale-Up | Regional Project Coordination Office 4A)
+build_prdp_building.py — Authentic Unified 3D Model of the DA-LARES PRDP Building (Western Half)
+Part of the unified PRDP + LARES Agricultural Supplies Storage complex.
 
-Ground-truth references:
-1. IMG_3801 (Front Elevation, short SSE end facing the roads.json entrance node):
-   - 1-storey white-painted concrete office, maroon/oxblood skirting base
-   - Single dark-framed entrance door, slightly left of centre, with a pilaster on its left
-   - White PRDP signboard above the door:
-       DEPARTMENT OF AGRICULTURE
-       PHILIPPINE RURAL DEVELOPMENT PROJECT
-       SCALE-UP | Regional Project Coordination Office 4A
-     with DA seal on the left and PRDP chevron logos at both ends
-   - Two wide 3-panel windows with dark frames and brick-pattern steel security grilles
-   - Galvanised grey corrugated HIP roof with dark green fascia trim and white soffit
-2. IMG_3802 (Left / WSW long elevation):
-   - Long 7-bay elevation with projecting pilasters, one grilled window per bay
-   - Front bay painted white, the remaining bays painted warm cream
-   - Split-type AC condensers + window-type AC units mounted on the wall
-   - Continuous maroon skirting base
-
-Orientation: front entrance facade along -Y (Mapbox rotation = facade normal - 180).
-Footprint (roads.json polygon, roof outline): ~14.2 m x 28.7 m.
-Pure architecture only — ZERO outdoor props.
+Shared Reference:
+- Origin: [121.16692287, 13.95933876]
+- Mapbox rotation: 341.9 deg
+- Local Y-axis: runs along bearing 342.4° (Y < 0 is South towards entrance_16, Y > 0 is North towards Storage).
+- Local X-axis: runs along bearing 72.4° (X > 0 faces road_1, X < 0 faces rear trees).
+- Shared seam: at Y = +8.35m.
+- PRDP bounds: Y in [-8.35, +8.35], X in [-5.50, +5.50].
+- Roof: Freshly painted vibrant emerald green (#124729) corrugated hip roof.
+  Continuous horizontal main ridge at X = 0, Z = 5.80m running cleanly all the way to Y = +8.35m.
 """
 
 import bpy
@@ -30,14 +19,9 @@ import math
 import os
 from mathutils import Vector
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
 def create_mat(name, color, roughness=0.7, metallic=0.0, specular=0.5):
-    mat = bpy.data.materials.get(name)
-    if not mat:
-        mat = bpy.data.materials.new(name=name)
-        mat.use_nodes = True
+    mat = bpy.data.materials.new(name=name)
+    mat.use_nodes = True
     nodes = mat.node_tree.nodes
     nodes.clear()
     out = nodes.new(type='ShaderNodeOutputMaterial')
@@ -51,7 +35,6 @@ def create_mat(name, color, roughness=0.7, metallic=0.0, specular=0.5):
         bsdf.inputs['Specular'].default_value = specular
     mat.node_tree.links.new(bsdf.outputs['BSDF'], out.inputs['Surface'])
     return mat
-
 
 def create_box(name, loc, size, mat, parent=None, rot=(0, 0, 0)):
     mesh = bpy.data.meshes.new(name + "_Mesh")
@@ -70,7 +53,6 @@ def create_box(name, loc, size, mat, parent=None, rot=(0, 0, 0)):
         obj.parent = parent
     return obj
 
-
 def create_cylinder(name, loc, radius, height, mat, segments=16, rot=(0, 0, 0), parent=None):
     mesh = bpy.data.meshes.new(name + "_Mesh")
     obj = bpy.data.objects.new(name, mesh)
@@ -88,9 +70,7 @@ def create_cylinder(name, loc, radius, height, mat, segments=16, rot=(0, 0, 0), 
         obj.parent = parent
     return obj
 
-
 def create_text_mesh(name, loc, text, size, mat, rot=(0, 0, 0), parent=None, align='CENTER'):
-    """Flat (zero-extrude, low resolution) text to keep the GLB inside the 300 KB budget."""
     c_data = bpy.data.curves.new(name=name + "_Data", type='FONT')
     c_data.body = text
     c_data.size = size
@@ -112,12 +92,7 @@ def create_text_mesh(name, loc, text, size, mat, rot=(0, 0, 0), parent=None, ali
     bpy.ops.object.convert(target='MESH')
     return obj
 
-
 def create_quads(name, rects, plane, coord, outward, mat, parent=None):
-    """Batch of flat single-sided quads on a facade plane (cheap detail: grilles, frames, glass).
-    plane 'XZ': rect = (x0, x1, z0, z1) at y = coord ; outward = -1 faces -Y, +1 faces +Y
-    plane 'YZ': rect = (y0, y1, z0, z1) at x = coord ; outward = -1 faces -X, +1 faces +X
-    """
     mesh = bpy.data.meshes.new(name + "_Mesh")
     obj = bpy.data.objects.new(name, mesh)
     bpy.context.scene.collection.objects.link(obj)
@@ -142,48 +117,7 @@ def create_quads(name, rects, plane, coord, outward, mat, parent=None):
         obj.parent = parent
     return obj
 
-
-def create_hip_roof(name, hx, hy, z_eave, z_ridge, mat_top, mat_soffit, parent=None):
-    """Closed hip-roof solid: 2 trapezoids + 2 hip triangles + flat soffit underside."""
-    mesh = bpy.data.meshes.new(name + "_Mesh")
-    obj = bpy.data.objects.new(name, mesh)
-    bpy.context.scene.collection.objects.link(obj)
-    bm = bmesh.new()
-    rh = max(hy - hx, 0.0)
-    v0 = bm.verts.new((-hx, -hy, z_eave))
-    v1 = bm.verts.new((hx, -hy, z_eave))
-    v2 = bm.verts.new((hx, hy, z_eave))
-    v3 = bm.verts.new((-hx, hy, z_eave))
-    r0 = bm.verts.new((0, -rh, z_ridge))
-    r1 = bm.verts.new((0, rh, z_ridge))
-    bm.faces.new((v0, v1, r0))          # front hip
-    bm.faces.new((v1, v2, r1, r0))      # right slope
-    bm.faces.new((v2, v3, r1))          # rear hip
-    bm.faces.new((v3, v0, r0, r1))      # left slope
-    soffit = bm.faces.new((v3, v2, v1, v0))
-    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
-    soffit.material_index = 1
-    bm.to_mesh(mesh)
-    bm.free()
-    obj.data.materials.append(mat_top)
-    obj.data.materials.append(mat_soffit)
-    if parent:
-        obj.parent = parent
-    return obj, rh
-
-
-def create_beam_between(name, p0, p1, w, h, mat, parent=None):
-    """Box beam spanning two 3D points (used for hip/ridge caps)."""
-    a, b = Vector(p0), Vector(p1)
-    d = b - a
-    obj = create_box(name, (a + b) / 2.0, (d.length, w, h), mat, parent)
-    obj.rotation_euler = d.to_track_quat('X', 'Z').to_euler()
-    return obj
-
-
 def window_rects(u_c, z0, width, height, panels, rows, frame_t=0.06, bar_t=0.022):
-    """Return (glass, frames, grille) rect lists for a dark-framed window with
-    a brick-pattern steel security grille (IMG_3801 / IMG_3802)."""
     u0, u1 = u_c - width / 2.0, u_c + width / 2.0
     z1 = z0 + height
     glass = [(u0, u1, z0, z1)]
@@ -198,28 +132,19 @@ def window_rects(u_c, z0, width, height, panels, rows, frame_t=0.06, bar_t=0.022
         x = u0 + p * pw
         frames.append((x - frame_t / 2.0, x + frame_t / 2.0, z0, z1))
     grille = []
-    rh = height / rows
-    for r in range(1, rows):
-        z = z0 + r * rh
-        grille.append((u0, u1, z - bar_t / 2.0, z + bar_t / 2.0))
-    # staggered vertical stubs -> brick pattern
-    for r in range(rows):
-        za, zb = z0 + r * rh, z0 + (r + 1) * rh
-        for p in range(panels):
-            pa = u0 + p * pw
-            fracs = (0.5,) if r % 2 == 0 else (0.25, 0.75)
-            for fr in fracs:
-                x = pa + fr * pw
-                grille.append((x - bar_t / 2.0, x + bar_t / 2.0, za, zb))
+    dz = height / (rows + 1)
+    for r in range(1, rows + 1):
+        y = z0 + r * dz
+        grille.append((u0, u1, y - bar_t / 2.0, y + bar_t / 2.0))
+    dx = width / 6.0
+    for c in range(1, 6):
+        x = u0 + c * dx
+        grille.append((x - bar_t / 2.0, x + bar_t / 2.0, z0, z1))
     return glass, frames, grille
 
-
-# ---------------------------------------------------------------------------
-# Builder
-# ---------------------------------------------------------------------------
 def build_prdp_building():
     print("=====================================================================")
-    print(" Building Authentic PRDP Building (IMG_3801 front / IMG_3802 side)   ")
+    print(" Building Calibrated Unified PRDP Building (+X Facing Road)          ")
     print("=====================================================================")
 
     for obj in list(bpy.data.objects):
@@ -229,20 +154,22 @@ def build_prdp_building():
     root = bpy.data.objects.new("PRDP_Root", None)
     bpy.context.scene.collection.objects.link(root)
 
-    # --- Materials (calibrated from photos) ---
-    mat_wall_white = create_mat("Mat_PRDP_WallWhite", (0.86, 0.87, 0.85), roughness=0.88)
-    mat_wall_cream = create_mat("Mat_PRDP_WallCream", (0.90, 0.82, 0.58), roughness=0.88)
-    mat_maroon     = create_mat("Mat_PRDP_Maroon",    (0.42, 0.10, 0.09), roughness=0.80)
+    # --- Materials ---
+    mat_wall_cream = create_mat("Mat_PRDP_WallCream", (0.91, 0.85, 0.65), roughness=0.88)
+    mat_maroon     = create_mat("Mat_PRDP_Maroon",    (0.40, 0.12, 0.15), roughness=0.80)
     mat_tile       = create_mat("Mat_PRDP_Tile",      (0.80, 0.74, 0.66), roughness=0.45)
     mat_frame      = create_mat("Mat_PRDP_Frame",     (0.10, 0.09, 0.09), roughness=0.55, metallic=0.4)
     mat_door_frame = create_mat("Mat_PRDP_DoorFrame", (0.20, 0.13, 0.10), roughness=0.60)
     mat_glass      = create_mat("Mat_PRDP_Glass",     (0.13, 0.15, 0.17), roughness=0.15, metallic=0.35, specular=0.9)
     mat_grille     = create_mat("Mat_PRDP_Grille",    (0.16, 0.16, 0.17), roughness=0.50, metallic=0.6)
     mat_interior   = create_mat("Mat_PRDP_Interior",  (0.07, 0.07, 0.08), roughness=0.90)
-    mat_roof       = create_mat("Mat_PRDP_RoofGalv",  (0.56, 0.59, 0.61), roughness=0.42, metallic=0.65)
-    mat_ridge      = create_mat("Mat_PRDP_RidgeCap",  (0.45, 0.48, 0.50), roughness=0.45, metallic=0.6)
-    mat_fascia     = create_mat("Mat_PRDP_Fascia",    (0.07, 0.24, 0.17), roughness=0.60)
-    mat_soffit     = create_mat("Mat_PRDP_Soffit",    (0.90, 0.90, 0.88), roughness=0.85)
+
+    # Fresh vibrant emerald-green corrugated hip roof
+    mat_roof       = create_mat("Mat_PRDP_RoofEmerald", (0.07, 0.28, 0.16), roughness=0.52, metallic=0.25)
+    mat_ridge      = create_mat("Mat_PRDP_RidgeCap",    (0.06, 0.24, 0.14), roughness=0.48, metallic=0.30)
+    mat_fascia     = create_mat("Mat_PRDP_Fascia",      (0.05, 0.20, 0.12), roughness=0.60)
+    mat_soffit     = create_mat("Mat_PRDP_Soffit",      (0.92, 0.92, 0.90), roughness=0.85)
+
     mat_sign_bg    = create_mat("Mat_PRDP_SignBG",    (0.95, 0.95, 0.94), roughness=0.40)
     mat_sign_text  = create_mat("Mat_PRDP_SignText",  (0.10, 0.14, 0.24), roughness=0.50)
     mat_logo_teal  = create_mat("Mat_PRDP_LogoTeal",  (0.05, 0.42, 0.45), roughness=0.45)
@@ -253,189 +180,172 @@ def build_prdp_building():
     mat_ac         = create_mat("Mat_PRDP_ACUnit",    (0.86, 0.87, 0.86), roughness=0.45, metallic=0.2)
     mat_ac_dark    = create_mat("Mat_PRDP_ACDark",    (0.12, 0.12, 0.13), roughness=0.60)
 
-    # --- Dimensions ---
-    W, D = 12.60, 27.00             # wall footprint (roof outline ~14.3 x 28.7 matches polygon)
-    hx_w, hy_w = W / 2.0, D / 2.0
-    front_y, rear_y = -hy_w, hy_w
-    FLOOR_Z = 0.35                  # raised floor level
-    BASE_H = 0.45                   # maroon skirting height
-    EAVE_Z = 3.35                   # wall top / soffit level
-    OVERHANG = 0.85
-    RIDGE_Z = EAVE_Z + 2.60         # ~20 deg hip pitch
-    N_BAYS = 7
-    BAY = D / N_BAYS                # ~3.86 m structural bays (IMG_3802)
+    # --- Geometry parameters ---
+    Y_FRONT = -8.35                 # South wall facing entrance_16
+    Y_SEAM  = +8.35                 # Seam dividing PRDP from Storage
+    PRDP_LEN = Y_SEAM - Y_FRONT     # 16.70m
+    W_DEPTH  = 11.00                # depth along X: X in [-5.50, +5.50]
+    X_REAR   = -5.50                # Wall facing rear trees (West)
+    X_ROAD   = +5.50                # Wall facing road_1 (East)
 
-    # --- 1. Wall body: front bay white, remainder cream (IMG_3802) ---
-    white_y1 = front_y + BAY
-    create_box("PRDP_Walls_FrontBay", (0, (front_y + white_y1) / 2.0, EAVE_Z / 2.0),
-               (W, BAY, EAVE_Z), mat_wall_white, root)
-    create_box("PRDP_Walls_Rear", (0, (white_y1 + rear_y) / 2.0, EAVE_Z / 2.0),
-               (W, rear_y - white_y1, EAVE_Z), mat_wall_cream, root)
+    FLOOR_Z  = 0.35
+    BASE_H   = 0.45
+    EAVE_Z   = 3.35
+    RIDGE_Z  = 5.80
+    OVERHANG = 0.75
 
-    # Maroon skirting plinth (proud of pilasters)
-    create_box("PRDP_Maroon_Base", (0, 0, BASE_H / 2.0), (W + 0.28, D + 0.28, BASE_H), mat_maroon, root)
+    # --- 1. Walls & Skirting ---
+    yc = (Y_FRONT + Y_SEAM) / 2.0   # 0.0
+    create_box("PRDP_Walls", (0.0, yc, EAVE_Z / 2.0), (W_DEPTH, PRDP_LEN, EAVE_Z), mat_wall_cream, root)
+    create_box("PRDP_Maroon_Base", (0.0, yc, BASE_H / 2.0), (W_DEPTH + 0.24, PRDP_LEN + 0.24, BASE_H), mat_maroon, root)
 
     # --- 2. Pilasters ---
     pil_h = EAVE_Z - BASE_H
     pil_z = BASE_H + pil_h / 2.0
-    for side, sx in (("W", -1), ("E", 1)):
-        for i in range(N_BAYS + 1):
-            y = front_y + i * BAY
-            y = min(max(y, front_y + 0.15), rear_y - 0.15)
-            m = mat_wall_white if i <= 1 else mat_wall_cream
-            create_box(f"PRDP_Pilaster_{side}_{i}", (sx * (hx_w + 0.05), y, pil_z), (0.12, 0.32, pil_h), m, root)
-    # Front facade: corner returns + pilaster left of the door (IMG_3801)
-    for x in (-hx_w + 0.15, hx_w - 0.15, -1.30):
-        create_box(f"PRDP_FrontPilaster_{x:+.2f}", (x, front_y - 0.05, pil_z), (0.32, 0.12, pil_h), mat_wall_white, root)
-    for x in (-hx_w + 0.15, -2.10, 2.10, hx_w - 0.15):
-        create_box(f"PRDP_RearPilaster_{x:+.2f}", (x, rear_y + 0.05, pil_z), (0.32, 0.12, pil_h), mat_wall_cream, root)
+    N_BAYS = 4
+    BAY = PRDP_LEN / N_BAYS         # ~4.175m
 
-    # --- 3. Front facade openings (IMG_3801) ---
-    yf_glass, yf_grille, yf_frame = front_y - 0.012, front_y - 0.028, front_y - 0.040
-    win_z0, win_h = 1.15, 1.45      # window heads align with door head (IMG_3801)
-    glass_r, frame_r, grille_r = [], [], []
-    for xc in (-3.35, 3.45):
-        g, f, gr = window_rects(xc, win_z0, 3.00, win_h, panels=3, rows=7)
-        glass_r += g; frame_r += f; grille_r += gr
+    # Pilasters along road wall (X = X_ROAD + 0.06)
+    for i in range(N_BAYS + 1):
+        py = Y_FRONT + i * BAY
+        py = min(max(py, Y_FRONT + 0.15), Y_SEAM - 0.15)
+        create_box(f"PRDP_Pil_Road_{i}", (X_ROAD + 0.06, py, pil_z), (0.12, 0.30, pil_h), mat_wall_cream, root)
 
-    # Entrance door (single dark frame, open doorway look)
+    # Pilasters along rear wall (X = X_REAR - 0.06)
+    for i in range(N_BAYS + 1):
+        py = Y_FRONT + i * BAY
+        py = min(max(py, Y_FRONT + 0.15), Y_SEAM - 0.15)
+        create_box(f"PRDP_Pil_Rear_{i}", (X_REAR - 0.06, py, pil_z), (0.12, 0.30, pil_h), mat_wall_cream, root)
+
+    # Pilasters on South entrance facade (Y = Y_FRONT - 0.06)
+    for px in (-4.20, -1.25, 1.25, 4.20):
+        create_box(f"PRDP_Pil_Front_{px:+.1f}", (px, Y_FRONT - 0.06, pil_z), (0.30, 0.12, pil_h), mat_wall_cream, root)
+
+    # --- 3. South Entrance Facade (Y = Y_FRONT, facing entrance_16) ---
     door_xc, door_w, door_top = 0.0, 1.50, 2.60
-    interior_r = [(door_xc - door_w / 2.0, door_xc + door_w / 2.0, FLOOR_Z, door_top)]
     dft = 0.09
-    door_frame_r = [
-        (door_xc - door_w / 2.0 - dft, door_xc + door_w / 2.0 + dft, door_top, door_top + dft),
-        (door_xc - door_w / 2.0 - dft, door_xc - door_w / 2.0, FLOOR_Z, door_top),
-        (door_xc + door_w / 2.0, door_xc + door_w / 2.0 + dft, FLOOR_Z, door_top),
-        (door_xc - 0.05, door_xc + 0.05, FLOOR_Z, door_top),  # meeting stile of the twin leaves
-    ]
-    # Open white door leaf visible inside (IMG_3801) + notice
-    leaf_r = [(door_xc + 0.10, door_xc + 0.62, FLOOR_Z + 0.05, door_top - 0.08)]
+    yf = Y_FRONT
+    # Double door frame
+    create_box("PRDP_Door_Frame_T", (door_xc, yf - 0.04, door_top + dft / 2.0), (door_w + 2 * dft, 0.08, dft), mat_door_frame, root)
+    create_box("PRDP_Door_Frame_L", (door_xc - door_w / 2.0 - dft / 2.0, yf - 0.04, (FLOOR_Z + door_top) / 2.0), (dft, 0.08, door_top - FLOOR_Z), mat_door_frame, root)
+    create_box("PRDP_Door_Frame_R", (door_xc + door_w / 2.0 + dft / 2.0, yf - 0.04, (FLOOR_Z + door_top) / 2.0), (dft, 0.08, door_top - FLOOR_Z), mat_door_frame, root)
+    create_box("PRDP_Door_Mullion", (door_xc, yf - 0.04, (FLOOR_Z + door_top) / 2.0), (0.05, 0.08, door_top - FLOOR_Z), mat_door_frame, root)
+    create_box("PRDP_Door_Leaf_L", (door_xc - 0.35, yf - 0.02, (FLOOR_Z + door_top) / 2.0), (0.60, 0.03, door_top - FLOOR_Z), mat_glass, root)
+    create_box("PRDP_Door_Leaf_R", (door_xc + 0.35, yf - 0.02, (FLOOR_Z + door_top) / 2.0), (0.60, 0.03, door_top - FLOOR_Z), mat_glass, root)
 
-    create_quads("PRDP_Front_Glass", glass_r, 'XZ', yf_glass, -1, mat_glass, root)
-    create_quads("PRDP_Front_Interior", interior_r, 'XZ', yf_glass, -1, mat_interior, root)
-    create_quads("PRDP_Front_DoorLeaf", leaf_r, 'XZ', yf_grille, -1, mat_wall_white, root)
-    create_quads("PRDP_Front_Grilles", grille_r, 'XZ', yf_grille, -1, mat_grille, root)
-    create_quads("PRDP_Front_Frames", frame_r, 'XZ', yf_frame, -1, mat_frame, root)
-    create_quads("PRDP_Front_DoorFrame", door_frame_r, 'XZ', yf_frame, -1, mat_door_frame, root)
-    # "NO SMOKING" placard right of door
-    create_quads("PRDP_NoSmoking", [(1.05, 1.33, 1.45, 1.80)], 'XZ', yf_frame, -1, mat_sign_bg, root)
+    # Entrance stoop
+    create_box("PRDP_Stoop_Riser", (door_xc, yf - 0.45, 0.15), (2.30, 0.90, 0.30), mat_maroon, root)
+    create_box("PRDP_Stoop_Tile", (door_xc, yf - 0.42, 0.325), (2.10, 0.84, 0.05), mat_tile, root)
 
-    # Entrance stoop (maroon riser + tiled tread)
-    create_box("PRDP_Stoop_Riser", (door_xc, front_y - 0.45, 0.15), (2.30, 0.90, 0.30), mat_maroon, root)
-    create_box("PRDP_Stoop_Tile", (door_xc, front_y - 0.42, 0.325), (2.10, 0.84, 0.05), mat_tile, root)
+    # South facade windows flanking door
+    win_z0, win_h = 1.15, 1.45
+    for sx in (-2.75, 2.75):
+        g, f, gr = window_rects(sx, win_z0, 2.40, win_h, panels=3, rows=7)
+        create_quads(f"PRDP_FrontWin_{sx:+.1f}_Glass", g, 'XZ', yf - 0.012, -1, mat_glass, root)
+        create_quads(f"PRDP_FrontWin_{sx:+.1f}_Grille", gr, 'XZ', yf - 0.028, -1, mat_grille, root)
+        create_quads(f"PRDP_FrontWin_{sx:+.1f}_Frame", f, 'XZ', yf - 0.040, -1, mat_frame, root)
 
-    # --- 4. PRDP signboard above the door (IMG_3801) ---
-    sign_x0, sign_x1 = -1.15, 2.15
-    sign_z0, sign_z1 = 2.70, 3.24
-    sign_xc, sign_zc = (sign_x0 + sign_x1) / 2.0, (sign_z0 + sign_z1) / 2.0
-    sign_face_y = front_y - 0.07
-    create_box("PRDP_Sign_Panel", (sign_xc, front_y - 0.035, sign_zc),
-               (sign_x1 - sign_x0, 0.07, sign_z1 - sign_z0), mat_sign_bg, root)
+    # Signboard above the entrance door
+    sign_w, sign_h = 3.30, 0.54
+    sign_zc = 2.97
+    create_box("PRDP_Sign_Panel", (door_xc, yf - 0.04, sign_zc), (sign_w, 0.08, sign_h), mat_sign_bg, root)
     txt_rot = (math.radians(90), 0, 0)
-    txt_y = sign_face_y - 0.006
-    text_x = -0.30
-    create_text_mesh("PRDP_Text_L1", (text_x, txt_y, 3.13), "DEPARTMENT OF AGRICULTURE", 0.070, mat_sign_text, txt_rot, root, 'LEFT')
-    create_text_mesh("PRDP_Text_L2", (text_x, txt_y, 3.00), "PHILIPPINE RURAL DEVELOPMENT PROJECT", 0.092, mat_sign_text, txt_rot, root, 'LEFT')
-    create_text_mesh("PRDP_Text_L3", (text_x, txt_y, 2.86), "SCALE-UP | Regional Project Coordination Office 4A", 0.068, mat_sign_text, txt_rot, root, 'LEFT')
-    # DA seal + partner seal (left of text)
-    for i, sx in enumerate((-0.62, -0.42)):
-        create_cylinder(f"PRDP_Seal_Ring_{i}", (sx, sign_face_y - 0.004, sign_zc), 0.10, 0.008,
-                        mat_da_green, 16, rot=txt_rot, parent=root)
-        create_cylinder(f"PRDP_Seal_Core_{i}", (sx, sign_face_y - 0.010, sign_zc), 0.065, 0.008,
-                        mat_da_gold if i == 0 else mat_logo_teal, 12, rot=txt_rot, parent=root)
-    # PRDP chevron/triangle logos at both ends
-    tri_specs = [((-1.00, 2.84), mat_logo_teal), ((-0.90, 2.84), mat_logo_orng),
-                 ((1.88, 3.08), mat_logo_navy), ((2.00, 3.08), mat_logo_teal)]
-    for i, ((tx, tz), tm) in enumerate(tri_specs):
-        create_cylinder(f"PRDP_Logo_Tri_{i}", (tx, sign_face_y - 0.004, tz), 0.08, 0.008, tm, 3,
-                        rot=(math.radians(90), 0, math.radians(0)), parent=root)
+    txt_y = yf - 0.082
+    create_text_mesh("PRDP_Text_L1", (-0.35, txt_y, 3.13), "DEPARTMENT OF AGRICULTURE", 0.070, mat_sign_text, txt_rot, root, 'LEFT')
+    create_text_mesh("PRDP_Text_L2", (-0.35, txt_y, 3.00), "PHILIPPINE RURAL DEVELOPMENT PROJECT", 0.090, mat_sign_text, txt_rot, root, 'LEFT')
+    create_text_mesh("PRDP_Text_L3", (-0.35, txt_y, 2.87), "SCALE-UP | RPCO 4A", 0.068, mat_sign_text, txt_rot, root, 'LEFT')
+    create_cylinder("PRDP_Seal_Ring", (-0.95, yf - 0.084, sign_zc), 0.14, 0.008, mat_da_green, 16, rot=txt_rot, parent=root)
+    create_cylinder("PRDP_Seal_Core", (-0.95, yf - 0.088, sign_zc), 0.09, 0.008, mat_da_gold, 12, rot=txt_rot, parent=root)
 
-    # --- 5. Long side elevations: 1 grilled window per bay (IMG_3802) ---
-    side_z0, side_h = 1.20, 1.30
-    for side, sx in (("W", -1), ("E", 1)):
-        plane_x = sx * hx_w
-        g_all, f_all, gr_all = [], [], []
-        for i in range(N_BAYS):
-            yc = front_y + (i + 0.5) * BAY
-            wdt = 1.90 if i == 0 else 1.60
-            g, f, gr = window_rects(yc, side_z0, wdt, side_h, panels=2, rows=6)
-            g_all += g; f_all += f; gr_all += gr
-        create_quads(f"PRDP_Side{side}_Glass", g_all, 'YZ', plane_x + sx * 0.012, sx, mat_glass, root)
-        create_quads(f"PRDP_Side{side}_Grilles", gr_all, 'YZ', plane_x + sx * 0.028, sx, mat_grille, root)
-        create_quads(f"PRDP_Side{side}_Frames", f_all, 'YZ', plane_x + sx * 0.040, sx, mat_frame, root)
+    # --- 4. Road-Facing Facade (X = X_ROAD = +5.50m, facing road_1) ---
+    # 4 bays, each with a 2-panel grilled window facing road_1 (+X direction)
+    for b in range(N_BAYS):
+        by = Y_FRONT + (b + 0.5) * BAY
+        g, f, gr = window_rects(by, 1.20, 2.10, 1.35, panels=2, rows=6)
+        create_quads(f"PRDP_RoadWin_{b}_Glass", g, 'YZ', X_ROAD + 0.012, 1, mat_glass, root)
+        create_quads(f"PRDP_RoadWin_{b}_Grille", gr, 'YZ', X_ROAD + 0.028, 1, mat_grille, root)
+        create_quads(f"PRDP_RoadWin_{b}_Frame", f, 'YZ', X_ROAD + 0.040, 1, mat_frame, root)
 
-    # --- 6. Rear elevation windows ---
-    g_all, f_all, gr_all = [], [], []
-    for xc in (-4.20, 0.0, 4.20):
-        g, f, gr = window_rects(xc, side_z0, 1.60, side_h, panels=2, rows=6)
-        g_all += g; f_all += f; gr_all += gr
-    create_quads("PRDP_Rear_Glass", g_all, 'XZ', rear_y + 0.012, 1, mat_glass, root)
-    create_quads("PRDP_Rear_Grilles", gr_all, 'XZ', rear_y + 0.028, 1, mat_grille, root)
-    create_quads("PRDP_Rear_Frames", f_all, 'XZ', rear_y + 0.040, 1, mat_frame, root)
+    # AC Condenser units mounted on road facade
+    create_box("PRDP_SplitAC_1", (X_ROAD + 0.28, Y_FRONT + 1.2 * BAY, 1.10), (0.30, 0.82, 0.58), mat_ac, root)
+    create_cylinder("PRDP_SplitAC_Fan_1", (X_ROAD + 0.435, Y_FRONT + 1.2 * BAY - 0.10, 1.10), 0.21, 0.01, mat_ac_dark, 14, rot=(0, math.radians(90), 0), parent=root)
+    create_box("PRDP_SplitAC_2", (X_ROAD + 0.28, Y_FRONT + 3.1 * BAY, 1.10), (0.30, 0.82, 0.58), mat_ac, root)
+    create_cylinder("PRDP_SplitAC_Fan_2", (X_ROAD + 0.435, Y_FRONT + 3.1 * BAY - 0.10, 1.10), 0.21, 0.01, mat_ac_dark, 14, rot=(0, math.radians(90), 0), parent=root)
 
-    # --- 7. Wall-mounted AC units on the WSW elevation (IMG_3802) ---
-    wx = -hx_w
-    for i, yc in enumerate((front_y + BAY + 0.55, front_y + BAY + 1.45)):
-        cz = 1.00
-        create_box(f"PRDP_SplitAC_{i}", (wx - 0.30, yc, cz), (0.30, 0.82, 0.58), mat_ac, root)
-        create_cylinder(f"PRDP_SplitAC_Fan_{i}", (wx - 0.455, yc - 0.10, cz), 0.21, 0.01, mat_ac_dark, 14,
-                        rot=(0, math.radians(90), 0), parent=root)
-        create_box(f"PRDP_SplitAC_Bracket_{i}", (wx - 0.22, yc, cz - 0.33), (0.45, 0.70, 0.04), mat_ac_dark, root)
-    # Window-type AC units protruding from bay windows
-    for i, bay_i in enumerate((2, 4)):
-        yc = front_y + (bay_i + 0.5) * BAY + 0.35
-        create_box(f"PRDP_WindowAC_{i}", (wx - 0.22, yc, side_z0 + 0.25), (0.45, 0.62, 0.42), mat_ac, root)
-        create_quads(f"PRDP_WindowAC_Grille_{i}", [(yc - 0.25, yc + 0.25, side_z0 + 0.08, side_z0 + 0.42)],
-                     'YZ', wx - 0.448, -1, mat_ac_dark, root)
+    # --- 5. ROOF GEOMETRY (Seamless Emerald Green Half) ---
+    # Main ridge runs at X = 0, Z = RIDGE_Z (5.80m).
+    # Starts at Y = Y_FRONT + (W_DEPTH / 2.0) = -8.35 + 5.50 = -2.85m (front hip vertex)
+    # and runs straight all the way to the dividing seam Y = Y_SEAM (+8.35m)!
+    # Eaves:
+    #   Road eave: X = X_ROAD + OVERHANG = +6.25m, Z = EAVE_Z (3.35m)
+    #   Rear eave: X = X_REAR - OVERHANG = -6.25m, Z = EAVE_Z (3.35m)
+    #   Front eave: Y = Y_FRONT - OVERHANG = -9.10m, Z = EAVE_Z (3.35m)
+    #   Seam eave: terminates flush at Y = Y_SEAM (+8.35m)
+    X_EAVE_ROAD = X_ROAD + OVERHANG     # +6.25
+    X_EAVE_REAR = X_REAR - OVERHANG     # -6.25
+    Y_EAVE_FRONT = Y_FRONT - OVERHANG   # -9.10
+    Y_RIDGE_FRONT = Y_FRONT + (W_DEPTH + 2 * OVERHANG) / 2.0  # -2.85
 
-    # --- 8. Galvanised corrugated hip roof with green fascia (IMG_3801 / IMG_3802) ---
-    rhx, rhy = hx_w + OVERHANG, hy_w + OVERHANG
-    _, ridge_half = create_hip_roof("PRDP_Roof", rhx, rhy, EAVE_Z, RIDGE_Z, mat_roof, mat_soffit, root)
+    roof_mesh = bpy.data.meshes.new("PRDP_Roof_Mesh")
+    roof_obj = bpy.data.objects.new("PRDP_Roof", roof_mesh)
+    bpy.context.scene.collection.objects.link(roof_obj)
+    roof_obj.parent = root
 
-    # Fascia band wrapping the eaves
-    f_h, f_t = 0.26, 0.06
-    f_z = EAVE_Z - 0.06
-    create_box("PRDP_Fascia_Front", (0, -rhy - f_t / 2.0, f_z), (2 * rhx + 2 * f_t, f_t, f_h), mat_fascia, root)
-    create_box("PRDP_Fascia_Rear", (0, rhy + f_t / 2.0, f_z), (2 * rhx + 2 * f_t, f_t, f_h), mat_fascia, root)
-    create_box("PRDP_Fascia_W", (-rhx - f_t / 2.0, 0, f_z), (f_t, 2 * rhy, f_h), mat_fascia, root)
-    create_box("PRDP_Fascia_E", (rhx + f_t / 2.0, 0, f_z), (f_t, 2 * rhy, f_h), mat_fascia, root)
+    bm = bmesh.new()
 
-    # Ridge + hip caps
-    cap_z = 0.04
-    create_beam_between("PRDP_RidgeCap", (0, -ridge_half, RIDGE_Z + cap_z), (0, ridge_half, RIDGE_Z + cap_z), 0.30, 0.08, mat_ridge, root)
-    for i, (cx, cy, ry) in enumerate(((-rhx, -rhy, -ridge_half), (rhx, -rhy, -ridge_half),
-                                      (rhx, rhy, ridge_half), (-rhx, rhy, ridge_half))):
-        create_beam_between(f"PRDP_HipCap_{i}", (cx, cy, EAVE_Z + cap_z), (0, ry, RIDGE_Z + cap_z), 0.26, 0.07, mat_ridge, root)
+    # Vertices
+    v_rf_road   = bm.verts.new((X_EAVE_ROAD, Y_EAVE_FRONT, EAVE_Z))    # (+6.25, -9.10, 3.35)
+    v_rf_rear   = bm.verts.new((X_EAVE_REAR, Y_EAVE_FRONT, EAVE_Z))    # (-6.25, -9.10, 3.35)
+    v_seam_road = bm.verts.new((X_EAVE_ROAD, Y_SEAM, EAVE_Z))        # (+6.25, +8.35, 3.35)
+    v_seam_rear = bm.verts.new((X_EAVE_REAR, Y_SEAM, EAVE_Z))        # (-6.25, +8.35, 3.35)
 
-    # Corrugation hint: subtle raised ribs on the two long slopes (few long strips only)
-    slope_dz = RIDGE_Z - EAVE_Z
-    for side, sx in (("W", -1), ("E", 1)):
-        for k in range(1, 6):
-            t = k / 6.0
-            x = sx * rhx * (1 - t)
-            z = EAVE_Z + slope_dz * t + 0.012
-            half = ridge_half + (rhy - ridge_half) * (1 - t)
-            create_beam_between(f"PRDP_Rib_{side}_{k}", (x, -half, z), (x, half, z), 0.05, 0.02, mat_ridge, root)
+    v_ridge_front = bm.verts.new((0.0, Y_RIDGE_FRONT, RIDGE_Z))       # (0.0, -2.85, 5.80)
+    v_ridge_seam  = bm.verts.new((0.0, Y_SEAM, RIDGE_Z))              # (0.0, +8.35, 5.80)
 
-    # --- 9. Export ---
-    bpy.ops.object.select_all(action='DESELECT')
-    root.select_set(True)
-    for child in root.children_recursive:
-        child.select_set(True)
-    bpy.context.view_layer.objects.active = root
+    # Faces:
+    # 1. South front hip triangle
+    bm.faces.new((v_rf_road, v_ridge_front, v_rf_rear))
+    # 2. Road slope trapezoid (facing +X)
+    bm.faces.new((v_rf_road, v_seam_road, v_ridge_seam, v_ridge_front))
+    # 3. Rear slope trapezoid (facing -X)
+    bm.faces.new((v_rf_rear, v_ridge_front, v_ridge_seam, v_seam_rear))
+    # 4. Internal dividing gable wall at the seam (closes the roof solid at Y = +8.35)
+    bm.faces.new((v_seam_road, v_seam_rear, v_ridge_seam))
+    # 5. Bottom soffit
+    bm.faces.new((v_rf_rear, v_seam_rear, v_seam_road, v_rf_road))
 
-    glb_out = r"c:\Users\LGU-SanPedro\Downloads\map\models\prdp_building.glb"
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+    bm.to_mesh(roof_mesh)
+    bm.free()
+
+    roof_obj.data.materials.append(mat_roof)
+
+    # Fascia boards (dark timber eave trims)
+    create_box("PRDP_Fascia_Front", (0.0, Y_EAVE_FRONT, EAVE_Z - 0.08), (X_EAVE_ROAD - X_EAVE_REAR + 0.10, 0.05, 0.22), mat_fascia, root)
+    create_box("PRDP_Fascia_Road", (X_EAVE_ROAD, (Y_EAVE_FRONT + Y_SEAM) / 2.0, EAVE_Z - 0.08), (0.05, Y_SEAM - Y_EAVE_FRONT, 0.22), mat_fascia, root)
+    create_box("PRDP_Fascia_Rear", (X_EAVE_REAR, (Y_EAVE_FRONT + Y_SEAM) / 2.0, EAVE_Z - 0.08), (0.05, Y_SEAM - Y_EAVE_FRONT, 0.22), mat_fascia, root)
+
+    # Ridge cap along main ridge
+    create_box("PRDP_RidgeCap", (0.0, (Y_RIDGE_FRONT + Y_SEAM) / 2.0, RIDGE_Z + 0.03), (0.35, Y_SEAM - Y_RIDGE_FRONT, 0.08), mat_ridge, root)
+
+    # --- Export GLB ---
+    out_dir = r"c:\Users\LGU-SanPedro\Downloads\map\models"
+    os.makedirs(out_dir, exist_ok=True)
+    out_path = os.path.join(out_dir, "prdp_building.glb")
+
+    bpy.ops.object.select_all(action='SELECT')
     bpy.ops.export_scene.gltf(
-        filepath=glb_out,
+        filepath=out_path,
         export_format='GLB',
         use_selection=True,
         export_apply=True,
-        export_yup=True,
-        export_texcoords=False,
+        export_draco_mesh_compression_enable=True,
+        export_draco_mesh_compression_level=7
     )
-    size_kb = os.path.getsize(glb_out) / 1024.0
-    print(f"Exported PRDP Building GLB to {glb_out} (Size: {size_kb:.1f} KB)")
-    return root
 
+    size_kb = os.path.getsize(out_path) / 1024.0
+    print(f"Exported PRDP Building to {out_path} ({size_kb:.1f} KB)")
+    assert size_kb < 300.0, f"Model size {size_kb:.1f} KB exceeds budget!"
 
-build_prdp_building()
+if __name__ == "__main__":
+    build_prdp_building()

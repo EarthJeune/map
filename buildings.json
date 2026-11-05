@@ -1281,6 +1281,120 @@
         ],
         "type": "Polygon"
       }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "plot22_water_tank",
+        "name": "LARES Water Tank",
+        "height": 9.0,
+        "min_height": 0,
+        "station": "lares",
+        "has_3d_model": true,
+        "category": "infrastructure",
+        "isSubPlot": false,
+        "hasMarker": false
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              121.16900426,
+              13.9597697
+            ],
+            [
+              121.16900246,
+              13.95976316
+            ],
+            [
+              121.16899752,
+              13.95975837
+            ],
+            [
+              121.16899078,
+              13.95975662
+            ],
+            [
+              121.16898404,
+              13.95975837
+            ],
+            [
+              121.16897911,
+              13.95976316
+            ],
+            [
+              121.1689773,
+              13.9597697
+            ],
+            [
+              121.16897911,
+              13.95977624
+            ],
+            [
+              121.16898404,
+              13.95978103
+            ],
+            [
+              121.16899078,
+              13.95978278
+            ],
+            [
+              121.16899752,
+              13.95978103
+            ],
+            [
+              121.16900246,
+              13.95977624
+            ],
+            [
+              121.16900426,
+              13.9597697
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "plot22_comfort_room",
+        "name": "Comfort Room",
+        "height": 3.0,
+        "min_height": 0,
+        "station": "lares",
+        "has_3d_model": true,
+        "category": "infrastructure",
+        "isSubPlot": false,
+        "hasMarker": false
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              121.16895513,
+              13.9597658
+            ],
+            [
+              121.16892836,
+              13.95975845
+            ],
+            [
+              121.16893593,
+              13.95973248
+            ],
+            [
+              121.1689627,
+              13.95973983
+            ],
+            [
+              121.16895513,
+              13.9597658
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      }
     }
   ]
 }

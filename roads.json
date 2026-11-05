@@ -5,7 +5,8 @@
       "id": "da42de293999638db564e2a7c9e835f9",
       "type": "Feature",
       "properties": {
-        "id": "road_1"
+        "id": "road_1",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -77,7 +78,8 @@
       "id": "55a4f1786abffba0adc8d64115b01efe",
       "type": "Feature",
       "properties": {
-        "id": "road_2"
+        "id": "road_2",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -113,7 +115,8 @@
       "id": "c29885a7877dedf740c4d2fbdf6d6736",
       "type": "Feature",
       "properties": {
-        "id": "road_3"
+        "id": "road_3",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -133,7 +136,8 @@
       "id": "ad015e185cbb8221e2349966e1687e5f",
       "type": "Feature",
       "properties": {
-        "id": "road_4"
+        "id": "road_4",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -177,7 +181,8 @@
       "id": "c917437cfea4007620ba959e839f1e52",
       "type": "Feature",
       "properties": {
-        "id": "road_5"
+        "id": "road_5",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -197,7 +202,8 @@
       "id": "26591f8e35a683f47cf31a27ebc11445",
       "type": "Feature",
       "properties": {
-        "id": "road_6"
+        "id": "road_6",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -225,7 +231,8 @@
       "id": "083f7cb1378d82e31b46bb545ff2f5fd",
       "type": "Feature",
       "properties": {
-        "id": "road_7"
+        "id": "road_7",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -281,7 +288,8 @@
       "id": "1e61af13dcfb4a466f39a1328b720673",
       "type": "Feature",
       "properties": {
-        "id": "road_8"
+        "id": "road_8",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -301,7 +309,8 @@
       "id": "2d4bf237c413382a0e92ed715bceeb07",
       "type": "Feature",
       "properties": {
-        "id": "road_9"
+        "id": "road_9",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -333,7 +342,8 @@
       "id": "48bd45a0b9d9eee393e758825d897da5",
       "type": "Feature",
       "properties": {
-        "id": "road_10"
+        "id": "road_10",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -365,7 +375,8 @@
       "id": "a406e03b8e1ec4b560e574b7a6f50667",
       "type": "Feature",
       "properties": {
-        "id": "road_11"
+        "id": "road_11",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -385,7 +396,8 @@
       "id": "6e1fbbe39d957faeaa27c0583a284b30",
       "type": "Feature",
       "properties": {
-        "id": "road_12"
+        "id": "road_12",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -425,7 +437,8 @@
       "id": "847619c11f95038aa60f1fc09f68c8e4",
       "type": "Feature",
       "properties": {
-        "id": "road_13"
+        "id": "road_13",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -453,7 +466,8 @@
       "id": "e353fdae1c3bbed856583267e2401001",
       "type": "Feature",
       "properties": {
-        "id": "road_14"
+        "id": "road_14",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -477,7 +491,8 @@
       "id": "497c0ab8253699c2d8d5047368c8f94e",
       "type": "Feature",
       "properties": {
-        "id": "road_16"
+        "id": "road_16",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -497,7 +512,8 @@
       "id": "4be056085e5d45101f00db659261e381",
       "type": "Feature",
       "properties": {
-        "id": "road_17"
+        "id": "road_17",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -525,7 +541,8 @@
       "id": "401ff538525319466ab2fd2442e5ee54",
       "type": "Feature",
       "properties": {
-        "id": "road_18"
+        "id": "road_18",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -549,7 +566,8 @@
       "id": "e43f6447170e2a2b81cb59ae5fe1a7fd",
       "type": "Feature",
       "properties": {
-        "id": "road_19"
+        "id": "road_19",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -573,7 +591,8 @@
       "id": "bc888ad7f148f48b753b0b09668fa8f3",
       "type": "Feature",
       "properties": {
-        "id": "road_20"
+        "id": "road_20",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -605,7 +624,8 @@
       "id": "903169e26e6cc1975b687ceccb6ae27d",
       "type": "Feature",
       "properties": {
-        "id": "road_21"
+        "id": "road_21",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -661,7 +681,8 @@
       "id": "3c9453a4b35eee25ffe2657b8981844a",
       "type": "Feature",
       "properties": {
-        "id": "road_22"
+        "id": "road_22",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -689,7 +710,8 @@
       "id": "b5f16b39e9dfcefe38efd98c501d475a",
       "type": "Feature",
       "properties": {
-        "id": "road_23"
+        "id": "road_23",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -717,7 +739,8 @@
       "id": "82b541d08bd79a248d4cd8488b7a3a04",
       "type": "Feature",
       "properties": {
-        "id": "road_24"
+        "id": "road_24",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -773,7 +796,8 @@
       "id": "92a3dbfaed8e338ff1f7113be763e5b3",
       "type": "Feature",
       "properties": {
-        "id": "road_25"
+        "id": "road_25",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -793,7 +817,8 @@
       "id": "12d3332a8f939f63a0fa67bc09ac4b7b",
       "type": "Feature",
       "properties": {
-        "id": "road_26"
+        "id": "road_26",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -813,7 +838,8 @@
       "id": "e990bccf3336a01ff31e00b8640dbaee",
       "type": "Feature",
       "properties": {
-        "id": "road_27"
+        "id": "road_27",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -833,7 +859,8 @@
       "id": "79b0cb4589c9ce36c3d2d45250046d90",
       "type": "Feature",
       "properties": {
-        "id": "road_28"
+        "id": "road_28",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -909,7 +936,8 @@
       "id": "1143f9e54856a0f4d23d1a29d7faec0e",
       "type": "Feature",
       "properties": {
-        "id": "road_29"
+        "id": "road_29",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -933,7 +961,8 @@
       "id": "eea353c2f3d3437957218af4e41eddec",
       "type": "Feature",
       "properties": {
-        "id": "road_30"
+        "id": "road_30",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -957,7 +986,8 @@
       "id": "00cb58b01f7fa0540fab2dc7c6e42d5a",
       "type": "Feature",
       "properties": {
-        "id": "road_31"
+        "id": "road_31",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -977,7 +1007,8 @@
       "id": "4872f871cd43b31286d9fcc9cb070602",
       "type": "Feature",
       "properties": {
-        "id": "road_32"
+        "id": "road_32",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1093,7 +1124,8 @@
       "id": "cd6935dc2f9ebc0508254ae3718615d6",
       "type": "Feature",
       "properties": {
-        "id": "road_33"
+        "id": "road_33",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1113,7 +1145,8 @@
       "id": "6aebdd3b0e0247d7206ba4f0787d42ff",
       "type": "Feature",
       "properties": {
-        "id": "road_34"
+        "id": "road_34",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1141,7 +1174,8 @@
       "id": "53704cf5f21df86d1d69669a6fc8bed7",
       "type": "Feature",
       "properties": {
-        "id": "road_35"
+        "id": "road_35",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1165,7 +1199,8 @@
       "id": "cd0c38236d46c6dec3d5af250306835c",
       "type": "Feature",
       "properties": {
-        "id": "road_36"
+        "id": "road_36",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1269,7 +1304,8 @@
       "id": "94087dccbe984cbac76d0d67ac08a8f1",
       "type": "Feature",
       "properties": {
-        "id": "road_37"
+        "id": "road_37",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1289,7 +1325,8 @@
       "id": "d21b050e5aaf7559712d86948780e456",
       "type": "Feature",
       "properties": {
-        "id": "road_38"
+        "id": "road_38",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1309,7 +1346,8 @@
       "id": "4dc1ebbb2346e56bac9271aafbeb2a82",
       "type": "Feature",
       "properties": {
-        "id": "road_39"
+        "id": "road_39",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1329,7 +1367,8 @@
       "id": "be499ea50dd9816f99ace12347aeeca0",
       "type": "Feature",
       "properties": {
-        "id": "road_40"
+        "id": "road_40",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1408,7 +1447,8 @@
         "type": "entrance",
         "buildingId": "canteen",
         "name": "Entrance: canteen",
-        "id": "entrance_1"
+        "id": "entrance_1",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1425,7 +1465,8 @@
         "type": "entrance",
         "buildingId": "raed_building",
         "name": "Entrance: raed_building",
-        "id": "entrance_2"
+        "id": "entrance_2",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1442,7 +1483,8 @@
         "type": "entrance",
         "buildingId": "ored_building",
         "name": "Entrance: ored_building",
-        "id": "entrance_3"
+        "id": "entrance_3",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1459,7 +1501,8 @@
         "type": "entrance",
         "buildingId": "amad_building",
         "name": "Entrance: amad_building",
-        "id": "entrance_6"
+        "id": "entrance_6",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1476,7 +1519,8 @@
         "type": "entrance",
         "buildingId": "admin_building",
         "name": "Entrance: admin_building",
-        "id": "entrance_7"
+        "id": "entrance_7",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1493,7 +1537,8 @@
         "type": "entrance",
         "buildingId": "admin_building",
         "name": "Entrance: admin_building",
-        "id": "entrance_8"
+        "id": "entrance_8",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1510,7 +1555,8 @@
         "type": "entrance",
         "buildingId": "rafis_building",
         "name": "Entrance: rafis_building",
-        "id": "entrance_9"
+        "id": "entrance_9",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1527,7 +1573,8 @@
         "type": "entrance",
         "buildingId": "mis_building",
         "name": "Entrance: mis_building",
-        "id": "entrance_10"
+        "id": "entrance_10",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1544,7 +1591,8 @@
         "type": "entrance",
         "buildingId": "pmed_building",
         "name": "Entrance: pmed_building",
-        "id": "entrance_12"
+        "id": "entrance_12",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1561,7 +1609,8 @@
         "type": "entrance",
         "buildingId": "argosino_hall",
         "name": "Entrance: argosino_hall",
-        "id": "entrance_14"
+        "id": "entrance_14",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1578,7 +1627,8 @@
         "type": "entrance",
         "buildingId": "laboratory_building",
         "name": "Entrance: laboratory_building",
-        "id": "entrance_15"
+        "id": "entrance_15",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1595,7 +1645,8 @@
         "type": "entrance",
         "buildingId": "prdp_building",
         "name": "Entrance: prdp_building",
-        "id": "entrance_16"
+        "id": "entrance_16",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1612,7 +1663,8 @@
         "type": "entrance",
         "buildingId": "tissue_culture_building",
         "name": "Entrance: tissue_culture_building",
-        "id": "entrance_17"
+        "id": "entrance_17",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1629,7 +1681,8 @@
         "type": "entrance",
         "buildingId": "tissue_culture_building",
         "name": "Entrance: tissue_culture_building",
-        "id": "entrance_18"
+        "id": "entrance_18",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1646,7 +1699,8 @@
         "type": "entrance",
         "buildingId": "pgrc_building",
         "name": "Entrance: pgrc_building",
-        "id": "entrance_19"
+        "id": "entrance_19",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1663,7 +1717,8 @@
         "type": "entrance",
         "buildingId": "corn/casava_building",
         "name": "Entrance: corn/casava_building",
-        "id": "entrance_20"
+        "id": "entrance_20",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1680,7 +1735,8 @@
         "type": "entrance",
         "buildingId": "rsbsa_building",
         "name": "Entrance: rsbsa_building",
-        "id": "entrance_21"
+        "id": "entrance_21",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1697,7 +1753,8 @@
         "type": "entrance",
         "buildingId": "rnd_building",
         "name": "Entrance: rnd_building",
-        "id": "entrance_22"
+        "id": "entrance_22",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1714,7 +1771,8 @@
         "type": "entrance",
         "buildingId": "dorm",
         "name": "Entrance: dorm",
-        "id": "entrance_26"
+        "id": "entrance_26",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1731,7 +1789,8 @@
         "type": "entrance",
         "buildingId": "rsl_building",
         "name": "Entrance: rsl_building",
-        "id": "entrance_27"
+        "id": "entrance_27",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1748,7 +1807,8 @@
         "type": "entrance",
         "buildingId": "guard_house",
         "name": "Entrance: guard_house",
-        "id": "entrance_28"
+        "id": "entrance_28",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1765,7 +1825,8 @@
         "type": "entrance",
         "buildingId": "exit_guard_house_1",
         "name": "Entrance: exit_guard_house_1",
-        "id": "entrance_29"
+        "id": "entrance_29",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1782,7 +1843,8 @@
         "type": "entrance",
         "buildingId": "rcpc_building",
         "name": "Entrance: rcpc_building",
-        "id": "entrance_30"
+        "id": "entrance_30",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1799,7 +1861,8 @@
         "type": "entrance",
         "buildingId": "motorpool_barracks",
         "name": "Entrance: motorpool_barracks",
-        "id": "entrance_31"
+        "id": "entrance_31",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1816,7 +1879,8 @@
         "type": "entrance",
         "buildingId": "guest_house",
         "name": "Entrance: guest_house",
-        "id": "entrance_32"
+        "id": "entrance_32",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1833,7 +1897,8 @@
         "type": "entrance",
         "buildingId": "exit_guard_house_2",
         "name": "Entrance: exit_guard_house_2",
-        "id": "entrance_33"
+        "id": "entrance_33",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1850,7 +1915,8 @@
         "type": "entrance",
         "buildingId": "lares_building",
         "name": "Entrance: lares_building",
-        "id": "entrance_1"
+        "id": "entrance_1",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1867,7 +1933,8 @@
         "type": "entrance",
         "buildingId": "fod_building",
         "name": "Entrance: fod_building",
-        "id": "entrance_2"
+        "id": "entrance_2",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1884,7 +1951,8 @@
         "type": "entrance",
         "buildingId": "ild_building",
         "name": "Entrance: ild_building",
-        "id": "entrance_3"
+        "id": "entrance_3",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1898,7 +1966,8 @@
       "id": "5c00dcc1f0fbbbcae853b92cfa2a2971",
       "type": "Feature",
       "properties": {
-        "id": "road_1"
+        "id": "road_1",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1925,7 +1994,8 @@
         "type": "entrance",
         "buildingId": "seaguard_building",
         "name": "Entrance: seaguard_building",
-        "id": "entrance_4"
+        "id": "entrance_4",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1942,7 +2012,8 @@
         "type": "entrance",
         "buildingId": "f2c2_building",
         "name": "Entrance: f2c2_building",
-        "id": "entrance_5"
+        "id": "entrance_5",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1956,7 +2027,8 @@
       "id": "77ee2681bd44cd3db3d11efb8632ee1f",
       "type": "Feature",
       "properties": {
-        "id": "road_2"
+        "id": "road_2",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -1980,7 +2052,8 @@
       "id": "f79296eee237f19b012a802e4334a838",
       "type": "Feature",
       "properties": {
-        "id": "road_3"
+        "id": "road_3",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -2000,7 +2073,8 @@
       "id": "275793e7d1a2a14256ccd286e76ebdd6",
       "type": "Feature",
       "properties": {
-        "id": "road_4"
+        "id": "road_4",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -2020,7 +2094,8 @@
       "id": "aa3c7c66e4ff0d634af56de89f98e3ec",
       "type": "Feature",
       "properties": {
-        "id": "road_5"
+        "id": "road_5",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -2040,7 +2115,8 @@
       "id": "65f9ef06c0a41f6337e5a01b2fd8007a",
       "type": "Feature",
       "properties": {
-        "id": "road_6"
+        "id": "road_6",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -2063,7 +2139,8 @@
         "type": "entrance",
         "buildingId": "fmr",
         "name": "Entrance: fmr",
-        "id": "entrance_6"
+        "id": "entrance_6",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -2077,7 +2154,8 @@
       "id": "d8e36eeaa6bfd7e0bb16880bfa6da1b0",
       "type": "Feature",
       "properties": {
-        "id": "road_7"
+        "id": "road_7",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -2100,7 +2178,8 @@
         "type": "entrance",
         "buildingId": "mushroom_laboratory",
         "name": "Entrance: mushroom_laboratory",
-        "id": "entrance_7"
+        "id": "entrance_7",
+        "station": "lares"
       },
       "geometry": {
         "coordinates": [
@@ -2108,6 +2187,475 @@
           13.957679133408703
         ],
         "type": "Point"
+      }
+    },
+    {
+      "id": "road_aws_walkway",
+      "type": "Feature",
+      "properties": {
+        "id": "road_aws_walkway",
+        "station": "lares",
+        "type": "walkway"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.16866614359799,
+            13.959749554496724
+          ],
+          [
+            121.16855681736558,
+            13.96005459554873
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "entrance_aws_gate",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "automated_weather_station",
+        "name": "Entrance: automated_weather_station",
+        "id": "entrance_34",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          121.16855668434135,
+          13.960054765058647
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "41fc6ecb6f17b39c231608e2ae5397ed",
+      "type": "Feature",
+      "properties": {
+        "id": "road_1",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.16710661329563,
+            13.959212583633985
+          ],
+          [
+            121.16701192743119,
+            13.95948585977348
+          ],
+          [
+            121.16695844011906,
+            13.959639978638847
+          ],
+          [
+            121.16693246580354,
+            13.959752838065427
+          ],
+          [
+            121.16694832075632,
+            13.959827804404242
+          ],
+          [
+            121.16699613711035,
+            13.959868416398578
+          ],
+          [
+            121.16715219486218,
+            13.95991924132926
+          ],
+          [
+            121.1677645394006,
+            13.960126435628496
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "e2e7c794af2f13eed77c5f35563b6841",
+      "type": "Feature",
+      "properties": {
+        "id": "road_2",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.16695558882174,
+            13.959649758357642
+          ],
+          [
+            121.16689512250451,
+            13.959629119009549
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "c07c1b4dc87b0e2be914833b329df78c",
+      "type": "Feature",
+      "properties": {
+        "id": "road_3",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.16694098335375,
+            13.95971570108567
+          ],
+          [
+            121.16691628628672,
+            13.959707602336465
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "8e0dc7098d468ece667a55242f86d411",
+      "type": "Feature",
+      "properties": {
+        "id": "road_4",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.16694071717683,
+            13.95979349664809
+          ],
+          [
+            121.16690493827997,
+            13.959781880312079
+          ],
+          [
+            121.16685823167205,
+            13.959903725905804
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "184349fd349b4f36064f10a978d471b4",
+      "type": "Feature",
+      "properties": {
+        "id": "road_5",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.16704578348998,
+            13.959883719443397
+          ],
+          [
+            121.16700757308308,
+            13.96000508629281
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "5ded0151888d78060f3698cc0b928a44",
+      "type": "Feature",
+      "properties": {
+        "id": "road_6",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.16723715922211,
+            13.959948574847118
+          ],
+          [
+            121.167230759142,
+            13.959967420632495
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "09d36e8f8cb793ed93b5327ccbdcb1f2",
+      "type": "Feature",
+      "properties": {
+        "id": "road_7",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.16741837669554,
+            13.960009974251065
+          ],
+          [
+            121.16740679425578,
+            13.960045095189528
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "ff69138090692aca6647e23d182da1c3",
+      "type": "Feature",
+      "properties": {
+        "id": "road_8",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.1675981151036,
+            13.960070508253324
+          ],
+          [
+            121.16758020941802,
+            13.960120642415518
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "d66e92ff475141a728b567209d14a575",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "warehouse_1",
+        "name": "Entrance: warehouse_1",
+        "station": "lares",
+        "id": "entrance_1"
+      },
+      "geometry": {
+        "coordinates": [
+          121.16689429869575,
+          13.95962893034634
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "a4b5305f10e4c67c281675158a086b18",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "warehouse_2",
+        "name": "Entrance: warehouse_2",
+        "station": "lares",
+        "id": "entrance_2"
+      },
+      "geometry": {
+        "coordinates": [
+          121.16691513713585,
+          13.959707381769292
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "94238e07689ea745e226699223b8c902",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "warehouse_3",
+        "name": "Entrance: warehouse_3",
+        "station": "lares",
+        "id": "entrance_3"
+      },
+      "geometry": {
+        "coordinates": [
+          121.16685834706084,
+          13.959904310384118
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "56edc37e1dc08ae92a5d6e56461d4010",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "warehouse_4",
+        "name": "Entrance: warehouse_4",
+        "station": "lares",
+        "id": "entrance_4"
+      },
+      "geometry": {
+        "coordinates": [
+          121.16700739997793,
+          13.960005712376699
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "1caba094363892200b9bc9d5823dde26",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "warehouse_5",
+        "name": "Entrance: warehouse_5",
+        "station": "lares",
+        "id": "entrance_5"
+      },
+      "geometry": {
+        "coordinates": [
+          121.16723035455391,
+          13.959968414519338
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "193c726129b4fa6b18119cad1926f49f",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "warehouse_6",
+        "name": "Entrance: warehouse_6",
+        "station": "lares",
+        "id": "entrance_6"
+      },
+      "geometry": {
+        "coordinates": [
+          121.1674062212038,
+          13.960046199435055
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "0008fcc59ddb2e7a1c61e51e532f3e8b",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "warehouse_7",
+        "name": "Entrance: warehouse_7",
+        "station": "lares",
+        "id": "entrance_7"
+      },
+      "geometry": {
+        "coordinates": [
+          121.1675800929849,
+          13.96012122180015
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "89538d8df9e3c609c5d24a8a42d582dc",
+      "type": "Feature",
+      "properties": {
+        "id": "road_9",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.16690162379575,
+            13.959789248819916
+          ],
+          [
+            121.16687737078627,
+            13.959779916245395
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "558f0d04df5c132685e775c2a56c95e4",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "lares_facility",
+        "name": "Entrance: lares_facility",
+        "station": "lares",
+        "id": "entrance_8"
+      },
+      "geometry": {
+        "coordinates": [
+          121.16687680710152,
+          13.959779763606505
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "49f271c09d2c878083c692eeb801a605",
+      "type": "Feature",
+      "properties": {
+        "id": "road_10",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.16701040919298,
+            13.959490565201023
+          ],
+          [
+            121.16696475179532,
+            13.959477138396238
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "40e388c77df60244a2a6b9c938a8604f",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "lares_facility",
+        "name": "Entrance: lares_facility",
+        "station": "lares",
+        "id": "entrance_9"
+      },
+      "geometry": {
+        "coordinates": [
+          121.16696259564662,
+          13.959476573681513
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "43878883fb307f2023cdfa9c5c404133",
+      "type": "Feature",
+      "properties": {
+        "id": "road_11",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.16694074205964,
+            13.959716566635848
+          ],
+          [
+            121.16692325266155,
+            13.95973847309972
+          ],
+          [
+            121.16691369674987,
+            13.95975950357959
+          ],
+          [
+            121.16690471951739,
+            13.959782787861883
+          ]
+        ],
+        "type": "LineString"
       }
     }
   ]

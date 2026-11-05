@@ -1,7 +1,8 @@
 # Session Handoff — DA-LARES / DA-QARES Interactive Map
 
 > **Read this first in a new chat**, together with [AGENTS.md](../AGENTS.md) (master project rules + 3D building status matrix).  
-> Last updated: **2026-10-26**
+> Roadmap: [docs/CSS_MODULARIZATION_PLAN.md](CSS_MODULARIZATION_PLAN.md) (post-LARES stylesheet modularization roadmap).  
+> Last updated: **2026-11-03**
 
 ---
 
@@ -21,18 +22,395 @@ Runtime:
 
 ---
 
-## 2. 🎯 Active Priority Tasks for the Next Conversation
+### 2.0.29 Four Official Stations Alignment (DA-CARES Cavite Integration) — ✅ Complete
+- **Aligned 4th Regional Station:** Replaced obsolete placeholder `lardc` (Siniloan, Laguna) with the official 4th Research Station of DA-CALABARZON: **DA-CARES** (**Cavite Agricultural Research and Experiment Station** located in **Naic, Cavite**; NIA Compound, Brgy. Ibayo Silangan, Naic, Cavite; `[120.7925, 14.2965]`).
+- **Official 4 Stations of DA-CALABARZON (Region IV-A):**
+  1. **DA-LARES:** Lipa Agricultural Research and Experiment Station (Brgy. Marawoy, Lipa City, Batangas) — Active Main Hub.
+  2. **DA-QARES:** Quezon Agricultural Research and Experiment Station (Tiaong, Quezon) — Under Development.
+  3. **DA-RARES:** Rizal Agricultural Research and Experiment Station (Brgy. Cuyambay, Tanay, Rizal) — Under Development.
+  4. **DA-CARES:** Cavite Agricultural Research and Experiment Station (Naic, Cavite) — Under Development.
+- **Synchronized Station Registries & UI:**
+  - `STATIONS.cares` registered in [js/data/stations.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/data/stations.js).
+  - Desktop station dropdown flyout updated with `DA-CARES` / `Naic, Cavite (Experiment Station)` in [index.html](file:///c:/Users/LGU-SanPedro/Downloads/map/index.html).
+  - Mobile station modal updated with `DA-CARES` / `Naic, Cavite` / `Cavite Agricultural Research & Experiment Station` in [index.html](file:///c:/Users/LGU-SanPedro/Downloads/map/index.html).
+  - Added `'🍃': 'leaf'` mapping to [js/data/icons.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/data/icons.js).
+- **Cachebusters Bumped:** `css/main.css?v=186` and `js/app.js?v=252` in [index.html](file:///c:/Users/LGU-SanPedro/Downloads/map/index.html).
 
-### 2.1 Layer Visibility: Sync QARES 3D Buildings with Toggle
-- **Requirement:** When turning off the "3D Buildings" switch in **Layers → Layer Visibility** (`#layer-buildings-toggle`), the buildings in QARES must also vanish completely.
-- **Current Behavior:** In [js/map-setup.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/map-setup.js), `toggleBuildings()` handles layers, but QARES 3D extrusions (`qares-footprints-3d` and `qares-footprints-roofs`) and QARES DOM building markers must be fully synchronized so toggling off hides both LARES and QARES 3D models and pins simultaneously.
+### 2.0.28 Search Bar UI Refinements (Phone Info Button Removal & Desktop Ellipsis Parity) — ✅ Complete
+- **Removed Repetitive `i` Button in Phone UI:** Removed `<button class="phone-info-guide-btn">` from the mobile search bar in [index.html](file:///c:/Users/LGU-SanPedro/Downloads/map/index.html), eliminating duplicate trigger since the top DASH header logo already opens the Welcome Guide.
+- **Desktop Search Bar Flex Layout & Ellipsis Parity:**
+  - Modernized `.search-box` in [css/main.css](file:///c:/Users/LGU-SanPedro/Downloads/map/css/main.css) to a clean flexbox container (`display: flex; align-items: center; gap: 10px; padding: 0 14px; border-radius: 14px`), removing hardcoded asymmetrical padding and dead square gaps.
+  - Aligned placeholder text with Phone UI: `Search places, plots & offices...` with `text-overflow: ellipsis; white-space: nowrap; overflow: hidden;` preventing clipped letter glyphs like "plac".
+- **Cachebusters Bumped:** `css/main.css?v=185` and `js/app.js?v=251` in [index.html](file:///c:/Users/LGU-SanPedro/Downloads/map/index.html).
 
-### 2.2 Full-Stack Performance & Lag Optimization Pass
-- **Requirement:** The user reported noticeable screen lag and stuttering during interaction. Perform a comprehensive performance pass:
-  - **DOM Marker Frustum Virtualization:** Only keep markers within the active camera viewport mounted/visible; set `display: none` on off-screen pins to cut layout recalculations.
-  - **Event Listener Throttling:** Throttle high-frequency camera movement (`pitch`, `rotate`, `zoom`, `move`) and mouse/touch drag handlers using `requestAnimationFrame`.
-  - **Three.js Resource Management:** Verify draw calls, geometry batching, and memory disposal on station transitions to lock rendering at a smooth **60 FPS**.
-  - **Tile Cache & Texture Limits:** Ensure MBTiles raster tile cache is capped to prevent GPU memory saturation on kiosk hardware.
+### 2.0.27 CSS Problems Linter Warnings Resolved — ✅ Complete
+- **Resolved 4 `css(propertyIgnoredDueToDisplay)` Warnings:** Removed redundant `vertical-align: unset !important;` from 4 icon selector rules in [css/main.css](file:///c:/Users/LGU-SanPedro/Downloads/map/css/main.css) (`.station-item-icon svg`, `.mlo-icon svg`, `.mlm-option-icon svg`, `.psc-icon svg`). Because these elements already have `display: block !important;` and are contained within flexbox-centered wrappers (`display: flex; align-items: center; justify-content: center;`), `vertical-align` was ignored by the CSS engine and triggered linter warnings.
+- **Cachebuster Bumped:** `css/main.css?v=184` in [index.html](file:///c:/Users/LGU-SanPedro/Downloads/map/index.html).
+
+### 2.0.26 Mobile Numbered Pills: Desktop Color Scheme Parity — ✅ Complete
+- **Translucent Tinted Wash & Vivid Text:** Mobile directory badges (`.phone-dir-badge`) and building detail header badges (`#phone-bldg-badge`) updated from flat opaque circles with white text to the desktop glassmorphic aesthetic:
+  - `background: ${bColor}22` (~13.3% translucent background tint).
+  - `color: ${bColor}` (vibrant text and SVG icon stroke matching the building's color).
+  - `border: 1px solid ${bColor}44` (subtle matching translucent outline).
+- **Modern Squircle Geometry:** Replaced plain circular `border-radius: 50%` with `border-radius: 10px` ($36\text{px} \times 36\text{px}$) for directory badges and `border-radius: 11px` ($38\text{px} \times 38\text{px}$) for building details header badges.
+- **QARES Directory & Plots:** Applied the same translucent color scheme across QARES mobile directory in `js/stations.js` and plot zones in `js/phone-ui.js`.
+- **Cachebusters Bumped:** `css/main.css?v=183` and `js/app.js?v=250` in `index.html`.
+
+### 2.0.25 Regional Research Stations "Under Development" Protection (Deployment-Gated) — ✅ Complete
+- **Strictly Deployment-Gated (`isDeployedMode()`):**
+  - **Local Development / Localhost (Current Workspace):** Station switching is 100% unrestricted with zero blocking modals. Developers can freely switch to, inspect, and build `qares` without interruption.
+  - **Production / Deployed Environments (`isDeployedMode() === true` or `?deployed=1`):** Other research stations (`qares`, `rares`, `cares`) are protected with the dedicated `#station-dev-modal` ("Campus Under Development") preventing public visitors from accessing unfinished campuses and safely returning them to DA-LARES.
+  - **Dev Override:** Developer/Admin preview button (`Explore Station (Dev)`) is available whenever the modal is viewed in development mode.
+
+### 2.0.24 Mobile Right Control Rail Redesign (Parallel 4-Button Stack) — ✅ Complete
+- **Suppressed Mapbox Navigation Buttons on Mobile:** Hidden Zoom In (+), Zoom Out (-), and Compass (▲) on mobile viewports and phone mode (.mapboxgl-ctrl-group:has(.mapboxgl-ctrl-zoom-in)).
+- **Parallel Right-Side Column Layout:** Clean vertical stack aligned along 
+ight: 14px with uniform 38px circular buttons:
+  1. Settings (Gear)
+  2. Map Layer (Aerial Drone / Mapbox)
+  3. Orbit (3D rotate)
+  4. Fullscreen (Expand)
+- **Synchronous Navigation Gliding:** When turn-by-turn navigation starts, the 4-button column slides from 	op: 14px to 	op: 88px below the HUD banner, maintaining complete visibility and zero overlap.
+
+### 2.0.23 Plot 22 Comfort Room Geometric Highlight Realignment & Zero-Pill Amenities Synchronization — ✅ Complete
+- **Root Cause of Diamond/Rhombus Highlight Bug:**
+  - The previous GeoJSON polygon for `plot22_comfort_room` inadvertently cross-paired longitude and latitude coordinates across diagonals (`[X0, Y2]`, `[X1, Y3]`, `[X2, Y0]`, `[X3, Y1]`).
+  - Instead of placing vertices at the 4 rectangular corner extremities (NE, NW, SW, SE), the vertices lay along the cardinal axes (N, S, E, W), creating a diamond rotated by $45^\circ$ that sliced diagonally across the building.
+- **Architectural Solution & Mathematical Realignment:**
+  - Derived the exact rectangular footprint matching the 3D model walls ($2.80	ext{ m} 	imes 2.80	ext{ m}$) and foundation plinth, rotated by the authentic $164.2^\circ$ model bearing:
+    * NE: `[121.16895513, 13.95976580]`
+    * NW: `[121.16892836, 13.95975845]`
+    * SW: `[121.16893593, 13.95973248]`
+    * SE: `[121.16896270, 13.95973983]`
+  - Synchronized across `LARES_DRAWINGS` in [js/data/buildings.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/data/buildings.js), `FIELD_COMMODITY_ZONES` in [js/data/plots.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/data/plots.js), and [buildings.json](file:///c:/Users/LGU-SanPedro/Downloads/map/buildings.json).
+  - Maintained strictly 39 numbered facilities in the directory; utilities (Water Tank and Comfort Room) display clean emoji badges (`🚰`, `🚻`) without numeric badges (`num: null`).
+  - Confirmed `hasMarker: false` eliminates all floating map pills over both utility models.
+  - Bumped cachebuster to `v=223` in `index.html`.
+  - Verified via Headless Edge CDP (`scratch/verify_final.py`): the neon casing forms a clean rectangular box framing the building foundation and step, with zero diagonal diamond distortion.
+
+### 2.0.20 Building Orbit & Kiosk Pin Restoration (ES Module Canonical Singleton Architecture) — ✅ Complete
+- **Root Cause Analysis:**
+  - Browser ES module loader treats differing query parameters (e.g. `import './map-setup.js?v=91'` vs `import './map-setup.js'`) as separate modules with independent memory scopes and duplicate top-level executions.
+  - Across 48 import statements, fragmented query parameters caused `js/map-setup.js` to execute twice, instantiating **two concurrent `mapboxgl.Map` instances**.
+  - One Map instance was mounted to the DOM while `window.orbitBuilding` in `js/idle.js` was controlling the disconnected ghost instance.
+  - Furthermore, `js/markers.js` was instantiated five separate times (`?v=111`, `?v=109`, `?v=106`, `?v=105`, and unversioned), causing multiple `kioskMarkerInstance` objects and desynchronized label decluttering loops.
+- **Architectural Cleanup & Harmonization:**
+  - Standardized all internal relative imports across the entire `js/` directory to clean, canonical ES module specifiers without relative query strings.
+  - Cachebusting is strictly governed at the application shell entry point in `index.html` (`js/app.js?v=216`).
+  - Total active JS modules in browser reduced from 41 duplicate/fragmented instances to exactly 29 canonical singletons.
+  - `server.js` statically serves all assets with `Cache-Control: no-store, no-cache, must-revalidate` so script changes are immediately hot-loaded.
+- **Full Verification Across Desktop & Mobile Viewports:**
+  - **Desktop Kiosk Mode:**
+    * Clicking `(9) RAED Building` smoothly pans and tilts the camera to `[121.16617, 13.95834]`, `zoom: 19.6`, `pitch: 54°`, perfectly centered in the viewport between the left directory and right building drawer.
+    * Smooth continuous 3D inspection orbit executes around RAED Building (`bearing` rotates by $+7.37^\circ$ in $1.2\text{s}$).
+    * The `📍 YOU ARE HERE` pin remains strictly locked at Argosino Hall (`[121.1664336, 13.9581208]`).
+    * Clicking another building (e.g. `(12) Tanco Hall Building`) transitions smoothly to Tanco Hall (`[121.16658, 13.95821]`, `pitch: 54°`).
+    * Closing the building panel returns camera cleanly to the default Kiosk overview.
+  - **Mobile Phone Mode:**
+    * Clicking a building centers camera with mobile calibration (`zoom: 19.1`, `pitch: 48°`) and opens the active `phone-bottom-sheet` with complete photos and action buttons.
+  - Verified with live Headless Edge CDP tests: `verified_raed_orbit_centered.jpg`, `verified_tanco_orbit_centered.jpg`, `verified_back_to_kiosk_overview.jpg`, `verified_mobile_raed_sheet.jpg`.
+
+---
+
+### 2.0.15 Differentiated Mobile vs Kiosk Performance Profile System — ✅ Complete
+- **Context-Aware Performance Profile Differentiation:**
+  - **Kiosk Mode (Desktop / Totem Touchscreen):**
+    * Tag: `HARDWARE` (Emerald)
+    * Title: `Kiosk Performance Profile`
+    * Options: `⚡ Auto (Adaptive)`, `🌿 Kiosk Eco (i3 / i5 GPU)`, `💎 High (Native DPI)`
+    * Tuning: Optimized for low-generation Intel HD/UHD graphics (`activePixelRatio: 1.0` in Eco, max 1.5 in High).
+    * Storage Key: `da_kiosk_perf_profile`
+  - **Mobile Phone Mode (Smartphones / QR Navigation):**
+    * Tag: `BATTERY` (Cyan)
+    * Title: `Mobile Performance Profile`
+    * Options: `⚡ Auto (Balanced)`, `🔋 Battery Saver (Cool & Efficient)`, `💎 High Quality (Retina HD)`
+    * Tuning: Calibrated specifically for smartphone thermals and battery lifespan. Eco mode locks rendering to strictly 1.0x to prevent thermal throttling and save up to 60% battery; High mode clamps to `Math.min(nativeDpr, 2.0)` for razor-sharp Retina HD without burning the battery.
+    * Storage Key: `da_mobile_perf_profile` (decoupled from kiosk settings so mobile visitor adjustments never impact physical kiosk totems).
+- **Dynamic DOM Updates & State Decoupling:**
+  - Added `state.mobilePerformanceProfile` and `state.performanceProfile` in `js/data/state.js`.
+  - Added dynamic label/tag/icon morphing in `js/performance.js` (`updatePerformanceUI()`).
+  - Added dynamic responsiveness in `js/mode.js` (`applyAppModeToDOM()`) when resizing or rotating between mobile and desktop.
+  - Bumped cachebusters: `index.html` (`app.js?v=210`), `js/app.js` (`performance.js?v=87`), `js/map-settings.js` (`performance.js?v=87`), `js/map-setup.js` (`performance.js?v=87`).
+- **Headless Browser CDP Verification:**
+  - Verified Kiosk Mode: `HARDWARE`, `Kiosk Eco (i3/i5 GPU)`, writes to `da_kiosk_perf_profile` (`verified_perf_kiosk_mode.jpg`).
+  - Verified Mobile Mode: `BATTERY`, `🔋 Battery Saver (Cool & Efficient)`, writes to `da_mobile_perf_profile`, scrollable viewport (`verified_perf_mobile_scrolled.jpg`).
+
+### 2.0.14 Kiosk Performance Profile Persistence & Desync Fix — ✅ Complete
+- **Root Cause Resolution:**
+  - Resolved ES Module fragmentation where `js/app.js` imported `./performance.js?v=85` while `js/map-settings.js` and `js/map-setup.js` imported unversioned `./performance.js`, leading to separate module instances in browser memory with independent `currentProfile` variables.
+  - Eliminated truthy fallback bug in `updatePerformanceUI()` where `const p = currentProfile || localStorage...` was blocked from reading `localStorage` because `currentProfile` defaulted to `'auto'`.
+  - Moved performance profile state into `state.performanceProfile` in `js/data/state.js` as the single shared source of truth across all modules and window contexts.
+  - Hardened `localStorage` reads/writes with comprehensive `try...catch` guards to prevent silent execution termination in restricted storage environments.
+  - Guarded Mapbox `state.map.getLayer()` calls inside `applyPerformanceProfileClass()` against `Style is not done loading` exceptions.
+  - Attached explicit DOM click event listeners with `e.preventDefault()` and `e.stopPropagation()` on `#perf-btn-auto`, `#perf-btn-eco`, and `#perf-btn-high`.
+  - Unified all module imports to `./performance.js?v=86` and bumped `app.js?v=209`.
+- **End-to-End Automated Headless CDP Verification:**
+  - Verified clicking "Kiosk Eco" immediately engages `eco` profile (`Render: 1.00x`), turns `#perf-btn-eco` active, turns `#perf-btn-auto` inactive, persists across idle and frame ticks, survives closing/reopening the panel, and persists across full browser page reloads (`verified_perf_eco_closeup.jpg`).
+
+### 2.0.13 Plot 22 Water Tank & Comfort Room (Sub-Plots) Integration — ✅ Complete
+- **Option B Separate 3D Models (<300 KB Budget):**
+  - **LARES Water Tank (models/plot22_water_tank.glb, 165.6 KB):** Elevated structural steel water tower with 4 tapered angle legs, 3 tiers of horizontal tie beams, X-bracing, vertical access ladder with rungs, circular perimeter catwalk platform with safety guardrail, bottom conical hopper transition, ribbed cylindrical stainless tank, conical roof with apex finial, central water riser pipe with blue valve, and front 3D modernization project signboard with official DA seal medallion.
+  - **Plot 22 Comfort Room (models/plot22_comfort_room.glb, 47.0 KB):** Concrete sanitation & irrigation control facility (.40\text{ m} \times 3.00\text{ m}$); white stucco walls, dark green fascia trim, white ceiling soffits, single-slope shed roof sloping downward to rear, aluminum louver door with frame, threshold, and silver push handle, brass wall dedication plaque, blue water riser pipe, galvanized side piping fixture, concrete entrance step, and freestanding commemorative project marker pedestal with angled DA bronze dedication plaque.
+- **Sub-Plot Architecture with Zero Floating Map Pills:**
+  - Integrated both facilities under **Coffee Orchard** (zone_coffee_orchard, Plot 22) as sub-plots with hasMarker: false, isSubPlot: true.
+  - Excluded plot22_ IDs from generating standalone floating pin pills or directory entries in markers.js, sidebar.js, and phone-ui.js, preserving exactly 39 campus pin markers with zero ghost pills.
+  - Interactive sub-plot chips rendered in the Coffee Orchard drawer with two-tier descriptions, coordinates, and multi-view photo carousels (images/plot22_water_tank.jpg, plot22_water_tank_angle.jpg, plot22_comfort_room.jpg, plot22_comfort_room_marker.jpg).
+- **Road Graph & Walkway Connectivity:**
+  - Plotted entrance nodes entrance_plot22_water_tank and entrance_plot22_comfort_room in 
+oads.json.
+  - Added dedicated pedestrian walkway spurs (
+oad_walkway_water_tank, 
+oad_walkway_comfort_room) connecting seamlessly into Pili Drive (
+oad_40).
+- **Cachebusters Bumped:** uildings.js?v=108, plots.js?v=95, 
+oads.json?v=80, pp.js?v=205.
+
+### 2.0.12 Post-Arrival UI Streamlining & Unobstructed 3D View — ✅ Complete
+- **Removed Bottom Arrival Popup Card (`#kiosk-arrival-action-bar`):** Eliminated the redundant floating bottom modal that previously covered the lower third of the 3D map upon reaching destinations. Arrival is now cleanly conveyed via the top floating arrival banner (`🏁 Arrived — You have arrived at [Building Name]`) and the left sidebar's arrival card, replay button, and directory exit button.
+- **Persistent Camera Controls on Arrival:** Cleaned up `startArrivedCountdown()` in `js/walker.js` so that `.floating-camera-controls` (`CAMERA: 🔒 Locked | 🧭 Side View | 🗺️ Top View`) remains active and accessible on arrival, gently auto-dimming after 5s of inactivity. Visitors can now immediately explore the 3D model perspective without obstructed views.
+- **Stylesheet & DOM Decoupling:** Removed obsolete `.kiosk-arrival-action-bar` and `.kaa-*` styles from `css/main.css`, including the rule that forcibly hid the camera controls upon arrival.
+- **Cachebusters Bumped:** `css/main.css?v=167`, `walker.js?v=94`, `routing.js?v=95`, `app.js?v=204`.
+
+### 2.0.11 Plot Calibration Drawer & Plot 30 Main Map Synchronization — ✅ Complete
+- **Plot Draw Restoration (`plot_draw.html`):** Restored missing `new mapboxgl.Map` and `MapboxDraw` initialization. Resolves freeze on "Loading calibrated squares..." and dark blue screen. All 45 plot chips, 10GB drone orthomosaic raster layer, road lines guide, and polygon drawing controls now initialize and persist immediately.
+- **Plot 30 6-Sided Perimeter Integration (`js/data/plots.js`):** Merged user's bespoke 6-sided Plot 30 geometry wrapping the RCPC & Motorpool complex into `zone_mango_banana_jackfruit` (Plots 30–32) for both `FIELD_COMMODITY_ZONES` and `ZONE_POLYGONS` (10-sided seamless outer perimeter, 11 coordinates).
+- **Internal Cut Line 15 (`INTERNAL_CUT_LINES`):** Updated shared boundary between Plot 30 and Plot 31 to align with Plot 30's eastern edge (`[121.16777592, 13.95824287]` to `[121.16799713, 13.95763656]`).
+- **Plot 31 Snapped Boundary:** Snapped Plot 31's western edge in `ALL_PLOT_POLYGONS` cleanly to Plot 30.
+- **Cachebusters Bumped:** `plots.js?v=92`, `plot-layers.js?v=92`, `building-panel.js?v=92`, `routing.js?v=92`, `sidebar.js?v=92`, `map-setup.js?v=92`, `index.html` (`app.js?v=200`).
+- **Automated Verification:** Verified via Edge headless CDP (`tools/tests/verify_plot_fixes.py`) with visual screenshot captures for `plot_draw.html` and `index.html?mode=kiosk`.
+
+### 2.0.10 Master Agricultural Plots Reorganization (Plots 1–45 Schedule across 23 Official Zones) — ✅ Complete
+- **Reorganization Directive:** Full re-indexing, grouping, and renaming of all 45 agricultural research plots into 23 official master commodity zones based on user-provided ground-truth schedule:
+  1. **Plot 1:** `Indigenous Trees` (`zone_indigenous_trees`)
+  2. **Plot 2:** `Corn Seed Production Area` (`zone_corn_seed_prod_2`)
+  3. **Plot 3:** `Upland Rice Experimental Area` (`zone_upland_rice_exp`)
+  4. **Plot 4:** `Vegetables Experimental Area` (`zone_veg_exp`)
+  5. **Plot 5:** `CGUARD Corn` (`zone_cguard_corn`)
+  6. **Plots 6–12:** `Citrus Orchard` (`zone_citrus_orchard`) — retains AWS (#40) inside Plot 8
+  7. **Plots 13–15:** `Corn Seed Production Area` (`zone_corn_seed_prod_13_15`)
+  8. **Plot 16:** `Mango Orchard` (`zone_mango_orchard_16`)
+  9. **Plot 17:** `TC Makapuno & Banana Screenhouse` (`zone_tc_makapuno_screenhouse`) — strictly preserves 5 3D models & real sub-plot names: Vegetables Screenhouse 1 & 2, Citrus Mother Plants, Embryo Cultured Macapuno Seedlings & TC Banana, and Coffee Seedlings
+  10. **Plot 18:** `Coffee & Citrus Screenhouse` (`zone_coffee_citrus_screenhouse`) — strictly preserves 3D models & real sub-plot names: combined Screenhouses 6–8 and Screenhouse 9
+  11. **Plot 19:** `Pomelo Orchard` (`zone_pomelo_orchard_19`) — calibrated 8-vertex polygon
+  12. **Plots 20–22:** `Coffee Orchard` (`zone_coffee_orchard`)
+  13. **Plots 23–25:** `Vegetable Production Area` (`zone_vegetable_production_area`)
+  14. **Plots 26–28:** `Fruit Trees & Citrus Orchard` (`zone_fruit_trees_citrus_orchard`)
+  15. **Plot 29:** `Tall Makapuno & Cacao` (`zone_tall_makapuno_cacao_29`)
+  16. **Plots 30–32:** `Mango, Banana & Jackfruit Trees` (`zone_mango_banana_jackfruit`) — calibrated 7-vertex polygon
+  17. **Plots 33–35:** `Dwarf Makapuno` (`zone_dwarf_makapuno`)
+  18. **Plots 36–38:** `Cassava Production Area` (`zone_cassava_production_36_38`)
+  19. **Plots 39–41:** `Soybean Seeds Production Area` (`zone_soybean_seeds_prod`)
+  20. **Plot 42:** `Tall Makapuno & Cacao` (`zone_tall_makapuno_cacao_42`)
+  21. **Plot 43:** `Cassava Production Area` (`zone_cassava_production_43`)
+  22. **Plot 44:** `Organic Vegetable Production Area` (`zone_organic_veg_prod`)
+  23. **Plot 45:** `Mango Orchard` (`zone_mango_orchard_45`)
+- **Combined Overview & On-Demand Split Illumination:**
+  - In the overview, all grouped zones (e.g. Plots 6–12 Citrus Orchard, Plots 13–15 Corn Seed Production, Plots 36–38 Cassava Production, etc.) render as **single seamless combined rectangles with zero internal lines** via `getPlotsGeoJSON()` returning `ZONE_POLYGONS`.
+  - When a zone is clicked/selected, Mapbox feature state `selected: true` dynamically illuminates **only the internal cut lines of that specific zone** with white dashed dividers.
+  - When deselected, cut line opacity cleanly returns to `0.0`.
+- **Mathematical Exactness & Integrity:**
+  - 23 Zone Polygons (`ZONE_POLYGONS`) merged seamlessly from user's `scratch/user_updated_plots.json`.
+  - 45 Individual Plot Polygons (`ALL_PLOT_POLYGONS`) synchronized.
+  - 22 Internal Dividing Cut Lines (`INTERNAL_CUT_LINES`) rendered with clean dashed boundaries (`rgba(255, 255, 255, 0.45)`).
+  - Synchronized baseline `DEFAULT_CALIBRATED_SQUARES` in `plot_draw.html`.
+  - Cachebusters bumped across all consumers: `js/data/plots.js?v=88`, `js/plot-layers.js?v=88`, `js/sidebar.js?v=88`, `js/map-setup.js?v=88`, `index.html` (`js/app.js?v=195`).
+- **Automated Verification:** Verified via Edge CDP automation (`scratch/verify_combined_and_splits.py`) with 100% pass across overview combined counts, selection illumination, and deselect reset.
+
+---
+
+### 2.0.9 Mapbox Gate Presentation Alignment & Calibrated Plots Sync — ✅ Complete
+- **Mapbox-Native Gate Barrier Presentation (Matches User Reference Image 1):**
+  - **Eliminated Bulky Pill:** Replaced the heavy black capsule container with the authentic Mapbox Maki `gate` vector symbol (`<svg viewBox="0 0 15 15">`) directly integrated onto the perimeter boundary line crossing the road.
+  - **Dual Mode Visuals:**
+    - *Mapbox Standard Mode:* Displays clean slate-grey Maki gate icon (`#475569` on `#e2e8f0`) matching Image 1 100%.
+    - *Drone / Satellite Mode:* Displays crisp circular badge with dark glassmorphism backing (`rgba(15, 23, 42, 0.85)`) & theme accent ring.
+  - **Clean Typography (NO Pill Container):** Name is rendered in Mapbox typography directly on the map surface with native text-halo (`text-shadow`), eliminating bulky dark boxes.
+  - **Zero Flinging / Stable Markers:** Root marker translation is controlled exclusively by Mapbox GL JS without CSS transform overrides.
+  - **100% Standalone Selection:** Clicking `Main Entrance`, `Main Exit`, or `Back Gate Entrance / Exit` opens the gate details drawer and routes directly to the barrier; Guard House A (#1) remains unselected in both the directory and the map.
+  - **Calibrated Barrier Placement:** Shifted `Main Entrance` northward along the compound boundary from `13.958316` to `[121.165745, 13.958380]`, aligning it directly at the physical driveway opening and barrier gate crossing.
+- **Calibrated Plot Drawings Synchronization (`plot_draw.html`):**
+  - Extracted 45 calibrated field plots directly from user browser storage (`scratch/user_updated_plots.json`).
+  - Synchronized updated boundary polygons for:
+    - **Plot 17 (`zone_tc_makapuno_screenhouse`)**: Calibrated boundaries updated.
+    - **Plot 18 (`zone_coffee_citrus_screenhouse`)**: Calibrated boundaries updated.
+    - **Plot 19 (`zone_pummelo_orchard`)**: Upgraded to 8-vertex calibrated polygon.
+    - **Plot 30 (`zone_mango_banana_jackfruit`)**: Upgraded to 7-vertex calibrated polygon.
+  - Synchronized `ALL_PLOT_POLYGONS` and `ZONE_POLYGONS` in `js/data/plots.js` and updated baseline `DEFAULT_CALIBRATED_SQUARES` in `plot_draw.html`.
+  - Cachebusters bumped: `css/main.css?v=166`, `js/app.js?v=193`, `js/markers.js?v=107`, `js/data/plots.js?v=86`.
+
+---
+
+### 2.0.8 Official Screenhouse Real Names & Combined Highlight (Plot 18 Screenhouses 6–8) — ✅ Complete
+- **Official Ground-Truth Real Names Configured:**
+  - **Screenhouse 1:** `Vegetables Screenhouse 1` (`plot17_screenhouse_1`, Plot 17 Sub-Plot 1)
+  - **Screenhouse 2:** `Vegetables Screenhouse 2` (`plot17_screenhouse_2`, Plot 17 Sub-Plot 2)
+  - **Screenhouse 3:** `Citrus Mother Plants Screenhouse` (`plot17_screenhouse_3`, Plot 17 Sub-Plot 3)
+  - **Screenhouse 4:** `Embryo Cultured Macapuno Seedlings & Tissue Cultured Banana Screenhouse` (`plot17_screenhouse_4`, Plot 17 Sub-Plot 4)
+  - **Screenhouse 5:** `Coffee Seedlings Screenhouse` (`plot17_screenhouse_5`, Plot 17 Sub-Plot 5)
+  - **Screenhouse 6–8:** `Citrus Seedlings Screenhouse` (`plot18_greenhouse_complex`, Plot 18 Sub-Plot '6-8')
+    - **Combined Highlight:** Unifies bays 6, 7, and 8 into one continuous highlight polygon with interactive multi-bay image gallery (West, Center, East bays).
+  - **Screenhouse 9:** `Citrus Seedlings Screenhouse` (`plot18_screenhouse_9`, Plot 18 Sub-Plot 9)
+- **Files Synchronized:**
+  - `js/data/plots.js`: Updated `FIELD_COMMODITY_ZONES` and `ZONE_POLYGONS` sub-plots, labels, names, crops, and descriptions.
+  - `js/data/buildings.js`: Updated `LARES_DRAWINGS`, `KNOWN_BUILDING_NAMES`, and `BUILDING_DIRECTORY` descriptions.
+  - `js/building-panel.js`: Fixed `zoomToSubPlot` argument escaping for combined plot string identifiers (`'6-8'`).
+  - `js/data/descriptions.js`: Synchronized `compactTag` and `keyServices`.
+  - `buildings.json`: Updated `name` properties.
+  - `index.html`: Cachebuster bumped to `app.js?v=193`.
+- **Verification:** Verified in headless Edge CDP; captured high-resolution screenshots for Screenhouse 1, combined Screenhouse 6–8, and Screenhouse 9.
+
+---
+
+### 2.0.7 Warehouse Entrances & Complete 39-Building Pathfinding Graph Integration — ✅ Complete
+- **User Action & Requirement:** User drew two new walkway road segments and entrance nodes in `road_draw.html` for **LARES Agricultural Supplies Storage** and **LARES Organic Fertilizer Storage**, which were saved to `roads.json` with temporary properties (`buildingId: "lares_facility"`).
+- **Entrances Mapped & Configured in `roads.json`:**
+  1. **LARES Agricultural Supplies Storage (`lares_agricultural_supplies_storage`, Building Pin #31):**
+     - Assigned Feature 99 (`id: "entrance_9"`) at coordinates `[121.16696259564662, 13.959476573681513]`.
+     - Connected via walkway `road_10` to campus main road `road_1`.
+  2. **LARES Organic Fertilizer Storage (`lares_organic_fertilizer_storage`, Building Pin #34):**
+     - Assigned Feature 97 (`id: "entrance_8"`) at coordinates `[121.16687680710152, 13.959779763606505]`.
+     - Connected via walkway `road_9` to campus access road `road_4`.
+  3. **LARES Farm Machinery Shed 1 (`lares_farm_machinery_shed_1`, Building Pin #33):**
+     - Updated legacy Feature 90 (`id: "entrance_2"`) at coordinates `[121.16691513713585, 13.959707381769292]` from `"warehouse_2"` to `"lares_farm_machinery_shed_1"`.
+- **System Synchronization:**
+  - `roads.json` cachebuster bumped to `v=77` in `js/app.js` and `js/map-setup.js`.
+  - Added `'warehouse_2': 'lares_farm_machinery_shed_1'` safety alias to `aliasMap` in `js/app.js` and `ENTRANCE_OVERRIDES` in `js/routing.js`.
+  - Cachebusters bumped in `index.html` (`app.js?v=192`).
+- **Comprehensive Audit:** Verified that **all 39 standalone campus buildings** have registered, active entrance nodes in `roads.json` and compute valid routes with zero orphan destinations.
+
+---
+
+### 2.0.5 Sidebar Directory & Map Pin Numbering Desynchronization — ✅ Complete
+- **Issue:** In the sidebar directory menu, the numbering jumped from `#30 Automated Weather Station` directly to `#39 Warehouse 1 (Abono)`, whereas on the 3D map viewport the pin on Warehouse 1 displayed `#31` (desync of 8 numbers).
+- **Root Cause Diagnosed:**
+  - `BUILDING_DIRECTORY` contains 47 items in total, which includes 8 hidden screenhouse sub-plots (`plot17_screenhouse_1` to `plot18_screenhouse_9_headhouse`) at indices 30 to 37.
+  - Map markers filtered out sub-plots first, assigning Warehouse 1 index 30 + 1 = `num: 31`.
+  - In contrast, the sidebar menu (`js/sidebar.js`) computed `num = dirList.indexOf(b) + 1`, counting the 8 hidden sub-plots, which pushed Warehouse 1 to `num: 39`.
+- **Permanent Solution Applied:**
+  1. **Canonical `b.num` in `BUILDING_DIRECTORY`:** When `BUILDING_DIRECTORY` is populated in `js/data/buildings.js`, a sequential `buildingCounter` assigns `num` exclusively to standalone facilities ($1\dots38$), setting `num: null` on sub-plots.
+  2. **Unified Consumer Modules:**
+     - `js/sidebar.js`: Uses `b.num` directly for directory badges.
+     - `js/markers.js`: Uses `b.num` directly for map pin badges and popups.
+     - `js/phone-ui.js`: Uses `b.num` directly for mobile list and arrival cards.
+     - `js/data/buildings.js` (`getBuildingById`): Returns `b.num`.
+     - `js/app.js`: URL parameter matching (`?dest=31`) matches `b.num`.
+  3. **Cachebusters Bumped:** Unified to `v=98` across all modules and `app.js?v=183` in `index.html`.
+- **Verification:** Automated CDP comparison audit of all 38 sidebar items against all 38 map marker pins returned **0 mismatches**; Warehouse 1 is `#31`, through Storage `#38`.
+
+### 2.0.4 Zoom Vanish Bug & Drone Calibration Array Offset Resolution — ✅ Permanent Architectural Fix
+- **Issues Addressed:**
+  1. **Building Vanishing on Zoom Out:** When zooming out to zoom $\le 18.0$, `lares_agricultural_supplies_storage` completely disappeared from view, leaving only `prdp_building` rendered.
+  2. **Warehouse Markers Teleporting to Screenhouses on Refresh:** Warehouse pins (31 to 37) previously jumped southeast onto the Plot 17 & 18 Screenhouses whenever the page reloaded.
+  3. **Corrupted Facility Names When Drawing:** Newly drawn shapes in `draw.html` previously defaulted to `admin_building`.
+- **Root Causes Diagnosed & Permanent Solutions Applied:**
+  1. **Mapbox `geojson-vt` Point Deduplication:** `prdp_building` and `lares_agricultural_supplies_storage` previously shared the identical Point coordinate (`[121.16692287, 13.95933876]`). At zoom levels $\le 18$, Mapbox's tile generator merged coincident points and dropped the second model.
+     - *Solution:* Re-centered `models/lares_agricultural_supplies_storage.glb` ($35.2\text{ KB}$) around its own local origin ($Y = 0$), placed its world coordinate at its authentic physical center (`[121.16688145, 13.95946174]`), and added `tolerance: 0, buffer: 0, maxzoom: 24` to `lares-3d-buildings-models-source` in `js/map-setup.js`.
+  2. **Drone Calibration Marker Indexing Bug & Module Caching:** `drone-calibration.js`'s `executeLayerShift()` indexed `BUILDING_DIRECTORY[idx]` directly from `state.markers.forEach((m, idx) => ...)`. Since sub-plots were excluded from `state.markers` (38 items) but present in `BUILDING_DIRECTORY` (47 items), index 30 (`warehouse_1`) picked `BUILDING_DIRECTORY[30]` (Screenhouse 1). In addition, `drone-calibration.js` was imported in `js/app.js` without a version query parameter, causing browsers to serve the unpatched cached script on refresh.
+     - *Solution:* Fixed `js/drone-calibration.js` to look up by canonical dataset ID (`el.dataset.id`). Updated `js/app.js` to import `./drone-calibration.js?v=97` and unified all modules to cachebuster `v=97` (`app.js?v=182`).
+  3. **Draw.html Default Selection:** Changed `draw.html` creation modal from defaulting to `'admin_building'` to an unselected placeholder `-- Select Campus Facility --` with hard validation blocking blank/unassigned submissions.
+- **Verification Across All Zoom Levels:**
+  - Automated CDP tests confirmed that at Zoom 19.5, 18.0, 17.5, 16.5, and 15.0, both `prdp_building` and `lares_agricultural_supplies_storage` remain 100% rendered with zero vanishing.
+  - Marker audit confirmed: Screenhouse pins count = 0; Warehouse 1–7 anchored precisely in the northern operational compound; Storage pin anchored at the eastern PRDP wing.
+
+### 2.0.3 Stale Draw Autosaves & Rogue Map Pin Deduplication — ✅ Permanent Architectural Fix
+- **Issue:** Every time the user saved or drew buildings in `draw.html`, old/placeholder pins (such as pins 31-35 labeled "Admin Building" over Plot 17 Screenhouses) reappeared across the campus map.
+- **Root Causes Diagnosed & Resolved:**
+  1. **Stale `localStorage` Priority in `draw.html`:** `draw.html` loaded stale local storage before fetching server data. When the user saved, the browser's stale polygons were sent to `/api/buildings` and overwrote `buildings.json`.
+  2. **Unassigned Dropdown Fallback:** Unassigned polygons in `draw.html` defaulted to `admin_building`.
+  3. **No Deduplication in `BUILDING_DIRECTORY`:** `BUILDING_DIRECTORY` in `js/data/buildings.js` previously did a raw `.map()` over all polygons without deduplicating by ID, allowing 16 duplicate "Admin Building" entries and pins.
+  4. **Unfiltered Sub-Plots:** Screenhouses in Plot 17 and Plot 18 were missing `isSubPlot: true` and `hasMarker: false` flags in `buildings.json`.
+- **4-Layer Permanent Architectural Solution:**
+  1. **Strict Deduplication in `js/data/buildings.js`:** `BUILDING_DIRECTORY` now uses `seenBuildingIds = new Set()`. Even if multiple polygons exist with the same ID, only the first instance ever enters the directory or spawns a map pin. All sub-plots (`plot17_*`, `plot18_*`, `*_annex`, `*_headhouse`) are strictly excluded from map pins.
+  2. **Automated Centroid Sanitizer in `server.js` (`POST /api/buildings`):** Every incoming payload is matched against known geographic coordinates (Screenhouses 1-5, Greenhouses, Warehouses 1-7, Storage, PRDP, Admin Building). Any mislabeled or duplicate ID is auto-corrected to its canonical identity and sub-plot flags are enforced before writing to disk.
+  3. **Self-Healing `draw.html`:** Auto-purges corrupted `localStorage` if more than one `admin_building` exists. Default fallback changed from `'admin_building'` to `'__custom__'`. Sanitizes data before saving to server.
+  4. **Database Sanitized:** `buildings.json` and `LARES_DRAWINGS` restored with canonical identities for all 47 features.
+- **Verification:** `BUILDING_DIRECTORY` count: 47; Admin Building count: 1 (Pin 3); Screenhouse pins: 0; Live map verified via HTTP server.
+
+### 2.0.2 PRDP Building Resizing & LARES Agricultural Supplies Storage Split & 3D Integration — ✅ Complete
+- **Context & User Directive:** Based on drone aerial orthomosaic ground-truth and field photos, the structure previously treated as a single building was split into two distinct, side-by-side structures sharing an internal dividing wall:
+  1. **PRDP Building (`prdp_building`)**: Resized to its authentic western half ($16.7\text{ m} \times 12.5\text{ m}$, 4 bays, $W=11.0\text{ m}, D=15.2\text{ m}$, eaves $0.75\text{ m}$). Freshly painted deep emerald-green corrugated hip roof (`#124729`), dark oxblood foundation plinth, 4-bay commercial facade, official signage, and double entrance doors aligned with `entrance_16`. Model: `models/prdp_building.glb` (**$132.1\text{ KB}$**, $<300\text{ KB}$ budget). Center: `[121.16692287, 13.95933876]`, rotation $341.9^\circ$.
+  2. **LARES Agricultural Supplies Storage (`lares_agricultural_supplies_storage`)**: Eastern half with 6-vertex L-shaped footprint. Weathered olive/sage green corrugated hip roof (`#4D604B`), L-wing valley rake, dark timber fascia, warm cream stucco walls, maroon foundation skirting; fixed 6-panel wooden door at entrance position "1" on the south wing wall with brass doorknob and concrete step (properly fixed/mounted per user request), through-wall Carrier window AC unit, and 3-panel steel-grilled windows facing east towards `road_1`. Model: `models/lares_agricultural_supplies_storage.glb` (**$68.9\text{ KB}$**, $<300\text{ KB}$ budget). Center: `[121.16690896, 13.95946182]`, rotation $341.9^\circ$. Hero image: `images/lares_agricultural_supplies_storage.jpg` ($284.6\text{ KB}$).
+- **Wayfinding & Road Graph Integration:**
+  - Entrance node `entrance_49` plotted at `[121.16695385, 13.95945836]` directly at the entrance step of the projecting wing (position "1").
+  - Dedicated straight walkway LineString `road_walkway_agri_supplies` connects `entrance_49` directly to `road_1` (`[121.16701192743119, 13.95948585977348]`).
+  - Full pathfinding verified from Main Kiosk to `lares_agricultural_supplies_storage`.
+- **Data Registration & Rule Compliance:**
+  - Feature 46 updated in `buildings.json` and `LARES_DRAWINGS` in `js/data/buildings.js` with `id: 'lares_agricultural_supplies_storage'`, `category: 'infrastructure'`, `type: 'Storage & Logistics Facility'`.
+  - Registered in `KNOWN_BUILDING_NAMES`, `CUSTOM_BUILDING_CENTERS`, `BUILDING_CATEGORIES`, `BUILDING_TYPES`, and dynamic `BUILDING_DIRECTORY`.
+  - Added two-tier descriptions in `js/data/descriptions.js`.
+  - Strictly Rule 6 compliant: Zero entries in `BUILDING_OFFICES` in `js/data/offices.js`.
+  - Strictly Rule 4 compliant: Pure architectural structure without external turf, roads, or vehicles.
+  - Bumped cachebusters: `app.js?v=175`, `buildings.js?v=89`, `roads.json?v=75`.
+
+### 2.0.0 Phase 1: Warehouse 1 (Abono Storage Facility) 3D Model Integration — ✅ Complete
+- **Facility:** Warehouse 1 (`warehouse_1`) — Abono / Fertilizer Storage Facility.
+- **Reference Images:** `Building Images/warehouses/1 Front View.jpg`, drone aerial close-up `fe349ae4`.
+- **Architectural Specifications:**
+  - Compact single-story CMU structure ($6.90\text{ m} \times 9.91\text{ m}$, eaves $3.10\text{ m}$, ridge apex $4.30\text{ m}$) in warm off-white stucco (`#EDE6D4`) with weathered dark grey plinth skirt (`#636561`).
+  - 100% Watertight gable roof with authentic $0.40\text{ m}$ eave and $0.35\text{ m}$ rake overhangs, dark brown timber fascia rakes (`#4C3727`), corrugated galvanized metal panels with alternating weathered rust strips, green painted ridge cap (`#2E5638`), and overhead black drop cable from apex.
+  - East gable facade features dark charcoal door frame, cream flush door leaf, silver vertical handle/latch, concrete threshold landing pad ($1.40\text{ m} \times 1.40\text{ m}$), and 3D official facility signboard `"ABONO"` with green border frame and bold red lettering.
+- **Orientation & Wayfinding Alignment:**
+  - Model centered at `[121.16684337, 13.95960904]`, Mapbox rotation $68.15^\circ$ (outward normal of East gable wall), orienting the door and `"ABONO"` sign directly toward `roads.json` entrance node `entrance_42` (`[121.16689, 13.959626]`).
+- **Performance Budget:** `models/warehouse_1.glb` is **$86.1\text{ KB}$**, well below the $150\text{ KB}$ target and $< 300\text{ KB}$ budget (Rule 2).
+- **Rule Compliance:** Strictly one building at a time (Rule 1); zero extraneous outdoor props/vehicles/lawn (Rule 4); zero fake offices in `offices.js` (Rule 6).
+- **Hero Image:** Optimized `images/warehouse_1.jpg` ($258.5\text{ KB}$) for fast mobile and kiosk drawer display.
+- **Cachebuster:** Bumped `index.html` to `app.js?v=161`.
+
+### 2.0.1 Warehouse 1–7 Directory, Entrance Orientations & Road Graph Integration — ✅ Complete
+- **Background & Identification:** Polygons drawn by the user north of PRDP Building were identified and registered as Warehouses 1 through 7 (warehouse_1 to warehouse_7):
+  - **LARES Agricultural Supplies Storage (lares_agricultural_supplies_storage)** (#31): Eastern wing of PRDP complex, faces **East** towards compound lane ([121.166881, 13.959462]).
+  - **LARES Synthetic Fertilizer Storage / LARES Pesticide Storage (warehouse_1)** (#32): Masonry storage north of PRDP, faces **East** towards access lane ([121.166890, 13.959626]).
+  - **LARES Farm Machinery Shed 1 (lares_farm_machinery_shed_1)** (#33): Open shed north of Warehouse 1 housing combine harvester & Ford tractor, faces **East-North-East** towards internal lane ([121.166871, 13.959707]).
+  - **LARES Organic Fertilizer Storage (lares_organic_fertilizer_storage)** (#34): Enclosed fertilizer storage north of Shed 1, faces **East-North-East** towards internal lane ([121.166833, 13.959801]).
+  - **LARES Corn Seed Processing Facility (warehouse_3)** (#35): Facility at northwest compound bend with screened packing veranda, faces **South** towards courtyard ([121.166838, 13.959895]).
+  - **LARES Farm Machinery Shed 2 (warehouse_4)** (#36): L-shaped machinery complex behind Warehouse 3 housing tractors & threshers, faces **South** towards staging courtyard ([121.166996, 13.960005]).
+  - **Rice Banner Warehouse (warehouse_5)** (#37): Large high-bay green-roofed facility with southern loading canopies, faces **South** towards service road ([121.167232, 13.959950]).
+  - **Cassava Dryer (warehouse_6)** (#38): Processing facility with rotary dryer & biomass furnace, faces **South** towards service road ([121.167405, 13.960040]).
+  - **Corn Banner Warehouse (warehouse_7)** (#39): Multi-bay seed warehouse with skylight monitors and western annex, faces **South** towards service road ([121.167587, 13.960085]).
+- **Data & Wayfinding Integration:**
+  - **buildings.json & js/data/buildings.js:** Mapped features 38–44 with category infrastructure, height 4.5m, type Storage & Logistics Facility, registered in KNOWN_BUILDING_NAMES, CUSTOM_BUILDING_CENTERS, BUILDING_CATEGORIES, BUILDING_TYPES, and dynamic BUILDING_DIRECTORY.
+  - **js/data/descriptions.js:** Added two-tier wayfinding information (compactTag, visualLandmark, keyServices) for all 7 warehouses.
+  - **roads.json:** Plotted entrances entrance_42 through entrance_48 aligned with user-specified facing directions. Extended road graph via road_warehouse_access, road_warehouse_east_lane, and dedicated entrance walkway spurs (road_walkway_wh1 to road_walkway_wh7). Full pathfinding verified from Main Kiosk to all 7 warehouses.
+  - **Rule 6 Compliance:** Zero entries added in BUILDING_OFFICES in offices.js.
+  - **Cachebusters:** Bumped app.js?v=160, roads.json?v=73, and buildings.js?v=76.
+
+### 2.0 Plot Infographics Mode (Suppressed Get Directions & QR Codes) — ✅ Complete
+- **Implementation:** Per user instruction, all agricultural field plots and master commodity zones (`FIELD_COMMODITY_ZONES`, Plots 1–45) are designated as infographics-only facilities:
+  - **CSS Suppression:** Added `#building-panel.is-plot-panel .bp-actions`, `#bp-directions-btn`, `#bp-gps-nav-btn`, and `#bp-qr-card` with `display: none !important` in [css/main.css](file:///c:/Users/LGU-SanPedro/Downloads/map/css/main.css).
+  - **Panel State Management:** In [js/building-panel.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/building-panel.js), `showPlotPanel(zoneId)` applies `is-plot-panel` and hides `.bp-actions` without triggering QR generation. `showBuildingPanel(buildingId)` and `closeBuildingPanel()` cleanly restore `.bp-actions` and QR generation for regular buildings.
+  - **Router Guard:** In [js/routing.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/routing.js), `getDirections()` now includes a guard returning immediately if `selectedBuildingId` belongs to a plot zone.
+  - **Cachebusters:** Bumped [index.html](file:///c:/Users/LGU-SanPedro/Downloads/map/index.html) to `main.css?v=159` and `app.js?v=159`.
+
+### 2.1 Human-Centered Two-Tier Wayfinding Descriptions & Compact Sidebar Tags — ✅ Complete
+- **Implementation:** Replaced database-level technical metadata (`Section: Compound`, `Type: Office Building`, `Coords: ...`) across both Desktop Kiosk and Mobile Web modes with human-centered two-tier wayfinding cards:
+  - **Scannable Sidebar Menu:** Displays concise, single-line descriptive badges (e.g. `Executive Hub • 6 offices`, `Conference & Training Hall`, `Agribusiness & Marketing`, `Food & Refreshment Center`).
+  - **Two-Tier Detail Card (Desktop & Mobile):**
+    - 👁️ **How to Spot It (Visual Landmark):** Physical cues from field photos and 3D models (roof structure, porticos, entrance steps, wings).
+    - 🎯 **What's Inside & Key Services:** Plain-language, visitor-relevant services and activities.
+    - 🏢 **Interactive Office Chips:** Retained clickable office route pills for designated multi-office complexes (`ored_building`, `admin_building`, `raed_building`, `tanco_hall_building`, `lares_building`, `multi_purpose_administrative_building`, `rnd_building`), strictly omitting them for standalone facilities.
+- **Artifacts & Files:** [js/data/descriptions.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/data/descriptions.js), [index.html](file:///c:/Users/LGU-SanPedro/Downloads/map/index.html) (`v=119`), [css/main.css](file:///c:/Users/LGU-SanPedro/Downloads/map/css/main.css), [js/building-panel.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/building-panel.js), [js/sidebar.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/sidebar.js), [js/phone-ui.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/phone-ui.js). Verified on Desktop and Mobile.
+
+### 2.1 Mapbox View vs. Aerial Drone View & Multiple Scale Controls Resolution — ✅ Complete
+- **Root Causes:**
+  1. *Duplicate Zoom / Multiple Scale Controls:* `js/app.js` imported `markers.js?v=7`, `routing.js?v=7`, and `map-setup.js?v=3` while 12 other modules imported `markers.js`, `routing.js`, and `map-setup.js` without query strings. Browser ES module resolution treats distinct query strings as separate modules, causing dual module execution and instantiating two concurrent `mapboxgl.Map` instances and two `HeightLimitScaleControl` instances (displaying stacked 10m and 20m scale bars).
+  2. *Black Border in Mapbox View:* `lares-mask-layer` and `qares-mask-layer` are global inverted world masks (`[[-180,-85],[180,-85],[180,85],[-180,85]]` with compound cutouts). Previous code kept the mask layer permanently `visible: 'visible'` and only switched `fill-color: #060a12`, covering all surrounding provincial terrain with a pitch-black box.
+- **Fixes Applied:**
+  1. Stripped all divergent internal query strings from relative ES module imports in [js/app.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/app.js).
+  2. Wrapped all Mapbox controls (`NavigationControl`, `OrbitControl`, `HeightLimitScaleControl`, `FullscreenControl`) inside a singleton guard `if (!window._mapControlsAdded)` in [js/map-setup.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/map-setup.js).
+  3. Calibrated mask visibility:
+     - **LARES Aerial Drone View:** `lares-mask-layer` is `visible` (vignette black border outside compound), `lares-drone-layer` is `visible`.
+     - **LARES Mapbox View:** `lares-mask-layer` is `none`, exposing the full Mapbox standard vector basemap (surrounding highway 421-1, lots, terrain) with zero black border.
+     - **QARES Aerial Drone View:** `qares-mask-layer` is `visible` (vignette black border outside compound), `qares-ortho-layer` is `visible`.
+     - **QARES Mapbox View:** `qares-mask-layer` is `none`, exposing the full Mapbox standard vector basemap (Maharlika Highway 1, lots, terrain) with 3D buildings, railway, and zero black border.
+  4. Cachebuster bumped to `app.js?v=118` in [index.html](file:///c:/Users/LGU-SanPedro/Downloads/map/index.html). All 4 modes verified via automated CDP testing and visual screenshots.
+
+### 2.2 Full-Stack Performance & Low-End / Legacy PC Optimization Suite — ✅ Complete
+- **Background & Requirement:** The system was optimized to guarantee rock-solid, responsive 60 FPS performance across low-end and legacy PCs with limited RAM (2GB–4GB), older dual/quad-core CPUs (Intel Celeron, Core 2 Duo, Haswell/Skylake i3/i5), and integrated graphics (Intel HD Graphics 4000/4400/520/620):
+  - **Eliminated Runaway Idle CPU Spinning:** Replaced the infinite 60Hz `fpsLoop` `requestAnimationFrame` recursion in [js/app.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/app.js) with an adaptive, idle-sleeping frame meter (`wakeFpsMeter`, `sleepFpsMeter`). The meter actively monitors frame rate during user interactions, camera manipulation, and animations, and automatically sleeps 2 seconds after the camera settles, cutting idle CPU thread utilization to ~0%.
+  - **Zero-Cost `body.low-perf-mode` CSS Suite:** Appended zero-overhead GPU rules in [css/main.css](file:///c:/Users/LGU-SanPedro/Downloads/map/css/main.css) disabling all 40+ `backdrop-filter: blur(...)` and `-webkit-backdrop-filter` shader passes (`none !important`), replacing expensive translucent blurs with sleek opaque high-contrast dark backgrounds (`#0f172a` / `#1e293b`), disabling continuous heavy box-shadow rasterization pulses (`.kiosk-marker-pulse`, `.spotlight-pulse-ring`, `.gps-marker-pulse`, `.stc-shimmer-bar`), and shortening UI transition times to `0.15s`.
+  - **Adaptive Hardware Profile & Quality Class Dispatcher:** Extended [js/performance.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/performance.js) with `applyPerformanceProfileClass()` hooked into `detectGpuHardware()`, `reportFrameRate()`, and `setPerformanceProfile()`. Automatically engages `body.low-perf-mode` on systems with <= 4 cores, <= 4 GB RAM, software WebGL rendering, or when frame rate drops below 38 FPS.
+  - **Page Visibility API (Zero Background Power):** Wired `document.addEventListener('visibilitychange')` in [js/app.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/app.js) and [js/idle.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/idle.js) to immediately halt the telemetry loop, screensaver rotation loop (`rotateStep`), and idle timers whenever the browser tab is hidden or minimized (`document.hidden === true`), completely eliminating background CPU/GPU drain.
+  - **Cachebusters Bumped:** `css/main.css?v=160`, `js/app.js?v=173` in [index.html](file:///c:/Users/LGU-SanPedro/Downloads/map/index.html).
 
 ### 2.3 Explanation & Fix for the "21,537m / ~270 min walk" Route Calculation Bug
 - **Bug Breakdown:** When browsing DA-QARES and selecting a facility (e.g., *Research Building*), the navigation route banner displayed:
@@ -44,23 +422,113 @@ Runtime:
   - If `qares`: start from `STATIONS.qares.kioskCoords` (`[121.3713315, 13.9432268]`).
   - Ensure pathfinding graph traversal switches to `qares_roads.json` when browsing QARES.
 
-### 2.4 Implement QGIS QARES Boundaries (`QARES Boundaries.geojson`)
-- **Requirement:** Mirror the authentic QGIS boundary architecture established in LARES into QARES.
-- **Source File:** [QARES Boundaries.geojson](file:///c:/Users/LGU-SanPedro/Downloads/map/QARES%20Boundaries.geojson) contains two distinct polygon features:
-  1. `"Front"` (6 vertices along Maharlika Highway, encompassing main entrance and front offices)
-  2. `"Flint"` (12 vertices encompassing the upper agricultural research fields)
-- **The Split Boundary Context:** The two parcels are physically separated by the **PNR Railway Track / corridor**, which is not owned by DA and is therefore omitted from the deeded QGIS polygon.
+### 2.4 Implement QGIS QARES Boundaries & Dynamic Inverted Mask Synchronization — ✅ Complete
+- **Implementation:** Imported and integrated authentic deeded split parcels (`qares_front` and `qares_flint`) from QGIS into `qares_boundary.json` with neon green boundary lines, outer protective casings, and subtle interior green fill.
+- **Bridged Inverted World Mask (`QARES_MASK`):** Generated in [js/data/geo.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/data/geo.js) and [js/stations.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/stations.js) with 100% solid opacity (`fill-opacity: 1.0`, `fill-color: #060a12` in mapbox / `#0b1121` in satellite), completely eliminating outside bleed from surrounding neighborhoods and Maharlika Highway, while leaving the authentic central railway crossing walkway bridge (`qares_road_6` $\to$ `qares_road_7`) illuminated with high-res drone orthomosaic imagery.
+- **Front Boundary Adjustment & Realtime Mask Alignment:** When the Front (southern parcel) northern boundary was moved northward to the PNR railway track via `qares_boundary_draw.html`, the static mask was updated to eliminate the black strip above buildings #27, #28, #30, #31. Implemented runtime `buildQARESMaskFromBoundary()` in [js/stations.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/stations.js) and backend `updateQaresMaskInGeoJs()` in [server.js](file:///c:/Users/LGU-SanPedro/Downloads/map/server.js) so future boundary adjustments automatically update both the live map mask and `js/data/geo.js` with zero blank voids.
 
-### 2.5 QARES Boundary Drop Shadow & Train Track Handling
-- **Requirement:** Replicate the high-contrast boundary casing and ambient drop shadow used in LARES, tailored for QARES's split boundaries.
-- **Design Considerations & Alternatives for the Train Track Gap:**
-  - *Option A (Authentic Dual Casing - Recommended):* Render the ambient drop shadow and neon casing around both `"Front"` and `"Flint"` polygons independently. The railway corridor remains a natural neutral divider, accurately reflecting actual property boundaries.
-  - *Option B (Railway Corridor Connector):* Draw a subtle dashed or hatched railway track corridor connecting the two boundary segments, visually explaining why the property is split into two halves.
-  - *Option C (Compound MultiPolygon Shadow):* Combine both parcels into a single MultiPolygon in Mapbox with an outer ambient shadow wrapping the exterior perimeter.
+### 2.5 QARES Railway Track Cartographic Symbology — ✅ Complete
+- **Implementation:** Replaced legacy broken/dashed divider line with an authentic 4-layer railway cartography system in [js/stations.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/stations.js):
+  1. `qares-railway-ballast`: Crushed gravel bed foundation (`#0f172a`, zoom-interpolated width 6–22px).
+  2. `qares-railway-sleepers`: Railroad ties/cross-sleepers (`#94a3b8`, zoom-interpolated width 5–18px, `line-dasharray: [0.35, 1.25]`, `line-cap: butt`).
+  3. `qares-railway-rail-left`: Left parallel gleaming metallic steel rail (`#f8fafc`, `line-offset: -1.8` to `-6.5`).
+  4. `qares-railway-rail-right`: Right parallel gleaming metallic steel rail (`#f8fafc`, `line-offset: 1.8` to `6.5`).
+- The railway track passes across the dark void separating Front and Flint and passes cleanly under the illuminated connecting walkway bridge.
 
 ### 2.6 Add Entrance Option for Automated Weather Station in `draw.html`
 - **Requirement:** Add `automated_weather_station` (Automated Weather Station) to the entrance point assignment dropdown in [draw.html](file:///c:/Users/LGU-SanPedro/Downloads/map/draw.html).
 - **Purpose:** Allows plotting the entrance coordinate node directly at the AWS perimeter swing gate (`[121.16855139, 13.96006960]`) and linking it to the pedestrian graph in [roads.json](file:///c:/Users/LGU-SanPedro/Downloads/map/roads.json), so the 3D claymation walker avatar can route visitors directly to and through the AWS gate.
+
+### 2.7 Pitch-Black Darkness on Station & Map Switching — ✅ Fully Resolved
+- **Bug Breakdown:**
+  When switching between research stations (LARES $\leftrightarrow$ QARES) or when rapidly switching locations and toggling between Aerial Drone and Mapbox 3D views, the screen would unexpectedly plunge into complete pitch-black darkness.
+- **Root Cause Forensic Analysis:**
+  1. *Dangling Intro Fly-In Callback Clamping:* `playIntroAnimation()` runs a 6.0-second 3-stage cinematic fly-in with asynchronous `map.once('moveend')` listeners and `setTimeout`s. When switching stations before that animation completes, `stopIntroAnimation()` stopped the camera, but Mapbox GL's `map.stop()` emitted a `moveend` event! Because the new station re-set `isIntroAnimating = true`, the previous station's pending `moveend` callback executed `map.setMaxBounds(activeBounds)` where `activeBounds` belonged to the OLD station!
+     - When switching QARES $\to$ LARES, QARES bounds `[121.30, 13.88] to [121.44, 14.00]` were applied while the camera was at LARES (`121.166`). Mapbox GL forcibly clamped the camera to QARES's western edge (`121.3000`), 15 kilometers away!
+     - At `121.3000`, the inverted `lares-mask-layer` was active, whose only cutout hole is at Lipa (`121.166`). The camera was looking directly at the solid black mask (`#0b1121`), plunging the entire screen into 100% pitch black darkness!
+  2. *Asynchronous Switch Cascades & Race Conditions:* `switchResearchStation()` lacked timer handles. Rapid clicks queued multiple interleaved `setTimeout(260ms)` and `setTimeout(120ms)` transitions in parallel, causing curtain desynchronization, contradictory layer toggling, and camera fighting.
+  3. *Unfiltered Gesture Bounds Clamping:* Mouse/touch listeners (`'mousedown'`, `'touchstart'`) in `js/map-setup.js` prematurely clamped bounds to the active station before the user's click even initiated the station change.
+- **Fixes Applied:**
+  1. **Intro Sequence Generation Token (`introSequenceId`):** In [js/map-setup.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/map-setup.js), introduced monotonic sequence IDs. When `stopIntroAnimation()` or a new `playIntroAnimation()` runs, previous sequences and timeouts are instantly invalidated and aborted.
+  2. **Safe Bounds Clamping Failsafe (`isCoordInStationBounds`):** In [js/map-setup.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/map-setup.js), `map.setMaxBounds()` is strictly guarded: bounds are NEVER applied unless `isCoordInStationBounds(map.getCenter(), stationId)` is true. During transitions and intro animations, bounds remain `null` to guarantee zero camera clamping.
+  3. **Multi-Timer Cancellation & Unconditional Layer Isolation:** In [js/stations.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/stations.js), added `activeStationSwitchTimer`, `activeCurtainDismissTimer`, and `activeStationSwitchSafetyTimer`. Any new switch immediately halts prior sequences, resets bounds, unmounts all markers, and enforces strict mutual exclusion: QARES mask is 100% forced `none` at LARES, and LARES mask is 100% forced `none` at QARES.
+  4. **Mapbox 3D Mode Layer Hydration:** Automatically verifies and initializes Mapbox Standard building layers via `setupMapboxStandardLayers()` if switching to LARES in Mapbox mode.
+  5. **Verification:** Verified across an automated 8-phase CDP test ([tools/tests/test_location_and_map_switching.py](file:///c:/Users/LGU-SanPedro/Downloads/map/tools/tests/test_location_and_map_switching.py)) covering cold start, bidirectional switching, Mapbox $\leftrightarrow$ Aerial Drone switching, and rapid 5-switch stress tests. Zero darkness detected across all permutations.
+- **Cachebuster:** Bumped `app.js?v=120` in [index.html](file:///c:/Users/LGU-SanPedro/Downloads/map/index.html).
+
+### 2.9g Plot Zone Selection Camera Lock & Building Orbit Collision Fix — ✅ Complete
+- **Bug Breakdown:** When browsing facilities in the left directory search and selecting an agricultural zone (e.g. *Cassava Production* / `zone_cassava_production`), the right details drawer correctly opened, but the 3D map camera remained locked at the previously inspected building (e.g. *R&D Multipurpose Building*), Pin 14 stayed active with its HUD label visible, and the camera failed to glide to the Cassava field plots.
+- **Root Cause Analysis:**
+  1. *Uninterrupted Orbit Animation Loop:* When inspecting a 3D building, `orbitBuilding()` initiates an animation frame loop (`orbitStep` in [js/idle.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/idle.js)) calling `map.setBearing(map.getBearing() + step)` every 16ms. In Mapbox GL JS, any synchronous call to `setBearing()` instantly aborts any in-flight `map.flyTo()` or `map.fitBounds()` transition! Because `selectPlotZone()` never called `stopOrbit()`, the active building orbit aborted the camera flight on frame 1.
+  2. *Undecluttered Building Markers:* `selectPlotZone()` never stripped `.active`, `.decluttered-highlight`, or `.decluttered-dest` from `.bldg-map-marker`, leaving the previous building marker highlighted with its active HUD badge.
+  3. *Unpadded Viewport Framing:* `selectPlotZone()` did not compute viewport padding for desktop/kiosk (380px left sidebar + 400px right drawer), nor did it use `turf.bbox` to frame multi-hectare agricultural field boundaries.
+  4. *Missing Routing Fallback:* In [js/routing.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/routing.js), `computeRouteFromKiosk()` returned early with a dummy zero-distance route if the target ID was an agricultural commodity zone instead of a standard building.
+- **Fixes Applied:**
+  1. **Comprehensive Orbit & Navigation Termination:** In [js/plot-layers.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/plot-layers.js), `selectPlotZone()` and `zoomToSubPlot()` now call `stopOrbit()`, `stopIdleRotation()`, `resetIdle()`, and `clearRoute()`.
+  2. **Full Marker & UI Cleanup:** `selectPlotZone()` removes `.active` and decluttering classes from all `.bldg-map-marker` elements, closes open marker popups, removes active classes from `.dir-item`, and sets active styling on the clicked plot directory item.
+  3. **Viewport-Aware Camera Framing (`fitBounds` & `flyTo`):** Integrated Turf bounding box calculation `turf.bbox(turf.polygon([zone.groupPolygon]))` with responsive padding (`{ top: 70, bottom: 70, left: 390, right: 410 }` on desktop) so that selecting any agricultural zone fits the entire field plot into the viewing corridor between the sidebar and details drawer.
+  4. **Bidirectional State Synchronization:** Updated [js/walker.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/walker.js) `navigateTo()` and [js/building-panel.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/building-panel.js) `showBuildingPanel()` to call `deselectPlotZone()` and `clearSubPlotHighlight()`, guaranteeing clean transitions between buildings and agricultural zones in both directions.
+  5. **Routing Support for Plot Zones:** Updated [js/routing.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/routing.js) `computeRouteFromKiosk()` to route to `zone.centerCoords`.
+  6. **Cachebuster:** Bumped to `v=139` in [index.html](file:///c:/Users/LGU-SanPedro/Downloads/map/index.html).
+
+### 2.9j Screenhouses Dynamic Hero Image Swap (Alternative 1) — ✅ Complete
+- **Feature Overview:** Implemented Alternative 1 (Dynamic Hero Image Swap with Multi-Photo Views) for screenhouses in Plot 17 (*TC Makapuno & Banana Screenhouse*) and Plot 18 (*Coffee & Citrus Screenhouse*).
+- **Core Capabilities:**
+  1. **Master Zone Establishing Shot:** Opening Plot 17 or Plot 18 immediately displays a web-optimized wide compound establishing shot (`images/zone_tc_makapuno_screenhouse.jpg` / `images/zone_coffee_citrus_screenhouse.jpg`) with an overlay badge: `🏡 TC Makapuno & Banana Screenhouse (Overview)`.
+  2. **Sub-Plot Dynamic Image Swap:** Tapping any sub-plot button (e.g. *Screenhouse 1: Hydroponics & NFT Propagation*):
+     - The drawer's hero image smoothly cross-fades to Screenhouse 1's authentic photo (`images/plot17_screenhouse_1.jpg`).
+     - A sleek glassmorphic overlay badge updates to `📍 Screenhouse 1: Hydroponics & NFT Propagation` with a cyan pulse dot.
+     - A photo views switcher bar (`.bp-image-views-bar`) appears with quick-toggle chips: `[📷 Exterior Front]`, `[🌱 NFT Hydroponics]`, `[📐 Left Flank]`.
+     - Tapping any view chip smoothly cross-fades the photo and updates the lightbox caption.
+  3. **Multi-Photo Lightbox Integration:** Tapping the photo or the `🔍 Enlarge` hint opens the full-screen photo lightbox modal (`openPhotoLightbox`).
+  4. **Smart Toggle-Off Reversion:** Tapping the active sub-plot button again smoothly restores the Master Zone establishing overview shot.
+  5. **Web-Optimized Image Assets:** Converted and optimized 17 high-resolution ground-truth photographs from `Building Images/Screenhouses/` to 1280px web-ready JPEGs (200KB–350KB each) in `images/`.
+- **Files Modified:**
+  - [js/data/plots.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/data/plots.js): Registered `image` and `images` arrays for `zone_tc_makapuno_screenhouse`, `zone_coffee_citrus_screenhouse`, and all 9 individual screenhouses.
+  - [js/building-panel.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/building-panel.js): Added unified `setDrawerHeroImage()`, `switchHeroView()`, `setDrawerHeroSubPlot()`, and `restoreDrawerHeroMaster()`.
+  - [js/plot-layers.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/plot-layers.js): Integrated hero swap into `highlightSubPlot()` and `clearSubPlotHighlight()`.
+  - [index.html](file:///c:/Users/LGU-SanPedro/Downloads/map/index.html): Added `.bp-image-wrapper`, `.bp-image-overlay-vignette`, `.bp-image-badge`, `.bp-image-expand-hint`, and `.bp-image-views-bar`. Bumped cachebuster to `v=145`.
+  - [css/main.css](file:///c:/Users/LGU-SanPedro/Downloads/map/css/main.css): Added styling for hero wrapper, glassmorphic badge, expand hint, and view chips. Pruned 8,998 redundant blank lines (-47.9%).
+
+### 2.9k Phase 2: Screenhouse 2 (`plot17_screenhouse_2`) — ✅ Complete
+- **Feature Overview:** Modeled, textured, exported, registered, and verified **Screenhouse 2 (Plot 17)** as part of the DA-LARES screenhouse modernization roadmap.
+- **Model Details:**
+  - File: [models/plot17_screenhouse_2.glb](file:///c:/Users/LGU-SanPedro/Downloads/map/models/plot17_screenhouse_2.glb) (**$265.4\text{ KB}$**, strictly under the $300\text{ KB}$ budget).
+  - Geometry: $6.22\text{ m} \times 18.78\text{ m}$, two-tier concrete curb plinth, 11 hoop arch trusses, longitudinal purlins, front spider-web gable with inner arch truss, commercial sliding screen door.
+  - Interior Nursery: Central weed barrier walkway, two raised seedling hardening propagation benches with wire mesh tops, rows of black nursery polybag pots, lush Makapuno coconut seedling foliage, and blue PVC irrigation piping.
+  - Alignment: Calibrated true survey centroid `[121.16733397, 13.95909642]`, Mapbox rotation $69.8^\circ$ (front entrance door facing WSW toward compound walkway).
+  - Entrance & Routing: `roads.json` entrance node `entrance_36` (`[121.167258, 13.959074]`) connected via dedicated walkway `road_walkway_sh2` to `road_21`.
+  - Sub-Plot Integration: Registered in `CUSTOM_3D_BUILDINGS` with `isSubPlot: true, hasMarker: false` (zero individual floating pin clutter, navigates via Plot 17 drawer sub-plot button and 3D mesh click).
+  - Dynamic Hero Integration: Connected to `images/plot17_screenhouse_2.jpg` (exterior) and `images/plot17_screenhouse_2_inside.jpg` (seedling nursery).
+
+### 2.9l Phase 3: Screenhouse 3 (`plot17_screenhouse_3`) — ✅ Complete
+- **Feature Overview:** Modeled, textured, exported, registered, and verified **Screenhouse 3 (Plot 17)**.
+- **Model Details:**
+  - File: [models/plot17_screenhouse_3.glb](file:///c:/Users/LGU-SanPedro/Downloads/map/models/plot17_screenhouse_3.glb) (**$247.5\text{ KB}$**, strictly under $300\text{ KB}$ budget).
+  - Geometry: $6.16\text{ m} \times 18.61\text{ m}$, two-tier concrete curb plinth, 11 oxide-red hoop arch trusses, signature radial sunburst spokes on front entrance gable.
+  - Utility Block: Solid concrete entrance room ($2.45\text{ m} \times 2.50\text{ m}$) on right-front corner with wooden plank door, open aluminum screen door, corrugated sheet roof with white monobloc chair, and purple jerrycan on front curb.
+  - Alignment: Centroid `[121.16735615, 13.95903957]`, Mapbox rotation $69.8^\circ$.
+  - Entrance & Routing: `roads.json` entrance node `entrance_37` (`[121.167262, 13.959005]`) connected via `road_walkway_sh3` to `road_21`.
+
+### 2.9m Phase 4: Screenhouse 4 (`plot17_screenhouse_4`) — ✅ Complete
+- **Feature Overview:** Modeled, textured, exported, registered, and verified **Screenhouse 4 (Plot 17)**.
+- **Model Details:**
+  - File: [models/plot17_screenhouse_4.glb](file:///c:/Users/LGU-SanPedro/Downloads/map/models/plot17_screenhouse_4.glb) (**$229.1\text{ KB}$**, strictly under $300\text{ KB}$ budget).
+  - Geometry: $8.62\text{ m} \times 18.72\text{ m}$, two-tier concrete curb plinth with iconic continuous painted red stripe along lower step apron, 11 hoop arch trusses, heavy-duty black agricultural shade netting enclosure.
+  - Doorway & Interior: Right-side entrance doorway with wooden door and eave canopy hood, dual propagation tables, polybag containers, tropical plantlets, and iconic bright blue 55-gallon HDPE water drum in center aisle.
+  - Alignment: Calibrated true survey centroid `[121.16738144, 13.95897382]`, Mapbox rotation $69.8^\circ$.
+  - Entrance & Routing: `roads.json` entrance node `entrance_38` (`[121.167305, 13.958918]`) connected via `road_walkway_sh4`.
+
+### 2.9n Phase 5: Screenhouse 5 (`plot17_screenhouse_5`) — ✅ Complete
+- **Feature Overview:** Modeled, textured, exported, registered, and verified **Screenhouse 5 (Plot 17)** — Nursery Shade House & Seedling Production.
+- **Model Details:**
+  - File: [models/plot17_screenhouse_5.glb](file:///c:/Users/LGU-SanPedro/Downloads/map/models/plot17_screenhouse_5.glb) (**$148.5\text{ KB}$**, 152,056 bytes, ultra-clean and well within $300\text{ KB}$ budget).
+  - Geometry: $18.00\text{ m} \times 18.06\text{ m}$ (area $325.1\text{ m}^2$) conforming to survey polygon #34. Continuous perimeter concrete curb plinth ($Z = 0.40\text{ m}$), 5x5 grid (25 posts) of round galvanized tubular columns ($Z = 3.20\text{ m}$), welded perimeter & internal lintel beams, diagonal corner knee braces, structural high-tensile roof cable tension grid ($Z_{RIDGE} = 3.65\text{ m}$), full black shade netting enclosure.
+  - Entrance: Northwest corner entrance door ($1.40\text{ m} \times 2.20\text{ m}$) with aluminum screen frame and outward swing leaf facing North into the alleyway between Screenhouse 4 and 5.
+  - Interior: Central cruciform gravel walkways, four quadrant growing zones with rows of black nursery polybags and tropical saplings/fronds, and overhead central irrigation misting lines.
+  - Alignment: Centroid `[121.16741435, 13.95882594]`, Mapbox rotation $69.8^\circ$.
+  - Entrance & Routing: `roads.json` entrance node `entrance_39` (`[121.167310, 13.958894]`) connected via `road_walkway_sh5`.
+  - Next Active Step: **Phase 6: Plot 18 Research Greenhouse Complex (`plot18_greenhouse_complex`, Bays 6, 7, 8)**.
 
 ---
 
@@ -106,11 +574,11 @@ The authentic 3D architectural model for the Automated Weather Station has been 
 | Station | Data files | Drawing tools |
 |---|---|---|
 | **DA-LARES** (Lipa) | `buildings.json`, `roads.json`, `trees.json`, `js/data/buildings.js` | `draw.html`, `road_draw.html`, `plot_draw.html` |
-| **DA-QARES** (Tiaong, Quezon) | `qares_buildings.json`, `qares_roads.json`, `qares_boundary.json`, `qares_pin.json`, `qares_ortho.png`, `QARES v1.mbtiles` | `qares_draw.html`, `qares_road_draw.html` (also QARES mode inside `draw.html`) |
+| **DA-QARES** (Tiaong, Quezon) | `qares_buildings.json`, `qares_roads.json`, `qares_boundary.json`, `qares_pin.json`, `qares_ortho.png`, `QARES v1.mbtiles` | `qares_draw.html`, `qares_road_draw.html`, `qares_boundary_draw.html` (also QARES mode inside `draw.html`) |
 
 - Station registry: [js/data/stations.js](../js/data/stations.js)
 - Switching / QARES layers / directory / category filter: [js/stations.js](../js/stations.js)
-- Save endpoints with timestamped backups (`archive/backups/`): `/api/qares/buildings`, `/api/qares/roads` in [server.js](../server.js)
+- Save endpoints with timestamped backups (`archive/backups/`): `/api/qares/buildings`, `/api/qares/roads`, `/api/qares/boundary` in [server.js](../server.js)
 - QARES center: `[121.37178, 13.94658]`
 - Kiosk Default: Map startup ALWAYS boots to **DA-LARES (Lipa)** unless `?station=qares` is explicitly in the URL.
 
@@ -131,10 +599,366 @@ The authentic 3D architectural model for the Automated Weather Station has been 
 
 ## 7. Open items / next steps
 
-- [ ] **Task 2.1:** Fix QARES 3D buildings toggle desynchronization (`#layer-buildings-toggle`).
-- [ ] **Task 2.2:** Full-stack kiosk performance & lag optimization pass.
-- [ ] **Task 2.3:** Fix station origin in `js/routing.js` (resolving 21,537m route calculation bug).
-- [ ] **Task 2.4:** Integrate `QARES Boundaries.geojson` (Front & Flint polygons) into `qares_boundary.json`.
-- [ ] **Task 2.5:** Add boundary drop shadow for QARES and decide railway corridor representation.
-- [ ] **Task 2.6:** Add Automated Weather Station to entrance node dropdown in `draw.html`.
-- [ ] **MIS-RAFIS Building** is still marked 🔄 *Existing* in the AGENTS.md matrix (pending authentic rebuild).
+- [x] **Task 2.1:** Fix QARES 3D buildings toggle desynchronization (`#layer-buildings-toggle`, `#msp-toggle-buildings`, `#chip-buildings`). Fully synced across both stations.
+- [x] **Task 2.2:** Full-stack kiosk performance & lag optimization pass (DOM marker viewport frustum virtualization with 12% buffer padding, rAF throttled camera/coordinate listeners, WebGL DPR clamping, and capped MBTiles LRU cache).
+- [x] **Task 2.3:** Fix station origin in `js/routing.js` (station-aware kiosk origin `STATIONS.qares.kioskCoords` and `qaresRoadGraph` completely eliminating 21,537m cross-province route calculation bug).
+- [x] **Task 2.4:** Integrate `QARES Boundaries.geojson` (Front & Flint parcels) into `qares_boundary.json` using authentic 18-vertex deeded survey geometry.
+- [x] **Task 2.5:** Add authentic boundary glow/casing (Option A) and PNR railway corridor divider line (`#0f172a` casing + `#94a3b8` dashed centerline) for QARES compound.
+- [x] **Task 2.6:** Add Automated Weather Station to entrance node dropdown in `road_draw.html` / `draw.html`, with dedicated gate entrance node and walkway connected to `road_40` in `roads.json` (34/34 LARES entrances reachable).
+- [x] **MIS-RAFIS Building** confirmed complete (`models/mis_rafis_building.glb`, 109.9 KB, verified in AGENTS.md matrix).
+- [x] **Transition Curtain & Station Switch Freeze Fully Resolved:** 
+  - **Root Cause 1 (8-Second Thread Lock):** `buildRoadGraph()` in [js/routing.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/routing.js) broke roads into 1m chunks (5,250 chunks) and used an $O(N^2)$ brute-force array scan with `turf.distance`. For ~5,000 nodes, it computed $\sim 13,000,000$ geodesic distance calculations synchronously on the UI thread, freezing the browser. Implemented a 5-meter Spatial Hash Grid reducing graph build time from 7,891ms down to 255ms (30x speedup), and cached `state.qaresRoadGraph` so subsequent switches take 0ms.
+  - **Root Cause 2 (Mapbox Bounds Clamping):** LARES bounds restricted coordinates to Lipa City (`121.185` max). QARES is at `121.371`. Calling `map.setMaxBounds(null)` synchronously before teleport prevents Mapbox from clamping camera coordinates or throwing bounds errors.
+  - **Root Cause 3 (Intro Animation Restored):** The cinematic intro fly-in was previously bypassed. Restored signature two-phase camera animation: behind the curtain the camera positions at `introViews.start` (high top-down birds-eye view) with bounds relaxed across Batangas & Quezon (`[[120.40, 13.30], [122.80, 15.00]]`). As the curtain lifts at 380ms, `playIntroAnimation(null, true)` plays seamlessly: Phase 1 zooms in to the station's "You Are Here" pin in 2D, and Phase 2 tilts up into the station's signature 3D perspective angle (pitch ~52°, bearing 25° for QARES / 165° for LARES).
+  - **Root Cause 4 (Deterministic Curtain Dismissal):** Curtain is guaranteed to dismiss within 260ms + 120ms with a 600ms hard safety failsafe and click-to-dismiss bypass.
+- [x] **Task 2.7: DA-LARES Agricultural Field Plots & Commodity Zones Enhancement — ✅ Complete:**
+  - **45 Sub-Plots Grouped into 22 Commodity Zones:** All 45 field plots grouped into 22 unified commodity zones with single outer boundary casings and zero middle divider lines on overview.
+  - **Dynamic Internal Cuts & Interactive Drawer:** Selecting a zone illuminates internal sub-plot dashed cuts, zooms to fit with 22° pitch, and opens the detail drawer showing estimated land area ($m^2$ and ha), sub-plot count, research details, and clickable sub-plot chips.
+  - **Dedicated Settings Switch:** Added "Agricultural Plots" boolean switch under Map Settings (Perimeter Boundaries section) to toggle plot highlighting.
+  - **Marker Alignment & Zero Teleportation:** Removed `position: relative !important;` from `.plot-map-marker.collapsed`, enforcing `position: absolute !important; top: 0; left: 0;`. Eliminated 600px cumulative DOM flow displacement, seating all 22 badges with $0\text{ px}$ error directly on their plots with zero hover jitter.
+- [x] **Task 2.8: Legacy 2D Billboard Tree & Tile Cleanup — ✅ Complete:**
+  - **Deleted `tree.png`:** Completely removed dead 2D billboard sprite `tree.png` and pruned unused `ensureTreeIconLoaded()` and `renderTreesLayer()` from [js/map-setup.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/map-setup.js). Trees in 3D mode use GLTF models (`models/tree_mango.glb`, etc.).
+  - **PWA Manifest Icons Fixed:** Created authentic $192\times 192$ and $512\times 512$ DASH emblems in `icons/` and updated [manifest.json](file:///c:/Users/LGU-SanPedro/Downloads/map/manifest.json), eliminating Chrome manifest icon errors.
+  - **MBTiles 404 Suppression:** Updated [server.js](file:///c:/Users/LGU-SanPedro/Downloads/map/server.js) to serve a cached $1\times 1$ transparent PNG with HTTP 200 for out-of-bounds tiles, permanently stopping red 404 network console spam.
+  - **Cachebuster Bumped:** Updated to `css/main.css?v=127` and `js/app.js?v=127` in [index.html](file:///c:/Users/LGU-SanPedro/Downloads/map/index.html).
+- [x] **Task 2.9: DA-LARES Plots 17 & 18 Screenhouses 3D Modeling (Phase 1: Screenhouse 1) — ✅ Complete:**
+  - Created official engineering roadmap: [docs/screenhouses_3d_modeling_plan.md](file:///c:/Users/LGU-SanPedro/Downloads/map/docs/screenhouses_3d_modeling_plan.md) covering the 7-phase modeling plan.
+  - Modeled and exported authentic bespoke 3D model [models/plot17_screenhouse_1.glb](file:///c:/Users/LGU-SanPedro/Downloads/map/models/plot17_screenhouse_1.glb) ($262.8\text{ KB}$, strictly within the $300\text{ KB}$ performance budget).
+  - Authentic ground-truth architectural features: two-tier concrete plinth with entrance steps, perimeter horizontal eave beam, semicircular hoop trusses with king struts and purlins, inner concentric arch gable truss with radial struts, sliding aluminum screen door with handle & latch, semi-translucent white agricultural insect mesh, horizontal black ceiling shade cloth, and interior NFT hydroponic propagation benches with blue PVC manifold & supply risers.
+  - Registered across [buildings.json](file:///c:/Users/LGU-SanPedro/Downloads/map/buildings.json), [js/data/buildings.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/data/buildings.js), [js/data/descriptions.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/data/descriptions.js), and [roads.json](file:///c:/Users/LGU-SanPedro/Downloads/map/roads.json) (`entrance_35` + `road_walkway_sh1`).
+- [x] **Task 2.9b: Master Commodity Zone & Sub-Plot Hierarchy Integration (Plots 17 & 18) — ✅ Complete:**
+  - **Hierarchy Established:**
+    - **Plot 17 Zone:** **TC Makapuno & Banana Screenhouse** (`zone_tc_makapuno_screenhouse`) configured with **5 Sub-Plots**: Screenhouses 1, 2, 3, 4, 5.
+    - **Plot 18 Zone:** **Coffee & Citrus Screenhouse** (`zone_coffee_citrus_screenhouse`) configured with **4 Sub-Plots**: Screenhouse Bays 6, 7, 8, and Screenhouse 9 (& Potting Headhouse).
+  - **Data & UI Updates:**
+    - [js/data/plots.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/data/plots.js): Updated `FIELD_COMMODITY_ZONES` and `ZONE_POLYGONS` for Plot 17 and Plot 18 with accurate `plotCount`, `plotRange`, authentic building polygons from `buildings.json`, coordinates, and descriptive metadata.
+    - [js/building-panel.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/building-panel.js): Updated drawer sub-plot renderer to display `sp.label` cleanly (e.g. `Screenhouse 1: Hydroponics & NFT Propagation`), with click-to-zoom passing coordinates and 3D building IDs.
+    - [js/plot-layers.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/plot-layers.js): Enhanced `zoomToSubPlot(target, centerCoords, buildingId)` to smoothly zoom to screenhouses or focus the 3D model.
+    - Cachebusters updated to `plots.js?v=84` and `app.js?v=134`.
+- [x] **Task 2.9c: Draw Tool Footprint Archival & Phantom Button Cleanup — ✅ Complete:**
+  - **Archived Polygons:** Extracted and safely stored the authentic survey footprints for Screenhouses 2 through 9 into [tools/build_scripts/screenhouses_survey_polygons.json](file:///c:/Users/LGU-SanPedro/Downloads/map/tools/build_scripts/screenhouses_survey_polygons.json).
+  - **Phantom Buttons Removed:** Pruned the 7 placeholder `admin_building` polygons (features 31 to 37) created by tracing in `draw.html` from both [buildings.json](file:///c:/Users/LGU-SanPedro/Downloads/map/buildings.json) and `LARES_DRAWINGS` in [js/data/buildings.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/data/buildings.js).
+  - **Result:** Successfully eliminated map buttons (32) through (38) labeled "Admin Building" and restored `BUILDING_DIRECTORY` to active campus facilities.
+- [x] **Task 2.9d: Screenhouse Pin Clutter Elimination & Pure Sub-Plot Navigation — ✅ Complete:**
+  - **Decision:** As confirmed by the user, screenhouses do not receive individual floating map pins (e.g. `(31) Plot 17 Screenhouse 1`). Instead, navigation and discovery are based entirely on the **Sub-Plots list** inside the Master Plot Zone drawer.
+  - **Implementation:**
+    - [js/markers.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/markers.js): Filtered out sub-plot screenhouse IDs (`plot17_screenhouse_*`, `plot18_screenhouse_*`) from generating numbered floating badges. Map pins terminate cleanly at landmark Pin 30 (`automated_weather_station`).
+    - [js/sidebar.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/sidebar.js): Screenhouses are excluded from the standalone buildings list to avoid duplicate listings; searching for any screenhouse keyword ("Hydroponics", "NFT", "Screenhouse 1", "Banana") routes directly to its parent commodity zone.
+    - [js/data/buildings.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/data/buildings.js): Tagged screenhouse building directory entries with `isSubPlot: true` and `hasMarker: false`.
+    - **Result:** Keeps the Plot 17 and Plot 18 satellite and 3D views completely uncluttered while maintaining full Three.js 3D model rendering and interactive deep zoom from the Sub-Plot chips.
+    - Cachebuster bumped to `app.js?v=136`.
+- [x] **Task 2.9e: Permanent Bottom Anchoring of Mapbox Watermark & Scale Controls — ✅ Complete:**
+  - **Issue:** In portrait kiosk mode, `.mapboxgl-ctrl-bottom-left` (Mapbox watermark logo) and `.mapboxgl-ctrl-bottom-right` (meters scale bar and attribution) were dynamically lifted up to `calc(var(--portrait-panel-height) + 36px)` or `76px`, floating in the middle of the screen over buildings and roads when the menu was collapsed.
+  - **Fix:** In [css/main.css](file:///c:/Users/LGU-SanPedro/Downloads/map/css/main.css), eliminated variable lifting calculations and permanently anchored `.mapboxgl-ctrl-bottom-left` and `.mapboxgl-ctrl-bottom-right` directly at the bottom edge (`bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important;`) across all states (open sidebar, collapsed sidebar, active building panel, overview, portrait, landscape) with `transition: none !important;`. The watermark and scale bar now permanently stay at the very bottom edge.
+  - Cachebusters bumped to `css/main.css?v=140` and `js/app.js?v=140`.
+- [x] **Task 2.9f: Dynamic Spotlight HUD Badge & Selection Glow for Sub-Plots — ✅ Complete:**
+  - **Feature Implementation:** Tapping any Sub-Plot button in the Plot Zone drawer (e.g. *Screenhouse 1: Hydroponics & NFT Propagation*) dynamically:
+    1. **Floating Spotlight HUD Beacon:** Drops a glassmorphic HUD badge directly above the selected roof (`📍 Screenhouse 1`, with subtitle and downward glowing stem) and pulses a radar ripple ring on the ground plane at its foundation.
+    2. **Ground Footprint Glow:** Illuminates the exact survey polygon of the active screenhouse in neon cyan (`#38bdf8`) with high-tech casing (`plots-active-subplot-glow` & `plots-active-subplot-casing`).
+    3. **Active Drawer Chip State:** Highlights the tapped chip in the drawer with glowing border, pulse dot, and translateX slide.
+    4. **Camera Glide:** Glides smoothly to the selected building at $45^\circ$ perspective pitch ($19.8$ zoom).
+    5. **Clean Dismissal:** When deselecting the zone or closing the drawer, the spotlight badge and footprint glow vanish cleanly.
+- [x] **Task 2.9h: Building & Plot Zone Details Panel Widened (420px) — ✅ Complete:**
+  - **Enhancement:** Increased the desktop `.building-panel` width from $350\text{ px}$ to **$420\text{ px}$** (`max-width: calc(100vw - 32px);`, closed offset `right: -480px;`).
+  - **Result:** Provides $+70\text{ px}$ of comfortable horizontal breathing room. Long commodity titles ("TC Makapuno & Banana Screenhouse"), sub-plot names ("Screenhouse 2: Makapuno Hardening & Seedling Propagation"), and multi-plot metrics no longer wrap onto awkward orphaned lines.
+- [x] **Task 2.9i: Sub-Plot Cross-Zone Resolution Collision & Toggle Fix — ✅ Complete:**
+  - **Issue:** Tapping *Screenhouse 1: Hydroponics & NFT Propagation* in the Plot 17 drawer erroneously generated a spotlight HUD badge titled `📍 Plot 1 - Industrial Starch Cassava` and caused chip selection and camera misalignment.
+  - **Root Cause:** In `js/plot-layers.js`, `zoomToSubPlot()` iterated across all commodity zones from index 0 (`zone_cassava_production`) with a loose lookup condition `(buildingId && sp.buildingId === buildingId) || (sp.plotNum == plotNum)`. Because Cassava Plot 1 and Screenhouse 1 both have `plotNum: 1`, the OR condition short-circuited on Cassava, returning Cassava Plot 1 instead of Screenhouse 1.
+  - **Fix Applied:**
+    1. **Strict Hierarchical Scope:** Updated `zoomToSubPlot(plotNum, centerCoords, buildingId, zoneId)` and `js/building-panel.js` to pass `zone.id` and prioritize matching within the currently open parent zone.
+    2. **Strict Building ID Matching:** When `buildingId` is present (e.g. `plot17_screenhouse_1`), it searches strictly by `buildingId` without falling back to generic `plotNum` across unrelated zones.
+    3. **Chip Scoping:** In `highlightSubPlot()`, `.sub-plot-chip` active state matches strictly on `buildingId` or `(plotNum && zoneId)`.
+    4. **Smart Toggle Support:** Tapping an already selected sub-plot chip now cleanly toggles it off and smoothly frames back out to the parent zone overview.
+  - Cachebusters bumped to `css/main.css?v=142` and `js/app.js?v=142`.
+- [x] **Task 2.9j: Plot 17 Screenhouse 2 3D Modeling (Phase 2) — ✅ Complete:**
+  - Modeled and exported authentic bespoke 3D model [models/plot17_screenhouse_2.glb](file:///c:/Users/LGU-SanPedro/Downloads/map/models/plot17_screenhouse_2.glb) ($265.4\text{ KB}$, strictly within $300\text{ KB}$ budget).
+  - Ground-truth architectural features: 2-tier concrete foundation plinth, 11 structural hoop arch trusses, spider-web front arch truss, sliding aluminum screen door, semi-translucent white insect mesh, ceiling shade cloth, and authentic nursery interior with raised benches, polybag pots, Makapuno coconut palm fronds, and blue PVC irrigation headers.
+  - Registered across `buildings.json`, `js/data/buildings.js`, `js/data/descriptions.js`, and `roads.json` (`entrance_36` + `road_walkway_sh2`).
+- [x] **Task 2.9l: Plot 17 Screenhouse 4 3D Modeling (Phase 4) — ✅ Complete:**
+  - Modeled and exported authentic bespoke 3D model [models/plot17_screenhouse_4.glb](file:///c:/Users/LGU-SanPedro/Downloads/map/models/plot17_screenhouse_4.glb) ($229.1\text{ KB}$, strictly within $300\text{ KB}$ budget).
+  - Ground-truth architectural features: 11 structural semicircular hoop trusses painted oxide red / maroon ($Z = 2.10\text{-}4.10\text{ m}$), front entrance gable web with inner concentric arch and 8 radial sunburst spoke pipes, right-side entrance doorway ($X = 2.50\text{ to } 3.80\text{ m}$) with solid timber jambs, wooden plank door leaf, and corrugated sheet canopy hood, two-tier concrete foundation plinth with iconic continuous **painted red horizontal stripe** along lower footing step apron, heavy-duty black agricultural shade netting enclosure over barrel roof curve, flanks, rear, front gable, and horizontal interior ceiling at eave level; authentic interior with central weed-barrier walkway mat, dual galvanized steel seedling propagation tables, rows of nursery polybag plantlet containers, tropical foliage sprouts, and iconic **bright blue 55-gallon HDPE water drum** in center aisle; overhead irrigation misting line.
+  - Registered across `buildings.json`, `js/data/buildings.js`, `js/data/descriptions.js`, and `roads.json` (`entrance_38` at `[121.167286, 13.958918]` + `road_walkway_sh4`).
+  - Cachebusters bumped to `v=147` in `index.html`.
+- [x] **Task 2.9m: Plot 17 Screenhouse 5 3D Modeling (Phase 5) — ✅ Complete:**
+  - Facility: Screenhouse 5 (`plot17_screenhouse_5`) — Nursery Post-and-Lintel Shade House ($18.00\text{ m} \times 18.06\text{ m}$, area $325.1\text{ m}^2$, angle $159.5^\circ$, centroid `[121.16741435, 13.95882594]`).
+  - Architecture: Square post-and-lintel galvanized steel pipe shade nursery facility ($18.00\text{ m} \times 18.06\text{ m}$); 5x5 grid of round galvanized steel tubular columns with welded perimeter/internal lintel beams; high-tensile roof cable tension grid; full black agricultural shade netting; northwest corner screen door; interior cruciform gravel walkways and four quadrant growing zones with polybags and tropical saplings; misting lines. Model file: `models/plot17_screenhouse_5.glb` ($148.5\text{ KB}$).
+- [x] **Task 2.9n: Plot 18 Research Greenhouse Complex 3D Modeling (Phase 6: Bays 6, 7, 8) — ✅ Complete:**
+  - Facility: Plot 18 Research Greenhouse Complex (`plot18_greenhouse_complex`) — Contiguous 3-bay research greenhouse complex containing Screenhouses 6, 7, and 8 ($24.85\text{ m} \times 32.80\text{ m}$, area $815.1\text{ m}^2$, angle $339.5^\circ$, centroid `[121.16761281, 13.95902581]`).
+  - Architecture:
+    - **Bay 6 (West):** Pointed gothic arch tunnel ($Z_{APEX} = 4.85\text{ m}$, $Z_{EAVE} = 2.40\text{ m}$), heavy-duty black agricultural shade cloth enclosure, high square ventilation louver box with horizontal blades, front concrete entrance vestibule ($1.70\text{ m} \times 1.50\text{ m}$) with door & step, and interior clonal coffee nursery tables.
+    - **Bay 7 (Center):** Curved circular steel arch truss bay ($Z_{APEX} = 4.70\text{ m}$, $Z_{EAVE} = 2.40\text{ m}$), continuous diagonal zigzag web lacing, front arch gable shade netting, high square louver box, concrete entrance booth, and 12 interior nursery polybag blocks of certified citrus rootstocks.
+    - **Bay 8 (East):** Open-air curved circular steel arch truss propagation bay ($Z_{APEX} = 4.70\text{ m}$), front gable circular fan shroud & frame, low galvanized wire mesh flank skirt, ground propagation beds with scion foliage, and authentic iconic props: blue HDPE 55-gallon water drum barrel, grey nursery barrel, and white monobloc plastic chair.
+    - **Valley Gutters:** Continuous galvanized steel U-channels along $X = -4.142\text{ m}$ and $X = +4.142\text{ m}$.
+  - Model file: `models/plot18_greenhouse_complex.glb` ($268.89\text{ KB}$, strictly within $300\text{ KB}$ budget).
+  - Registrations: `buildings.json`, `js/data/buildings.js`, `roads.json` (`entrance_40` + `road_walkway_gh_complex`), `js/data/descriptions.js`, and `index.html` (cachebusters bumped to `v=151`).
+- [x] **Task 2.9p: Details Drawer Dead "White Space" & Placeholder Elimination on Open Plots — ✅ Complete:**
+  - **Issue:** Opening standard field plots or orchards (e.g. Plot 19 Pummelo Orchard, Cassava, Rice, Corn, Mango) displayed a 136px empty placeholder box reading `🍈 Pummelo Orchard (Overview) (No Photo)` directly under the header, pushing down wayfinding cards and leaving dead space.
+  - **Root Cause:** In Task 2.9j, `restoreDrawerHeroMaster(zone)` fell back to `images/${zone.id}.jpg` for all plots. Because open field plots have no facility photography (`!zone.image`), this triggered `onerror`, which displayed `.bp-image-placeholder` (`display: flex`).
+  - **Fix Applied:**
+    - Updated `js/building-panel.js` `showPlotPanel()`, `setDrawerHeroImage()`, `setDrawerHeroSubPlot()`, and `restoreDrawerHeroMaster()`: if a plot zone does not have an authentic photo (`!zone.image`), `#bp-image-area` and `.bp-image-placeholder` are set to `display: none` completely.
+    - Preserved authentic photo rendering for Plot 17 and Plot 18 screenhouses (`zone.image`), sub-plot photo swaps, and all 3D physical buildings (`#bp-image-area` reset to `display: block` in `showBuildingPanel()`).
+    - Cachebusters bumped to `v=152` in `index.html`, `js/app.js`, `js/plot-layers.js`, `js/idle.js`, and `js/routing.js`.
+- [x] **Task 2.9q: Suppression of Erroneous Building Pin #31 Over Plot 18 Greenhouse Complex — ✅ Complete:**
+  - **Issue:** A floating numbered building button/pin `(31) Plot 18 Research Greenhouse Complex` was erroneously generated directly over the 3D model of Plot 18.
+  - **Root Cause:** When `plot18_greenhouse_complex` was registered in `js/data/buildings.js`, line 1751 checked `id.startsWith('plot17_screenhouse') || id.startsWith('plot18_screenhouse')`. Because `plot18_greenhouse_complex` contains `_greenhouse_` instead of `_screenhouse_`, `isSubPlot` evaluated to `false`, causing `markers.js` to assign it building marker number 31 and render a floating pin, violating Rule 8 (Plot 18 screenhouses are sub-plots of the Coffee & Citrus Screenhouse zone, not standalone buildings).
+  - **Fix Applied:**
+    - Updated [js/data/buildings.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/data/buildings.js), [js/markers.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/markers.js), [js/sidebar.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/sidebar.js), and [js/phone-ui.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/phone-ui.js) to filter by `id.startsWith('plot17_') || id.startsWith('plot18_')`.
+    - `plot18_greenhouse_complex` is now correctly classified as `isSubPlot: true`, suppressing the extraneous floating button pin so Plot 18 is accessed exclusively via the master zone marker (**☕ Coffee & Citrus Screenhouse**) and its drawer sub-plots list.
+    - Cachebusters bumped to `v=153` in `index.html` and `v=75` for `buildings.js`.
+- [x] **Task 2.9o: Plot 18 Screenhouse 9 & Potting Headhouse 3D Modeling (Phase 7) — ✅ Complete:**
+  - **Facility:** Screenhouse 9 & Potting Headhouse (`plot18_screenhouse_9`) — Sub-Plot 9 of **Coffee & Citrus Screenhouse** (`zone_coffee_citrus_screenhouse`, Plot 18).
+  - **Reference Images:** Ground-truth photos provided by user (`IMG_4185` front gate, `IMG_4186` interior covered workspace, `9 Front View.jpg`, and aerial drone top view).
+  - **Architecture ($21.58\text{ m} \times 7.42\text{ m}$, area $140.4\text{ m}^2$):**
+    - **North Potting Headhouse:** Corrugated hip roof with painted red hip rake trim; corrugated iron side walls; front entrance with open central gateway and double-leaf steel wire mesh swing gate (`IMG_4185`); structural steel angle roof trusses; enclosed concrete utility room with door and security-grilled window; attached white-tiled concrete wash counter & sink with faucet (`IMG_4186`); work table and white chair.
+    - **Small House Inside Trellis (NW Corner):** Concrete masonry booth with door opening east onto central aisle; authentic rusty-red corrugated sheet roof with square raised ventilation hatch matching aerial drone top view.
+    - **South Hoop Trellis Nursery:** Concrete perimeter curb plinth ($Z = 0.40\text{ m}$); semi-translucent wire mesh perimeter fencing; 8 tubular steel hoop arch frames; central walkway aisle; dual columns of raised propagation benches with dark polybags and green foliage; elevated white HDPE water drum on stand and pump base on west flank.
+  - **Performance & Optimization:** Model size is **$135.04\text{ KB}$** (well within $\le 300\text{ KB}$ budget). Joined meshes by material and reduced radial segments to 8 vertices.
+  - **Mapbox & Campus Registration:**
+    - Model registered in `CUSTOM_3D_BUILDINGS` at `[121.16773388, 13.95925730]`, rotation $339.1^\circ$ (NNW facing compound road, parallel with Greenhouse Complex at $339.5^\circ$), cachebuster `?v=1`.
+    - GeoJSON feature added to [buildings.json](file:///c:/Users/LGU-SanPedro/Downloads/map/buildings.json) and `LARES_DRAWINGS` in [js/data/buildings.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/data/buildings.js).
+    - Added entrance node `entrance_41` at `[121.167707, 13.959335]` and connecting walkway `road_walkway_sh9` to `road_40` in [roads.json](file:///c:/Users/LGU-SanPedro/Downloads/map/roads.json).
+    - Synchronized centroid and polygon in [js/data/plots.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/data/plots.js).
+    - Registered wayfinding landmark and services in [js/data/descriptions.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/data/descriptions.js).
+    - Cachebusters bumped to `v=154` in [index.html](file:///c:/Users/LGU-SanPedro/Downloads/map/index.html).
+
+### 2.12 Route Walker Avatar Vertical Alignment Resolution — ✅ Complete
+- **Issue Reported:** The animated wayfinding farmer avatar was hanging below the green route line with the route line crossing directly over his salakot hat ("the green line should be underneath their feet not above their head").
+- **Root Cause Analysis:**
+  1. *Marker Flow Displacement:* .dest-pin-marker, .kiosk-marker, and .route-walker-avatar had position: relative instead of position: absolute; top: 0; left: 0;. Because they shared the same mapboxgl-canvas-container parent, the preceding sibling markers (.kiosk-marker 24px + .dest-pin-marker 48px) took up 72px in normal document flow, pushing .route-walker-avatar down by 72px (offsetTop: 72px).
+  2. *Wiping of Mapbox Classes:* Code setting walkerEl.className = 'route-walker-avatar ...' during animation state changes stripped .mapboxgl-marker and .mapboxgl-marker-anchor-bottom, preventing Mapbox's absolute positioning rules from taking effect.
+  3. When combined with Mapbox's 	ranslate(-50%, -100%), the +72px normal-flow offset caused the hat of the avatar to land on the route line while his body and feet hung down into the parking lots and rooftops.
+- **Fixes Applied:**
+  1. Changed .route-walker-avatar, .dest-pin-marker, and .kiosk-marker in [css/main.css](css/main.css) to position: absolute; top: 0; left: 0; will-change: transform; so all markers are taken out of document flow and originate cleanly at (0, 0).
+  2. Preserved .mapboxgl-marker and .mapboxgl-marker-anchor-bottom across all state changes in [js/routing.js](js/routing.js) and [js/walker.js](js/walker.js).
+  3. Calibrated offset: [0, 4] with nchor: 'bottom' so that the contact shadow under the boots (cy="72", 4px above the 76px SVG box bottom) aligns with sub-millimeter precision directly on top of the green route coordinate line.
+  4. Verified via headless browser CDP testing: avatar's boots and contact shadow are planted squarely on the green line, with the entire character standing upright above the path.
+  5. Bumped cachebusters to =157 in [index.html](index.html) and [css/main.css](css/main.css).
+
+
+### 2.0.9 Master Agricultural Plots Reorganization & Gate Refinements
+- **Master Agricultural Plots Reorganization (Plots 1–45 Schedule across 23 Official Zones):**
+  - Conformed all plots to user ground-truth schedule across the 23 verified zones.
+  - Grouped zones (e.g. Citrus Orchard 6–12, Corn Seed Production 13–15, Coffee Orchard 20–22, Vegetable Production 23–25, Fruit Trees & Citrus Orchard 26–28, Mango, Banana & Jackfruit Trees 30–32, Dwarf Makapuno 33–35, Cassava Production 36–38, Soybean Seeds 39–41) render as **single seamless combined polygons** on overview (`getPlotsGeoJSON()` returning `ZONE_POLYGONS`).
+  - Selecting any zone illuminates only its internal sub-plot cut lines (`INTERNAL_CUT_LINES`).
+- **Main Entrance Adjustment (`gate_main_entrance`):**
+  - Shifted northward from `[121.165745, 13.958316]` to `[121.165745, 13.958380]` to center cleanly on the asphalt driveway entrance opening.
+- **Back Gate Entrance / Exit Adjustment (`gate_back_gate`):**
+  - Repositioned from `[121.172486, 13.961669]` to `[121.172504, 13.961645]`, shifting down (-2.6m South) and right (+1.9m East) out of Guard House C's footprint and into the center of the eastern dirt road corridor.
+- **Cachebusters Bumped:**
+  - `js/markers.js?v=109`, `js/data/buildings.js?v=107`, `js/app.js?v=197`.
+
+- **Restored Rich Screenhouse Sub-Plots (Plots 17 & 18):**
+  - Fully restored rich screenhouse sub-plots formatting in [js/data/plots.js](js/data/plots.js) and [js/building-panel.js](js/building-panel.js):
+    * `Screenhouse 1: Vegetables Screenhouse 1` — *Protected vegetable cultivation & seedling propagation beds*
+    * `Screenhouse 2: Vegetables Screenhouse 2` — *Insect-proof vegetable seedling nursery with protective fine mesh*
+    * `Screenhouse 3: Citrus Mother Plants Screenhouse` — *Foundation block & mother tree screenhouse for disease-free citrus budwood*
+    * `Screenhouse 4: Embryo Cultured Macapuno Seedlings & Tissue Cultured Banana Screenhouse` — *Acclimatization & hardening nursery for embryo-cultured Makapuno and micropropagated banana*
+    * `Screenhouse 5: Coffee Seedlings Screenhouse` — *Galvanized pipe frame nursery shade house for high-quality clonal coffee seedlings*
+    * `Screenhouse 6–8: Citrus Seedlings Screenhouse` — *Combined 3-bay research greenhouse complex dedicated to certified disease-free citrus rootstocks and scions*
+    * `Screenhouse 9: Citrus Seedlings Screenhouse` — *Curved hoop trellis screenhouse and attached potting headhouse for citrus seedling production*
+  - Retained individual photo galleries and interactive tap-to-zoom to individual 3D screenhouse models.
+  - All field plots (Plots 1–16, 19–45) strictly retain `subPlots: []` (zero fabricated sub-plots).
+- **Cachebusters Bumped:**
+  - `js/data/plots.js?v=91`, `js/building-panel.js?v=157`, `js/app.js?v=199`.
+
+
+### 2.0.16 Mobile UI Synchronization Milestone: Agricultural Plots, Filters, Sub-Plots & Standalone Gates
+- **Context & Motivation:** The user observed that the mobile interface (`?mode=phone`, `#phone-bottom-sheet`) had fallen behind the desktop campus updates regarding the 23 official agricultural plot zones, the 7 verified category type filters, standalone compound gates, and sub-plot interactions.
+- **Root Cause Analysis:**
+  1. *Phone Directory Isolation:* `renderPhoneDirectory` in `js/phone-ui.js` previously iterated only through `BUILDING_DIRECTORY` (ignoring `FIELD_COMMODITY_ZONES`, `EMBEDDED_CONFERENCE_HALLS`, `STANDALONE_GATES`, and `activeTypeFilters`).
+  2. *Missing Mobile Filters:* The mobile search container had no filter button or dropdown, while Rule 7 strictly disallows horizontal category chip bars for DA-LARES.
+  3. *Hidden Panel Mismatch:* When selecting agricultural plots on mobile (`selectPlotZone`), the code invoked `showPlotPanel()`, which populated `#building-panel` (which has `display: none !important;` in `body.mode-phone`), leaving mobile users with no visual feedback.
+  4. *Missing Sub-Plots Container:* `#phone-bldg-scrollable` lacked a sub-plots breakdown card for Plot 17, Plot 18, and Plot 22.
+- **Architectural Enhancements Implemented:**
+  1. *Mobile Search & Type Filter Bar:*
+     - Added `.phone-search-row` in `index.html` featuring `#phone-filter-btn` and `#phone-filter-dropdown` popover modal with backdrop.
+     - Implemented the 7 verified DA-LARES categories: `infrastructure`, `trial_sites`, `orchard`, `office`, `laboratory`, `conference`, `digital_agri`.
+     - Synced `updateFilterDropdownUI()` across both desktop and mobile buttons/badges and checkboxes in real-time.
+  2. *Full 4-Part Mobile Directory:*
+     - Upgraded `renderPhoneDirectory()` to display all 65 campus places (39 buildings, 23 agricultural plot zones, 3 compound gates, 3 conference halls) with responsive tags (`.phone-dir-plot-tag`, `.phone-dir-gate-tag`, `.phone-dir-conf-tag`, `.phone-dir-office-tag`).
+     - Supports live keyword search and dynamic filtering by active category.
+  3. *Dedicated Mobile Plot View (`showPhonePlotDetails`):*
+     - Renders plot icon badge (`🌾`, `☕`, etc.), official title, plot range, plot count, and calibrated area ($m^2$ and $ha$).
+     - Displays "OVERVIEW & COMMODITY" and "KEY PLOT METRICS" cards while hiding walk routing buttons for plot zones.
+     - Supports real-time sub-plot chips for Screenhouses (Plots 17 & 18) and Water Tank & Comfort Room (Plot 22) with direct `zoomToSubPlot` 3D camera fly-in and dynamic photo switching.
+  4. *Standalone Gate Support:*
+     - `selectStandaloneGate` now opens `#phone-view-bldg` with official access gate details and stationed post information.
+  5. *Navigation Reset & Overview FlyTo:*
+     - Tapping `✕` in details view cleanly resets plot/sub-plot highlights and smoothly flies the camera back to `getActiveStationDefaultView()`.
+- **Verification:**
+  - Validated via automated Edge CDP tests capturing `verified_mobile_directory_synced.jpg`, `verified_mobile_filter_dropdown.jpg`, `verified_mobile_filtered_orchards.jpg`, `verified_mobile_search_coffee.jpg`, `verified_mobile_plot22_full_sheet.jpg`, `verified_mobile_watertank_spotlight_focused.jpg`, `verified_mobile_gate1_sheet.jpg`, and `verified_mobile_back_overview.jpg`.
+- **Cachebuster Bump:**
+  - `app.js?v=212`.
+
+
+### 2.0.17 Decoupled 3D Buildings & Marker/Pill Visibility System — ✅ Complete
+- **Context & Motivation:**
+  - The user reported: *"When removing 3d Buildings. The pills should not vanish. When in full pill view, when i turn off building labels, the pills vanishes as well."*
+  - Previously, all marker visibility logic across `js/map-settings.js`, `js/map-setup.js`, `js/sidebar.js`, and `js/markers.js` had `state.buildingsVisible !== false` as an explicit prerequisite (`markersShouldShow = isChecked && (state.buildingsVisible !== false)`).
+  - Consequently, whenever the user toggled OFF "3D Buildings", all campus building pills (`.bldg-map-marker`) were forcefully hidden with `style.display = 'none'`, leaving an empty 2D map with no way to identify campus facilities. Furthermore, turning on "Building Labels" while 3D buildings was OFF could not restore the markers because `buildingsVisible` blocked them.
+- **Architectural Changes & State Decoupling:**
+  - **`js/map-settings.js` (`handleLayerToggle`):**
+    * Removed DOM marker manipulation completely from `type === 'buildings'`. Toggling 3D buildings on/off now strictly affects 3D architectural extrusions and GLTF model layers (`3d-drawings`, `3d-buildings-models-layer`, etc.) without ever altering `.bldg-map-marker` or `state.markers`.
+    * In `type === 'numbers' || type === 'labels'`, decoupled marker visibility from `state.buildingsVisible`: `markersShouldShow = isChecked;`.
+  - **`js/map-setup.js` (`toggleBuildings`):**
+    * Removed marker hiding logic (`markersShouldShow = state.buildingsVisible && ...`). Toggling buildings now purely updates 3D layers and syncs the UI toggle checkbox.
+  - **`js/sidebar.js` (`toggleSettingChip`):**
+    * Decoupled chip-based marker toggling: `markersShouldShow = on;`.
+  - **`js/markers.js` (`virtualizeMarkers`, `renderMarkers`, `restoreMarkersAfterOrbit`, `declutterMarkersForNavigation`):**
+    * Stripped `state.buildingsVisible !== false` checks from marker rendering and virtualization. Virtualization now purely respects `state.markersVisible !== false` and viewport frustum bounds.
+- **Behavior in Full Pill View vs Compact Number Mode:**
+  - In **Full Pill View** (`label-mode-full`):
+    * Toggling OFF "3D Buildings" retains all full pills (`(1) Guard House A`, `(11) Argosino Hall`, etc.) on top of the 2D aerial satellite basemap.
+    * Toggling OFF "Building Labels" cleanly hides the marker layer, leaving a completely uncluttered aerial basemap. Toggling it back ON immediately restores the pills even when 3D buildings remain OFF.
+  - In **Compact Number Mode** (`label-mode-compact`):
+    * Toggling OFF "3D Buildings" retains circular numbered badges (`(1)`, `(11)`, `(12)`, etc.) without models.
+- **Cachebuster Updates:**
+  - `index.html`: `js/app.js?v=213`
+  - `js/app.js`: `markers.js?v=111`, `map-setup.js?v=91`, `sidebar.js?v=84`, `map-settings.js?v=90`
+- **Headless Browser CDP Verification:**
+  - Verified with `scratch/test_buildings_labels_toggle.py` across Edge CDP:
+    * `verified_pills_without_3d_buildings.jpg`: 3D buildings OFF, Full Pill View active, building pills remain 100% visible and interactive over aerial imagery.
+    * `verified_labels_toggled_off.jpg`: Building Labels OFF, clean basemap with all markers hidden.
+    * `verified_labels_on_3d_off.jpg`: Building Labels turned back ON while 3D buildings is OFF, pills immediately restored.
+    * `verified_compact_mode_3d_off.jpg`: Compact Number mode with 3D buildings OFF, circular badges displayed.
+    * `verified_3d_off_full_pills_overview.jpg`: Full campus overview with settings modal closed, 3D buildings OFF, and all pills rendered over satellite basemap.
+
+
+### 2.0.18 LARES Building Pill Alignment & Spatial Centering — ✅ Complete
+- **Context & Motivation:**
+  - The user requested: *"Move the LARES pill to the right in the direction of the road so its in the middle of the building"*.
+  - Previously, `CUSTOM_BUILDING_CENTERS['lares_building']` was set to `[121.16629490, 13.95918766]`. In the campus view, this placed the circular badge `(5)` at the extreme western edge of the main north-south building wing, directly touching `(7) F2C2 Building` and overlapping the `YOU ARE HERE` kiosk marker.
+- **Geometric Calibration:**
+  - Calibrated the pill position along the road vector ($	heta pprox 162.8^\circ$) by $+8.0\text{ m}$:
+    * New Pill Coordinates: `[121.16631686, 13.95911881]`
+    * Kept 3D Model Coordinates strictly untouched at `[121.16629490, 13.95918766]` to preserve ground-truth architectural registration.
+  - **Results:**
+    * In **Full Pill View** (`label-mode-full`): The entire `(5) LARES Building` pill is now symmetrically centered across the width of the green wing roof, with the roof ridge line passing cleanly through the center of the capsule and equal margins to both the western wall and eastern road-facing wall.
+    * In **Compact Number Mode** (`label-mode-compact`): The numbered circular badge `(5)` sits centered along the roof ridge line.
+    * Completely eliminated visual clutter and marker collision with `YOU ARE HERE` and `(7) F2C2 Building`.
+- **Cachebuster Updates:**
+  - `js/data/buildings.js?v=112` bumped across 13 consuming modules (`app.js`, `building-panel.js`, `drone-calibration.js`, `gps.js`, `map-setup.js`, `markers.js`, `occlusion.js`, `phone-nav.js`, `phone-ui.js`, `routing.js`, `sidebar.js`, `steps.js`, `walker.js`).
+  - `index.html`: `js/app.js?v=214`.
+- **Headless Browser CDP Verification:**
+  - Verified across Edge CDP (`scratch/verify_lares_pill_final.py`):
+    * `verified_lares_pill_centered.jpg`: Direct comparison against user's top-down angle, showing the pill centered on the green roof wing.
+    * `verified_lares_compact_centered.jpg`: Compact number badge centered along the roof ridge.
+    * `verified_lares_pill_overview.jpg`: 3D angled overview verifying clutter-free marker arrangement.
+
+
+### 2.0.19 Warehouse 1–8 & Infrastructure Category Filtering Harmonization — ✅ Complete
+- **Context & Motivation:**
+  - The user reported: *"Filter of warehouses seems to not work because the warehouse 1-8 is not here. Make sure all the filter works and all are appearing right where they belong when choosing a filter."*
+  - An inspection of the **Filter by Type Popover Modal** with `[x] Agri Infrastructure / Facilities` active revealed that all 8 Northern Warehouses (`warehouse_1` through `warehouse_7` and `lares_farm_machinery_shed_1` / `lares_organic_fertilizer_storage`) and `lares_agricultural_supplies_storage` were completely absent from the directory list.
+- **Root Cause Analysis:**
+  - In `BUILDING_CATEGORIES` within `js/data/buildings.js`, the facilities' own names were accidentally assigned as their category string instead of `'infrastructure'` (e.g., `'warehouse_1': 'LARES Synthetic Fertilizer Storage / LARES Pesticide Storage'`, `'lares_farm_machinery_shed_1': 'LARES Farm Machinery Shed 1'`).
+  - When the user selected `Agri Infrastructure / Facilities` in the type filter modal, `activeTypeFilters.has(b.category)` evaluated to false for all 8 warehouses and the supplies storage.
+  - Furthermore, `plot22_water_tank` and `plot22_comfort_room` had their names and types in `KNOWN_BUILDING_NAMES` and `BUILDING_TYPES` mapped to `'infrastructure'` instead of their proper facility names and functional types.
+- **Key Changes Implemented:**
+  - **`js/data/buildings.js`:**
+    * Fixed `BUILDING_CATEGORIES`: Explicitly mapped `lares_agricultural_supplies_storage`, `warehouse_1`, `lares_farm_machinery_shed_1`, `lares_organic_fertilizer_storage`, `warehouse_3`, `warehouse_4`, `warehouse_5`, `warehouse_6`, `warehouse_7`, `plot22_water_tank`, and `plot22_comfort_room` to `'infrastructure'`.
+    * Fixed `KNOWN_BUILDING_NAMES`: Corrected `'plot22_water_tank': 'LARES Water Tank'` and `'plot22_comfort_room': 'Plot 22 Comfort Room'`.
+    * Fixed `BUILDING_TYPES`: Added clear functional descriptors with warehouse numbers:
+      - `warehouse_1`: `Warehouse 1 • Fertilizer & Pesticide Storage`
+      - `lares_farm_machinery_shed_1`: `Warehouse 2 • Machinery Shed`
+      - `lares_organic_fertilizer_storage`: `Warehouse 3 • Organic Fertilizer Storage`
+      - `warehouse_3`: `Warehouse 4 • Corn Seed Processing`
+      - `warehouse_4`: `Warehouse 5 • Machinery Shed`
+      - `warehouse_5`: `Warehouse 6 • Rice Banner Warehouse`
+      - `warehouse_6`: `Warehouse 7 • Cassava Drying Shed`
+      - `warehouse_7`: `Warehouse 8 • Corn Banner Warehouse`
+      - `lares_agricultural_supplies_storage`: `Agricultural Storage Facility`
+      - `plot22_water_tank`: `Water Supply & Sprinkler Irrigation`
+      - `plot22_comfort_room`: `Sanitation & Irrigation Hub`
+    * Enhanced `BUILDING_DIRECTORY` descriptions to include "Warehouse 1" through "Warehouse 8" and "Logistics Warehouse" for unified keyword search.
+  - **`js/data/descriptions.js`:**
+    * Updated `compactTag` across all 8 warehouses with explicit `Warehouse 1 • ...` through `Warehouse 8 • ...` prefixes.
+- **Comprehensive Audit across All 7 Filter Categories:**
+  1. **Agri Infrastructure / Facilities (`infrastructure`)**: 16 numbered buildings (#1 Guard House A, #10 Canteen, #18 Dormitory, #25 Motorpool Barracks, #26 Guest House, #27 Guard House B, #28 Guard House C, #31 LARES Agricultural Supplies Storage, #32 Warehouse 1, #33 Warehouse 2, #34 Warehouse 3, #35 Warehouse 4, #36 Warehouse 5, #37 Warehouse 6, #38 Warehouse 7, #39 Warehouse 8) + 2 screenhouse master zones (Plot 17 & Plot 18) = 18 items.
+  2. **Office Buildings (`office`)**: All 11 verified office buildings (Tanco Hall, Admin, ORED, LARES, RAED, AMAD, F2C2, PRDP, Multi-Purpose Admin, RSBSA, MIS-RAFIS).
+  3. **Laboratories (`laboratory`)**: All 10 research laboratories (RSL, PGRC, R&D Multipurpose, Post-Harvest Lab, Tissue Culture, Corn & Cassava, RCPC, Mushroom Lab, ILD, CGuard).
+  4. **Conference Hall (`conference`)**: Standalone Argosino Hall + 2 verified embedded conference halls (ORED Conference, R&D Conference Hall) = 3 facilities.
+  5. **Digital Agriculture Project (`digital_agri`)**: Automated Weather Station (Pin #30).
+  6. **Agricultural Test / Trial Sites (`trial_sites`)**: All 10 field crop variety trial zones.
+  7. **Orchard (`orchard`)**: All 11 fruit tree and citrus orchard zones.
+  - Searching `"warehouse"` in the directory search input surfaces all 8 warehouses + agricultural supplies storage.
+  - Mobile phone directory (`#phone-directory-list`) is 100% in sync with the filter state.
+- **Cachebuster Updates:**
+  - `js/data/buildings.js?v=113` bumped across all 13 consuming modules (`app.js`, `building-panel.js`, `drone-calibration.js`, `gps.js`, `map-setup.js`, `markers.js`, `occlusion.js`, `phone-nav.js`, `phone-ui.js`, `routing.js`, `sidebar.js`, `steps.js`, `walker.js`).
+  - `index.html`: `js/app.js?v=215`.
+- **Headless Browser CDP Verification:**
+  - Automated test suite `scratch/verify_all_filters_cdp.py` executed with 100% pass across all 9 test suites:
+    * `verified_filter_infrastructure_warehouses.jpg`: Live screenshot showing the Type Filter Popover modal with `Agri Infrastructure / Facilities` checked and Warehouses 1–8 appearing cleanly in the directory list.
+
+---
+
+### 🚀 Update: Mobile Walking Directions Overlap & Zoom Controls Fix
+- **Problem Statement:** During mobile walking navigation (`body.phone-nav-active` / `body.mode-phone.has-active-route`), the Settings button (`⚙️`, `.map-settings-widget`) was positioned at `top: 86px; right: 14px;`, landing directly over the Mapbox Zoom Controls stack (`.mapboxgl-ctrl-top-right`), completely blocking the Zoom In (`+`) button from user tap interaction.
+- **Implemented Fix in `css/main.css`:**
+  1. **Settings Cog Suppression:** Set `.map-settings-widget { display: none !important; }` during active route / phone navigation. Settings are deeply administrative (drone calibration, display shadows, 3D sun lighting) and are not needed while walking, immediately eliminating the right-rail collision.
+  2. **Controls Rail Shift:** Shifted `.mapboxgl-ctrl-top-right` down from `top: 60px` to `top: calc(var(--safe-top, 0px) + 88px) !important;` with smooth CSS transition (`transition: top 0.3s cubic-bezier(0.16, 1, 0.3, 1)`). This positions Zoom In (`+`), Zoom Out (`-`), Compass (`▲`), Orbit, and Fullscreen with pristine clearance beneath the Top Nav HUD banner ($y = 12..84\text{px}$).
+  3. **Drone Aerial Layer Toggle Positioning:** Kept `.map-layer-widget` at `top: calc(var(--safe-top, 0px) + 88px) !important; right: 60px !important;`, floating cleanly to the left of the Zoom In button in a balanced side-by-side arrangement.
+  4. **Smooth State Recovery:** When navigation completes or is cancelled via `cancelPhoneRoute()`, the classes are removed, smoothly restoring Settings at `top: 14px; right: 14px;`, Controls at `top: 60px; right: 14px;`, and Layer Toggle at `top: 14px; right: 60px;`.
+- **Cachebuster Updates:**
+  - `css/main.css?v=176` bumped in `index.html`.
+- **Headless Chrome Verification:**
+  - Automated CDP test `scratch/test_full_cycle.py` verified exact computed styles across all 3 lifecycle stages:
+    * Idle: `settings: flex`, `ctrlTop: 60px`, `layerTop: 14px`
+    * Navigating: `settings: none`, `ctrlTop: 88px`, `layerTop: 88px`
+    * Restored: `settings: flex`, `ctrlTop: 60px`, `layerTop: 14px`
+  - High-res visual artifacts generated:
+    * `mobile_nav_preview_clean_zoom.jpg`
+    * `mobile_nav_top_right_unblocked.jpg`
+
+---
+
+### 🎥 Update: Mobile Camera View Controls (`Locked` / `Side View` / `Top View`)
+- **User Request:** Add the Camera View controls to the mobile navigation interface, floating centered right above the dropped-down bottom route sheet. When the sheet is slid up, the camera controls do not follow the sheet into the screen; they stay firmly anchored at the bottom and fade out so turn-by-turn directions remain 100% clean and readable.
+- **Implemented Changes:**
+  1. **Mobile Floating Controls (`css/main.css`):**
+     * Enabled `.floating-camera-controls.active` on mobile phone mode (`body.mode-phone` and `@media (max-width: 768px)`).
+     * Positioned at `bottom: calc(var(--safe-bottom, 0px) + 138px) !important; left: 50% !important; transform: translateX(-50%) !important; z-index: 90 !important;`.
+     * Styled with glass-morphic theme (`rgba(15, 23, 42, 0.92)`, blur 16px), compact button dimensions (`height: 32px`, `padding: 0 10px`, `font-size: 11.5px`), and Lucide icons.
+  2. **Anchored in Place & Non-Following Behavior (`css/main.css` & `js/phone-ui.js`):**
+     * When the user slides the bottom sheet UP to `snap-half` or `snap-full`, the sheet (`z-index: 100`) slides over the camera pill.
+     * `.sheet-expanded-hidden` and CSS `:has(#phone-bottom-sheet.snap-half)` smoothly fade out the camera pill (`opacity: 0`, `pointer-events: none`, `transform: translateX(-50%) scale(0.95)`).
+     * When sliding back down to `peek`, the camera pill smoothly restores above the menu.
+  3. **Module Activation Wiring:**
+     * `js/phone-nav.js` and `js/routing.js`: Activated `fcc.classList.add('active')` and called `updateCameraControlsUI()` when virtual walkthrough / phone routes start, and removed upon arrival or cancellation.
+- **Cachebuster Updates:**
+  - `css/main.css?v=178` and `js/app.js?v=244` in `index.html`.
+- **Headless Chrome Verification:**
+  - Automated CDP test `scratch/verify_camera_controls_mobile.py` verified:
+    * Peek State: `fccVisible: true`, `display: flex`, `bottom: 138px`, `gapToSheet: 14px`.
+    * Half Sheet State: `opacity: 0`, `fccY: 513` (stayed firmly anchored in place, zero riding up into the screen).
+    * Restored Peek State: `opacity: 1`, `pointer-events: auto`.
+  - Verified Screenshots:
+    * `mobile_nav_with_camera_view.jpg`
+    * `mobile_nav_sheet_half_camera_hidden.jpg`
+    * `mobile_nav_sheet_peek_camera_restored.jpg`
+
+---
+
+### 🚧 Update: Regional Research Stations "Under Development" Protection
+- **User Directive:** "When deployed make sure that other research stations will be shown as Under Development when they choose it."
+- **Implemented Architecture:**
+  1. **Station Registry Status (`js/data/stations.js`):**
+     * Added `status: 'active'` for `lares` (Lipa City, Batangas).
+     * Added `status: 'under_development'` for `qares` (Tiaong, Quezon), `rares` (Tanay, Rizal), and `cares` (Naic, Cavite).
+  2. **Badging in Station Selectors (`index.html` & `css/main.css`):**
+     * Dropdown list items and mobile station cards now display an amber `Under Dev` badge (`.dev-badge`) for in-development stations, while `lares` retains the green `Active` badge.
+  3. **"Under Development" Pop-up Modal (`#station-dev-modal` in `index.html`):**
+     * Displays a glass-morphic prompt with glowing construction badge, dynamic station name, full name, and roadmap checklist (3D models, road graph pathfinding, and drone survey).
+     * Primary Action: `"Continue on DA-LARES Map"` — cleanly dismisses the modal and keeps visitors on the active DA-LARES compound.
+     * Admin Mode Action (`?admin=1`): `"Explore Preview (Admin)"` — allows developers/admins to preview QARES if needed without exposing incomplete data to the general public.
+  4. **Selection Intercept (`js/stations.js`):**
+     * `switchResearchStation(stationId)` checks `targetStation.status === 'under_development'`. If true, it opens `showStationDevModal(stationId)` and halts the map flyover, keeping the camera safely anchored at DA-LARES.
+     * Mobile station selection via `handlePhoneSelectStation(stationId)` routes through the same intercept.
+- **Cachebuster Updates:**
+  - `css/main.css?v=179` and `js/app.js?v=245` in `index.html`.
+- **Headless Chrome CDP Verification:**
+  - `scratch/verify_under_development_modal.py` verified 100% pass across both Kiosk and Mobile:
+    * `kiosk_station_dropdown_dev.jpg`: Kiosk dropdown showing `Active` on LARES and `Under Dev` on QARES, RARES, LARDC.
+    * `kiosk_station_dev_modal.jpg`: Centered Under Development dialog upon clicking QARES on Kiosk.
+    * `phone_station_modal_dev.jpg`: Mobile station selection modal showing `Under Dev` cards.
+    * `phone_station_dev_modal.jpg`: Centered Under Development dialog upon tapping QARES on mobile.

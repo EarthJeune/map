@@ -12,6 +12,8 @@ export function syncLayerToggleCheckboxes() {
     if (cbBuildings) cbBuildings.checked = state.buildingsVisible !== false;
     if (cbMarkers) cbMarkers.checked = state.markersVisible !== false;
     if (cbBoundary) cbBoundary.checked = state.boundaryVisible !== false;
+    const cbPlots = document.getElementById('msp-toggle-plots');
+    if (cbPlots) cbPlots.checked = state.plotsVisible === true;
 }
 
 export function handleLayerToggle(type, isChecked) {
@@ -27,7 +29,11 @@ export function handleLayerToggle(type, isChecked) {
                 '3d-drawings-transparent',
                 '3d-drawings-roofs-transparent',
                 '3d-buildings-models-layer',
-                '3d-buildings-models-transparent'
+                '3d-buildings-models-transparent',
+                'qares-footprints-3d',
+                'qares-footprints-roofs',
+                'qares-footprints-fill',
+                'qares-footprints-line'
             ];
             bldgLayers.forEach(id => {
                 if (currentMap.getLayer(id)) {
@@ -40,35 +46,72 @@ export function handleLayerToggle(type, isChecked) {
                 } catch (e) { }
             }
         }
+
+        // Synchronize corresponding bottom bar chip
+        const chipBldg = document.getElementById('chip-buildings');
+        if (chipBldg) chipBldg.classList.toggle('active', isChecked);
+
     } else if (type === 'numbers' || type === 'labels') {
         state.markersVisible = isChecked;
+        const markersShouldShow = isChecked;
         if (state.markers && state.markers.length > 0) {
             state.markers.forEach(m => {
                 if (m && m.getElement()) {
-                    m.getElement().style.display = isChecked ? '' : 'none';
+                    m.getElement().style.display = markersShouldShow ? '' : 'none';
                 }
-                if (!isChecked && m.getPopup && m.getPopup() && m.getPopup().isOpen()) {
+                if (!markersShouldShow && m.getPopup && m.getPopup() && m.getPopup().isOpen()) {
                     m.togglePopup();
                 }
             });
         }
         document.querySelectorAll('.bldg-map-marker').forEach(el => {
-            el.style.display = isChecked ? '' : 'none';
+            el.style.display = markersShouldShow ? '' : 'none';
         });
+        document.querySelectorAll('.plot-map-marker').forEach(el => {
+            el.style.display = markersShouldShow ? '' : 'none';
+        });
+        if (markersShouldShow && typeof window.virtualizeMarkers === 'function') {
+            window.virtualizeMarkers();
+        }
+
+        const chipNum = document.getElementById('chip-numbers');
+        if (chipNum) chipNum.classList.toggle('active', isChecked);
+
+    } else if (type === 'plots') {
+        state.plotsVisible = isChecked;
+        try {
+            localStorage.setItem('da_plots_visible', isChecked ? 'true' : 'false');
+        } catch (e) { }
+        if (typeof window.updatePlotLayerStyles === 'function') {
+            window.updatePlotLayerStyles();
+        }
+
     } else if (type === 'boundary') {
         state.boundaryVisible = isChecked;
         const vis = isChecked ? 'visible' : 'none';
         if (currentMap) {
+            const isMapbox = (state.currentMapStyleMode === 'mapbox');
+            const shadowVis = (!isMapbox && isChecked) ? 'visible' : 'none';
+
             const boundaryLayerIds = [
                 'lares-boundary-fill',
                 'lares-boundary-glow',
                 'lares-boundary-line',
                 'lares-compound-border-casing',
-                'lares-compound-border-line'
+                'lares-compound-border-line',
+                'qares-boundary-fill',
+                'qares-boundary-line',
+                'qares-railway-casing',
+                'qares-railway-line'
             ];
             boundaryLayerIds.forEach(lid => {
                 if (currentMap.getLayer(lid)) {
                     try { currentMap.setLayoutProperty(lid, 'visibility', vis); } catch (e) { }
+                }
+            });
+            ['qares-boundary-glow', 'qares-boundary-casing'].forEach(lid => {
+                if (currentMap.getLayer(lid)) {
+                    try { currentMap.setLayoutProperty(lid, 'visibility', shadowVis); } catch (e) { }
                 }
             });
             ['10', '20', '21', '1', '2', '3'].forEach(fid => {
@@ -88,6 +131,9 @@ export function handleLayerToggle(type, isChecked) {
                 if (m && m.getElement()) m.getElement().style.display = isChecked ? 'inline-flex' : 'none';
             });
         }
+
+        const chipBnd = document.getElementById('chip-boundary');
+        if (chipBnd) chipBnd.classList.toggle('active', isChecked);
     }
 
     syncLayerToggleCheckboxes();
@@ -108,6 +154,10 @@ export function setLabelDisplayMode(mode) {
     try {
         localStorage.setItem('da_label_display_mode', mode);
     } catch (e) { }
+
+    if (typeof window.updatePlotMarkerLOD === 'function') {
+        window.updatePlotMarkerLOD();
+    }
 
     if (typeof window.resetIdle === 'function') window.resetIdle();
 }
@@ -198,10 +248,51 @@ export function initMapSettings() {
         setEnvironmentLighting('auto');
     }
 
+    // 3. Restore agricultural plots visibility preference
+    try {
+        const savedPlots = localStorage.getItem('da_plots_visible');
+        if (savedPlots !== null) {
+            state.plotsVisible = (savedPlots === 'true');
+        } else {
+            state.plotsVisible = false;
+        }
+    } catch (e) {
+        state.plotsVisible = false;
+    }
+
     syncLayerToggleCheckboxes();
     updatePerformanceUI();
 
-    // 3. Global ESC listener and outside click dismiss
+    // 4. Bind Kiosk Performance Profile Button Listeners
+    const btnAuto = document.getElementById('perf-btn-auto');
+    const btnEco = document.getElementById('perf-btn-eco');
+    const btnHigh = document.getElementById('perf-btn-high');
+    if (btnAuto && !btnAuto._perfBound) {
+        btnAuto._perfBound = true;
+        btnAuto.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setPerformanceProfile('auto');
+        });
+    }
+    if (btnEco && !btnEco._perfBound) {
+        btnEco._perfBound = true;
+        btnEco.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setPerformanceProfile('eco');
+        });
+    }
+    if (btnHigh && !btnHigh._perfBound) {
+        btnHigh._perfBound = true;
+        btnHigh.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setPerformanceProfile('high');
+        });
+    }
+
+    // 5. Global ESC listener and outside click dismiss
     if (typeof window !== 'undefined') {
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') closeMapSettingsPanel();

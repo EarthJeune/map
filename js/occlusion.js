@@ -3,7 +3,7 @@
 
 import { map, getRoofColorCaseStyle } from './map-setup.js';
 import { state } from './data/state.js';
-import { LARES_DRAWINGS } from './data/buildings.js?v=72';
+import { LARES_DRAWINGS } from './data/buildings.js';
 
 let cachedBuildings = null;
 let lastOccludedIds = [];
@@ -63,7 +63,7 @@ export function ensureOcclusionLayers() {
             source: origLayerDef.source,
             minzoom: origLayerDef.minzoom || 13,
             layout: {
-                visibility: state.buildingsVisible ? 'visible' : 'none'
+                visibility: 'none'
             },
             paint: {
                 'fill-extrusion-color': (state.currentMapStyleMode === 'mapbox') ? '#e2e8f0' : '#cbd5e1',
@@ -85,7 +85,7 @@ export function ensureOcclusionLayers() {
             source: origRoofDef.source,
             minzoom: origRoofDef.minzoom || 13,
             layout: {
-                visibility: state.buildingsVisible ? 'visible' : 'none'
+                visibility: 'none'
             },
             paint: {
                 'fill-extrusion-color': (state.currentMapStyleMode === 'mapbox') ? '#cbd5e1' : getRoofColorCaseStyle(),
@@ -110,7 +110,7 @@ export function ensureOcclusionLayers() {
             minzoom: origModelDef.minzoom || 14.5,
             layout: {
                 'model-id': ['get', 'model'],
-                'visibility': state.buildingsVisible ? 'visible' : 'none'
+                'visibility': 'none'
             },
             paint: {
                 'model-scale': [1.0, 1.0, 1.0],
@@ -132,174 +132,302 @@ export function ensureOcclusionLayers() {
     return true;
 }
 
+// Fast distance from point [px, py] to line segment [segA, segB] in meters (calibrated for Batangas ~13.96° N)
+
+export function fastDistToSegmentMeters(pt, segA, segB) {
+
+    if (!pt || !segA || !segB) return 999;
+
+    const px = pt[0] * 108040;
+
+    const py = pt[1] * 110540;
+
+    const x1 = segA[0] * 108040;
+
+    const y1 = segA[1] * 110540;
+
+    const x2 = segB[0] * 108040;
+
+    const y2 = segB[1] * 110540;
+
+
+
+    const dx = x2 - x1;
+
+    const dy = y2 - y1;
+
+    const lenSq = dx * dx + dy * dy;
+
+    if (lenSq === 0) {
+
+        const sx = px - x1, sy = py - y1;
+
+        return Math.sqrt(sx * sx + sy * sy);
+
+    }
+
+    const t = Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / lenSq));
+
+    const projX = x1 + t * dx;
+
+    const projY = y1 + t * dy;
+
+    const ex = px - projX;
+
+    const ey = py - projY;
+
+    return Math.sqrt(ex * ex + ey * ey);
+
+}
+
+
+
 // Calculate which buildings should become translucent:
+
 // 1. When avatar is walking or running past the building (proximity detection)
+
 // 2. When building is blocking the camera's sightline to the avatar (perspective ray/corridor occlusion)
+
 export function computeOccludedBuildingIds(targetCoord, destinationId) {
-    if (!targetCoord || typeof turf === 'undefined') return [];
+
+    if (!targetCoord) return [];
+
+
 
     if (!cachedBuildings) initBuildingSpatialIndex();
+
     if (!cachedBuildings || cachedBuildings.length === 0) return [];
 
-    const pitch = (map && map.getPitch) ? map.getPitch() : 0;
-    const bearing = (map && map.getBearing) ? map.getBearing() : 0;
-    const zoom = (map && map.getZoom) ? map.getZoom() : 19.5;
-    
-    const targetPt = turf.point(targetCoord);
 
-    // Build camera sightline ray and corridor when camera is pitched (pitch >= 15°)
-    let sightline = null;
-    let corridor = null;
+
+    const pitch = (map && map.getPitch) ? map.getPitch() : 0;
+
+    const bearing = (map && map.getBearing) ? map.getBearing() : 0;
+
+    const zoom = (map && map.getZoom) ? map.getZoom() : 19.5;
+
+
+
+    // Fast trigonometric camera position calculation
+
+    let camCoord = null;
+
+    let corridorRadius = 12.0;
+
     if (pitch >= 15) {
-        const backAngle = ((bearing + 180) % 360 + 360) % 360;
-        const backDistanceMeters = Math.max(18, Math.min(48, 28 * Math.tan((pitch * Math.PI) / 180) * Math.pow(2, 20 - zoom)));
-        try {
-            const camPt = turf.destination(targetPt, backDistanceMeters, backAngle, { units: 'meters' });
-            sightline = turf.lineString([camPt.geometry.coordinates, targetCoord]);
-            const corridorRadius = Math.max(9.0, Math.min(14.0, 7.5 + (pitch - 15) * 0.12));
-            corridor = turf.buffer(sightline, corridorRadius, { units: 'meters' });
-        } catch (e) {
-            sightline = null;
-            corridor = null;
-        }
+
+        const rad = Math.PI / 180;
+
+        const backAngleRad = (((bearing + 180) % 360 + 360) % 360) * rad;
+
+        const backDistanceMeters = Math.max(18, Math.min(48, 28 * Math.tan(pitch * rad) * Math.pow(2, 20 - zoom)));
+
+        const dLng = (backDistanceMeters * Math.sin(backAngleRad)) / 108040;
+
+        const dLat = (backDistanceMeters * Math.cos(backAngleRad)) / 110540;
+
+        camCoord = [targetCoord[0] + dLng, targetCoord[1] + dLat];
+
+        corridorRadius = Math.max(8.5, Math.min(13.5, 7.0 + (pitch - 15) * 0.1));
+
     }
+
+
 
     const occludedIds = [];
 
+
+
     for (let i = 0; i < cachedBuildings.length; i++) {
+
         const b = cachedBuildings[i];
+
         
+
         // RULE 1: Destination building NEVER becomes transparent so the user clearly sees their goal
+
         if (b.id === destinationId) continue;
 
-        let distToWalker = 999;
-        if (b.center) {
-            distToWalker = fastMetersDistance(targetCoord, b.center);
-            if (distToWalker > 65) continue; // Far away, skip immediately
-        }
+        if (!b.center) continue;
+
+
+
+        const distToWalker = fastMetersDistance(targetCoord, b.center);
+
+        if (distToWalker > 60) continue; // Far away, skip immediately
+
+
 
         let isOccluded = false;
 
-        // 1. Walker Proximity Check: Model is walking or running past the building
-        // Campus roads run 4m–12m from building perimeters. Centroid distance <= 22m or polygon distance <= 15m.
-        if (distToWalker <= 22) {
+
+
+        // 1. Walker Proximity Check: Avatar is walking directly past the building
+
+        if (distToWalker <= 20) {
+
             isOccluded = true;
-        } else if (distToWalker <= 36 && b.geometry) {
-            try {
-                if (turf.booleanPointInPolygon(targetPt, b.geometry)) {
-                    isOccluded = true;
-                } else {
-                    const line = turf.polygonToLine(b.geometry);
-                    const polyDist = turf.pointToLineDistance(targetPt, line, { units: 'meters' });
-                    if (polyDist <= 15) {
-                        isOccluded = true;
-                    }
-                }
-            } catch (err) {
-                if (distToWalker <= 24) isOccluded = true;
+
+        } else if (camCoord) {
+
+            // 2. Camera Sightline Occlusion: Building blocks camera view to the walker in 3D perspective
+
+            const distToSightline = fastDistToSegmentMeters(b.center, camCoord, targetCoord);
+
+            if (distToSightline <= corridorRadius) {
+
+                isOccluded = true;
+
             }
+
         }
 
-        // 2. Camera Sightline Occlusion: Building blocks camera view to the walker in 3D perspective
-        if (!isOccluded && (sightline || corridor) && b.geometry) {
-            try {
-                const intersectsRay = sightline ? turf.booleanIntersects(sightline, b.geometry) : false;
-                const intersectsCorridor = corridor ? turf.booleanIntersects(corridor, b.geometry) : false;
-                if (intersectsRay || intersectsCorridor) {
-                    isOccluded = true;
-                }
-            } catch (err) {
-                // Ignore fallback
-            }
-        }
+
 
         if (isOccluded) {
+
             occludedIds.push(b.id);
+
         }
+
     }
+
+
 
     return occludedIds;
+
 }
 
+
+
 // Apply Mapbox filters for solid vs translucent layers:
+
 // - Procedural: 3d-drawings (solid) vs 3d-drawings-transparent (frosted glass)
+
 // - Custom 3D GLB: 3d-buildings-models-layer (solid 1.0) vs 3d-buildings-models-transparent (frosted glass 0.25)
+
 export function applyOcclusionFilters(occludedIds) {
+
     if (!map || !map.getStyle()) return;
 
+
+
     if (!map.getLayer('3d-drawings-transparent') || (map.getLayer('3d-buildings-models-layer') && !map.getLayer('3d-buildings-models-transparent'))) {
+
         ensureOcclusionLayers();
+
     }
 
+
+
     const areEqual = (occludedIds.length === lastOccludedIds.length) &&
+
         occludedIds.every(id => lastOccludedIds.includes(id));
+
+
 
     if (areEqual) return;
 
+
+
     lastOccludedIds = [...occludedIds];
 
-    try {
-        if (occludedIds.length === 0) {
-            // A. All solid procedural buildings
-            const baseFilter = getBaseFilter();
-            if (map.getLayer('3d-drawings')) map.setFilter('3d-drawings', baseFilter);
-            if (map.getLayer('3d-drawings-roofs')) map.setFilter('3d-drawings-roofs', baseFilter);
-            if (map.getLayer('3d-drawings-transparent')) {
-                map.setFilter('3d-drawings-transparent', ['all', baseFilter, ['in', ['get', 'id'], ['literal', []]]]);
-            }
-            if (map.getLayer('3d-drawings-roofs-transparent')) {
-                map.setFilter('3d-drawings-roofs-transparent', ['all', baseFilter, ['in', ['get', 'id'], ['literal', []]]]);
-            }
 
-            // B. All solid custom 3D models (show all on solid layer, hide on transparent layer)
+
+    try {
+        const visWhenActive = (state.buildingsVisible !== false) ? 'visible' : 'none';
+        if (occludedIds.length === 0) {
+            // A. All solid custom 3D models (show all on solid layer, hide transparent layer completely)
             if (map.getLayer('3d-buildings-models-layer')) {
                 map.setFilter('3d-buildings-models-layer', null);
             }
             if (map.getLayer('3d-buildings-models-transparent')) {
+                map.setLayoutProperty('3d-buildings-models-transparent', 'visibility', 'none');
                 map.setFilter('3d-buildings-models-transparent', ['in', ['get', 'id'], ['literal', []]]);
             }
+
+            // B. Procedural buildings
+            const baseFilter = getBaseFilter();
+            if (map.getLayer('3d-drawings')) map.setFilter('3d-drawings', baseFilter);
+            if (map.getLayer('3d-drawings-roofs')) map.setFilter('3d-drawings-roofs', baseFilter);
+            if (map.getLayer('3d-drawings-transparent')) {
+                map.setLayoutProperty('3d-drawings-transparent', 'visibility', 'none');
+                map.setFilter('3d-drawings-transparent', ['all', baseFilter, ['in', ['get', 'id'], ['literal', []]]]);
+            }
+            if (map.getLayer('3d-drawings-roofs-transparent')) {
+                map.setLayoutProperty('3d-drawings-roofs-transparent', 'visibility', 'none');
+                map.setFilter('3d-drawings-roofs-transparent', ['all', baseFilter, ['in', ['get', 'id'], ['literal', []]]]);
+            }
         } else {
-            // A. Procedural buildings
+            // A. Custom 3D models: Solid layer excludes occludedIds, translucent layer displays occludedIds
+            if (map.getLayer('3d-buildings-models-layer')) {
+                map.setFilter('3d-buildings-models-layer', ['!', ['in', ['get', 'id'], ['literal', occludedIds]]]);
+            }
+            if (map.getLayer('3d-buildings-models-transparent')) {
+                map.setFilter('3d-buildings-models-transparent', ['in', ['get', 'id'], ['literal', occludedIds]]);
+                map.setLayoutProperty('3d-buildings-models-transparent', 'visibility', visWhenActive);
+            }
+
+            // B. Procedural buildings (only filter if procedural buildings are involved)
             const baseFilter = getBaseFilter();
             const solidFilter = ['all', baseFilter, ['!', ['in', ['get', 'id'], ['literal', occludedIds]]]];
             const transFilter = ['all', baseFilter, ['in', ['get', 'id'], ['literal', occludedIds]]];
 
             if (map.getLayer('3d-drawings')) map.setFilter('3d-drawings', solidFilter);
             if (map.getLayer('3d-drawings-roofs')) map.setFilter('3d-drawings-roofs', solidFilter);
-            if (map.getLayer('3d-drawings-transparent')) map.setFilter('3d-drawings-transparent', transFilter);
-            if (map.getLayer('3d-drawings-roofs-transparent')) map.setFilter('3d-drawings-roofs-transparent', transFilter);
-
-            // B. Custom 3D models: Solid layer excludes occludedIds, translucent layer displays occludedIds
-            if (map.getLayer('3d-buildings-models-layer')) {
-                map.setFilter('3d-buildings-models-layer', ['!', ['in', ['get', 'id'], ['literal', occludedIds]]]);
+            if (map.getLayer('3d-drawings-transparent')) {
+                map.setFilter('3d-drawings-transparent', transFilter);
+                map.setLayoutProperty('3d-drawings-transparent', 'visibility', visWhenActive);
             }
-            if (map.getLayer('3d-buildings-models-transparent')) {
-                map.setFilter('3d-buildings-models-transparent', ['in', ['get', 'id'], ['literal', occludedIds]]);
+            if (map.getLayer('3d-drawings-roofs-transparent')) {
+                map.setFilter('3d-drawings-roofs-transparent', transFilter);
+                map.setLayoutProperty('3d-drawings-roofs-transparent', 'visibility', visWhenActive);
             }
         }
     } catch (e) {
         console.warn('[Occlusion] Error updating layer filters:', e);
     }
+
 }
 
+
+
 // High-performance throttled occlusion updater for 60fps loops
+
 export function updateOcclusion(targetCoord, destinationId) {
+
     const now = Date.now();
-    // Run at most every 90ms (~11 checks/sec) to preserve 60fps budget
-    if (now - lastCheckTime < 90 && lastCheckCoord) {
+
+    // Run at most every 180ms (~5.5 checks/sec) with 1.5m movement threshold to guarantee 60fps
+
+    if (now - lastCheckTime < 180 && lastCheckCoord) {
+
         if (targetCoord) {
+
             const distMoved = fastMetersDistance(lastCheckCoord, targetCoord);
-            if (distMoved < 1.0) return;
+
+            if (distMoved < 1.5) return;
+
         } else {
+
             return;
+
         }
+
     }
 
+
+
     lastCheckTime = now;
+
     lastCheckCoord = targetCoord;
 
+
+
     const occludedIds = computeOccludedBuildingIds(targetCoord, destinationId);
+
     applyOcclusionFilters(occludedIds);
+
 }
 
 // Reset all buildings back to 100% solid
@@ -315,15 +443,18 @@ export function resetOcclusion() {
         if (map.getLayer('3d-drawings')) map.setFilter('3d-drawings', baseFilter);
         if (map.getLayer('3d-drawings-roofs')) map.setFilter('3d-drawings-roofs', baseFilter);
         if (map.getLayer('3d-drawings-transparent')) {
+            map.setLayoutProperty('3d-drawings-transparent', 'visibility', 'none');
             map.setFilter('3d-drawings-transparent', ['all', baseFilter, ['in', ['get', 'id'], ['literal', []]]]);
         }
         if (map.getLayer('3d-drawings-roofs-transparent')) {
+            map.setLayoutProperty('3d-drawings-roofs-transparent', 'visibility', 'none');
             map.setFilter('3d-drawings-roofs-transparent', ['all', baseFilter, ['in', ['get', 'id'], ['literal', []]]]);
         }
         if (map.getLayer('3d-buildings-models-layer')) {
             map.setFilter('3d-buildings-models-layer', null);
         }
         if (map.getLayer('3d-buildings-models-transparent')) {
+            map.setLayoutProperty('3d-buildings-models-transparent', 'visibility', 'none');
             map.setFilter('3d-buildings-models-transparent', ['in', ['get', 'id'], ['literal', []]]);
         }
     } catch (e) {
