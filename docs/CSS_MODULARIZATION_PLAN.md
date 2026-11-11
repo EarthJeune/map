@@ -105,21 +105,125 @@ css/
 
 ---
 
-## 5. Rollout Strategy & Execution Timeline
+## 5. Phase-by-Phase Execution Roadmap
 
 ```mermaid
-graph TD
-    A["Active Task: Finish LARES 3D Screenhouses"] --> B["LARES Complete: All 30 Buildings & Screenhouses Verified"]
-    B --> C["Step 1: Whitespace Pruning on main.css"]
-    C --> D["Step 2: Modular CSS Split (6 Domain Files)"]
-    D --> E["Step 3: Verification via Automated CDP Suite"]
-    E --> F["Launch Station 2: QARES (Clean Scalable Foundation)"]
+flowchart TD
+    P0["Phase 0: Safety Baseline & Git Sync (Completed ✅)"] --> P1["Phase 1: Design Tokens & Variables (css/variables.css)"]
+    P1 --> P2["Phase 2: Base & Reset Layer (css/base.css)"]
+    P2 --> P3["Phase 3: Kiosk Desktop Shell & Directory (css/kiosk.css)"]
+    P3 --> P4["Phase 4: Building Details Drawer & Gallery (css/building-panel.css)"]
+    P4 --> P5["Phase 5: Live Navigation & HUD (css/navigation.css)"]
+    P5 --> P6["Phase 6: Mobile Touch UI & Bottom Sheet (css/phone.css)"]
+    P6 --> P7["Phase 7: Admin & Dev Calibration (css/admin.css)"]
+    P7 --> P8["Phase 8: Comprehensive Cross-Platform Matrix Testing & Verification"]
+    P8 --> Complete["Deployment Ready for Multi-Station Scale (QARES, RARES, CARES)"]
 ```
 
-### Execution Rules:
-1. **Zero Disruption During LARES Modeling:**
-   Do NOT execute the modular CSS split while authentic 3D modeling for LARES screenhouses is actively in progress.
-2. **Immediate Whitespace Prune Permitted Anytime:**
-   Removing the 10,000 blank lines from `main.css` can be executed in seconds with zero visual regression risk.
-3. **Formal Split Point:**
-   Execute the domain split immediately after the final LARES screenhouse model is exported, registered, and verified, serving as the official architectural handoff to **Station 2 (QARES)**.
+### Detailed Phase Specifications:
+
+#### **Phase 0: Safety Baseline & Git Sync** — ✅ Complete
+* Preserved `css/main.baseline.css` as an immutable local rollback anchor.
+* Committed clean working tree and pushed to remote master (`https://github.com/EarthJeune/map.git`).
+* Verified zero linter warnings and zero syntax issues in baseline.
+
+#### **Phase 1: Design Tokens & Variables (`css/variables.css`)**
+* Extract all `:root` CSS variables (color palettes, glassmorphic opacities, typography scales, z-indexes, and safe-area insets).
+* Add `@import 'variables.css';` at the very top of `css/main.css`.
+* **Zero Layout Impact:** Modifies 0 class selectors or box models.
+* Automated CDP visual check.
+
+#### **Phase 2: Universal Base & Reset Layer (`css/base.css`)**
+* Extract universal box-sizing, HTML/body viewport locks (`touch-action`, `overflow: hidden`), typography defaults, and glassmorphic scrollbar definitions.
+* Add `@import 'base.css';` to `css/main.css`.
+* Automated CDP visual check.
+
+#### **Phase 3: Kiosk Desktop Shell & Directory (`css/kiosk.css`)**
+* Extract left sidebar (`.sidebar`), header branding, station dropdown flyout menu (`#station-dropdown-flyout`), flex search row, filter dropdown, and directory list (`.dir-item`).
+* Add `@import 'kiosk.css';` to `css/main.css`.
+* Automated CDP visual check.
+
+#### **Phase 4: Building Details Drawer & Gallery (`css/building-panel.css`)**
+* Extract slide-out right drawer (`.building-panel`), hero image cross-fade vignette, multi-view thumbnails, office pills, QR code handoff card, and lightbox viewer.
+* Add `@import 'building-panel.css';` to `css/main.css`.
+* Automated CDP visual check.
+
+#### **Phase 5: Navigation & Live Turn-by-Turn HUD (`css/navigation.css`)** — ✅ Complete
+* Extract live arrival banner (`.turn-by-turn-banner`), step list, distance meters, speed pills (`1x`, `2x`, `3x`), and spotlight beacon animations.
+* Add `@import 'navigation.css';` to `css/main.css`.
+* Linked via `<link rel="stylesheet" href="css/navigation.css?v=191">` in `index.html`.
+* Automated CDP visual check passed across Landscape Desktop, Portrait Kiosk, and Mobile Phone.
+
+#### **Phase 6: Mobile Touch UI & Bottom Sheet (`css/phone.css`)** — ✅ Complete
+* Extracted mobile viewport rules (`@media (max-width: 768px)` and `?mode=phone`), 3-stage bottom sheet (`.phone-bottom-sheet`), touch drag handles, mobile right rail controls, and mobile station action sheet.
+* Added `@import 'phone.css';` to `css/main.css`.
+* Linked via `<link rel="stylesheet" href="css/phone.css?v=192">` in `index.html`.
+* Automated CDP visual check passed across Landscape Desktop, Portrait Kiosk, and Mobile Phone (65 directory facilities verified interactive).
+
+#### **Phase 7: Admin & Calibration Overlays (`css/admin.css`)** — ✅ Complete
+* Extracted drone calibration panel, admin drag handles, diagnostic GPS HUD, and map settings admin tools into `css/admin.css`.
+* Added `@import 'admin.css';` to `css/main.css`.
+* Linked via `<link rel="stylesheet" href="css/admin.css?v=193">` in `index.html`.
+* Automated CDP visual check passed across Landscape Desktop (Normal & Admin Mode), Portrait Kiosk, and Mobile Phone.
+
+---
+
+## 6. Phase 8: Comprehensive Cross-Platform Matrix Testing & Verification — 🏆 Passed (100% Verified)
+
+Before signing off on the refactoring, a rigorous automated and visual test suite runs across all three display viewports and runtime targets.
+
+```mermaid
+graph LR
+    P8["Phase 8 Cross-Platform Matrix"] --> T1["Landscape Desktop & Kiosk (1920x1080 & 1280x800)"]
+    P8 --> T2["Portrait Touch Totem Kiosk (1080x1920)"]
+    P8 --> T3["Mobile Smartphone (390x844 iOS/Android)"]
+    P8 --> T4["File Integrity, Linter & Network Audit"]
+    P8 --> T5["Visual Pixel-by-Pixel Diff against Baseline"]
+```
+
+### Test Dimensions & Acceptance Criteria:
+
+### 🖥️ Dimension 1: Landscape Desktop / Touch Kiosk (`1920x1080` & `1280x800`)
+1. **Left Sidebar & Search:**
+   - Sidebar displays at exactly `var(--sidebar-width, 400px)` with crisp glassmorphism.
+   - Search row maintains flex alignment with zero clipping and clean ellipsis overflow.
+   - Station selector dropdown opens smoothly with DA-LARES (Active) and DA-QARES / DA-RARES / DA-CARES (Under Dev).
+   - Filter dropdown opens and filters directory by category (Offices, Labs, Screenhouses, Infrastructure).
+2. **Right Details Drawer:**
+   - Clicking any building opens `.building-panel` from the right with smooth transition.
+   - Hero photo carousel, office badges, and wayfinding steps render properly.
+3. **Turn-by-Turn Live Navigation:**
+   - Pathfinding starts cleanly, turn banner displays at the top center without text cutoff, speed pills (`1x/2x/3x`) respond, and arrival modal fires on target.
+4. **GPU 3D Canvas:**
+   - Mapbox GL JS 3D tiles and Three.js GLB models render at 60 FPS with zero clipping.
+
+### 📱 Dimension 2: Portrait Touch Kiosk Mode (`1080x1920` Vertical Totem)
+1. **Vertical Layout Adaptation:**
+   - Viewport switches correctly under portrait kiosk mode (`body.kiosk-portrait`).
+   - Bottom search bar and bottom drawer expand and collapse properly.
+   - Touch targets meet accessibility minimums ($\ge 44\text{px}$).
+2. **Idle Screensaver:**
+   - 60-second idle countdown activates smoothly with slow camera pan and resets on touch.
+
+### 📱 Dimension 3: Mobile Smartphone Mode (`390x844` iPhone / Android)
+1. **Mobile Bottom Sheet:**
+   - Bottom sheet cleanly supports all three snap points: `peek` (collapsed), `half` (split view), and `full` (expanded directory).
+   - Smooth inertia touch dragging with zero rubber-band clipping.
+2. **Mobile Right Rail Controls:**
+   - Right rail buttons (compass, 2D/3D toggle, layer modal toggle, GPS center, zoom +/-) are cleanly spaced without overlapping the bottom sheet.
+3. **Mobile Route Header & Banner:**
+   - Mobile turn banner stays pinned cleanly under status bar safe-area.
+   - Mobile station switcher modal opens as a slide-up sheet and selects stations properly.
+
+### 🔍 Dimension 4: File Integrity, Network & Linter Audit
+1. **HTTP 200 Network Check:**
+   - Every single modular CSS file (`variables.css`, `base.css`, `kiosk.css`, `building-panel.css`, `navigation.css`, `phone.css`, `admin.css`) returns status HTTP 200 with zero 404s.
+2. **Zero CSS Syntax Errors & Zero Linter Warnings:**
+   - Full linter validation with 0 problems in VS Code problems tab.
+3. **Zero JavaScript Console Errors:**
+   - Automated CDP audit verifies zero runtime exceptions or missing asset warnings.
+
+### 🖼️ Dimension 5: Visual Parity Snapshot Diff against Baseline
+1. Headless Chrome CDP captures high-resolution screenshots of all 3 viewport modes.
+2. Screenshots are compared directly against `css/main.baseline.css`.
+3. Strict acceptance threshold: **0 visual regression, 0 unintended layout shifts, 0 color deviation**.

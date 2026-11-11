@@ -57,14 +57,22 @@ export const STATIONS = {
         province: 'Tanay, Rizal',
         status: 'under_development',
         icon: '🌿',
-        center: [121.2850, 14.4980],
+        center: [121.33930, 14.57500],
         zoom: 18.5,
         pitch: 50,
         bearing: 0,
+        introStartZoom: 16.5,
+        introTarget2DZoom: 18.8,
         bounds: [
-            [121.20, 14.40],
-            [121.35, 14.60]
-        ]
+            [121.330, 14.565],
+            [121.350, 14.585]
+        ],
+        kioskCoords: [121.34000, 14.57550],
+        boundaryFile: 'rares_boundary.json',
+        plotsFile: 'rares_plots.json',
+        roadsFile: 'rares_roads.json',
+        buildingsFile: 'rares_buildings.json',
+        hasDrone: true
     },
     cares: {
         id: 'cares',
@@ -105,6 +113,18 @@ export function getActiveStationDefaultView(targetStationId) {
             zoom: station.zoom || 19.0,
             pitch: station.pitch !== undefined ? station.pitch : 52,
             bearing: station.bearing !== undefined ? station.bearing : 25
+        };
+    }
+
+    if (stationId === 'rares') {
+        const center = (typeof window !== 'undefined' && (window.RARES_KIOSK_COORDS || (window.state && window.state.RARES_KIOSK_COORDS)))
+            || station.center
+            || station.kioskCoords;
+        return {
+            center: center,
+            zoom: station.zoom || 18.5,
+            pitch: station.pitch !== undefined ? station.pitch : 50,
+            bearing: station.bearing !== undefined ? station.bearing : 0
         };
     }
 

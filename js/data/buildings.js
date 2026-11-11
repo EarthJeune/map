@@ -6332,6 +6332,22 @@ export const CUSTOM_3D_BUILDINGS = {
 
         scale: [1.0, 1.0, 1.0]
 
+    },
+
+    'rares_building_1': {
+
+        modelId: 'rares_guard_house',
+
+        modelUrl: 'models/rares_guard_house.glb?v=1',
+
+        coords: [121.34054276, 14.57644291],
+
+        rotation: 194.7,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
     }
 
 };

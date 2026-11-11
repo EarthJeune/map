@@ -274,11 +274,24 @@
 
 <div class="panel">
   <div class="panel-header">
-    <span class="panel-icon">🌿</span>
+    <span class="panel-icon" id="panel-station-icon">🌿</span>
     <div>
-      <h3 class="panel-title">Field Plot Calibration</h3>
-      <p class="panel-sub">45 Calibrated Plots • Auto-Persists on Refresh</p>
+      <h3 class="panel-title" id="panel-station-title">Field Plot Calibration</h3>
+      <p class="panel-sub" id="panel-station-sub">Agricultural Plots • Auto-Persists on Refresh</p>
     </div>
+  </div>
+
+  <div class="section-label">Campus Station</div>
+  <div class="layer-switcher" style="margin-bottom: 12px;">
+    <button class="layer-btn active" id="btn-station-lares" onclick="switchStation('lares')">
+      <span>🌾 DA-LARES (Lipa)</span>
+    </button>
+    <button class="layer-btn" id="btn-station-qares" onclick="switchStation('qares')">
+      <span>🌱 DA-QARES (Tiaong)</span>
+    </button>
+    <button class="layer-btn" id="btn-station-rares" onclick="switchStation('rares')">
+      <span>🌿 DA-RARES (Tanay)</span>
+    </button>
   </div>
 
   <div class="section-label">Imagery Base Layer</div>
@@ -416,11 +429,79 @@
 <script>
 mapboxgl.accessToken = 'pk.eyJ1IjoiZWFydGgwMzA3IiwiYSI6ImNtdWFqNTR5czAxNmEyd29lMm42YjZlMDkifQ.xdPOP5RVPdn6YNka-ZdwoQ';
 
-// Storage Key for persistent localStorage calibration (bumped to v8 for updated plots)
-const STORAGE_KEY = 'lares_calibrated_plots_v8';
-['lares_calibrated_plots', 'lares_calibrated_plots_v1', 'lares_calibrated_plots_v2', 'lares_calibrated_plots_v3', 'lares_calibrated_plots_v4', 'lares_calibrated_plots_v5', 'lares_calibrated_plots_v6', 'lares_calibrated_plots_v7'].forEach(k => {
-    try { localStorage.removeItem(k); } catch(e){}
-});
+// Check URL query param for default station
+const urlParams = new URLSearchParams(window.location.search);
+let currentStation = (urlParams.get('station') === 'rares') ? 'rares' : (urlParams.get('station') === 'qares') ? 'qares' : 'lares';
+
+const STATION_CONFIG = {
+    lares: {
+        center: [121.1698, 13.9599],
+        zoom: 17.2,
+        name: 'DA-LARES (Lipa City, Batangas)',
+        storageKey: 'lares_calibrated_plots_v8',
+        plotsApi: null,
+        roadsFile: 'roads.json',
+        boundaryFile: null,
+        droneLayerId: 'lares-drone-layer',
+        title: 'DA-LARES Field Plot Calibration',
+        subtitle: '45 Calibrated Plots • Auto-Persists on Refresh',
+        saveBtnText: '💾 Save Plotted Layout',
+        presets: [
+            "Citrus Orchard", "Corn Research", "Mango Orchard", "Cassava Production",
+            "ATI Corn Trial", "Cassava Germplasm", "Tall Makapuno & Cacao", "Glutinous Flint Corn",
+            "Pomelo Orchard", "Vegetable Derby Citrus", "Vegetable Garden", "Coffee & Makapuno",
+            "Jackfruit & Fruit Trees", "Rice-Soybean Trial", "Calamansi Clonal Block",
+            "Sprinkler Irrigation", "Automated Weather Station", "Water Tower & CR",
+            "Field Rest Hut", "Greenhouse & Screenhouse", "Banana & Fruit Nursery",
+            "Organic Agriculture / Vermicompost", "Custom"
+        ]
+    },
+    qares: {
+        center: [121.37178, 13.94658],
+        zoom: 17.8,
+        name: 'DA-QARES (Tiaong, Quezon)',
+        storageKey: 'qares_calibrated_plots_v1',
+        plotsApi: null,
+        roadsFile: 'qares_roads.json',
+        boundaryFile: null,
+        droneLayerId: 'qares-drone-layer',
+        title: 'DA-QARES Field Plot Calibration',
+        subtitle: 'Tiaong Campus Plots • Auto-Persists on Refresh',
+        saveBtnText: '💾 Save Plotted Layout',
+        presets: [
+            "Coconut & Makapuno Trial", "Corn Demonstration", "Vegetable Nursery",
+            "Fruit Orchard", "Organic Agriculture", "Custom"
+        ]
+    },
+    rares: {
+        center: [121.33930, 14.57500],
+        zoom: 17.5,
+        name: 'DA-RARES (Tanay, Rizal)',
+        storageKey: 'plot_draw_autosave_rares',
+        plotsApi: '/api/rares/plots',
+        roadsFile: 'rares_roads.json',
+        boundaryFile: 'rares_boundary.json',
+        droneLayerId: 'rares-drone-layer',
+        title: 'DA-RARES Agricultural Plot Calibration',
+        subtitle: '28 Ground-Truth Plots • Auto-Saves to rares_plots.json',
+        saveBtnText: '💾 Save Directly to Map (rares_plots.json)',
+        presets: [
+            "SGPP (Smart Greenhouse Project in the Philippines)",
+            "Nursery A", "Nursery B", "Mango Area",
+            "Poultry Production Area", "Mungbean Area", "Vegetable Area",
+            "Native Pig ranging Area", "Cassava Area", "White Corn Area",
+            "Glutenous Corn Area", "Coffee Area", "Calamansi Area",
+            "Forage Area", "Pre-composting Area", "Vermicomposting Area",
+            "Hydroponics Area", "Rest Area", "Custom"
+        ]
+    }
+};
+
+function getStorageKey() {
+    return STATION_CONFIG[currentStation] ? STATION_CONFIG[currentStation].storageKey : 'lares_calibrated_plots_v8';
+}
+
+const STORAGE_KEY = getStorageKey();
 
 // 45 Ground-Truth Calibrated Agricultural Plots (DA-LARES Field Plot Plan 1 to 45)
 const DEFAULT_CALIBRATED_SQUARES = [
@@ -2433,72 +2514,108 @@ const DEFAULT_CALIBRATED_SQUARES = [
       ]
     }
   }
-];
-
-const map = new mapboxgl.Map({
-    container: 'map',
-    style: {
-        'version': 8,
-        'glyphs': 'mapbox://fonts/mapbox/{fontstack}/{range}.pbf',
-        'sources': {
-            'google-satellite': {
-                'type': 'raster',
-                'tiles': ['https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'],
-                'tileSize': 256,
-                'maxzoom': 22
-            },
-            'lares-drone-source': {
-                'type': 'raster',
-                'tiles': ['/api/tiles/{z}/{x}/{y}.png'],
-                'tileSize': 256,
-                'minzoom': 14,
-                'maxzoom': 24,
-                'bounds': [121.165052, 13.956537, 121.173221, 13.963068]
-            }
-        },
-        'layers': [
-            {
-                'id': 'google-satellite-layer',
-                'type': 'raster',
-                'source': 'google-satellite'
-            },
-            {
-                'id': 'lares-drone-layer',
-                'type': 'raster',
-                'source': 'lares-drone-source',
-                'paint': {
-                    'raster-opacity': 1.0,
-                    'raster-fade-duration': 0
-                }
-            }
-        ]
-    },
-    // Center dynamically on the 45 calibrated field plots
-    center: [121.1698, 13.9599],
-    zoom: 17.2,
-    pitch: 0,
-    bearing: 0
-});
-
-window.map = map;
-
-// Initialize Mapbox Draw
-const draw = new MapboxDraw({
-    displayControlsDefault: false,
-    controls: {
-        polygon: true,
-        trash: true
-    },
-    defaultMode: 'simple_select'
-});
-map.addControl(draw, 'top-right');
-window.draw = draw;
-
-// Metadata map: featureId -> { name }
-const featureMeta = {};
-// HTML Markers for on-map labels: featureId -> mapboxgl.Marker
-const mapMarkers = {};
-
+];
+
+const map = new mapboxgl.Map({
+    container: 'map',
+    style: {
+        'version': 8,
+        'glyphs': 'mapbox://fonts/mapbox/{fontstack}/{range}.pbf',
+        'sources': {
+            'google-satellite': {
+                'type': 'raster',
+                'tiles': ['https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'],
+                'tileSize': 256,
+                'maxzoom': 22
+            },
+            'lares-drone-source': {
+                'type': 'raster',
+                'tiles': ['/api/tiles/lares/{z}/{x}/{y}.png'],
+                'tileSize': 256,
+                'minzoom': 14,
+                'maxzoom': 21,
+                'bounds': [121.165052, 13.956537, 121.173221, 13.963068]
+            },
+            'qares-drone-source': {
+                'type': 'raster',
+                'tiles': ['/api/tiles/qares/{z}/{x}/{y}.png'],
+                'tileSize': 256,
+                'minzoom': 14,
+                'maxzoom': 21,
+                'bounds': [121.366888, 13.941220, 121.376150, 13.950960]
+            },
+            'rares-drone-source': {
+                'type': 'raster',
+                'tiles': ['/api/tiles/rares/{z}/{x}/{y}.png'],
+                'tileSize': 256,
+                'minzoom': 14,
+                'maxzoom': 21,
+                'bounds': [121.334000, 14.570000, 121.346000, 14.580000]
+            }
+        },
+        'layers': [
+            {
+                'id': 'google-satellite-layer',
+                'type': 'raster',
+                'source': 'google-satellite'
+            },
+            {
+                'id': 'lares-drone-layer',
+                'type': 'raster',
+                'source': 'lares-drone-source',
+                'layout': { 'visibility': (currentStation === 'lares') ? 'visible' : 'none' },
+                'paint': {
+                    'raster-opacity': 1.0,
+                    'raster-fade-duration': 0
+                }
+            },
+            {
+                'id': 'qares-drone-layer',
+                'type': 'raster',
+                'source': 'qares-drone-source',
+                'layout': { 'visibility': (currentStation === 'qares') ? 'visible' : 'none' },
+                'paint': {
+                    'raster-opacity': 1.0,
+                    'raster-fade-duration': 0
+                }
+            },
+            {
+                'id': 'rares-drone-layer',
+                'type': 'raster',
+                'source': 'rares-drone-source',
+                'layout': { 'visibility': (currentStation === 'rares') ? 'visible' : 'none' },
+                'paint': {
+                    'raster-opacity': 1.0,
+                    'raster-fade-duration': 0
+                }
+            }
+        ]
+    },
+    center: (STATION_CONFIG[currentStation] || STATION_CONFIG.lares).center,
+    zoom: (STATION_CONFIG[currentStation] || STATION_CONFIG.lares).zoom,
+    pitch: 0,
+    bearing: 0
+});
+
+window.map = map;
+
+// Initialize Mapbox Draw
+const draw = new MapboxDraw({
+    displayControlsDefault: false,
+    controls: {
+        polygon: true,
+        trash: true
+    },
+    defaultMode: 'simple_select'
+});
+map.addControl(draw, 'top-right');
+window.draw = draw;
+
+// Metadata map: featureId -> { name }
+const featureMeta = {};
+// HTML Markers for on-map labels: featureId -> mapboxgl.Marker
+const mapMarkers = {};
+
 function showToast(msg, bg) {
     const toast = document.getElementById('toast-alert');
     if (!toast) return;
@@ -2582,8 +2699,89 @@ function saveSquaresToStorage() {
 window.manualSaveLayout = function() {
     saveSquaresToStorage();
     const btn = document.getElementById('btn-manual-save');
+    const originalHtml = btn ? btn.innerHTML : '';
+    const all = draw.getAll();
+    const count = (all && all.features) ? all.features.length : 0;
+
+    if (currentStation === 'rares') {
+        const features = (all && all.features) ? all.features : [];
+        const geojson = {
+            type: 'FeatureCollection',
+            station: 'rares',
+            name: 'DA-RARES Agricultural Plots',
+            features: features.map((f, i) => {
+                const meta = featureMeta[f.id] || {};
+                const ring = getFeatureRing(f);
+                if (ring.length > 0) {
+                    const first = ring[0];
+                    const last = ring[ring.length - 1];
+                    if (first[0] !== last[0] || first[1] !== last[1]) {
+                        ring.push([first[0], first[1]]);
+                    }
+                }
+                const num = meta.plot_number || (i + 1);
+                const pName = meta.name || `Plot ${num}`;
+                return {
+                    type: 'Feature',
+                    id: f.id || `rares_plot_${num}`,
+                    properties: {
+                        id: f.id || `rares_plot_${num}`,
+                        plot_number: num,
+                        name: pName,
+                        short_name: meta.short_name || pName,
+                        category: meta.category || 'Trial Sites',
+                        area_sqm: meta.area_sqm || 0,
+                        description: meta.description || '',
+                        station: 'rares'
+                    },
+                    geometry: {
+                        type: 'Polygon',
+                        coordinates: [ring]
+                    }
+                };
+            })
+        };
+
+        try {
+            localStorage.setItem('plot_draw_autosave_rares', JSON.stringify(geojson));
+        } catch(e) {}
+
+        if (btn) {
+            btn.innerHTML = '<span>⏳</span> Saving to Server...';
+            btn.style.background = '#0284c7';
+        }
+
+        fetch('/api/rares/plots', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(geojson)
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (btn) {
+                btn.innerHTML = '<span>✅</span> Saved to Map File!';
+                btn.style.background = '#059669';
+                setTimeout(() => {
+                    btn.innerHTML = originalHtml;
+                    btn.style.background = '';
+                }, 2000);
+            }
+            showToast(`💾 Saved ${geojson.features.length} plots directly to rares_plots.json!`, '#059669');
+            const statusText = document.getElementById('save-status-text');
+            if (statusText) statusText.textContent = `All ${geojson.features.length} plots saved • Syncs with rares_plots.json`;
+        })
+        .catch(err => {
+            console.error('Server save error:', err);
+            if (btn) {
+                btn.innerHTML = originalHtml;
+                btn.style.background = '';
+            }
+            showToast('⚠️ Saved locally in browser storage', '#eab308');
+        });
+        return;
+    }
+
     if (btn) {
-        const originalHtml = btn.innerHTML;
         btn.innerHTML = '<span>✅</span> Saved Successfully!';
         btn.style.background = '#059669';
         setTimeout(() => {
@@ -2591,8 +2789,6 @@ window.manualSaveLayout = function() {
             btn.style.background = '';
         }, 2000);
     }
-    const all = draw.getAll();
-    const count = (all && all.features) ? all.features.length : 0;
     showToast(`💾 Saved ${count} squares to browser storage!`, '#059669');
 };
 
@@ -2737,7 +2933,61 @@ function syncPlottedSquares() {
 }
 
 // Load squares on page load (from localStorage or baseline)
-function loadSquaresState(forceBaseline = false) {
+async function loadSquaresState(forceBaseline = false) {
+    draw.deleteAll();
+    Object.keys(featureMeta).forEach(k => delete featureMeta[k]);
+
+    if (currentStation === 'rares') {
+        let squaresToLoad = null;
+        if (!forceBaseline) {
+            try {
+                const stored = localStorage.getItem('plot_draw_autosave_rares');
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    if (parsed && parsed.features && parsed.features.length > 0) {
+                        squaresToLoad = parsed.features;
+                    }
+                }
+            } catch (e) {}
+        }
+        if (!squaresToLoad || squaresToLoad.length === 0) {
+            try {
+                const res = await fetch('/api/rares/plots?t=' + Date.now());
+                const data = await res.json();
+                if (data && data.features) {
+                    squaresToLoad = data.features;
+                }
+            } catch (e) {
+                console.error('Failed to fetch rares plots:', e);
+            }
+        }
+        if (squaresToLoad && squaresToLoad.length > 0) {
+            squaresToLoad.forEach((feat, idx) => {
+                const fid = feat.id || ('rares_plot_' + (idx + 1));
+                const props = feat.properties || {};
+                featureMeta[fid] = {
+                    name: props.name || `Plot ${idx + 1}`,
+                    plot_number: props.plot_number || (idx + 1),
+                    short_name: props.short_name || props.name || `Plot ${idx + 1}`,
+                    category: props.category || 'Trial Sites',
+                    area_sqm: props.area_sqm || 0,
+                    description: props.description || ''
+                };
+                draw.add({
+                    type: 'Feature',
+                    id: fid,
+                    properties: { name: featureMeta[fid].name },
+                    geometry: feat.geometry
+                });
+            });
+            syncPlottedSquares();
+            const statusText = document.getElementById('save-status-text');
+            if (statusText) statusText.textContent = `All ${squaresToLoad.length} plots loaded • Auto-Saves to rares_plots.json`;
+            showToast(`🌿 Loaded ${squaresToLoad.length} RARES agricultural plots`, '#10b981');
+            return;
+        }
+    }
+
     let squaresToLoad = null;
     if (!forceBaseline) {
         try {
@@ -2756,9 +3006,6 @@ function loadSquaresState(forceBaseline = false) {
     if (!squaresToLoad || squaresToLoad.length === 0) {
         squaresToLoad = DEFAULT_CALIBRATED_SQUARES;
     }
-
-    draw.deleteAll();
-    Object.keys(featureMeta).forEach(k => delete featureMeta[k]);
 
     squaresToLoad.forEach((sq, idx) => {
         const fid = 'field_' + (sq.id || (Date.now() + '_' + idx));
@@ -2799,13 +3046,117 @@ function loadSquaresState(forceBaseline = false) {
     });
 
     syncPlottedSquares();
+    const statusText = document.getElementById('save-status-text');
+    if (statusText) statusText.textContent = `All ${squaresToLoad.length} plots saved • Persists on refresh`;
     console.log(`[PlotDrawer] Successfully loaded ${squaresToLoad.length} squares.`);
 }
+
+// Station Switcher
+window.switchStation = async function(st, isInitial = false) {
+    if (!STATION_CONFIG[st]) return;
+    currentStation = st;
+    const cfg = STATION_CONFIG[st];
+
+    // 1. Update UI Buttons
+    ['lares', 'qares', 'rares'].forEach(k => {
+        const btn = document.getElementById('btn-station-' + k);
+        if (btn) btn.classList.toggle('active', k === st);
+    });
+
+    // 2. Update URL query param without reload
+    try {
+        const u = new URL(window.location);
+        u.searchParams.set('station', st);
+        window.history.replaceState({}, '', u);
+    } catch(e) {}
+
+    // 3. Update Title & Subtitle & Save button
+    const titleEl = document.getElementById('panel-station-title');
+    const subEl = document.getElementById('panel-station-sub');
+    const saveBtn = document.getElementById('btn-manual-save');
+    if (titleEl) titleEl.textContent = cfg.title;
+    if (subEl) subEl.textContent = cfg.subtitle;
+    if (saveBtn) saveBtn.innerHTML = `<span>💾</span> ${cfg.saveBtnText || 'Save Plotted Layout'}`;
+
+    // 4. Update Presets Dropdown
+    const select = document.getElementById('box-zone-select');
+    if (select && cfg.presets) {
+        select.innerHTML = cfg.presets.map(p => `<option value="${p}">${p}</option>`).join('');
+        const nameInput = document.getElementById('box-name-input');
+        if (nameInput) nameInput.value = cfg.presets[0] || 'Plot';
+    }
+
+    // 5. Update Map
+    if (map) {
+        if (!isInitial) {
+            map.flyTo({
+                center: cfg.center,
+                zoom: cfg.zoom,
+                pitch: 0,
+                bearing: 0,
+                essential: true
+            });
+        }
+
+        // Toggle Drone Layers
+        ['lares-drone-layer', 'qares-drone-layer', 'rares-drone-layer'].forEach(lId => {
+            if (map.getLayer(lId)) {
+                const shouldShow = (lId === cfg.droneLayerId);
+                map.setLayoutProperty(lId, 'visibility', shouldShow ? 'visible' : 'none');
+            }
+        });
+
+        // Update Road guide lines
+        if (cfg.roadsFile) {
+            try {
+                const rRes = await fetch(cfg.roadsFile + '?t=' + Date.now());
+                const rData = await rRes.json();
+                if (map.getSource('roads-source')) {
+                    map.getSource('roads-source').setData(rData);
+                }
+            } catch(e) {}
+        }
+
+        // Update Boundary guide line
+        if (cfg.boundaryFile) {
+            try {
+                const bRes = await fetch(cfg.boundaryFile + '?t=' + Date.now());
+                const bData = await bRes.json();
+                if (!map.getSource('boundary-source')) {
+                    map.addSource('boundary-source', { type: 'geojson', data: bData });
+                    map.addLayer({
+                        id: 'boundary-casing',
+                        type: 'line',
+                        source: 'boundary-source',
+                        paint: { 'line-color': '#020617', 'line-width': 4.0, 'line-opacity': 0.7 }
+                    });
+                    map.addLayer({
+                        id: 'boundary-line',
+                        type: 'line',
+                        source: 'boundary-source',
+                        paint: { 'line-color': '#10b981', 'line-width': 2.5, 'line-dasharray': [2, 1] }
+                    });
+                } else {
+                    map.getSource('boundary-source').setData(bData);
+                    if (map.getLayer('boundary-line')) map.setLayoutProperty('boundary-line', 'visibility', 'visible');
+                    if (map.getLayer('boundary-casing')) map.setLayoutProperty('boundary-casing', 'visibility', 'visible');
+                }
+            } catch(e) {}
+        } else {
+            if (map.getLayer('boundary-line')) map.setLayoutProperty('boundary-line', 'visibility', 'none');
+            if (map.getLayer('boundary-casing')) map.setLayoutProperty('boundary-casing', 'visibility', 'none');
+        }
+    }
+
+    // 6. Reload Squares / Plots
+    await loadSquaresState();
+};
 
 map.on('load', async () => {
     // Road Network Lines
     try {
-        const roadsRes = await fetch('./roads.json');
+        const initialCfg = STATION_CONFIG[currentStation] || STATION_CONFIG.lares;
+        const roadsRes = await fetch(initialCfg.roadsFile || './roads.json');
         const roadsData = await roadsRes.json();
         map.addSource('roads-source', { type: 'geojson', data: roadsData });
         map.addLayer({
@@ -2822,8 +3173,8 @@ map.on('load', async () => {
         });
     } catch(e) { console.warn('Roads load error:', e); }
 
-    // Load saved or baseline squares
-    loadSquaresState();
+    // Synchronize station state
+    switchStation(currentStation, true);
 });
 
 // Update name input when preset dropdown changes
@@ -3068,6 +3419,14 @@ window.clearAllSquares = function() {
 };
 
 window.resetToBaseline45Plots = function() {
+    if (currentStation === 'rares') {
+        if (confirm('Reload the 28 RARES agricultural plots from rares_plots.json?')) {
+            try { localStorage.removeItem('plot_draw_autosave_rares'); } catch(e) {}
+            loadSquaresState(true);
+            showToast('🔄 Restored 28 RARES plots from rares_plots.json', '#10b981');
+        }
+        return;
+    }
     if (confirm('Reset canvas back to the 45 calibrated ground-truth plots?')) {
         localStorage.removeItem(STORAGE_KEY);
         loadSquaresState(true);
@@ -3186,16 +3545,22 @@ window.setBaseLayer = function(mode) {
     const isDrone = (mode === 'drone');
     document.getElementById('btn-layer-drone').classList.toggle('active', isDrone);
     document.getElementById('btn-layer-google').classList.toggle('active', !isDrone);
-    if (map.getLayer('lares-drone-layer')) {
-        map.setLayoutProperty('lares-drone-layer', 'visibility', isDrone ? 'visible' : 'none');
-    }
+    const cfg = STATION_CONFIG[currentStation] || STATION_CONFIG.lares;
+    const activeLayerId = cfg.droneLayerId;
+    ['lares-drone-layer', 'qares-drone-layer', 'rares-drone-layer'].forEach(lId => {
+        if (map.getLayer(lId)) {
+            map.setLayoutProperty(lId, 'visibility', (isDrone && lId === activeLayerId) ? 'visible' : 'none');
+        }
+    });
 };
 
 window.setDroneOpacity = function(val) {
     const opacity = parseFloat(val);
     document.getElementById('drone-opacity-val').textContent = `${Math.round(opacity * 100)}%`;
-    if (map.getLayer('lares-drone-layer')) {
-        map.setPaintProperty('lares-drone-layer', 'raster-opacity', opacity);
+    const cfg = STATION_CONFIG[currentStation] || STATION_CONFIG.lares;
+    const activeLayerId = cfg.droneLayerId;
+    if (map.getLayer(activeLayerId)) {
+        map.setPaintProperty(activeLayerId, 'raster-opacity', opacity);
     }
 };
 

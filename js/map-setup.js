@@ -163,7 +163,7 @@ export function setupLayers() {
             ],
             'tileSize': 256,
             'minzoom': 14,
-            'maxzoom': 24,
+            'maxzoom': 21,
             'bounds': [121.165052, 13.956537, 121.173221, 13.963068]
         });
     }
@@ -412,8 +412,6 @@ export function setupLayers() {
     // If active station is NOT lares, immediately ensure LARES models and layers are hidden
     if (state.currentStationId && state.currentStationId !== 'lares') {
         const laresLayers = [
-            '3d-buildings-models-layer',
-            '3d-buildings-translucent-layer',
             '3d-drawings',
             '3d-drawings-roofs',
             'lares-mask-layer',
@@ -431,6 +429,8 @@ export function setupLayers() {
         });
         if (state.currentStationId === 'qares' && typeof window.loadQARESData === 'function') {
             window.loadQARESData();
+        } else if (state.currentStationId === 'rares' && typeof window.loadRARESData === 'function') {
+            window.loadRARESData();
         }
     }
 
@@ -497,6 +497,16 @@ export function setupMapboxStandardLayers() {
     if (state.currentStationId === 'qares') {
         if (typeof window.loadQARESData === 'function') {
             window.loadQARESData();
+        }
+        removeSectionBadges();
+        removeMarkers();
+        setMapStyleMode(state.currentMapStyleMode);
+        return;
+    }
+
+    if (state.currentStationId === 'rares') {
+        if (typeof window.loadRARESData === 'function') {
+            window.loadRARESData();
         }
         removeSectionBadges();
         removeMarkers();
@@ -747,19 +757,21 @@ export function setupMapboxStandardLayers() {
     setMapStyleMode(state.currentMapStyleMode);
 }
 
-export function setup3DBuildingModelsLayer(map, isStandardMode) {
+export function setupStation3DModels(map, stationId = 'lares', isStandardMode = false) {
     if (!CUSTOM_3D_BUILDINGS || typeof CUSTOM_3D_BUILDINGS !== 'object') return;
-
-    // Station-scoped lazy loading: only load 3D models belonging to the active station
-    const activeStationId = state.currentStationId || 'lares';
+    const targetStation = stationId || state.currentStationId || 'lares';
 
     try {
-        // 1. Register GLB models with Mapbox for active station only
+        // 1. Get building IDs strictly belonging to this station
         const stationBuildingIds = Object.keys(CUSTOM_3D_BUILDINGS).filter(id => {
             const b = CUSTOM_3D_BUILDINGS[id];
-            return (b.stationId || 'lares') === activeStationId;
+            const bStation = b.stationId || 'lares';
+            return bStation === targetStation;
         });
 
+        if (stationBuildingIds.length === 0) return;
+
+        // 2. Register GLB models with Mapbox
         stationBuildingIds.forEach(id => {
             const b = CUSTOM_3D_BUILDINGS[id];
             if (!map.hasModel(b.modelId)) {
@@ -767,7 +779,7 @@ export function setup3DBuildingModelsLayer(map, isStandardMode) {
             }
         });
 
-        // 2. Prepare GeoJSON source for 3D building instances
+        // 3. Prepare dedicated static GeoJSON features for this station
         const features = stationBuildingIds.map(id => {
             const b = CUSTOM_3D_BUILDINGS[id];
             return {
@@ -777,7 +789,8 @@ export function setup3DBuildingModelsLayer(map, isStandardMode) {
                     id: id,
                     model: b.modelId,
                     rotation: b.rotation || 0,
-                    scale: b.scale || [1, 1, 1]
+                    scale: b.scale || [1, 1, 1],
+                    station: targetStation
                 },
                 geometry: {
                     type: 'Point',
@@ -786,7 +799,7 @@ export function setup3DBuildingModelsLayer(map, isStandardMode) {
             };
         });
 
-        const sourceId = 'lares-3d-buildings-models-source';
+        const sourceId = `${targetStation}-3d-models-source`;
         if (!map.getSource(sourceId)) {
             map.addSource(sourceId, {
                 type: 'geojson',
@@ -798,14 +811,27 @@ export function setup3DBuildingModelsLayer(map, isStandardMode) {
                     features: features
                 }
             });
-        } else {
-            map.getSource(sourceId).setData({
-                type: 'FeatureCollection',
-                features: features
+        }
+
+        // Also maintain lares-3d-buildings-models-source alias for LARES backwards-compatibility with drone calibration
+        if (targetStation === 'lares' && !map.getSource('lares-3d-buildings-models-source')) {
+            map.addSource('lares-3d-buildings-models-source', {
+                type: 'geojson',
+                tolerance: 0,
+                buffer: 0,
+                maxzoom: 24,
+                data: {
+                    type: 'FeatureCollection',
+                    features: features
+                }
             });
         }
 
-        const layerId = '3d-buildings-models-layer';
+        const isCurrentStation = (state.currentStationId || 'lares') === targetStation;
+        const shouldBeVisible = isCurrentStation && (state.buildingsVisible !== false);
+
+        // 4. Solid 3D Building Layer for this station
+        const layerId = `${targetStation}-3d-models-layer`;
         if (!map.getLayer(layerId)) {
             const layerDef = {
                 id: layerId,
@@ -814,7 +840,7 @@ export function setup3DBuildingModelsLayer(map, isStandardMode) {
                 minzoom: 14.5,
                 layout: {
                     'model-id': ['get', 'model'],
-                    'visibility': state.buildingsVisible ? 'visible' : 'none'
+                    'visibility': shouldBeVisible ? 'visible' : 'none'
                 },
                 paint: {
                     'model-scale': [1.0, 1.0, 1.0],
@@ -830,9 +856,15 @@ export function setup3DBuildingModelsLayer(map, isStandardMode) {
                 layerDef.slot = 'middle';
             }
             map.addLayer(layerDef);
+        } else {
+            try {
+                map.setLayoutProperty(layerId, 'visibility', shouldBeVisible ? 'visible' : 'none');
+                map.moveLayer(layerId);
+            } catch (e) {}
         }
 
-        const transLayerId = '3d-buildings-models-transparent';
+        // 5. Translucent 3D Layer for Walker Occlusion
+        const transLayerId = `${targetStation}-3d-models-transparent`;
         if (!map.getLayer(transLayerId)) {
             const transLayerDef = {
                 id: transLayerId,
@@ -841,7 +873,6 @@ export function setup3DBuildingModelsLayer(map, isStandardMode) {
                 minzoom: 14.5,
                 layout: {
                     'model-id': ['get', 'model'],
-                    // Keep 'none' until walker occlusion actually activates (saves duplicate 3D pass)
                     'visibility': 'none'
                 },
                 paint: {
@@ -859,10 +890,51 @@ export function setup3DBuildingModelsLayer(map, isStandardMode) {
                 transLayerDef.slot = 'middle';
             }
             map.addLayer(transLayerDef);
+        } else {
+            try {
+                map.moveLayer(transLayerId);
+            } catch (e) {}
+        }
+
+        // If target station is active, guarantee its 3D model layer is elevated to the top
+        if (isCurrentStation) {
+            try { map.moveLayer(layerId); } catch (e) {}
+            try { map.moveLayer(transLayerId); } catch (e) {}
+        }
+
+        // For backwards compatibility: if 3d-buildings-models-layer is queried by legacy scripts, alias LARES to it
+        if (targetStation === 'lares' && !map.getLayer('3d-buildings-models-layer')) {
+            const compatDef = {
+                id: '3d-buildings-models-layer',
+                type: 'model',
+                source: sourceId,
+                minzoom: 14.5,
+                layout: {
+                    'model-id': ['get', 'model'],
+                    'visibility': shouldBeVisible ? 'visible' : 'none'
+                },
+                paint: {
+                    'model-scale': [1.0, 1.0, 1.0],
+                    'model-rotation': [0, 0, ['coalesce', ['get', 'rotation'], 0]],
+                    'model-opacity': 1.0,
+                    'model-opacity-transition': { duration: 250, delay: 0 },
+                    'model-cast-shadows': false,
+                    'model-receive-shadows': false,
+                    'model-emissive-strength': 0.8
+                }
+            };
+            if (isStandardMode) compatDef.slot = 'middle';
+            map.addLayer(compatDef);
         }
     } catch (e) {
-        console.warn('Could not initialize 3D building models layer:', e);
+        console.warn(`Could not initialize 3D building models for station ${targetStation}:`, e);
     }
+}
+
+export function setup3DBuildingModelsLayer(map, isStandardMode) {
+    setupStation3DModels(map, 'lares', isStandardMode);
+    setupStation3DModels(map, 'rares', isStandardMode);
+    setupStation3DModels(map, 'qares', isStandardMode);
 }
 
 map.on('style.load', setupLayers);
@@ -1197,6 +1269,7 @@ export function toggleBuildings(btn) {
         if (map.getLayer('qares-footprints-roofs')) map.setLayoutProperty('qares-footprints-roofs', 'visibility', vis);
         if (map.getLayer('qares-footprints-fill')) map.setLayoutProperty('qares-footprints-fill', 'visibility', 'none');
         if (map.getLayer('qares-footprints-line')) map.setLayoutProperty('qares-footprints-line', 'visibility', 'none');
+        if (map.getLayer('rares-footprints-3d')) map.setLayoutProperty('rares-footprints-3d', 'visibility', vis);
     } catch (e) { }
 
 
@@ -1291,6 +1364,8 @@ export function selectMapStyle(mode) {
         });
         if (state.currentStationId === 'qares' && typeof window.loadQARESData === 'function') {
             window.loadQARESData();
+        } else if (state.currentStationId === 'rares' && typeof window.loadRARESData === 'function') {
+            window.loadRARESData();
         }
         setMapStyleMode(mode);
     });
@@ -1362,17 +1437,34 @@ export function setMapStyleMode(mode) {
         if (map.getLayer('qares-ortho-layer')) {
             map.setLayoutProperty('qares-ortho-layer', 'visibility', (!isMapbox && state.currentStationId === 'qares') ? 'visible' : 'none');
         }
+        if (map.getLayer('rares-ortho-layer')) {
+            map.setLayoutProperty('rares-ortho-layer', 'visibility', (!isMapbox && state.currentStationId === 'rares') ? 'visible' : 'none');
+        }
         if (map.getLayer('google-satellite-overlay-layer')) {
             map.setLayoutProperty('google-satellite-overlay-layer', 'visibility', (!isMapbox && state.gmapsOverlayOpacity > 0) ? 'visible' : 'none');
         }
         const showLaresMask = !isMapbox && (!state.currentStationId || state.currentStationId === 'lares');
         const showQaresMask = !isMapbox && (state.currentStationId === 'qares');
+        const showRaresMask = !isMapbox && (state.currentStationId === 'rares');
         if (map.getLayer('lares-mask-layer')) {
             map.setLayoutProperty('lares-mask-layer', 'visibility', showLaresMask ? 'visible' : 'none');
         }
         if (map.getLayer('qares-mask-layer')) {
             map.setLayoutProperty('qares-mask-layer', 'visibility', showQaresMask ? 'visible' : 'none');
         }
+        if (map.getLayer('rares-mask-layer')) {
+            map.setLayoutProperty('rares-mask-layer', 'visibility', showRaresMask ? 'visible' : 'none');
+        }
+        ['lares-3d-models-layer', 'rares-3d-models-layer', 'qares-3d-models-layer', '3d-buildings-models-layer'].forEach(lid => {
+            if (map.getLayer(lid)) {
+                try { map.moveLayer(lid); } catch (e) {}
+            }
+        });
+        ['lares-3d-models-transparent', 'rares-3d-models-transparent', 'qares-3d-models-transparent', '3d-buildings-models-transparent'].forEach(lid => {
+            if (map.getLayer(lid)) {
+                try { map.moveLayer(lid); } catch (e) {}
+            }
+        });
         if (map.getLayer('3d-trees-layer')) {
             map.setLayoutProperty('3d-trees-layer', 'visibility', (isMapbox && state.treesVisible) ? 'visible' : 'none');
         }

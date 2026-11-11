@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Interactive Building Footprint Drawer — DA-LARES & DA-QARES</title>
+<title>Interactive Building Footprint Drawer — DA-LARES, DA-QARES & DA-RARES</title>
 <meta name="viewport" content="initial-scale=1,maximum-scale=1">
 <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
 <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
@@ -513,6 +513,9 @@
     <button class="layer-btn" id="btn-station-qares" onclick="switchStation('qares')">
       <span>🌱 DA-QARES (Tiaong)</span>
     </button>
+    <button class="layer-btn" id="btn-station-rares" onclick="switchStation('rares')">
+      <span>🌿 DA-RARES (Tanay)</span>
+    </button>
   </div>
 
   <!-- Aerial Background Switcher -->
@@ -710,6 +713,18 @@
       </div>
     </div>
 
+    <!-- RARES Facility Fields -->
+    <div id="raresFacilityGroup" style="display:none;">
+      <div class="form-group">
+        <label for="raresBuildingId">Facility ID (lowercase_with_underscores)</label>
+        <input type="text" id="raresBuildingId" placeholder="e.g. rares_admin_building">
+      </div>
+      <div class="form-group">
+        <label for="raresBuildingName">Official Facility Name</label>
+        <input type="text" id="raresBuildingName" placeholder="e.g. Administration Building">
+      </div>
+    </div>
+
     <div class="form-group" style="display:flex; gap:12px;">
       <div style="flex:1;">
         <label for="buildingHeight">Height (Meters)</label>
@@ -743,7 +758,9 @@ mapboxgl.accessToken = 'pk.eyJ1IjoiZWFydGgwMzA3IiwiYSI6ImNtdWFqNTR5czAxNmEyd29lM
 
 // Detect Station from URL Query Param
 const urlParams = new URLSearchParams(window.location.search);
-let currentStation = (urlParams.get('station') === 'qares') ? 'qares' : 'lares';
+const urlParamStation = urlParams.get('station');
+let currentStation = (urlParamStation === 'qares' || urlParamStation === 'rares') ? urlParamStation : 'lares';
+window.currentStation = currentStation;
 let activeBaseLayer = 'drone';
 
 const STATION_CONFIG = {
@@ -773,6 +790,20 @@ const STATION_CONFIG = {
         buildingsFile: 'qares_buildings.json',
         buildingsApi: '/api/qares/buildings',
         saveBtnText: '💾 Save Directly to Map (qares_buildings.json)',
+        hasBoundary: true
+    },
+    rares: {
+        center: [121.33930, 14.57500],
+        zoom: 17.8,
+        name: 'DA-RARES (Tanay Campus)',
+        badge: '🌿 DA-RARES Tanay Campus',
+        title: '🏢 RARES Building Drawer',
+        subtitle: 'Trace building footprints & facility blocks for Rizal Agricultural Research & Experiment Station.',
+        roadsFile: 'rares_roads.json',
+        roadsEndpoint: '/api/rares/roads',
+        buildingsFile: 'rares_buildings.json',
+        buildingsApi: '/api/rares/buildings',
+        saveBtnText: '💾 Save Directly to Map (rares_buildings.json)',
         hasBoundary: true
     }
 };
@@ -1076,7 +1107,7 @@ const map = new mapboxgl.Map({
                 'tiles': ['/api/tiles/lares/{z}/{x}/{y}.png'],
                 'tileSize': 256,
                 'minzoom': 14,
-                'maxzoom': 24,
+                'maxzoom': 21,
                 'bounds': [121.165052, 13.956537, 121.173221, 13.963068]
             },
             'qares-drone-source': {
@@ -1084,8 +1115,16 @@ const map = new mapboxgl.Map({
                 'tiles': ['/api/tiles/qares/{z}/{x}/{y}.png'],
                 'tileSize': 256,
                 'minzoom': 14,
-                'maxzoom': 22,
+                'maxzoom': 21,
                 'bounds': [121.366888, 13.941220, 121.376150, 13.950960]
+            },
+            'rares-drone-source': {
+                'type': 'raster',
+                'tiles': ['/api/tiles/rares/{z}/{x}/{y}.png'],
+                'tileSize': 256,
+                'minzoom': 14,
+                'maxzoom': 21,
+                'bounds': [121.3366, 14.5727, 121.3421, 14.5773]
             }
         },
         'layers': [
@@ -1112,6 +1151,18 @@ const map = new mapboxgl.Map({
                 'source': 'qares-drone-source',
                 'layout': {
                     'visibility': (currentStation === 'qares') ? 'visible' : 'none'
+                },
+                'paint': {
+                    'raster-opacity': 1.0,
+                    'raster-fade-duration': 0
+                }
+            },
+            {
+                'id': 'rares-drone-layer',
+                'type': 'raster',
+                'source': 'rares-drone-source',
+                'layout': {
+                    'visibility': (currentStation === 'rares') ? 'visible' : 'none'
                 },
                 'paint': {
                     'raster-opacity': 1.0,
@@ -1344,46 +1395,55 @@ function showToast(msg, duration = 3000) {
 // Update UI State for Active Station
 function updateStationUIState() {
     const isQares = (currentStation === 'qares');
+    const isRares = (currentStation === 'rares');
+    const isLares = (currentStation === 'lares');
     const cfg = STATION_CONFIG[currentStation];
 
     // Buttons
-    document.getElementById('btn-station-lares').classList.toggle('active', !isQares);
+    document.getElementById('btn-station-lares').classList.toggle('active', isLares);
     document.getElementById('btn-station-qares').classList.toggle('active', isQares);
     document.getElementById('btn-station-qares').classList.toggle('qares-btn', isQares);
+    const btnRares = document.getElementById('btn-station-rares');
+    if (btnRares) {
+        btnRares.classList.toggle('active', isRares);
+        btnRares.classList.toggle('qares-btn', isRares);
+    }
 
     // Badges & Labels
     const badge = document.getElementById('headerBadge');
     badge.textContent = cfg.badge;
-    badge.classList.toggle('qares-badge', isQares);
+    badge.classList.toggle('qares-badge', isQares || isRares);
 
     document.getElementById('panelTitle').textContent = cfg.title;
     document.getElementById('panelSubtitle').textContent = cfg.subtitle;
 
     const sLabel = document.getElementById('stationSectionLabel');
-    if (sLabel) sLabel.classList.toggle('qares-label', isQares);
+    if (sLabel) sLabel.classList.toggle('qares-label', isQares || isRares);
     const aLabel = document.getElementById('aerialSectionLabel');
-    if (aLabel) aLabel.classList.toggle('qares-label', isQares);
+    if (aLabel) aLabel.classList.toggle('qares-label', isQares || isRares);
 
     // Save button styling and text
     const saveBtn = document.getElementById('saveDirectBtn');
     saveBtn.textContent = cfg.saveBtnText;
-    saveBtn.classList.toggle('qares-save', isQares);
+    saveBtn.classList.toggle('qares-save', isQares || isRares);
 
     // Roads toggle label
     document.getElementById('roadsToggleLabel').textContent = `🛣️ Show Roads Reference (${cfg.roadsFile})`;
 
     // Boundary toggle container
     const bToggle = document.getElementById('boundaryToggleContainer');
-    if (bToggle) bToggle.style.display = isQares ? 'flex' : 'none';
+    if (bToggle) bToggle.style.display = (isQares || isRares) ? 'flex' : 'none';
 
     // QARES filter & color control panel
     const qPanel = document.getElementById('qaresControlPanel');
     if (qPanel) qPanel.style.display = isQares ? 'flex' : 'none';
 
     // Modal fields
-    document.getElementById('laresFacilityGroup').style.display = isQares ? 'none' : 'block';
+    document.getElementById('laresFacilityGroup').style.display = isLares ? 'block' : 'none';
     document.getElementById('qaresFacilityGroup').style.display = isQares ? 'block' : 'none';
-    document.getElementById('has3DGroup').style.display = isQares ? 'none' : 'flex';
+    const rGroup = document.getElementById('raresFacilityGroup');
+    if (rGroup) rGroup.style.display = isRares ? 'block' : 'none';
+    document.getElementById('has3DGroup').style.display = isLares ? 'flex' : 'none';
 
     if (isQares) {
         updateQaresPaletteUI();
@@ -1424,11 +1484,13 @@ function updateMapLabels() {
 
     data.features.forEach(f => {
         if (f.geometry && f.geometry.type === 'Polygon' && f.geometry.coordinates) {
-            const centroid = getPolygonCentroid(f.geometry.coordinates);
+            const centroid = (f.properties && f.properties.marker_coords)
+                ? f.properties.marker_coords
+                : getPolygonCentroid(f.geometry.coordinates);
             const bId = f.properties.id || '';
             const bName = (currentStation === 'lares')
                 ? (KNOWN_BUILDING_NAMES[bId] || f.properties.name || bId || 'Unnamed Building')
-                : (f.properties.name || bId || 'QARES Facility');
+                : (f.properties.name || bId || 'Facility');
             const has3D = f.properties.has_3d_model ? ' [3D]' : '';
 
             labelPoints.features.push({
@@ -1606,13 +1668,15 @@ function openModalForFeature(f) {
     const title = document.getElementById('modalTitle');
     const subtitle = document.getElementById('modalSubtitle');
     const isQares = (currentStation === 'qares');
+    const isRares = (currentStation === 'rares');
+    const stLabel = currentStation.toUpperCase();
 
     if (isEditingExisting) {
         title.textContent = '✏️ Edit Building Properties';
-        subtitle.textContent = `Modify attributes for this ${isQares ? 'QARES' : 'LARES'} building polygon.`;
+        subtitle.textContent = `Modify attributes for this ${stLabel} building polygon.`;
     } else {
         title.textContent = '🏢 New Building Footprint';
-        subtitle.textContent = `Specify attributes for this drawn ${isQares ? 'QARES' : 'LARES'} campus facility.`;
+        subtitle.textContent = `Specify attributes for this drawn ${stLabel} campus facility.`;
     }
 
     const currentId = f.properties.id || '';
@@ -1624,6 +1688,9 @@ function openModalForFeature(f) {
         document.getElementById('qaresCategory').value = f.properties.category || f.properties.filter_type || qaresActiveFilter;
         window.onQaresCategoryChanged(document.getElementById('qaresCategory').value);
         window.selectQaresColorCode(f.properties.color_code || qaresActiveColor);
+    } else if (isRares) {
+        document.getElementById('raresBuildingId').value = currentId || `rares_building_${Date.now() % 1000}`;
+        document.getElementById('raresBuildingName').value = currentName || '';
     } else {
         const select = document.getElementById('buildingSelect');
         const customGroup = document.getElementById('customIdGroup');
@@ -1660,6 +1727,7 @@ window.openModalForSelected = function() {
 window.confirmModal = function() {
     try {
         const isQares = (currentStation === 'qares');
+        const isRares = (currentStation === 'rares');
         let buildingId = '';
         let buildingName = '';
         let category = 'office';
@@ -1685,6 +1753,14 @@ window.confirmModal = function() {
                 draw.setFeatureProperty(pendingFeatureId, 'user_color_code', colorKey);
                 draw.setFeatureProperty(pendingFeatureId, 'user_category', category);
                 draw.setFeatureProperty(pendingFeatureId, 'station', 'qares');
+            }
+        } else if (isRares) {
+            buildingId = document.getElementById('raresBuildingId').value.trim() || `rares_building_${Date.now() % 1000}`;
+            buildingName = document.getElementById('raresBuildingName').value.trim() || buildingId;
+            if (pendingFeatureId) {
+                draw.setFeatureProperty(pendingFeatureId, 'id', buildingId);
+                draw.setFeatureProperty(pendingFeatureId, 'name', buildingName);
+                draw.setFeatureProperty(pendingFeatureId, 'station', 'rares');
             }
         } else {
             const select = document.getElementById('buildingSelect');
@@ -1716,7 +1792,7 @@ window.confirmModal = function() {
             draw.setFeatureProperty(pendingFeatureId, 'min_height', minHeight);
             draw.setFeatureProperty(pendingFeatureId, 'station', currentStation);
 
-            if (!isQares) {
+            if (!isQares && !isRares) {
                 draw.setFeatureProperty(pendingFeatureId, 'has_3d_model', has3D);
             }
 
@@ -1800,7 +1876,7 @@ document.addEventListener('DOMContentLoaded', () => {
             window.confirmModal();
         });
     }
-    ['qaresBuildingId', 'qaresBuildingName', 'buildingHeight', 'buildingMinHeight', 'customIdInput'].forEach(id => {
+    ['qaresBuildingId', 'qaresBuildingName', 'raresBuildingId', 'raresBuildingName', 'buildingHeight', 'buildingMinHeight', 'customIdInput'].forEach(id => {
         const el = document.getElementById(id);
         if (el) {
             el.addEventListener('keydown', (e) => {
@@ -1826,6 +1902,9 @@ window.setBaseLayer = function(layerType) {
     if (map.getLayer('qares-drone-layer')) {
         map.setLayoutProperty('qares-drone-layer', 'visibility', (currentStation === 'qares' && isDrone) ? 'visible' : 'none');
     }
+    if (map.getLayer('rares-drone-layer')) {
+        map.setLayoutProperty('rares-drone-layer', 'visibility', (currentStation === 'rares' && isDrone) ? 'visible' : 'none');
+    }
 };
 
 window.setDroneOpacity = function(val) {
@@ -1836,6 +1915,9 @@ window.setDroneOpacity = function(val) {
     }
     if (map.getLayer('qares-drone-layer')) {
         map.setPaintProperty('qares-drone-layer', 'raster-opacity', opacity);
+    }
+    if (map.getLayer('rares-drone-layer')) {
+        map.setPaintProperty('rares-drone-layer', 'raster-opacity', opacity);
     }
 };
 
@@ -1855,11 +1937,16 @@ window.toggleRoadsLayer = function(visible) {
 
 window.toggleBoundaryLayer = function(visible) {
     const val = visible ? 'visible' : 'none';
-    if (map.getLayer('qares-boundary-fill')) map.setLayoutProperty('qares-boundary-fill', 'visibility', val);
-    if (map.getLayer('qares-boundary-line')) map.setLayoutProperty('qares-boundary-line', 'visibility', val);
+    if (currentStation === 'qares') {
+        if (map.getLayer('qares-boundary-fill')) map.setLayoutProperty('qares-boundary-fill', 'visibility', val);
+        if (map.getLayer('qares-boundary-line')) map.setLayoutProperty('qares-boundary-line', 'visibility', val);
+    } else if (currentStation === 'rares') {
+        if (map.getLayer('rares-boundary-fill')) map.setLayoutProperty('rares-boundary-fill', 'visibility', val);
+        if (map.getLayer('rares-boundary-line')) map.setLayoutProperty('rares-boundary-line', 'visibility', val);
+    }
 };
 
-// Direct Save to Backend (supports both LARES and QARES)
+// Direct Save to Backend (supports LARES, QARES and RARES)
 window.saveDirectlyToMap = function() {
     let data;
     const btn = document.getElementById('saveDirectBtn');
@@ -1878,6 +1965,20 @@ window.saveDirectlyToMap = function() {
             f.properties.station = 'lares';
         }
         localStorage.setItem('building_draw_autosave_lares', JSON.stringify(data));
+    } else if (currentStation === 'rares') {
+        data = draw.getAll();
+        let unassignedCounter = 1;
+        for (const f of data.features) {
+            const p = f.properties = f.properties || {};
+            if (!p.id) p.id = `rares_building_${unassignedCounter++}`;
+            if (!p.name) p.name = p.id;
+            if (p.height === undefined) p.height = 5;
+            if (p.min_height === undefined) p.min_height = 0;
+            p.station = 'rares';
+        }
+        data.station = 'rares';
+        data.name = 'RARES Buildings';
+        localStorage.setItem('building_draw_autosave_rares', JSON.stringify(data));
     } else {
         syncCurrentDrawToMaster();
         const allFeatures = Array.from(window.qaresMasterFeatures.values());
@@ -1947,8 +2048,14 @@ window.exportData = function() {
             name: 'QARES Buildings',
             features: Array.from(window.qaresMasterFeatures.values())
         };
+    } else if (currentStation === 'rares') {
+        data = draw.getAll();
+        data.station = 'rares';
+        data.name = 'RARES Buildings';
     } else {
         data = draw.getAll();
+        data.station = 'lares';
+        data.name = 'LARES Buildings';
     }
     const outputField = document.getElementById('output');
     outputField.value = JSON.stringify(data, null, 2);
@@ -2062,6 +2169,19 @@ function loadStationBuildings(station) {
                 console.error('Failed to parse autosave data:', e);
             }
         }
+    } else if (station === 'rares') {
+        const autosave = localStorage.getItem(storageKey);
+        if (autosave) {
+            try {
+                const data = JSON.parse(autosave);
+                if (data && data.features && data.features.length > 0) {
+                    draw.add(data);
+                    updateMapLabels();
+                    showToast(`[RARES] Restored ${data.features.length} buildings from autosave.`);
+                    return;
+                }
+            } catch (e) {}
+        }
     } else {
         // For LARES, purge any legacy corrupted local storage so the codebase is always the single source of truth
         try {
@@ -2125,12 +2245,18 @@ window.switchStation = function(station) {
             features: Array.from(window.qaresMasterFeatures.values())
         };
         localStorage.setItem('building_draw_autosave_qares', JSON.stringify(fullData));
+    } else if (currentStation === 'rares') {
+        const currentData = draw.getAll();
+        currentData.station = 'rares';
+        currentData.name = 'RARES Buildings';
+        localStorage.setItem('building_draw_autosave_rares', JSON.stringify(currentData));
     } else {
         const currentData = draw.getAll();
         localStorage.setItem('building_draw_autosave_lares', JSON.stringify(currentData));
     }
 
     currentStation = station;
+    window.currentStation = station;
     try {
         const newUrl = new URL(window.location);
         newUrl.searchParams.set('station', station);
@@ -2155,6 +2281,9 @@ window.switchStation = function(station) {
     if (map.getLayer('qares-drone-layer')) {
         map.setLayoutProperty('qares-drone-layer', 'visibility', (station === 'qares' && isDrone) ? 'visible' : 'none');
     }
+    if (map.getLayer('rares-drone-layer')) {
+        map.setLayoutProperty('rares-drone-layer', 'visibility', (station === 'rares' && isDrone) ? 'visible' : 'none');
+    }
 
     // Toggle QARES boundary
     if (map.getLayer('qares-boundary-fill')) {
@@ -2162,6 +2291,14 @@ window.switchStation = function(station) {
     }
     if (map.getLayer('qares-boundary-line')) {
         map.setLayoutProperty('qares-boundary-line', 'visibility', (station === 'qares') ? 'visible' : 'none');
+    }
+
+    // Toggle RARES boundary
+    if (map.getLayer('rares-boundary-fill')) {
+        map.setLayoutProperty('rares-boundary-fill', 'visibility', (station === 'rares') ? 'visible' : 'none');
+    }
+    if (map.getLayer('rares-boundary-line')) {
+        map.setLayoutProperty('rares-boundary-line', 'visibility', (station === 'rares') ? 'visible' : 'none');
     }
 
     // Clear current canvas and load target station
@@ -2251,6 +2388,37 @@ map.on('load', () => {
         source: 'qares-boundary-source',
         layout: {
             'visibility': (currentStation === 'qares') ? 'visible' : 'none'
+        },
+        paint: {
+            'line-color': '#10b981',
+            'line-width': 2.5,
+            'line-dasharray': [3, 1]
+        }
+    }, beforeDraw);
+
+    // 2b. RARES Official Survey Boundary Layer
+    map.addSource('rares-boundary-source', {
+        type: 'geojson',
+        data: 'rares_boundary.json'
+    });
+    map.addLayer({
+        id: 'rares-boundary-fill',
+        type: 'fill',
+        source: 'rares-boundary-source',
+        layout: {
+            'visibility': (currentStation === 'rares') ? 'visible' : 'none'
+        },
+        paint: {
+            'fill-color': '#10b981',
+            'fill-opacity': 0.08
+        }
+    }, beforeDraw);
+    map.addLayer({
+        id: 'rares-boundary-line',
+        type: 'line',
+        source: 'rares-boundary-source',
+        layout: {
+            'visibility': (currentStation === 'rares') ? 'visible' : 'none'
         },
         paint: {
             'line-color': '#10b981',

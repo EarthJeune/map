@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pill & Marker Calibrator — DA-LARES, DA-QARES & DA-RARES</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://api.mapbox.com/mapbox-gl-js/v3.1.2/mapbox-gl.css" rel="stylesheet">
+  <script src="https://api.mapbox.com/mapbox-gl-js/v3.1.2/mapbox-gl.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body, html { width: 100%; height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #0b1121; color: #f8fafc; }
+    #map { width: 100%; height: 100%; }
+
+    /* Top Control Bar */
+    .top-bar {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      right: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      pointer-events: none;
+      z-index: 100;
+    }
+    .top-bar-left, .top-bar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      pointer-events: auto;
+    }
+    .panel-card {
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 8px 14px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .title-badge {
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: #34d399;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .station-btn {
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: #cbd5e1;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .station-btn:hover { background: rgba(51, 65, 85, 0.9); color: #fff; }
+    .station-btn.active {
+      background: #059669;
+      color: #fff;
+      border-color: #10b981;
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+    }
+
+    .btn-action {
+      background: #10b981;
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+      transition: all 0.15s ease;
+    }
+    .btn-action:hover { background: #059669; transform: translateY(-1px); }
+    .btn-secondary {
+      background: rgba(51, 65, 85, 0.8);
+      color: #cbd5e1;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-secondary:hover { background: rgba(71, 85, 105, 0.9); color: #fff; }
+
+    /* Floating Inspector / Selected Pill Card */
+    .inspector-card {
+      position: absolute;
+      bottom: 24px;
+      left: 14px;
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 12px;
+      padding: 12px 18px;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      max-width: 380px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .inspector-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .inspector-title { font-size: 14px; font-weight: 700; color: #f8fafc; }
+    .inspector-badge {
+      background: #10b981;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+    .inspector-coords {
+      font-family: monospace;
+      font-size: 11px;
+      color: #94a3b8;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+
+    /* Draggable Marker Pill Styling */
+    .draggable-pill-marker {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #10b981;
+      border: 2.5px solid #0f172a;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), 0 0 10px rgba(16, 185, 129, 0.4);
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      user-select: none;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .draggable-pill-marker:hover {
+      transform: scale(1.25);
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6);
+      z-index: 1000 !important;
+    }
+    .draggable-pill-marker.active-drag {
+      cursor: grabbing;
+      transform: scale(1.35);
+      background: #34d399;
+      border-color: #ffffff;
+      box-shadow: 0 8px 24px rgba(52, 211, 153, 0.8);
+      z-index: 2000 !important;
+    }
+    .draggable-pill-marker.is-custom {
+      border-color: #38bdf8;
+      box-shadow: 0 4px 14px rgba(56, 189, 248, 0.5);
+    }
+
+    /* Toast Notification */
+    #toast {
+      position: absolute;
+      top: 75px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(16, 185, 129, 0.95);
+      color: #ffffff;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+      display: none;
+      z-index: 200;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <div class="top-bar">
+    <div class="top-bar-left">
+      <div class="panel-card">
+        <span class="title-badge">🎯 Pill Calibrator</span>
+        <button class="station-btn" id="btn-lares" onclick="switchStation('lares')">🌾 DA-LARES</button>
+        <button class="station-btn" id="btn-qares" onclick="switchStation('qares')">🌱 DA-QARES</button>
+        <button class="station-btn active" id="btn-rares" onclick="switchStation('rares')">🌿 DA-RARES</button>
+      </div>
+    </div>
+
+    <div class="top-bar-right">
+      <div class="panel-card">
+        <button class="btn-secondary" onclick="resetCurrentPillToCentroid()" id="btnResetCentroid" title="Snap selected pill back to building polygon center">↺ Reset Pill to Center</button>
+        <button class="btn-action" onclick="savePills()" id="btnSave">💾 Save Pill Positions</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="inspector-card" id="inspectorCard">
+    <div class="inspector-header">
+      <span class="inspector-title" id="inspName">Click or Drag Any Pill</span>
+      <span class="inspector-badge" id="inspNum">#</span>
+    </div>
+    <div class="inspector-coords" id="inspCoords">Drag a number pill with your mouse to adjust its position.</div>
+  </div>
+
+  <div id="toast">Saved successfully!</div>
+
+  <script>
+    mapboxgl.accessToken = 'pk.eyJ1IjoiZWFydGgwMzA3IiwiYSI6ImNtdWFqNTR5czAxNmEyd29lMm42YjZlMDkifQ.xdPOP5RVPdn6YNka-ZdwoQ';
+
+    const STATIONS = {
+      rares: {
+        name: 'DA-RARES (Tanay)',
+        center: [121.33985, 14.57645],
+        zoom: 18.2,
+        endpoint: '/api/rares/buildings',
+        tileUrl: '/api/tiles/rares/{z}/{x}/{y}.png',
+        dataFile: 'rares_buildings.json'
+      },
+      qares: {
+        name: 'DA-QARES (Tiaong)',
+        center: [121.37152, 13.94609],
+        zoom: 18.2,
+        endpoint: '/api/qares/buildings',
+        tileUrl: '/api/tiles/qares/{z}/{x}/{y}.png',
+        dataFile: 'qares_buildings.json'
+      },
+      lares: {
+        name: 'DA-LARES (Lipa)',
+        center: [121.16645, 13.95875],
+        zoom: 18.2,
+        endpoint: '/api/lares/buildings',
+        tileUrl: null,
+        dataFile: 'buildings.json'
+      }
+    };
+
+    const urlParams = new URLSearchParams(window.location.search);
+    let currentStation = urlParams.get('station') || 'rares';
+    if (!STATIONS[currentStation]) currentStation = 'rares';
+
+    let currentBuildingsData = null;
+    let markersMap = new Map(); // id -> mapboxgl.Marker
+    let selectedFeatureId = null;
+
+    const map = new mapboxgl.Map({
+      container: 'map',
+      style: 'mapbox://styles/mapbox/dark-v11',
+      center: STATIONS[currentStation].center,
+      zoom: STATIONS[currentStation].zoom,
+      pitch: 0,
+      bearing: 0
+    });
+
+    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+    map.on('load', () => {
+      loadStationLayers();
+      loadBuildings();
+    });
+
+    function loadStationLayers() {
+      const cfg = STATIONS[currentStation];
+      if (cfg.tileUrl) {
+        if (!map.getSource('drone-source')) {
+          map.addSource('drone-source', {
+            type: 'raster',
+            tiles: [cfg.tileUrl],
+            tileSize: 256,
+            minzoom: 14,
+            maxzoom: 22
+          });
+          map.addLayer({
+            id: 'drone-layer',
+            type: 'raster',
+            source: 'drone-source',
+            paint: { 'raster-opacity': 1.0 }
+          });
+        }
+      }
+    }
+
+    function calculateCentroid(coords) {
+      const ring = coords[0];
+      let sumX = 0, sumY = 0, count = 0;
+      const pts = ring[0][0] === ring[ring.length - 1][0] && ring[0][1] === ring[ring.length - 1][1]
+        ? ring.slice(0, -1)
+        : ring;
+      pts.forEach(p => {
+        sumX += p[0];
+        sumY += p[1];
+        count++;
+      });
+      return [sumX / count, sumY / count];
+    }
+
+    async function loadBuildings() {
+      // Clear existing markers
+      markersMap.forEach(m => m.remove());
+      markersMap.clear();
+
+      const cfg = STATIONS[currentStation];
+      try {
+        const resp = await fetch(cfg.endpoint + '?t=' + Date.now());
+        currentBuildingsData = await resp.json();
+      } catch (e) {
+        console.warn('API error, falling back to static file:', e);
+        const resp = await fetch(cfg.dataFile + '?t=' + Date.now());
+        currentBuildingsData = await resp.json();
+      }
+
+      if (!currentBuildingsData || !currentBuildingsData.features) return;
+
+      // Add building footprints layer
+      if (map.getSource('bldg-footprints-source')) {
+        map.getSource('bldg-footprints-source').setData(currentBuildingsData);
+      } else {
+        map.addSource('bldg-footprints-source', {
+          type: 'geojson',
+          data: currentBuildingsData
+        });
+        map.addLayer({
+          id: 'bldg-footprints-fill',
+          type: 'fill',
+          source: 'bldg-footprints-source',
+          paint: {
+            'fill-color': '#10b981',
+            'fill-opacity': 0.22
+          }
+        });
+        map.addLayer({
+          id: 'bldg-footprints-line',
+          type: 'line',
+          source: 'bldg-footprints-source',
+          paint: {
+            'line-color': '#34d399',
+            'line-width': 2.0
+          }
+        });
+      }
+
+      // Group facilities by base number (same grouping as campus map)
+      const groups = new Map();
+      currentBuildingsData.features.forEach(f => {
+        const p = f.properties || {};
+        const num = p.num || p.number || (p.id && parseInt(p.id.replace(/[^0-9]/g, ''), 10)) || null;
+        const key = num !== null ? num : (p.id || 'bldg_' + Math.random());
+        if (!groups.has(key)) {
+          groups.set(key, {
+            num: num,
+            name: p.name || `Facility ${num}`,
+            features: []
+          });
+        }
+        groups.get(key).features.push(f);
+      });
+
+      // Mount each group as a draggable pill
+      groups.forEach((g, key) => {
+        const mainFeat = g.features[0];
+        const p = mainFeat.properties || {};
+        const centroid = calculateCentroid(mainFeat.geometry.coordinates);
+        
+        // Priority: custom marker_coords, fallback: centroid
+        let markerCoords = p.marker_coords || centroid;
+
+        const el = document.createElement('div');
+        el.className = 'draggable-pill-marker' + (p.marker_coords ? ' is-custom' : '');
+        el.textContent = g.num !== null ? g.num : '🏛️';
+        el.title = `${g.name} (Hold & Drag to Move)`;
+
+        const marker = new mapboxgl.Marker({
+          element: el,
+          draggable: true,
+          anchor: 'center'
+        })
+        .setLngLat(markerCoords)
+        .addTo(map);
+
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          selectPill(mainFeat, g.num, g.name, marker.getLngLat());
+        });
+
+        marker.on('dragstart', () => {
+          el.classList.add('active-drag');
+          selectPill(mainFeat, g.num, g.name, marker.getLngLat());
+        });
+
+        marker.on('drag', () => {
+          const lngLat = marker.getLngLat();
+          updateInspector(g.name, g.num, lngLat.lng, lngLat.lat);
+        });
+
+        marker.on('dragend', () => {
+          el.classList.remove('active-drag');
+          el.classList.add('is-custom');
+          const lngLat = marker.getLngLat();
+          const cleanLng = parseFloat(lngLat.lng.toFixed(8));
+          const cleanLat = parseFloat(lngLat.lat.toFixed(8));
+          
+          // Apply to all features in this group
+          g.features.forEach(f => {
+            if (!f.properties) f.properties = {};
+            f.properties.marker_coords = [cleanLng, cleanLat];
+          });
+
+          selectPill(mainFeat, g.num, g.name, { lng: cleanLng, lat: cleanLat });
+          showToast(`Moved Pill #${g.num} to [${cleanLng}, ${cleanLat}]`);
+        });
+
+        markersMap.set(key, { marker, feat: mainFeat, centroid, group: g });
+      });
+    }
+
+    function selectPill(feat, num, name, lngLat) {
+      selectedFeatureId = num;
+      updateInspector(name, num, lngLat.lng, lngLat.lat);
+    }
+
+    function updateInspector(name, num, lng, lat) {
+      document.getElementById('inspName').textContent = name || 'Facility';
+      document.getElementById('inspNum').textContent = '#' + (num || '');
+      document.getElementById('inspCoords').textContent = `Longitude: ${lng.toFixed(8)}, Latitude: ${lat.toFixed(8)}`;
+    }
+
+    function resetCurrentPillToCentroid() {
+      if (selectedFeatureId === null) {
+        showToast('Please click or drag a pill first to select it.');
+        return;
+      }
+      const item = markersMap.get(selectedFeatureId);
+      if (!item) return;
+
+      const c = item.centroid;
+      item.marker.setLngLat(c);
+      item.marker.getElement().classList.remove('is-custom');
+
+      // Remove marker_coords override
+      item.group.features.forEach(f => {
+        if (f.properties && f.properties.marker_coords) {
+          delete f.properties.marker_coords;
+        }
+      });
+
+      updateInspector(item.group.name, item.group.num, c[0], c[1]);
+      showToast(`Pill #${item.group.num} snapped back to polygon center.`);
+    }
+
+    async function savePills() {
+      if (!currentBuildingsData) return;
+      const btn = document.getElementById('btnSave');
+      btn.textContent = '⏳ Saving...';
+      btn.disabled = true;
+
+      const cfg = STATIONS[currentStation];
+      try {
+        const resp = await fetch(cfg.endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(currentBuildingsData, null, 2)
+        });
+        const res = await resp.json();
+        if (resp.ok) {
+          showToast(`✅ Saved! Pill coordinates updated in ${cfg.dataFile}`);
+        } else {
+          showToast(`❌ Error: ${res.error || 'Failed to save'}`);
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('❌ Server error saving pill positions');
+      } finally {
+        btn.textContent = '💾 Save Pill Positions';
+        btn.disabled = false;
+      }
+    }
+
+    function switchStation(stationId) {
+      if (stationId === currentStation) return;
+      window.location.search = '?station=' + stationId;
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 2800);
+    }
+  </script>
+</body>
+</html>
+

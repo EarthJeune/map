@@ -23,8 +23,11 @@ export function createKioskMarker() {
     }
 
     const isQares = (state.currentStationId === 'qares');
+    const isRares = (state.currentStationId === 'rares');
     const targetCoords = isQares
         ? (state.QARES_KIOSK_COORDS || [121.3713315, 13.9432268])
+        : isRares
+        ? (state.RARES_KIOSK_COORDS || [121.3393, 14.5750])
         : (state.KIOSK_COORDS || SAVED_MAIN_KIOSK_COORDS);
 
     // In admin mode, enable dragging by default so it's immediately ready
@@ -33,7 +36,7 @@ export function createKioskMarker() {
     const el = document.createElement('div');
     el.className = 'kiosk-marker' + (state.isAdmin ? ' admin-mode' : ' visitor-mode');
 
-    const prefix = isQares ? 'QARES • ' : '';
+    const prefix = isQares ? 'QARES • ' : isRares ? 'RARES • ' : '';
     if (state.isAdmin) {
         const dragNotice = isDraggable ? `${lucideIcon('unlock', 12)} (Drag to move)` : `${lucideIcon('lock', 12)} (Admin)`;
         const bgStyle = isDraggable ? 'background:#eab308;color:#000;border:1px solid #ca8a04;' : '';
@@ -79,6 +82,7 @@ export function createKioskMarker() {
 export function repositionActiveKioskPin(newCoords) {
     if (!newCoords || !Array.isArray(newCoords) || newCoords.length !== 2) return;
     const isQares = (state.currentStationId === 'qares');
+    const isRares = (state.currentStationId === 'rares');
     const marker = state.kioskMarkerInstance;
     if (marker) {
         marker.setLngLat(newCoords);
@@ -100,6 +104,22 @@ export function repositionActiveKioskPin(newCoords) {
                 }
             })
             .catch(err => console.error("Error saving QARES kiosk pin:", err));
+    } else if (isRares) {
+        state.RARES_KIOSK_COORDS = newCoords;
+        window.RARES_KIOSK_COORDS = newCoords;
+
+        fetch('/api/rares/pin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ coordinates: newCoords, station: 'rares' })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showAutoExitToast(`📍 Saved RARES Kiosk Pin [${newCoords[0].toFixed(5)}, ${newCoords[1].toFixed(5)}]`, 3500);
+                }
+            })
+            .catch(err => console.error("Error saving RARES kiosk pin:", err));
     } else {
         state.KIOSK_COORDS = newCoords;
         window.KIOSK_COORDS = newCoords;

@@ -267,6 +267,9 @@
       <button class="layer-btn" id="btn-station-qares" onclick="switchStation('qares')">
           <span>🌱 DA-QARES (Tiaong)</span>
       </button>
+      <button class="layer-btn" id="btn-station-rares" onclick="switchStation('rares')">
+          <span>🌿 DA-RARES (Tanay)</span>
+      </button>
   </div>
 
   <div class="section-label">Aerial Map Background</div>
@@ -340,7 +343,7 @@ mapboxgl.accessToken = 'pk.eyJ1IjoiZWFydGgwMzA3IiwiYSI6ImNtdWFqNTR5czAxNmEyd29lM
 
 // Check URL query param for default station
 const urlParams = new URLSearchParams(window.location.search);
-let currentStation = (urlParams.get('station') === 'qares') ? 'qares' : 'lares';
+let currentStation = (urlParams.get('station') === 'rares') ? 'rares' : (urlParams.get('station') === 'qares') ? 'qares' : 'lares';
 
 const STATION_CONFIG = {
     lares: {
@@ -362,6 +365,16 @@ const STATION_CONFIG = {
         roadsFile: 'qares_roads.json',
         buildingsFile: '/api/qares/buildings',
         prefix: 'qares_'
+    },
+    rares: {
+        center: [121.3393, 14.5750],
+        zoom: 17.8,
+        name: 'DA-RARES (Tanay, Rizal)',
+        roadsEndpoint: '/api/rares/roads',
+        roadsSaveApi: '/api/rares/roads',
+        roadsFile: 'rares_roads.json',
+        buildingsFile: '/api/rares/buildings',
+        prefix: 'rares_'
     }
 };
 
@@ -381,7 +394,7 @@ const map = new mapboxgl.Map({
                 'tiles': ['/api/tiles/lares/{z}/{x}/{y}.png'],
                 'tileSize': 256,
                 'minzoom': 14,
-                'maxzoom': 24,
+                'maxzoom': 21,
                 'bounds': [121.165052, 13.956537, 121.173221, 13.963068]
             },
             'qares-drone-source': {
@@ -391,6 +404,14 @@ const map = new mapboxgl.Map({
                 'minzoom': 14,
                 'maxzoom': 21,
                 'bounds': [121.366888, 13.941220, 121.376150, 13.950960]
+            },
+            'rares-drone-source': {
+                'type': 'raster',
+                'tiles': ['/api/tiles/rares/{z}/{x}/{y}.png'],
+                'tileSize': 256,
+                'minzoom': 14,
+                'maxzoom': 21,
+                'bounds': [121.3366, 14.5727, 121.3421, 14.5773]
             }
         },
         'layers': [
@@ -422,6 +443,18 @@ const map = new mapboxgl.Map({
                     'raster-opacity': 1.0,
                     'raster-fade-duration': 0
                 }
+            },
+            {
+                'id': 'rares-drone-layer',
+                'type': 'raster',
+                'source': 'rares-drone-source',
+                'layout': {
+                    'visibility': (currentStation === 'rares') ? 'visible' : 'none'
+                },
+                'paint': {
+                    'raster-opacity': 1.0,
+                    'raster-fade-duration': 0
+                }
             }
         ]
     },
@@ -434,6 +467,7 @@ const map = new mapboxgl.Map({
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-station-lares').classList.toggle('active', currentStation === 'lares');
     document.getElementById('btn-station-qares').classList.toggle('active', currentStation === 'qares');
+    document.getElementById('btn-station-rares').classList.toggle('active', currentStation === 'rares');
     document.getElementById('saveDirectBtn').textContent = `💾 Save Directly to Map (${STATION_CONFIG[currentStation].roadsFile})`;
 });
 
@@ -687,6 +721,24 @@ function updateBuildingDropdown(station) {
                 });
             })
             .catch(e => console.log('Notice: Could not load buildings.json:', e));
+    } else if (station === 'rares') {
+        fetch('/api/rares/buildings?t=' + Date.now())
+            .then(r => r.json())
+            .then(data => {
+                if (data && data.features && data.features.length > 0) {
+                    data.features.forEach(f => {
+                        const bId = f.properties && f.properties.id;
+                        if (bId) {
+                            const name = f.properties.name || bId;
+                            const opt = document.createElement('option');
+                            opt.value = bId;
+                            opt.textContent = `${name} (${bId})`;
+                            select.appendChild(opt);
+                        }
+                    });
+                }
+            })
+            .catch(e => {});
     } else {
         fetch('/api/qares/buildings')
             .then(r => r.json())
@@ -773,39 +825,50 @@ window.switchStation = function(st) {
 
     document.getElementById('btn-station-lares').classList.toggle('active', st === 'lares');
     document.getElementById('btn-station-qares').classList.toggle('active', st === 'qares');
+    document.getElementById('btn-station-rares').classList.toggle('active', st === 'rares');
 
-    const isQARES = (st === 'qares');
     document.getElementById('saveDirectBtn').textContent = `💾 Save Directly to Map (${STATION_CONFIG[st].roadsFile})`;
 
     // Toggle Drone layers
-    if (map.getLayer('lares-drone-layer')) {
-        map.setLayoutProperty('lares-drone-layer', 'visibility', isQARES ? 'none' : 'visible');
-    }
-    if (map.getLayer('qares-drone-layer')) {
-        map.setLayoutProperty('qares-drone-layer', 'visibility', isQARES ? 'visible' : 'none');
-    }
+    ['lares-drone-layer', 'qares-drone-layer', 'rares-drone-layer'].forEach(lId => {
+        if (map.getLayer(lId)) {
+            map.setLayoutProperty(lId, 'visibility', (lId === `${st}-drone-layer`) ? 'visible' : 'none');
+        }
+    });
 
     // Toggle Boundaries & Footprints
     if (map.getLayer('qares-boundary-line')) {
-        map.setLayoutProperty('qares-boundary-line', 'visibility', isQARES ? 'visible' : 'none');
+        map.setLayoutProperty('qares-boundary-line', 'visibility', (st === 'qares') ? 'visible' : 'none');
     }
     if (map.getLayer('qares-boundary-fill')) {
-        map.setLayoutProperty('qares-boundary-fill', 'visibility', isQARES ? 'visible' : 'none');
+        map.setLayoutProperty('qares-boundary-fill', 'visibility', (st === 'qares') ? 'visible' : 'none');
+    }
+    if (map.getLayer('rares-boundary-line')) {
+        map.setLayoutProperty('rares-boundary-line', 'visibility', (st === 'rares') ? 'visible' : 'none');
+    }
+    if (map.getLayer('rares-boundary-fill')) {
+        map.setLayoutProperty('rares-boundary-fill', 'visibility', (st === 'rares') ? 'visible' : 'none');
     }
     if (map.getLayer('buildings-footprints-fill')) {
-        map.setLayoutProperty('buildings-footprints-fill', 'visibility', isQARES ? 'none' : 'visible');
+        map.setLayoutProperty('buildings-footprints-fill', 'visibility', (st === 'lares') ? 'visible' : 'none');
     }
     if (map.getLayer('buildings-footprints-line')) {
-        map.setLayoutProperty('buildings-footprints-line', 'visibility', isQARES ? 'none' : 'visible');
+        map.setLayoutProperty('buildings-footprints-line', 'visibility', (st === 'lares') ? 'visible' : 'none');
     }
     if (map.getLayer('buildings-names-layer')) {
-        map.setLayoutProperty('buildings-names-layer', 'visibility', isQARES ? 'none' : 'visible');
+        map.setLayoutProperty('buildings-names-layer', 'visibility', (st === 'lares') ? 'visible' : 'none');
     }
     if (map.getLayer('qares-footprints-fill')) {
-        map.setLayoutProperty('qares-footprints-fill', 'visibility', isQARES ? 'visible' : 'none');
+        map.setLayoutProperty('qares-footprints-fill', 'visibility', (st === 'qares') ? 'visible' : 'none');
     }
     if (map.getLayer('qares-footprints-line')) {
-        map.setLayoutProperty('qares-footprints-line', 'visibility', isQARES ? 'visible' : 'none');
+        map.setLayoutProperty('qares-footprints-line', 'visibility', (st === 'qares') ? 'visible' : 'none');
+    }
+    if (map.getLayer('rares-footprints-fill')) {
+        map.setLayoutProperty('rares-footprints-fill', 'visibility', (st === 'rares') ? 'visible' : 'none');
+    }
+    if (map.getLayer('rares-footprints-line')) {
+        map.setLayoutProperty('rares-footprints-line', 'visibility', (st === 'rares') ? 'visible' : 'none');
     }
 
     updateBuildingDropdown(st);
@@ -827,21 +890,18 @@ window.setBaseLayer = function(mode) {
     document.getElementById('btn-layer-drone').classList.toggle('active', isDrone);
     document.getElementById('btn-layer-google').classList.toggle('active', !isDrone);
     
-    const activeDroneLayer = (currentStation === 'qares') ? 'qares-drone-layer' : 'lares-drone-layer';
-    const inactiveDroneLayer = (currentStation === 'qares') ? 'lares-drone-layer' : 'qares-drone-layer';
-
-    if (map.getLayer(inactiveDroneLayer)) {
-        map.setLayoutProperty(inactiveDroneLayer, 'visibility', 'none');
-    }
-    if (map.getLayer(activeDroneLayer)) {
-        map.setLayoutProperty(activeDroneLayer, 'visibility', isDrone ? 'visible' : 'none');
-    }
+    ['lares-drone-layer', 'qares-drone-layer', 'rares-drone-layer'].forEach(lId => {
+        if (map.getLayer(lId)) {
+            const isMatch = (lId === `${currentStation}-drone-layer`);
+            map.setLayoutProperty(lId, 'visibility', (isMatch && isDrone) ? 'visible' : 'none');
+        }
+    });
 };
 
 window.setDroneOpacity = function(val) {
     const opacity = parseFloat(val);
     document.getElementById('drone-opacity-val').textContent = `${Math.round(opacity * 100)}%`;
-    const activeDroneLayer = (currentStation === 'qares') ? 'qares-drone-layer' : 'lares-drone-layer';
+    const activeDroneLayer = `${currentStation}-drone-layer`;
     if (map.getLayer(activeDroneLayer)) {
         map.setPaintProperty(activeDroneLayer, 'raster-opacity', opacity);
     }
@@ -851,7 +911,8 @@ window.toggleBuildingOutlines = function(visible) {
     const vis = visible ? 'visible' : 'none';
     const layers = [
         'buildings-footprints-line', 'buildings-footprints-fill', 'buildings-names-layer',
-        'qares-footprints-line', 'qares-footprints-fill'
+        'qares-footprints-line', 'qares-footprints-fill',
+        'rares-footprints-line', 'rares-footprints-fill'
     ];
     layers.forEach(l => {
         if (map.getLayer(l)) map.setLayoutProperty(l, 'visibility', vis);
@@ -879,7 +940,8 @@ window.loadStationRoads = function(station) {
         } catch (e) {}
     }
 
-    const endpoint = (station === 'qares') ? '/api/qares/roads?t=' + Date.now() : 'roads.json?t=' + Date.now();
+    const cfg = STATION_CONFIG[station] || STATION_CONFIG.lares;
+    const endpoint = `${cfg.roadsEndpoint}?t=${Date.now()}`;
     fetch(endpoint)
         .then(res => res.json())
         .then(data => {
@@ -954,6 +1016,33 @@ map.on('load', () => {
         type: 'line',
         source: 'qares-boundary-source',
         layout: { 'visibility': (currentStation === 'qares') ? 'visible' : 'none' },
+        paint: {
+            'line-color': '#10b981',
+            'line-width': 2.5,
+            'line-dasharray': [3, 1]
+        }
+    }, beforeDraw);
+
+    // 1b. RARES Compound Boundary
+    map.addSource('rares-boundary-source', {
+        type: 'geojson',
+        data: 'rares_boundary.json'
+    });
+    map.addLayer({
+        id: 'rares-boundary-fill',
+        type: 'fill',
+        source: 'rares-boundary-source',
+        layout: { 'visibility': (currentStation === 'rares') ? 'visible' : 'none' },
+        paint: {
+            'fill-color': '#10b981',
+            'fill-opacity': 0.08
+        }
+    }, beforeDraw);
+    map.addLayer({
+        id: 'rares-boundary-line',
+        type: 'line',
+        source: 'rares-boundary-source',
+        layout: { 'visibility': (currentStation === 'rares') ? 'visible' : 'none' },
         paint: {
             'line-color': '#10b981',
             'line-width': 2.5,
@@ -1045,6 +1134,34 @@ map.on('load', () => {
         })
         .catch(e => {});
 
+    // 3b. RARES Building Footprints (if available)
+    fetch('/api/rares/buildings?t=' + Date.now())
+        .then(res => res.json())
+        .then(data => {
+            if (data && data.features && data.features.length > 0) {
+                map.addSource('rares-footprints-source', {
+                    type: 'geojson',
+                    data: data
+                });
+                const targetBefore = getBeforeDrawId();
+                map.addLayer({
+                    id: 'rares-footprints-fill',
+                    type: 'fill',
+                    source: 'rares-footprints-source',
+                    layout: { 'visibility': (currentStation === 'rares') ? 'visible' : 'none' },
+                    paint: { 'fill-color': '#0284c7', 'fill-opacity': 0.25 }
+                }, targetBefore);
+                map.addLayer({
+                    id: 'rares-footprints-line',
+                    type: 'line',
+                    source: 'rares-footprints-source',
+                    layout: { 'visibility': (currentStation === 'rares') ? 'visible' : 'none' },
+                    paint: { 'line-color': '#38bdf8', 'line-width': 2, 'line-dasharray': [3, 2] }
+                }, targetBefore);
+            }
+        })
+        .catch(e => {});
+
     // 4. Entrance labels layer
     map.addSource('draw-labels', {
         type: 'geojson',
@@ -1074,8 +1191,8 @@ map.on('load', () => {
 });
 
 window.reloadFromOriginalBaseline = function() {
-    const isQARES = (currentStation === 'qares');
-    const targetFile = isQARES ? 'qares_roads.json' : 'roads.json';
+    const cfg = STATION_CONFIG[currentStation] || STATION_CONFIG.lares;
+    const targetFile = cfg.roadsFile;
     if (!confirm(`Discard all unsaved edits and reload original ${targetFile}?`)) return;
     
     localStorage.removeItem('road_draw_autosave_' + currentStation);
@@ -1084,7 +1201,7 @@ window.reloadFromOriginalBaseline = function() {
         map.getSource('draw-labels').setData({ type: 'FeatureCollection', features: [] });
     }
 
-    const endpoint = isQARES ? '/api/qares/roads?t=' + Date.now() : 'roads.json?t=' + Date.now();
+    const endpoint = `${cfg.roadsEndpoint}?t=${Date.now()}`;
     fetch(endpoint)
         .then(res => res.json())
         .then(data => {
@@ -1098,9 +1215,9 @@ window.reloadFromOriginalBaseline = function() {
 function saveDirectlyToMap() {
     const data = draw.getAll();
     const btn = document.getElementById('saveDirectBtn');
-    const isQARES = (currentStation === 'qares');
-    const targetFile = isQARES ? 'qares_roads.json' : 'roads.json';
-    const targetEndpoint = isQARES ? '/api/qares/roads' : '/api/roads';
+    const cfg = STATION_CONFIG[currentStation] || STATION_CONFIG.lares;
+    const targetFile = cfg.roadsFile;
+    const targetEndpoint = cfg.roadsSaveApi;
 
     btn.textContent = `Saving to ${targetFile}...`;
     btn.disabled = true;
@@ -1112,9 +1229,9 @@ function saveDirectlyToMap() {
         if (!f.properties) f.properties = {};
         if (!f.properties.id) {
             if (f.geometry.type === 'Point') {
-                f.properties.id = (isQARES ? 'qares_entrance_' : 'entrance_') + entranceCounter++;
+                f.properties.id = (cfg.prefix || '') + 'entrance_' + entranceCounter++;
             } else {
-                f.properties.id = (isQARES ? 'qares_road_' : 'road_') + roadCounter++;
+                f.properties.id = (cfg.prefix || '') + 'road_' + roadCounter++;
             }
         }
         f.properties.station = currentStation;

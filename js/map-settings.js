@@ -14,6 +14,10 @@ export function syncLayerToggleCheckboxes() {
     if (cbBoundary) cbBoundary.checked = state.boundaryVisible !== false;
     const cbPlots = document.getElementById('msp-toggle-plots');
     if (cbPlots) cbPlots.checked = state.plotsVisible === true;
+
+    if (document.body) {
+        document.body.classList.toggle('labels-hidden', state.markersVisible === false);
+    }
 }
 
 export function handleLayerToggle(type, isChecked) {
@@ -23,13 +27,21 @@ export function handleLayerToggle(type, isChecked) {
         state.buildingsVisible = isChecked;
         const vis = isChecked ? 'visible' : 'none';
         if (currentMap) {
+            const currentStation = state.currentStationId || 'lares';
             const bldgLayers = [
+                'lares-3d-models-layer',
+                'lares-3d-models-transparent',
+                '3d-buildings-models-layer',
+                '3d-buildings-models-transparent',
                 '3d-drawings',
                 '3d-drawings-roofs',
                 '3d-drawings-transparent',
                 '3d-drawings-roofs-transparent',
-                '3d-buildings-models-layer',
-                '3d-buildings-models-transparent',
+                'rares-3d-models-layer',
+                'rares-3d-models-transparent',
+                'rares-footprints-3d',
+                'qares-3d-models-layer',
+                'qares-3d-models-transparent',
                 'qares-footprints-3d',
                 'qares-footprints-roofs',
                 'qares-footprints-fill',
@@ -37,7 +49,15 @@ export function handleLayerToggle(type, isChecked) {
             ];
             bldgLayers.forEach(id => {
                 if (currentMap.getLayer(id)) {
-                    try { currentMap.setLayoutProperty(id, 'visibility', vis); } catch (e) { }
+                    let shouldBeVisible = isChecked;
+                    if (id.startsWith('lares-') || id.startsWith('3d-')) {
+                        shouldBeVisible = isChecked && currentStation === 'lares';
+                    } else if (id.startsWith('rares-')) {
+                        shouldBeVisible = isChecked && currentStation === 'rares';
+                    } else if (id.startsWith('qares-')) {
+                        shouldBeVisible = isChecked && currentStation === 'qares';
+                    }
+                    try { currentMap.setLayoutProperty(id, 'visibility', shouldBeVisible ? 'visible' : 'none'); } catch (e) { }
                 }
             });
             if (currentMap.getLayer('3d-buildings-mapbox')) {
@@ -54,10 +74,18 @@ export function handleLayerToggle(type, isChecked) {
     } else if (type === 'numbers' || type === 'labels') {
         state.markersVisible = isChecked;
         const markersShouldShow = isChecked;
+        if (document.body) {
+            document.body.classList.toggle('labels-hidden', !markersShouldShow);
+        }
         if (state.markers && state.markers.length > 0) {
             state.markers.forEach(m => {
                 if (m && m.getElement()) {
-                    m.getElement().style.display = markersShouldShow ? '' : 'none';
+                    if (markersShouldShow) {
+                        m.getElement().style.removeProperty('display');
+                        m.getElement().style.display = '';
+                    } else {
+                        m.getElement().style.setProperty('display', 'none', 'important');
+                    }
                 }
                 if (!markersShouldShow && m.getPopup && m.getPopup() && m.getPopup().isOpen()) {
                     m.togglePopup();
@@ -65,10 +93,20 @@ export function handleLayerToggle(type, isChecked) {
             });
         }
         document.querySelectorAll('.bldg-map-marker').forEach(el => {
-            el.style.display = markersShouldShow ? '' : 'none';
+            if (markersShouldShow) {
+                el.style.removeProperty('display');
+                el.style.display = '';
+            } else {
+                el.style.setProperty('display', 'none', 'important');
+            }
         });
         document.querySelectorAll('.plot-map-marker').forEach(el => {
-            el.style.display = markersShouldShow ? '' : 'none';
+            if (markersShouldShow) {
+                el.style.removeProperty('display');
+                el.style.display = '';
+            } else {
+                el.style.setProperty('display', 'none', 'important');
+            }
         });
         if (markersShouldShow && typeof window.virtualizeMarkers === 'function') {
             window.virtualizeMarkers();
@@ -82,6 +120,14 @@ export function handleLayerToggle(type, isChecked) {
         try {
             localStorage.setItem('da_plots_visible', isChecked ? 'true' : 'false');
         } catch (e) { }
+        if (currentMap) {
+            const plotVis = isChecked ? 'visible' : 'none';
+            ['rares-plots-fill', 'rares-plots-line', 'qares-plots-fill', 'qares-plots-line'].forEach(id => {
+                if (currentMap.getLayer(id)) {
+                    try { currentMap.setLayoutProperty(id, 'visibility', plotVis); } catch (e) { }
+                }
+            });
+        }
         if (typeof window.updatePlotLayerStyles === 'function') {
             window.updatePlotLayerStyles();
         }
@@ -102,14 +148,16 @@ export function handleLayerToggle(type, isChecked) {
                 'qares-boundary-fill',
                 'qares-boundary-line',
                 'qares-railway-casing',
-                'qares-railway-line'
+                'qares-railway-line',
+                'rares-boundary-fill',
+                'rares-boundary-line'
             ];
             boundaryLayerIds.forEach(lid => {
                 if (currentMap.getLayer(lid)) {
                     try { currentMap.setLayoutProperty(lid, 'visibility', vis); } catch (e) { }
                 }
             });
-            ['qares-boundary-glow', 'qares-boundary-casing'].forEach(lid => {
+            ['qares-boundary-glow', 'qares-boundary-casing', 'rares-boundary-glow', 'rares-boundary-casing'].forEach(lid => {
                 if (currentMap.getLayer(lid)) {
                     try { currentMap.setLayoutProperty(lid, 'visibility', shadowVis); } catch (e) { }
                 }
@@ -145,6 +193,9 @@ export function setLabelDisplayMode(mode) {
     const isCompact = (mode === 'compact');
 
     document.body.classList.toggle('label-mode-compact', isCompact);
+    if (state.markersVisible === false) {
+        document.body.classList.add('labels-hidden');
+    }
 
     const fullBtn = document.getElementById('msp-seg-full');
     const compactBtn = document.getElementById('msp-seg-compact');

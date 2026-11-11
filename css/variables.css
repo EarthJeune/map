@@ -1,0 +1,67 @@
+/* ==========================================================================
+   DA-CALABARZON INTERACTIVE WAYFINDING SYSTEM
+   Design Tokens, Custom Properties & CSS Variables
+   Author: DA-LARES / DA-CALABARZON Spatial Hub (DASH)
+   ========================================================================== */
+
+:root {
+    /* --- Layout & Dimensions --- */
+    --sidebar-width: 400px;
+    --sidebar-offset: 400px;
+    --panel-width: 420px;
+    --portrait-panel-height: 40vh;
+
+    /* --- Safe Area Insets (iOS Notch & Dynamic Island, Android Nav Bar) --- */
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+
+    /* --- Core Theme Colors (DA Green & Modern Glass Dark) --- */
+    --primary-green: #22c55e;
+    --primary-green-dark: #16a34a;
+    --primary-green-glow: rgba(34, 197, 94, 0.22);
+    --accent-emerald: #10b981;
+    --accent-cyan: #38bdf8;
+    --accent-gold: #f59e0b;
+    --accent-amber: #fbbf24;
+    --accent-rose: #f43f5e;
+    --accent-slate: #94a3b8;
+
+    /* --- Surface & Glassmorphic Backgrounds --- */
+    --dark-bg: #0a0f1c;
+    --dark-bg-glass: rgba(10, 15, 28, 0.94);
+    --dark-surface: rgba(15, 23, 42, 0.92);
+    --card-bg: rgba(255, 255, 255, 0.06);
+    --card-bg-hover: rgba(255, 255, 255, 0.1);
+    --card-border: rgba(255, 255, 255, 0.1);
+    --card-border-subtle: rgba(255, 255, 255, 0.06);
+
+    /* --- Typography & Text Hierarchy --- */
+    --text-main: #f1f5f9;
+    --text-muted: #94a3b8;
+    --text-subtle: #64748b;
+    --text-inverse: #0a0f1c;
+
+    /* --- Z-Index Layering System --- */
+    --z-map: 1;
+    --z-markers: 5;
+    --z-controls: 10;
+    --z-sidebar: 20;
+    --z-drawer: 30;
+    --z-hud: 40;
+    --z-modal: 50;
+    --z-curtain: 100;
+
+    /* --- Animation & Claymation Defaults --- */
+    --clay-speed: 0.44s;
+    --clay-lean: 10deg;
+    --leg-fwd: 46deg;
+    --leg-back: -40deg;
+    --arm-fwd: 44deg;
+    --arm-back: -36deg;
+
+    /* --- Spotlight Beacon Default --- */
+    --spotlight-color: #38bdf8;
+}
+

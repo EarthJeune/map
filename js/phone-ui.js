@@ -777,9 +777,9 @@ export function initPhoneSheetGestures() {
 
 export const BUILDING_PHOTOS = {
 
-    'admin_building': ['images/admin_building.jpg'],
+    'admin_building': ['images/admin_building.webp'],
 
-    'automated_weather_station': ['images/automated_weather_station.jpg']
+    'automated_weather_station': ['images/automated_weather_station.webp']
 
 };
 
@@ -809,7 +809,7 @@ export function renderPhoneBuildingGallery(buildingId) {
 
         const safeId = buildingId.replace(/\//g, '_');
 
-        candidatePhotos = [`images/${safeId}.jpg`];
+        candidatePhotos = [`images/${safeId}.webp`];
 
     }
 

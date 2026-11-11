@@ -378,18 +378,18 @@ export const FIELD_COMMODITY_ZONES = [
                 "crop": "Vegetables Screenhouse 1",
                 "details": "Protected vegetable cultivation & seedling propagation beds",
                 "buildingId": "plot17_screenhouse_1",
-                "image": "images/plot17_screenhouse_1.jpg",
+                "image": "images/plot17_screenhouse_1.webp",
                 "images": [
                     {
-                        "src": "images/plot17_screenhouse_1.jpg",
+                        "src": "images/plot17_screenhouse_1.webp",
                         "label": "Exterior Front"
                     },
                     {
-                        "src": "images/plot17_screenhouse_1_inside.jpg",
+                        "src": "images/plot17_screenhouse_1_inside.webp",
                         "label": "Interior Nursery Beds"
                     },
                     {
-                        "src": "images/plot17_screenhouse_1_side.jpg",
+                        "src": "images/plot17_screenhouse_1_side.webp",
                         "label": "Left Flank"
                     }
                 ],
@@ -427,14 +427,14 @@ export const FIELD_COMMODITY_ZONES = [
                 "crop": "Vegetables Screenhouse 2",
                 "details": "Insect-proof vegetable seedling nursery with protective fine mesh",
                 "buildingId": "plot17_screenhouse_2",
-                "image": "images/plot17_screenhouse_2.jpg",
+                "image": "images/plot17_screenhouse_2.webp",
                 "images": [
                     {
-                        "src": "images/plot17_screenhouse_2.jpg",
+                        "src": "images/plot17_screenhouse_2.webp",
                         "label": "Exterior Front"
                     },
                     {
-                        "src": "images/plot17_screenhouse_2_inside.jpg",
+                        "src": "images/plot17_screenhouse_2_inside.webp",
                         "label": "Seedling Nursery"
                     }
                 ],
@@ -472,14 +472,14 @@ export const FIELD_COMMODITY_ZONES = [
                 "crop": "Citrus Mother Plants",
                 "details": "Foundation block & mother tree screenhouse for disease-free citrus budwood",
                 "buildingId": "plot17_screenhouse_3",
-                "image": "images/plot17_screenhouse_3.jpg",
+                "image": "images/plot17_screenhouse_3.webp",
                 "images": [
                     {
-                        "src": "images/plot17_screenhouse_3.jpg",
+                        "src": "images/plot17_screenhouse_3.webp",
                         "label": "Exterior Front"
                     },
                     {
-                        "src": "images/plot17_screenhouse_3_side.jpg",
+                        "src": "images/plot17_screenhouse_3_side.webp",
                         "label": "Side View"
                     }
                 ],
@@ -517,14 +517,14 @@ export const FIELD_COMMODITY_ZONES = [
                 "crop": "Embryo Cultured Macapuno & TC Banana",
                 "details": "Acclimatization & hardening nursery for embryo-cultured Makapuno and micropropagated banana",
                 "buildingId": "plot17_screenhouse_4",
-                "image": "images/plot17_screenhouse_4.jpg",
+                "image": "images/plot17_screenhouse_4.webp",
                 "images": [
                     {
-                        "src": "images/plot17_screenhouse_4.jpg",
+                        "src": "images/plot17_screenhouse_4.webp",
                         "label": "Exterior Front"
                     },
                     {
-                        "src": "images/plot17_screenhouse_4_inside.jpg",
+                        "src": "images/plot17_screenhouse_4_inside.webp",
                         "label": "Inside Shade Net"
                     }
                 ],
@@ -562,14 +562,14 @@ export const FIELD_COMMODITY_ZONES = [
                 "crop": "Coffee Seedlings",
                 "details": "Galvanized pipe frame nursery shade house for high-quality clonal coffee seedlings",
                 "buildingId": "plot17_screenhouse_5",
-                "image": "images/plot17_screenhouse_5.jpg",
+                "image": "images/plot17_screenhouse_5.webp",
                 "images": [
                     {
-                        "src": "images/plot17_screenhouse_5.jpg",
+                        "src": "images/plot17_screenhouse_5.webp",
                         "label": "Exterior Front"
                     },
                     {
-                        "src": "images/plot17_screenhouse_5_inside.jpg",
+                        "src": "images/plot17_screenhouse_5_inside.webp",
                         "label": "Inside Nursery"
                     }
                 ],
@@ -601,7 +601,7 @@ export const FIELD_COMMODITY_ZONES = [
                 ]
             }
         ],
-        "image": "images/zone_tc_makapuno_screenhouse.jpg"
+        "image": "images/zone_tc_makapuno_screenhouse.webp"
     },
     {
         "id": "zone_coffee_citrus_screenhouse",
@@ -649,18 +649,18 @@ export const FIELD_COMMODITY_ZONES = [
                 "crop": "Citrus Seedlings",
                 "details": "Combined 3-bay research greenhouse complex dedicated to certified disease-free citrus rootstocks and scions",
                 "buildingId": "plot18_greenhouse_complex",
-                "image": "images/plot18_screenhouse_7.jpg",
+                "image": "images/plot18_screenhouse_7.webp",
                 "images": [
                     {
-                        "src": "images/plot18_screenhouse_6.jpg",
+                        "src": "images/plot18_screenhouse_6.webp",
                         "label": "Bay 6 (West Bay)"
                     },
                     {
-                        "src": "images/plot18_screenhouse_7.jpg",
+                        "src": "images/plot18_screenhouse_7.webp",
                         "label": "Bay 7 (Center Bay)"
                     },
                     {
-                        "src": "images/plot18_screenhouse_8.jpg",
+                        "src": "images/plot18_screenhouse_8.webp",
                         "label": "Bay 8 (East Bay)"
                     }
                 ],
@@ -698,10 +698,10 @@ export const FIELD_COMMODITY_ZONES = [
                 "crop": "Citrus Seedlings & Potting",
                 "details": "Curved hoop trellis screenhouse and attached potting headhouse for citrus seedling production",
                 "buildingId": "plot18_screenhouse_9",
-                "image": "images/plot18_screenhouse_9.jpg",
+                "image": "images/plot18_screenhouse_9.webp",
                 "images": [
                     {
-                        "src": "images/plot18_screenhouse_9.jpg",
+                        "src": "images/plot18_screenhouse_9.webp",
                         "label": "Exterior Front"
                     }
                 ],
@@ -733,7 +733,7 @@ export const FIELD_COMMODITY_ZONES = [
                 ]
             }
         ],
-        "image": "images/zone_coffee_citrus_screenhouse.jpg"
+        "image": "images/zone_coffee_citrus_screenhouse.webp"
     },
     {
         "id": "zone_pomelo_orchard_19",
@@ -835,14 +835,14 @@ export const FIELD_COMMODITY_ZONES = [
                 "crop": "Water Supply & Sprinkler Irrigation",
                 "details": "Elevated structural steel water tower with stainless storage tank & modernization signboard",
                 "buildingId": "plot22_water_tank",
-                "image": "images/plot22_water_tank.jpg",
+                "image": "images/plot22_water_tank.webp",
                 "images": [
                     {
-                        "src": "images/plot22_water_tank.jpg",
+                        "src": "images/plot22_water_tank.webp",
                         "label": "Front View with Signboard"
                     },
                     {
-                        "src": "images/plot22_water_tank_angle.jpg",
+                        "src": "images/plot22_water_tank_angle.webp",
                         "label": "Catwalk & Storage Tank"
                     }
                 ],
@@ -873,14 +873,14 @@ export const FIELD_COMMODITY_ZONES = [
                 "crop": "Sanitation & Irrigation Hub",
                 "details": "Concrete comfort room facility with shed roof, irrigation controls & dedication marker",
                 "buildingId": "plot22_comfort_room",
-                "image": "images/plot22_comfort_room.jpg",
+                "image": "images/plot22_comfort_room.webp",
                 "images": [
                     {
-                        "src": "images/plot22_comfort_room.jpg",
+                        "src": "images/plot22_comfort_room.webp",
                         "label": "Front Entrance"
                     },
                     {
-                        "src": "images/plot22_comfort_room_marker.jpg",
+                        "src": "images/plot22_comfort_room_marker.webp",
                         "label": "Irrigation System Marker"
                     }
                 ],

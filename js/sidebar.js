@@ -53,7 +53,7 @@ export function toggleSettingChip(btn, type) {
             const isMapbox = (state.currentMapStyleMode === 'mapbox');
             const shadowVis = (!isMapbox && on) ? 'visible' : 'none';
 
-            // Unified boundary layers (LARES & QARES)
+            // Unified boundary layers (LARES, QARES & RARES)
             const boundaryLayerIds = [
                 'lares-boundary-fill',
                 'lares-boundary-glow',
@@ -63,7 +63,9 @@ export function toggleSettingChip(btn, type) {
                 'qares-boundary-fill',
                 'qares-boundary-line',
                 'qares-railway-casing',
-                'qares-railway-line'
+                'qares-railway-line',
+                'rares-boundary-fill',
+                'rares-boundary-line'
             ];
             boundaryLayerIds.forEach(lid => {
                 if (currentMap.getLayer(lid)) {
@@ -72,7 +74,7 @@ export function toggleSettingChip(btn, type) {
             });
 
             // Shadow / glow layers (Satellite mode only, hidden in Mapbox mode)
-            ['qares-boundary-glow', 'qares-boundary-casing'].forEach(lid => {
+            ['qares-boundary-glow', 'qares-boundary-casing', 'rares-boundary-glow', 'rares-boundary-casing'].forEach(lid => {
                 if (currentMap.getLayer(lid)) {
                     try { currentMap.setLayoutProperty(lid, 'visibility', shadowVis); } catch (e) { }
                 }
@@ -114,10 +116,18 @@ export function toggleSettingChip(btn, type) {
         state.markersVisible = on;
 
         const markersShouldShow = on;
+        if (document.body) {
+            document.body.classList.toggle('labels-hidden', !markersShouldShow);
+        }
         if (state.markers && state.markers.length > 0) {
             state.markers.forEach(m => {
                 if (m && m.getElement()) {
-                    m.getElement().style.display = markersShouldShow ? '' : 'none';
+                    if (markersShouldShow) {
+                        m.getElement().style.removeProperty('display');
+                        m.getElement().style.display = '';
+                    } else {
+                        m.getElement().style.setProperty('display', 'none', 'important');
+                    }
                 }
                 if (!markersShouldShow && m.getPopup && m.getPopup() && m.getPopup().isOpen()) {
                     m.togglePopup();
@@ -127,7 +137,21 @@ export function toggleSettingChip(btn, type) {
 
         // Direct DOM update as fallback for any building marker element
         document.querySelectorAll('.bldg-map-marker').forEach(el => {
-            el.style.display = markersShouldShow ? '' : 'none';
+            if (markersShouldShow) {
+                el.style.removeProperty('display');
+                el.style.display = '';
+            } else {
+                el.style.setProperty('display', 'none', 'important');
+            }
+        });
+
+        document.querySelectorAll('.plot-map-marker').forEach(el => {
+            if (markersShouldShow) {
+                el.style.removeProperty('display');
+                el.style.display = '';
+            } else {
+                el.style.setProperty('display', 'none', 'important');
+            }
         });
 
         if (markersShouldShow && typeof window.virtualizeMarkers === 'function') {
@@ -341,7 +365,16 @@ export function quickSearch(term) {
 
 export function buildDirectory(filter = '', category = currentCategory) {
     if (state.currentStationId && state.currentStationId !== 'lares') {
-        return; // Prevent LARES directory from overwriting QARES or other stations
+        if (state.currentStationId === 'qares') {
+            if (typeof window.renderQARESDirectory === 'function' && window.qaresBuildingsBaseline) {
+                window.renderQARESDirectory(window.qaresBuildingsBaseline);
+            }
+        } else if (state.currentStationId === 'rares') {
+            if (typeof window.renderRARESDirectory === 'function') {
+                window.renderRARESDirectory();
+            }
+        }
+        return; // Prevent LARES directory from overwriting QARES or RARES stations
     }
     const dir = document.getElementById('directory');
     if (!dir) return;
@@ -552,6 +585,13 @@ export function filterDirectory() {
     if (state.currentStationId === 'qares') {
         if (typeof window.filterQARESSearch === 'function') {
             window.filterQARESSearch(val);
+        }
+        safeResetIdle();
+        return;
+    }
+    if (state.currentStationId === 'rares') {
+        if (typeof window.filterRARESSearch === 'function') {
+            window.filterRARESSearch(val);
         }
         safeResetIdle();
         return;

@@ -155,7 +155,9 @@ import {
     toggleStationDropdown,
     closeStationDropdown,
     switchResearchStation,
-    loadQARESData
+    loadQARESData,
+    loadRARESData,
+    renderRARESDirectory
 } from './stations.js';
 
 import {
@@ -288,6 +290,20 @@ fetch('/api/qares/pin')
     })
     .catch(err => console.error("Could not fetch QARES pin location", err));
 
+// Fetch RARES pin location from backend
+fetch('/api/rares/pin')
+    .then(res => res.json())
+    .then(data => {
+        if (data.coordinates) {
+            state.RARES_KIOSK_COORDS = data.coordinates;
+            window.RARES_KIOSK_COORDS = state.RARES_KIOSK_COORDS;
+            if (state.kioskMarkerInstance && state.currentStationId === 'rares') {
+                state.kioskMarkerInstance.setLngLat(state.RARES_KIOSK_COORDS);
+            }
+        }
+    })
+    .catch(err => console.error("Could not fetch RARES pin location", err));
+
 // Initial Map load sequence
 function initViewportTelemetry() {
     const coordsEl = document.getElementById('coords-text');
@@ -409,6 +425,10 @@ map.on('load', () => {
         } else if (state.currentStationId === 'qares') {
             createKioskMarker();
             loadQARESData();
+        } else if (state.currentStationId === 'rares') {
+            createKioskMarker();
+            renderRARESDirectory();
+            loadRARESData();
         }
         resetIdle();
         syncLightingWithTime();
@@ -579,9 +599,19 @@ window.addEventListener('keydown', (e) => {
         if (typeof window.syncAdminDroneDOM === 'function') {
             window.syncAdminDroneDOM();
         }
-        buildDirectory();
+        if (state.currentStationId === 'lares') {
+            buildDirectory();
+        } else if (state.currentStationId === 'qares') {
+            if (typeof window.renderQARESDirectory === 'function' && window.qaresBuildingsBaseline) {
+                window.renderQARESDirectory(window.qaresBuildingsBaseline);
+            }
+        } else if (state.currentStationId === 'rares') {
+            if (typeof window.renderRARESDirectory === 'function') {
+                window.renderRARESDirectory();
+            }
+        }
         createKioskMarker();
-        const activeStationLabel = (state.currentStationId === 'qares') ? 'DA-QARES (Tiaong)' : 'DA-LARES (Lipa)';
+        const activeStationLabel = (state.currentStationId === 'qares') ? 'DA-QARES (Tiaong)' : (state.currentStationId === 'rares') ? 'DA-RARES (Tanay)' : 'DA-LARES (Lipa)';
         const msg = state.isAdmin
             ? `🔓 Admin Mode Enabled (${activeStationLabel})\n\n• Kiosk Pin Calibration: Drag the "You Are Here" pin or Alt + Click anywhere on the map to place it\n• Drone Calibration: Click 🛰️ in the top-right toolbar or press Alt + Shift + D`
             : '🔒 Visitor Kiosk Mode (Admin Controls Hidden)';

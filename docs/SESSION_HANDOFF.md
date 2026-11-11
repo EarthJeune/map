@@ -22,6 +22,208 @@ Runtime:
 
 ---
 
+### 2.0.42 Option C Architecture: Dedicated Station-Isolated 3D Building Sources & Layers — 🏆 Complete
+- **Issue Investigated:** Switching from DA-LARES to another station (e.g. DA-RARES) and back to DA-LARES caused all 3D buildings in DA-LARES to vanish due to a shared mutable source (`lares-3d-buildings-models-source`) being overwritten via `.setData()`.
+- **Architectural Refactor to Option C Implemented:**
+  - Fully eliminated runtime GeoJSON swapping and source mutations across all research stations.
+  - Implemented dedicated, station-isolated 3D model sources and layers in [js/map-setup.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/map-setup.js):
+    - **DA-LARES:** `lares-3d-models-source`, `lares-3d-models-layer`, and `lares-3d-models-transparent` (49 models).
+    - **DA-RARES:** `rares-3d-models-source`, `rares-3d-models-layer`, and `rares-3d-models-transparent` (`rares_building_1` Guard House).
+    - **DA-QARES:** `qares-3d-models-source`, `qares-3d-models-layer`, and `qares-3d-models-transparent`.
+  - **Zero `.setData()` Mutation:** Each station's source is populated once with its own isolated static coordinates and models. Station switching is now a 100% pure layout visibility toggle (`visible` / `none`).
+  - **Walker Occlusion & Map Settings Integration:**
+    - Updated [js/occlusion.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/occlusion.js) and [js/map-settings.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/map-settings.js) to support station-scoped model layers and transparent companions.
+    - Updated [js/drone-calibration.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/drone-calibration.js) to reference `lares-3d-models-source`.
+  - Bumped cachebuster in [index.html](file:///c:/Users/LGU-SanPedro/Downloads/map/index.html) to `?v=263`.
+- **Automated Verification:**
+  - Executed comprehensive automated matrix tests in [`tools/tests/verify_option_c.py`](file:///c:/Users/LGU-SanPedro/Downloads/map/tools/tests/verify_option_c.py):
+    - Verified LARES initial load: `lares-3d-models-source` has 49 models; `lares-3d-models-layer` is `visible`.
+    - Switched to RARES: `rares-3d-models-layer` is `visible`; `lares-3d-models-layer` is `none`.
+    - Confirmed `lares-3d-models-source` **remained completely intact with 49 features** while camera was in RARES (zero mutation).
+    - Switched back to LARES: `lares-3d-models-layer` restored instantly with 0 latency and 0 vanishing.
+    - Multi-hop roundtrip (`LARES -> QARES -> RARES -> LARES`) executed with 100% building retention.
+    - Verified live screenshots: `option_c_rares_guard_house.jpg` and `option_c_lares_buildings.jpg`.
+
+### 2.0.41 DA-RARES Guard House 3D Integration, Layer Stacking Architecture & 39 Facilities Calibration — 🏆 Complete
+- **Issue Investigated:**
+  - The authentic 3D architectural model of the DA-RARES Guard House (`models/rares_guard_house.glb`) was not rendering on the map (`?station=rares`).
+  - When Building Labels was toggled OFF in Map Display Settings while in Compact Number mode, labels were not hidden.
+  - Facilities at DA-RARES required complete re-numbering and renaming to match the official 1..39 master list.
+- **Root Causes Discovered & Fixed:**
+  1. **Mapbox GL JS 3.x Layer Array Stacking Order:**
+     - Non-standard styles (`satellite-streets-v12` / Google Satellite mode) ignore `slot: 'middle'` and composite strictly by layer array order.
+     - `loadRARESData()` dynamically appended `rares-ortho-layer` and `rares-mask-layer` to the end of the style layers array, placing the drone orthomosaic raster directly *above* `3d-buildings-models-layer` and occluding the 3D models.
+     - **Fix:** Updated `loadRARESData()` in [js/stations.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/stations.js) to pass `bldgsModelBeforeId` to `rares-ortho-layer`, `rares-mask-layer`, `rares-footprints-3d`, `rares-plots-fill`, and `rares-plots-line`. Also added `map.moveLayer('3d-buildings-models-layer')` at the conclusion of layer loading so 3D architectural models are guaranteed to sit strictly above all ground rasters, masks, and polygons.
+  2. **Startup Layer Suppression Bug ([js/map-setup.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/map-setup.js)):**
+     - Line 413 checked `if (state.currentStationId && state.currentStationId !== 'lares')` and hid `laresLayers`, which mistakenly included `'3d-buildings-models-layer'`.
+     - **Fix:** Removed `'3d-buildings-models-layer'` and `'3d-buildings-translucent-layer'` from `laresLayers` so 3D models remain active across all research stations.
+  3. **Compact Number Label Toggle Bug ([js/markers.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/markers.js)):**
+     - When toggling Building Labels OFF while in Compact Number mode, elements retained inline display rules or lost the hide class.
+     - **Fix:** Added `document.body.classList.toggle('labels-hidden', !areMarkersVisible)` and forced `el.style.setProperty('display', 'none', 'important')`. Verified with automated CDP test (`tools/tests/test_compact_label_toggle.py`).
+  4. **Pill Marker Placement for Small Structures:**
+     - `rares_building_1` had no explicit `marker_coords` in `rares_buildings.json`, falling back to centroid which placed the wide pill directly across the entrance facade.
+     - **Fix:** Placed `marker_coords: [121.34054276, 14.576475]` slightly north along the roof ridge/rear.
+  5. **Official 39 Facilities Master List & Standalone Calibrator Tool:**
+     - Renamed and renumbered all 39 facilities in [rares_buildings.json](file:///c:/Users/LGU-SanPedro/Downloads/map/rares_buildings.json) to match the official sequence (1. Guard House, 2. Admin Building, 3. Seed Storage, ..., 39. SPIS).
+     - Built [pill_adjust.html](file:///c:/Users/LGU-SanPedro/Downloads/map/pill_adjust.html) interactive drag-and-drop pill calibrator tool (`/pill_adjust.html?station=rares`) enabling seamless visual adjustments without moving building polygon footprints.
+- **Verification:**
+  - Automated CDP verification test (`tools/tests/verify_rares_guard_house.py`) confirmed layer array indices (`rares-ortho-layer: 16`, `3d-buildings-models-layer: 22`).
+  - Captured live screenshots (`rares_guard_house_live_verified.jpg` and `rares_guard_house_live_topdown.jpg`) confirming the 3D terracotta gable Guard House is rendered cleanly in full 3D right at the entrance gate with authentic textures and materials.
+
+### 2.0.40 Multi-Station Standalone Directory Menus & RARES Buildings Integration — 🏆 Complete
+- **Issue Investigated:** When viewing DA-RARES, the sidebar directory erroneously showed the LARES buildings directory (`LARES BUILDINGS (39) Lipa City, Batangas` with Guard House A, ORED Building, etc.).
+- **Root Cause Identified:**
+  - `renderRARESDirectory` in `js/stations.js` targeted non-existent element IDs `dir-list` and `directory-list` instead of `directory` and `phone-directory-list`.
+  - `sidebar.js`'s `buildDirectory()` returned early when station was not `lares`, leaving the previously populated `#directory` DOM element untouched.
+  - Toggling Admin Mode (`Alt + Shift + A`) also called `buildDirectory()` unconditionally.
+- **Definitive Fixes Implemented:**
+  - **Standalone Directory Architecture ([js/stations.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/stations.js)):**
+    - Updated `renderRARESDirectory` to target `#directory` (desktop) and `#phone-directory-list` (mobile).
+    - Added dynamic loading from [rares_buildings.json](file:///c:/Users/LGU-SanPedro/Downloads/map/rares_buildings.json) so traced buildings (currently 33 facilities) render with badges, names, and click-to-fly navigation.
+    - Added `filterRARESSearch` for real-time station-isolated search bar filtering.
+    - Mounted 3D extrusion footprints (`rares-footprints-3d`) over the drone layer.
+  - **Directory Router ([js/sidebar.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/sidebar.js)):**
+    - `buildDirectory()` now automatically delegates to `renderRARESDirectory()` when `currentStationId === 'rares'` and `renderQARESDirectory()` when `currentStationId === 'qares'`.
+    - `filterDirectory()` routes searches directly to the active station's dedicated search function.
+  - **Admin Mode Router ([js/app.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/app.js)):**
+    - `Alt + Shift + A` now refreshes the active station's directory specifically.
+    - Added `/api/rares/pin` GET/POST endpoints and `rares_pin.json` persistence.
+- **Verification:**
+  - Verified across all 3 research stations with `scratch/verify_station_directories.py`.
+  - Confirmed 0 leakages: DA-RARES shows `RARES BUILDINGS (33) Tanay, Rizal`, DA-LARES shows `LARES BUILDINGS (39) Lipa City, Batangas`, and DA-QARES shows `QARES BUILDINGS (48) Tiaong, Quezon`.
+
+### 2.0.39 DA-RARES Drone Orthomosaic, Inverted Boundary Mask & Building Drawer Integration — 🏆 Complete
+- **Offline Drone Orthomosaic Layer (`RARES v1.mbtiles`):**
+  - Generated and placed `RARES v1.mbtiles` (17.5 MB, zooms 14–21) in the map root.
+  - Integrated into [server.js](file:///c:/Users/LGU-SanPedro/Downloads/map/server.js) with MBTiles SQLite streaming at `/api/tiles/rares/:z/:x/:y.png` (bounds: `[121.3366, 14.5727, 121.3421, 14.5773]`).
+- **Dissolved Single Boundary & Inverted Dark Mask:**
+  - Dissolved 3 parcel polygons from `rares_boundary/` into a single unified outline in [rares_boundary.json](file:///c:/Users/LGU-SanPedro/Downloads/map/rares_boundary.json).
+  - Created `RARES_MASK` inverted world polygon in [js/data/geo.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/data/geo.js) with deep dark void fill (`#0b1121`, opacity 1.0) and green neon glowing perimeter boundary lines (`rares-boundary-line`, `casing`, `glow`, `fill`).
+  - Wired into [js/stations.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/stations.js) and [js/app.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/app.js) with smooth station switching.
+- **Agricultural Plots Explicitly Suppressed:**
+  - Maintained `rares_plots.json` in codebase while strictly leaving plots unrendered on the map per user directive (*"Dont apply the agricultural plots for now and i will be drawing the buildings after you plotted the aerial drone view and outline."*).
+- **Interactive Tracing Setup in [draw.html](file:///c:/Users/LGU-SanPedro/Downloads/map/draw.html):**
+  - Added dedicated `DA-RARES (Tanay)` switcher button and URL router (`draw.html?station=rares`).
+  - Mounted `rares-drone-layer` and `rares-boundary-line`.
+  - Added `/api/rares/buildings` GET & POST endpoints in `server.js` with automated timestamped backups in `archive/backups/`.
+  - Initialized [rares_buildings.json](file:///c:/Users/LGU-SanPedro/Downloads/map/rares_buildings.json) as the single source of truth for traced building footprints.
+- **Automated Verification:** Verified via headless CDP in `scratch/verify_rares_integration.py` with zero errors, generating verified artifacts `rares_draw_view.png` and `rares_campus_view.png`.
+
+### 2.0.38 QARES High-Zoom Aerial Drone Hole Resolution — 🏆 Resolved
+- **Issue Investigated:** In DA-QARES, zooming in close ($\text{zoom} \ge 20.5$) formed a dark, jagged polygonal "hole" covering central facilities (Magdalo Building #7, Tissue Culture #6, Fertilizer Storage #14, and Guest House #8) through which the darker Google Satellite basemap showed.
+- **Root Cause Identified:**
+  - `QARES v1.mbtiles` contains pyramid levels 14 to 21 (`maxzoom = 21`). At zoom 22, 0 tiles exist.
+  - `js/stations.js` incorrectly declared `maxzoom: 22` on `qares-drone-source`. Mapbox requested zoom 22 tiles at high zoom.
+  - `server.js` previously returned a 70-byte transparent 1x1 PNG with HTTP 200 OK for missing tiles, which Mapbox rendered over the zoom 21 drone orthomosaic, punching a transparent hole.
+- **Definitive Fixes Implemented:**
+  - **Client Overzoom Fix ([js/stations.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/stations.js)):** Changed `maxzoom: 22` to `maxzoom: 21` on `qares-drone-source`. Mapbox now automatically overzooms (upsamples) the zoom 21 drone tiles seamlessly at zooms 21.5, 22.0, and 23.0 without requesting zoom 22 tiles.
+  - **Backend Defensive Guard ([server.js](file:///c:/Users/LGU-SanPedro/Downloads/map/server.js)):** Enhanced MBTiles loader to read database `minzoom` and `maxzoom` metadata. Added guard in `handleStationTileRequest` returning `HTTP 204 No Content` for any requests exceeding `st.maxzoom`, preventing transparent tile blanking.
+  - **Cachebuster Bump ([index.html](file:///c:/Users/LGU-SanPedro/Downloads/map/index.html)):** Bumped `js/app.js` to `?v=253`.
+- **Verification Across Viewports:**
+  - Verified via headless CDP matrix tests at zooms 20.0, 20.5, 21.0, 21.5, and 22.0 on Desktop (`1920x1080`) and Mobile (`390x844`).
+  - Dark pixel ratio at zoom 20.5 dropped from $25.80\%$ to $1.83\%$; at zoom 21.5 to $0.09\%$; at zoom 22.0 to $0.00\%$. The drone layer is now completely seamless, continuous, and crisp at all zoom levels.
+
+### 2.0.37 CSS Modularization — Phase 8: Comprehensive Cross-Platform Matrix Testing & Verification — 🏆 Passed
+- **Executed Cross-Platform Matrix Test Suite (`scratch/verify_phase8_matrix.py`):** Verified all viewports and display orientations with 0 regressions, 0 linter warnings, and 100% visual parity:
+  - **Landscape Desktop Full HD (`1920x1080`):** `phase8_landscape_1920x1080.png` — Map loaded, sidebar flex, building details drawer opens at exact 420px width.
+  - **Landscape Desktop Laptop (`1280x800`):** `phase8_landscape_1280x800.png` — Map loaded, sidebar flex, search row and directory list active.
+  - **Portrait Touch Kiosk Totem (`1080x1920`):** `phase8_portrait_1080x1920.png` — Map loaded, bottom touch panel styled with 28px border radius, building details drawer opens at 620px width.
+  - **Mobile Phone Web (`390x844`):** `phase8_mobile_390x844.png` — Desktop sidebar suppressed, mobile 3-stage bottom sheet docked, top bar visible, all 65 directory facilities verified interactive.
+- **Network & Resource Audit:** Confirmed all 8 modular stylesheets (`variables.css`, `base.css`, `kiosk.css`, `building-panel.css`, `navigation.css`, `phone.css`, `admin.css`, and `main.css`) return `HTTP 200 OK` with zero 404s.
+- **Console & Runtime Exception Audit:** Confirmed 0 uncaught exceptions or error logs across all tested viewports.
+- **CSS Modularization Roadmap Complete:** All 8 phases successfully executed. The modular stylesheet architecture is now fully decoupled, performant, and ready for multi-station scaling (QARES, RARES, CARES).
+
+### 2.0.36 CSS Modularization — Phase 7: Admin & Dev Calibration Overlays Layer (css/admin.css) — ✅ Complete
+- **Extracted Admin Architecture to `css/admin.css`:** Extracted 762 lines of admin tools, developer calibration HUDs, and diagnostic overlays into [css/admin.css](file:///c:/Users/LGU-SanPedro/Downloads/map/css/admin.css), covering:
+  - Normal visitor visibility isolation rules (`html:not(.admin-mode) body:not(.admin-mode) .admin-drone-calib-widget, .admin-drone-calib-btn, .drone-calib-hud, .dcal-toast, .msp-admin-only { display: none !important; }`)
+  - Admin interactive kiosk marker drag handles (`.kiosk-marker.admin-mode`, `:active`, label pointer events)
+  - Admin three-dots context menu trigger (`body.admin-mode .three-dots-btn`)
+  - Admin section in Map Display Settings panel (`.msp-admin-only`, `.msp-admin-action-btn`, `.msp-admin-action-arrow`)
+  - Diagnostic GPS HUD overlay (`.gps-debug-hud`, `.debug-title`, `.debug-row`)
+  - Drone Orthomosaic Alignment HUD window & widgets (`.admin-drone-calib-widget`, `.drone-calib-hud`, `.dcal-*`)
+  - Directional D-Pad controls, opacity comparison sliders, calibration readout cards, and action buttons
+- **Master Entry Integration:** Added `@import 'admin.css';` at line 7 of [css/main.css](file:///c:/Users/LGU-SanPedro/Downloads/map/css/main.css) and cleanly pruned 738 lines from `main.css` (reducing it from 5,899 lines down to 5,161 lines).
+- **HTML & Parallel Preload:** Added `<link rel="stylesheet" href="css/admin.css?v=193">` and bumped cachebusters to `?v=193` in [index.html](file:///c:/Users/LGU-SanPedro/Downloads/map/index.html).
+- **Automated Cross-Viewport Verification:** Passed automated testing across all 4 modes:
+  - **Landscape Desktop (Normal):** `phase7_landscape_desktop_normal.png` — all admin widgets hidden for visitors (`display: none`).
+  - **Landscape Desktop (Admin):** `phase7_landscape_desktop_admin.png` — `.admin-drone-calib-widget` `display: flex`, drone calibration HUD window active & interactive.
+  - **Portrait Kiosk:** `phase7_portrait_kiosk.png` — admin widgets hidden, kiosk UI 100% stable.
+  - **Mobile Phone:** `phase7_mobile_phone.png` — mobile UI 100% stable.
+
+### 2.0.35 CSS Modularization — Phase 6: Mobile Touch UI & Bottom Sheet Layer (css/phone.css) — ✅ Complete
+- **Extracted Mobile Touch Layer to `css/phone.css`:** Extracted 2,450 lines of mobile UI architecture into [css/phone.css](file:///c:/Users/LGU-SanPedro/Downloads/map/css/phone.css), covering:
+  - Desktop / Kiosk resets (`.phone-bottom-sheet, .mobile-recenter-btn, .phone-top-bar { display: none !important; }`)
+  - Phone 3-snap bottom sheet (`.phone-bottom-sheet`, `.snap-peek`, `.snap-half`, `.snap-full`, `.is-dragging`)
+  - Touch drag handle (`.phone-sheet-drag-handle`, `.phone-sheet-handle-pill`)
+  - Mobile station banner and switcher modal (`.phone-station-modal-sheet`, `.phone-station-card`, `.psc-*`)
+  - Mobile search row & category chips (`.phone-search-row`, `.phone-search-input`)
+  - Mobile directory list (`.phone-directory-list`, `.phone-dir-item`, tags & badges)
+  - Mobile building details peek panel & scrollable view (`.phone-bldg-header`, `.phone-bldg-scrollable`)
+  - Mobile route navigation sheet (`.phone-route-peek-panel`, `.phone-route-step`)
+  - Mobile arrived modal & celebratory confetti (`.phone-arrived-modal-card`, `.pam-*`)
+  - Mobile GPS permission prompt (`.phone-gps-permission-card`, `.pgpc-*`)
+  - Mobile onboarding guide (`.phone-welcome-modal-card`, `.pwm-*`)
+  - Mobile right-rail control stack (Map settings, Map layer/drone switcher, 38px circular orbit & fullscreen buttons)
+- **Master Entry Integration:** Added `@import 'phone.css';` at line 6 of [css/main.css](file:///c:/Users/LGU-SanPedro/Downloads/map/css/main.css) and cleanly pruned 2,435 lines from `main.css` (reducing it from 8,334 lines down to 5,899 lines).
+- **HTML & Parallel Preload:** Added `<link rel="stylesheet" href="css/phone.css?v=192">` and bumped cachebusters to `?v=192` in [index.html](file:///c:/Users/LGU-SanPedro/Downloads/map/index.html).
+- **Automated Cross-Viewport Verification:** Passed automated testing across all 3 viewports:
+  - **Landscape Desktop (`1280x800`):** `phase6_landscape_desktop.png` — phone sheet hidden, top bar hidden, desktop sidebar flex.
+  - **Portrait Kiosk (`1080x1920`):** `phase6_portrait_kiosk.png` — phone sheet hidden, top bar hidden, kiosk portrait sidebar flex.
+  - **Mobile Phone (`390x844`):** `phase6_mobile_phone.png` — phone sheet flex & docked, phone top bar flex, desktop sidebar hidden, 65 directory facilities verified and interactive.
+
+### 2.0.34 CSS Modularization — Phase 5: Navigation & Live Turn-by-Turn HUD Layer (css/navigation.css) — ✅ Complete
+- **Extracted Navigation & HUD to `css/navigation.css`:** Extracted 530 lines of navigation and live tracking architecture into [css/navigation.css](file:///c:/Users/LGU-SanPedro/Downloads/map/css/navigation.css), covering:
+  - `.turn-by-turn-banner`, `.turn-by-turn-banner.active`, `.turn-by-turn-banner.arrived`, `.is-long-dest`
+  - `.tbt-icon-wrapper`, `.tbt-content`, `.tbt-distance`, `.tbt-instruction`
+  - Floating speed control pills (`.floating-speed-controls`, `.speed-btn`, `.speed-btn.active`)
+  - GPS user location puck & animated wave rings (`.user-location-puck`, `.gps-pulse`)
+  - Campus destination spotlight beacon (`.destination-spotlight`, `spotlightRipple` keyframes)
+  - Sub-plot chip active state styling in drawer
+- **Master Entry Integration:** Added `@import 'navigation.css';` at line 5 of [css/main.css](file:///c:/Users/LGU-SanPedro/Downloads/map/css/main.css) and cleanly pruned 521 lines from `main.css` (down to 8,334 lines).
+- **HTML & Parallel Preload:** Added `<link rel="stylesheet" href="css/navigation.css?v=191">` and bumped cachebusters to `?v=191` in [index.html](file:///c:/Users/LGU-SanPedro/Downloads/map/index.html).
+- **Automated Cross-Viewport Verification:** Passed automated testing across all 3 viewports:
+  - **Landscape Desktop (`1280x800`):** `phase5_landscape_desktop.png` — `.turn-by-turn-banner` `display: flex`, `top: 24px`, `border-radius: 20px`, `z-index: 120`.
+  - **Portrait Kiosk (`1080x1920`):** `phase5_portrait_kiosk.png` — `.turn-by-turn-banner` `display: flex`, `top: 20px`, `border-radius: 18px`, `z-index: 120`.
+  - **Mobile Phone (`390x844`):** `phase5_mobile_phone.png` — `.turn-by-turn-banner` `display: none` (managed cleanly via mobile sheet), 0 regressions.
+
+### 2.0.33 CSS Modularization — Phase 4: Building Details Drawer & Gallery (css/building-panel.css) — ✅ Complete
+- **Extracted Details Drawer to `css/building-panel.css`:** Extracted 601 lines of building panel architecture into [css/building-panel.css](file:///c:/Users/LGU-SanPedro/Downloads/map/css/building-panel.css), covering:
+  - Slide-out right panel (`.building-panel`, `width: 420px`), active transition
+  - Hero image area, cross-fade vignette (`.bp-image-overlay-vignette`), expand hint, multi-view thumbnails bar (`.bp-image-views-bar`, `.bp-view-chip`)
+  - Facility metadata rows, wayfinding cards (`.bp-wf-card`, `HOW TO SPOT IT`, `WHAT'S INSIDE & SERVICES`)
+  - Action buttons (`.bp-directions-btn`, `.bp-gps-nav-btn`), QR mobile handoff card (`.bp-qr-card`, `.bp-qr-box`)
+  - Fullscreen photo lightbox modal (`.photo-lightbox-modal`, `.lightbox-close-btn`, `.lightbox-content`)
+- **Master Entry Integration:** Added `@import 'building-panel.css';` at line 4 of [css/main.css](file:///c:/Users/LGU-SanPedro/Downloads/map/css/main.css) and cleanly pruned 600 lines from `main.css` (down to 8,855 lines).
+- **HTML & Parallel Preload:** Added `<link rel="stylesheet" href="css/building-panel.css?v=190">` and bumped cachebusters to `?v=190` in [index.html](file:///c:/Users/LGU-SanPedro/Downloads/map/index.html).
+- **Automated Cross-Viewport Verification:** Passed on Landscape Desktop (`1280x800`), Portrait Kiosk (`1080x1920`), and Mobile Phone (`390x844`) with 0 errors, 0 linter warnings, and exact visual parity.
+
+### 2.0.32 CSS Modularization — Phase 3: Kiosk Desktop Shell & Directory Layer (css/kiosk.css) — ✅ Complete
+- **Extracted Kiosk Shell to `css/kiosk.css`:** Extracted 1,519 lines of desktop kiosk sidebar architecture into [css/kiosk.css](file:///c:/Users/LGU-SanPedro/Downloads/map/css/kiosk.css), covering:
+  - `.sidebar`, `.sidebar.visible`, `.sidebar.collapsed`, `.sidebar-toggle-btn`
+  - `.station-dropdown-*` flyout menu, transition curtain (`.station-transition-curtain`, `.stc-*`)
+  - `.search-container`, flex `.search-row`, `.search-box`, `.search-clear-btn`
+  - `.filter-dropdown-*` popover menu and category filter chips (`.kiosk-categories-bar`, `.cat-chip`)
+  - `.directory` scroll area, section titles, `.dir-item` cards, plot/conference tags
+  - Sidebar route navigation container (`.route-info`, `.route-steps-container`, `.route-step-item`, speed bar, replay/close buttons)
+- **Master Entry Integration:** Added `@import 'kiosk.css';` at line 3 of [css/main.css](file:///c:/Users/LGU-SanPedro/Downloads/map/css/main.css) and cleanly pruned 1,518 lines from `main.css` (down to 9,455 lines).
+- **HTML & Parallel Preload:** Added `<link rel="stylesheet" href="css/kiosk.css?v=189">` and bumped cachebusters to `?v=189` in [index.html](file:///c:/Users/LGU-SanPedro/Downloads/map/index.html).
+- **Automated Cross-Viewport Verification:** Passed on Landscape Desktop (`1280x800`), Portrait Kiosk (`1080x1920`), and Mobile Phone (`390x844`) with 0 errors, 0 linter warnings, and exact visual parity.
+
+### 2.0.31 CSS Modularization — Phase 2: Universal Base & Reset Layer (css/base.css) — ✅ Complete
+- **Extracted Base & Reset to `css/base.css`:** Extracted universal box-sizing reset (`*, *::before, *::after`), viewport locks (`html, body { overflow: hidden; width: 100%; height: 100%; touch-action: manipulation; }`), typography font-smoothing, modern glassmorphic thin scrollbars, and `.no-scrollbar, .hide-scrollbar` utilities into [css/base.css](file:///c:/Users/LGU-SanPedro/Downloads/map/css/base.css).
+- **Master Entry Integration:** Added `@import 'base.css';` at line 2 of [css/main.css](file:///c:/Users/LGU-SanPedro/Downloads/map/css/main.css).
+- **HTML & Parallel Preload:** Added `<link rel="stylesheet" href="css/base.css?v=188">` and bumped cachebusters to `?v=188` in [index.html](file:///c:/Users/LGU-SanPedro/Downloads/map/index.html).
+- **Cross-Viewport Automated CDP Verification:** Verified on Landscape Desktop (`1280x800`), Portrait Kiosk (`1080x1920`), and Mobile Phone (`390x844`) with 0 errors, 0 linter warnings, and exact visual parity.
+
+### 2.0.30 CSS Modularization — Phase 1: Design Tokens Extraction (css/variables.css) — ✅ Complete
+- **Extracted Design Tokens to `css/variables.css`:** Extracted all root custom properties (`:root { ... }`) including core theme colors (`--primary-green: #22c55e`, glassmorphism tints), surface tokens, layout widths (`--sidebar-width: 400px`, `--panel-width: 420px`), safe-area insets (`--safe-top`, `--safe-bottom`), z-index layering tokens (`--z-map` through `--z-curtain`), and claymation/spotlight defaults.
+- **Clean Master Entry Integration:** Replaced the legacy inline `:root` declaration in [css/main.css](file:///c:/Users/LGU-SanPedro/Downloads/map/css/main.css) with `@import 'variables.css';` at line 1.
+- **HTML & Cachebusters Updated:** Added `<link rel="stylesheet" href="css/variables.css?v=187">` and bumped [css/main.css](file:///c:/Users/LGU-SanPedro/Downloads/map/css/main.css) to `?v=187` in [index.html](file:///c:/Users/LGU-SanPedro/Downloads/map/index.html).
+- **Automated Cross-Viewport Verification:** Passed automated testing on all 3 targets:
+  - **Landscape Desktop (`1280x800`):** `phase1_landscape_desktop.png` — `--sidebar-width: 400px`, `--primary-green: #22c55e`, 0 errors.
+  - **Portrait Kiosk (`1080x1920`):** `phase1_portrait_kiosk.png` — `--portrait-panel-height: 40vh`, 0 errors.
+  - **Mobile Phone (`390x844`):** `phase1_mobile_phone.png` — `--sidebar-offset: 0px`, 0 errors.
+
 ### 2.0.29 Four Official Stations Alignment (DA-CARES Cavite Integration) — ✅ Complete
 - **Aligned 4th Regional Station:** Replaced obsolete placeholder `lardc` (Siniloan, Laguna) with the official 4th Research Station of DA-CALABARZON: **DA-CARES** (**Cavite Agricultural Research and Experiment Station** located in **Naic, Cavite**; NIA Compound, Brgy. Ibayo Silangan, Naic, Cavite; `[120.7925, 14.2965]`).
 - **Official 4 Stations of DA-CALABARZON (Region IV-A):**
@@ -962,3 +1164,40 @@ The authentic 3D architectural model for the Automated Weather Station has been 
     * `kiosk_station_dev_modal.jpg`: Centered Under Development dialog upon clicking QARES on Kiosk.
     * `phone_station_modal_dev.jpg`: Mobile station selection modal showing `Under Dev` cards.
     * `phone_station_dev_modal.jpg`: Centered Under Development dialog upon tapping QARES on mobile.
+
+---
+
+### 🏷️ Update: Compact Number Mode Building Labels Toggle Resolution — ✅ Complete
+- **Problem Statement:** When Map Display Settings has **Compact Number** mode active, toggling the **Building Labels** switch OFF (`msp-toggle-markers`) failed to hide the markers. The numbered circle badges remained visible on the map.
+- **Root Cause Analysis:**
+  - In `css/main.css` (lines 2406 and 2502), `body.label-mode-compact .bldg-map-marker` and `body.label-mode-compact .plot-map-marker` specified `display: flex !important;` and `display: inline-flex !important;`.
+  - In CSS specificity rules, any declaration with `!important` in a stylesheet overrides normal inline JavaScript styles (`element.style.display = 'none'`), rendering the toggle ineffective.
+- **Implemented Fix:**
+  1. **CSS Specificity Clean-Up (`css/main.css`):**
+     - Removed `!important` from `display: flex;` on `body.label-mode-compact .bldg-map-marker` and `display: inline-flex;` on `body.label-mode-compact .plot-map-marker`.
+     - Added dedicated universal hidden rule:
+       ```css
+       body.labels-hidden .bldg-map-marker,
+       body.labels-hidden .plot-map-marker,
+       body.labels-hidden .mapbox-gate-label {
+           display: none !important;
+           visibility: hidden !important;
+           opacity: 0 !important;
+           pointer-events: none !important;
+       }
+       ```
+  2. **JavaScript Layer & Display Synchronization:**
+     - **`js/map-settings.js` (`handleLayerToggle` & `syncLayerToggleCheckboxes` & `setLabelDisplayMode`):**
+       * Toggles `document.body.classList.toggle('labels-hidden', !markersShouldShow)`.
+       * Uses `.setProperty('display', 'none', 'important')` when hiding, and `.removeProperty('display')` / `.style.display = ''` when restoring.
+     - **`js/sidebar.js` (`toggleSettingChip` for `numbers`):**
+       * Toggles `document.body.classList.toggle('labels-hidden', !markersShouldShow)`.
+       * Uses `.setProperty('display', 'none', 'important')` on all markers.
+     - **`js/markers.js` (`virtualizeMarkers` & `createMarkers`):**
+       * In `virtualizeMarkers()`, checks `if (state.markersVisible === false)` and applies `labels-hidden` and `el.style.setProperty('display', 'none', 'important')`.
+       * In `createMarkers()`, applies `labels-hidden` and sets `.setProperty('display', 'none', 'important')` if markers are hidden.
+- **Automated CDP Test Verification (`tools/tests/test_compact_label_toggle.py`):**
+  - Verified across both DA-RARES and DA-LARES stations.
+  - When switched to Compact Number and toggled OFF: 0 visible building markers.
+  - When toggled back ON: All 39 markers immediately restored.
+  - Verified screenshots: `rares_compact_labels_off_verified.png` and `rares_compact_labels_on_verified.png`.

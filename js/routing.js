@@ -2315,8 +2315,8 @@ window.toggleKioskLock = function (e) {
     state.isKioskDraggable = isKioskDraggable;
 
     const isQares = (state.currentStationId === 'qares');
-
-    const prefix = isQares ? 'QARES • ' : '';
+    const isRares = (state.currentStationId === 'rares');
+    const prefix = isQares ? 'QARES • ' : isRares ? 'RARES • ' : '';
 
     const label = document.querySelector('.kiosk-marker-label');
 

@@ -1,0 +1,2450 @@
+/* ==========================================================================
+   DA-CALABARZON INTERACTIVE WAYFINDING SYSTEM
+   Mobile Touch UI & Bottom Sheet Layer
+   Author: DA-LARES / DA-CALABARZON Spatial Hub (DASH)
+   ========================================================================== */
+
+/* Strictly hide phone-specific bottom sheet & mobile floating controls on desktop / kiosk */
+
+.phone-bottom-sheet,
+.mobile-recenter-btn {
+    display: none !important;
+}
+
+/* ========================================================
+
+   RESPONSIVE DESIGN BREAKPOINTS
+
+   ======================================================== */
+
+/* --- MOBILE PHONES & COMPACT VIEWPORTS (< 768px) --- */
+
+@media screen and (max-width: 768px) {
+    :root {
+        --sidebar-offset: 0px !important;
+    }
+
+    /* Hide Desktop / Kiosk-specific floating panels on phone mode */
+
+    body.mode-phone .sidebar,
+    body.mode-phone .sidebar-backdrop,
+    body.mode-phone .building-panel,
+    body.mode-phone .turn-by-turn-banner,
+    body:not(.mode-kiosk) .sidebar,
+    body:not(.mode-kiosk) .sidebar-backdrop,
+    body:not(.mode-kiosk) .building-panel,
+    body:not(.mode-kiosk) .turn-by-turn-banner,
+    .coords-badge {
+        display: none !important;
+    }
+
+    /* Map takes 100% of viewport */
+
+    #map {
+        width: 100vw !important;
+        height: 100dvh !important;
+        inset: 0 !important;
+    }
+
+    /* Mapbox attribution & logo clearance */
+
+    .mapboxgl-ctrl-bottom-left {
+        bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+        left: 10px !important;
+        z-index: 85 !important;
+        transition: bottom 0.25s ease;
+    }
+
+    .mapboxgl-ctrl-bottom-right {
+        display: none !important;
+    }
+
+    /* Kiosk Marker on Phone: subtle pin without pulsing label */
+
+    .kiosk-marker-label,
+    .kiosk-marker-pulse {
+        display: none !important;
+    }
+
+    .kiosk-marker-dot {
+        width: 12px !important;
+        height: 12px !important;
+        background: #64748b !important;
+        border: 2px solid #cbd5e1 !important;
+    }
+
+    /* Mobile Phone: Floating Camera Controls sit cleanly right above the dropped-down sheet and stay anchored when sheet slides up */
+    .floating-camera-controls {
+        display: none;
+    }
+
+    .floating-camera-controls.active {
+        display: flex !important;
+        position: fixed !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        bottom: calc(var(--safe-bottom, 0px) + 138px) !important;
+        top: auto !important;
+        z-index: 90 !important;
+        padding: 4px 8px !important;
+        gap: 5px !important;
+        border-radius: 20px !important;
+        background: rgba(15, 23, 42, 0.92) !important;
+        backdrop-filter: blur(16px) !important;
+        -webkit-backdrop-filter: blur(16px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.14) !important;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+        transition: opacity 0.25s ease, transform 0.25s ease !important;
+    }
+
+    .floating-camera-controls .fcc-label {
+        font-size: 10px !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.5px !important;
+        color: #64748b !important;
+        margin-right: 2px !important;
+        margin-left: 2px !important;
+    }
+
+    .floating-camera-controls .fcc-btn {
+        height: 32px !important;
+        padding: 0 10px !important;
+        font-size: 11.5px !important;
+        font-weight: 600 !important;
+        gap: 5px !important;
+        border-radius: 16px !important;
+    }
+
+    .floating-camera-controls .fcc-btn svg {
+        width: 13px !important;
+        height: 13px !important;
+    }
+
+    /* Stays in place and fades out when sheet is slid up */
+    body:has(#phone-bottom-sheet.snap-half) .floating-camera-controls,
+    body:has(#phone-bottom-sheet.snap-full) .floating-camera-controls,
+    .floating-camera-controls.sheet-expanded-hidden,
+    .floating-camera-controls.sheet-full-hidden {
+        opacity: 0 !important;
+        pointer-events: none !important;
+        transform: translateX(-50%) scale(0.95) !important;
+        animation: none !important;
+    }
+
+    /* Centered Arrival Pop-up Modal */
+
+    .phone-arrived-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(2, 6, 23, 0.78);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        z-index: 10000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        opacity: 0;
+        transition: opacity 0.25s ease;
+    }
+
+    .phone-arrived-modal-backdrop.active {
+        display: flex !important;
+        opacity: 1;
+    }
+
+    .phone-arrived-modal-card {
+        width: 100%;
+        max-width: 340px;
+        background: rgba(15, 23, 42, 0.98);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 26px;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.06);
+        padding: 30px 22px 24px;
+        text-align: center;
+        transform: scale(0.9);
+        transition: transform 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .phone-arrived-modal-backdrop.active .phone-arrived-modal-card {
+        transform: scale(1);
+    }
+
+    .pam-confetti {
+        font-size: 52px;
+        line-height: 1;
+        margin-bottom: 14px;
+        display: inline-block;
+        animation: pamBounce 1s ease infinite alternate;
+    }
+
+    @keyframes pamBounce {
+        0% { transform: translateY(0) rotate(-6deg) scale(1); }
+        100% { transform: translateY(-8px) rotate(6deg) scale(1.08); }
+    }
+
+    .pam-title {
+        font-size: 21px;
+        font-weight: 800;
+        color: #f8fafc;
+        margin: 0 0 6px;
+        letter-spacing: -0.02em;
+        line-height: 1.25;
+    }
+
+    .pam-desc {
+        font-size: 14px;
+        color: #94a3b8;
+        margin: 0 0 22px;
+        line-height: 1.4;
+    }
+
+    .pam-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .pam-btn {
+        height: 48px;
+        border-radius: 14px;
+        font-size: 15px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        cursor: pointer;
+        border: none;
+        transition: transform 0.15s ease, filter 0.15s ease;
+    }
+
+    .pam-btn:active {
+        transform: scale(0.96);
+    }
+
+    .pam-btn-repeat {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        color: #f1f5f9;
+    }
+
+    .pam-btn-done {
+        background: #22c55e;
+        color: #020617;
+        box-shadow: 0 4px 16px rgba(34, 197, 94, 0.4);
+    }
+
+    /* Floating Re-center FAB */
+
+    .mobile-recenter-btn {
+        position: fixed !important;
+        bottom: calc(134px + env(safe-area-inset-bottom, 0px)) !important;
+        right: 14px !important;
+        left: auto !important;
+        width: 46px !important;
+        height: 46px !important;
+        border-radius: 50% !important;
+        background: rgba(15, 23, 42, 0.94) !important;
+        backdrop-filter: blur(14px) !important;
+        border: 1px solid rgba(56, 189, 248, 0.4) !important;
+        color: #38bdf8 !important;
+        font-size: 20px !important;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5) !important;
+        z-index: 95 !important;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
+    }
+
+    .mobile-recenter-btn.active {
+        display: flex !important;
+        animation: recenterPulse 1.6s infinite ease-in-out;
+    }
+
+    /* ====================================
+
+       PHONE 3-SNAP BOTTOM SHEET COMPONENT
+
+       ==================================== */
+
+    .phone-bottom-sheet {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: -40px;
+        width: 100vw;
+        height: calc(92dvh - env(safe-area-inset-top, 0px) + 40px);
+        padding-bottom: 40px;
+        box-sizing: border-box;
+        background: rgba(15, 23, 42, 0.96);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border-top: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 24px 24px 0 0;
+        box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.72);
+        z-index: 100;
+        display: flex !important;
+        flex-direction: column;
+        overflow: hidden;
+        overscroll-behavior-y: contain;
+        will-change: transform;
+        transform: translate3d(0, calc(100% - 40px - 142px - env(safe-area-inset-bottom, 0px)), 0);
+        transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .phone-bottom-sheet.is-dragging,
+    .phone-bottom-sheet.dragging {
+        transition: none !important;
+    }
+
+    /* 3 GPU-Composited Snap Positions (Google Maps Style) */
+
+    .phone-bottom-sheet.snap-peek {
+        transform: translate3d(0, calc(100% - 40px - 142px - env(safe-area-inset-bottom, 0px)), 0);
+    }
+
+    .phone-bottom-sheet.snap-peek.bldg-active {
+        transform: translate3d(0, calc(100% - 40px - 92px - env(safe-area-inset-bottom, 0px)), 0);
+    }
+
+    .phone-bottom-sheet.snap-peek.route-active {
+        transform: translate3d(0, calc(100% - 40px - 124px - env(safe-area-inset-bottom, 0px)), 0);
+    }
+
+    .phone-bottom-sheet.snap-half {
+        transform: translate3d(0, calc(100% - 40px - 50dvh), 0);
+    }
+
+    .phone-bottom-sheet.snap-full {
+        transform: translate3d(0, 0px, 0);
+    }
+
+    /* Whole-Sheet Gesture Zones & Scroll Handoff */
+
+    .phone-bottom-sheet .phone-station-banner,
+    .phone-bottom-sheet .phone-search-row,
+    .phone-bottom-sheet .phone-bldg-header,
+    .phone-bottom-sheet .phone-route-peek-panel {
+        touch-action: none;
+    }
+
+    .phone-bottom-sheet:not(.snap-full) .phone-directory-list,
+    .phone-bottom-sheet:not(.snap-full) .phone-bldg-scrollable,
+    .phone-bottom-sheet:not(.snap-full) .phone-route-scrollable {
+        overflow-y: hidden !important;
+        touch-action: none;
+    }
+
+    .phone-bottom-sheet.snap-full .phone-directory-list,
+    .phone-bottom-sheet.snap-full .phone-bldg-scrollable,
+    .phone-bottom-sheet.snap-full .phone-route-scrollable {
+        overflow-y: auto !important;
+        touch-action: pan-y;
+        overscroll-behavior-y: contain;
+    }
+
+    /* Drag Handle Pill */
+
+    .sheet-drag-handle-zone {
+        width: 100%;
+        padding: 10px 0 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: grab;
+        touch-action: none;
+        flex-shrink: 0;
+    }
+
+    .sheet-drag-handle-bar {
+        width: 40px;
+        height: 4.5px;
+        background: rgba(255, 255, 255, 0.36);
+        border-radius: 999px;
+        transition: background 0.18s ease, width 0.18s ease;
+    }
+
+    .sheet-drag-handle-zone:active .sheet-drag-handle-bar,
+    .phone-bottom-sheet.is-dragging .sheet-drag-handle-bar {
+        width: 48px;
+        background: rgba(255, 255, 255, 0.68);
+    }
+
+    /* Sheet Views Container */
+
+    .sheet-view {
+        display: none;
+        flex: 1;
+        flex-direction: column;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    .sheet-view.active {
+        display: flex;
+    }
+
+    /* --- 1. DIRECTORY / SEARCH VIEW --- */
+
+    .phone-search-row {
+        margin: 0 16px 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        position: relative;
+        flex-shrink: 0;
+    }
+
+    .phone-search-row .phone-search-wrap {
+        margin: 0;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .phone-search-wrap {
+        margin: 0 16px 8px;
+        height: 44px;
+        background: rgba(30, 41, 59, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        padding: 0 12px;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+
+    .phone-filter-wrap {
+        position: relative;
+        flex-shrink: 0;
+    }
+
+    .phone-filter-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        height: 44px;
+        padding: 0 12px;
+        background: rgba(30, 41, 59, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 12px;
+        color: #94a3b8;
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .phone-filter-btn:hover,
+    .phone-filter-btn:active {
+        background: rgba(51, 65, 85, 0.9);
+        color: #f8fafc;
+    }
+
+    .phone-filter-btn.has-filters,
+    .phone-filter-wrap.open .phone-filter-btn {
+        background: rgba(16, 185, 129, 0.15);
+        border-color: rgba(16, 185, 129, 0.45);
+        color: #10b981;
+    }
+
+    .phone-filter-btn .phone-filter-icon {
+        flex-shrink: 0;
+        transition: transform 0.2s ease;
+    }
+
+    .phone-filter-wrap.open .phone-filter-icon {
+        transform: rotate(180deg);
+    }
+
+    .phone-filter-count-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 17px;
+        height: 17px;
+        padding: 0 5px;
+        background: #10b981;
+        color: #020617;
+        font-size: 11px;
+        font-weight: 800;
+        border-radius: 9999px;
+        line-height: 1;
+    }
+
+    .phone-filter-dropdown {
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        width: 320px;
+        max-width: calc(100vw - 32px);
+        background: rgba(15, 23, 42, 0.96);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 16px;
+        box-shadow: 0 20px 45px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05);
+        z-index: 1100;
+        overflow: hidden;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transform: translateY(-8px) scale(0.98);
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .phone-filter-wrap.open .phone-filter-dropdown,
+    .phone-filter-dropdown.open {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: translateY(0) scale(1);
+    }
+
+    .phone-filter-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1050;
+        background: rgba(0, 0, 0, 0.45);
+        display: none;
+    }
+
+    .phone-filter-backdrop.active {
+        display: block;
+    }
+
+    .phone-dir-plot-tag {
+        display: inline-block;
+        padding: 1px 6px;
+        background: rgba(245, 158, 11, 0.15);
+        color: #fbbf24;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 700;
+        margin-right: 4px;
+        letter-spacing: 0.2px;
+    }
+
+    .phone-dir-conf-tag {
+        display: inline-block;
+        padding: 1px 6px;
+        background: rgba(139, 92, 246, 0.18);
+        color: #c4b5fd;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 700;
+        margin-right: 4px;
+        letter-spacing: 0.2px;
+    }
+
+    .phone-dir-gate-tag {
+        display: inline-block;
+        padding: 1px 6px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 700;
+        margin-right: 4px;
+        letter-spacing: 0.2px;
+    }
+
+    .phone-search-wrap input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        outline: none;
+        color: #f8fafc;
+        font-size: 15px;
+        font-family: inherit;
+    }
+
+    .phone-search-wrap input::placeholder {
+        color: #94a3b8;
+    }
+
+    .phone-search-icon {
+        font-size: 16px;
+        opacity: 0.7;
+    }
+
+    .phone-search-clear {
+        background: transparent;
+        border: none;
+        color: #94a3b8;
+        font-size: 16px;
+        cursor: pointer;
+        padding: 4px;
+    }
+
+    .phone-info-guide-btn {
+        background: transparent;
+        border: none;
+        font-size: 15px;
+        cursor: pointer;
+        padding: 4px;
+        opacity: 0.8;
+        line-height: 1;
+        transition: transform 0.15s, opacity 0.15s;
+    }
+
+    .phone-info-guide-btn:active {
+        opacity: 1;
+        transform: scale(1.15);
+    }
+
+    .phone-directory-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        padding: 0 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .phone-directory-chips {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 10px;
+        overflow-x: auto;
+        padding-bottom: 2px;
+        flex-shrink: 0;
+    }
+
+    .phone-dir-chip {
+        padding: 6px 14px;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #94a3b8;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 0.2s;
+    }
+
+    .phone-dir-chip.active {
+        background: #22c55e;
+        color: #020617;
+        border-color: #4ade80;
+        font-weight: 700;
+    }
+
+    .phone-directory-list {
+        flex: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .phone-dir-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 14px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 12px;
+        cursor: pointer;
+        min-height: 52px;
+        transition: background 0.15s;
+    }
+
+    .phone-dir-item:active {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .phone-dir-item.active {
+        background: rgba(34, 197, 94, 0.12);
+        border-color: rgba(34, 197, 94, 0.35);
+    }
+
+    .phone-dir-badge {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 15px;
+        flex-shrink: 0;
+        box-sizing: border-box;
+    }
+
+    .phone-dir-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .phone-dir-name {
+        font-size: 15px;
+        font-weight: 700;
+        color: #f1f5f9;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .phone-dir-sub {
+        font-size: 12px;
+        color: #94a3b8;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* --- 2. BUILDING DETAILS VIEW --- */
+
+    .phone-bldg-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 4px 16px 10px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        flex-shrink: 0;
+    }
+
+    .phone-bldg-header-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+    }
+
+    .phone-bldg-badge {
+        width: 38px;
+        height: 38px;
+        border-radius: 11px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 16px;
+        flex-shrink: 0;
+        box-sizing: border-box;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    }
+
+    .phone-bldg-title {
+        font-size: 17px;
+        font-weight: 800;
+        color: #f8fafc;
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .phone-bldg-desc {
+        font-size: 12px;
+        color: #94a3b8;
+        margin-top: 2px;
+    }
+
+    .phone-sheet-close-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.08);
+        border: none;
+        color: #cbd5e1;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+
+    .phone-bldg-scrollable {
+        flex: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 12px 16px calc(24px + env(safe-area-inset-bottom, 0px));
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    /* --- GOOGLE MAPS STYLE PHOTO GALLERY / MOSAIC --- */
+
+    .phone-bldg-gallery-grid {
+        width: 100%;
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+        position: relative;
+        background: rgba(15, 23, 42, 0.6);
+    }
+
+    /* Multi-photo mosaic: 1 big on left, 2 stacked on right */
+
+    .phone-bldg-gallery-grid.mosaic {
+        display: grid;
+        grid-template-columns: 1.55fr 1fr;
+        gap: 4px;
+        height: 200px;
+    }
+
+    .pbg-main-slot {
+        position: relative;
+        height: 100%;
+        overflow: hidden;
+        cursor: pointer;
+    }
+
+    .pbg-main-slot img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        transition: transform 0.25s ease;
+    }
+
+    .pbg-side-slots {
+        display: grid;
+        grid-template-rows: 1fr 1fr;
+        gap: 4px;
+        height: 100%;
+    }
+
+    .pbg-side-item {
+        position: relative;
+        overflow: hidden;
+        cursor: pointer;
+        height: 100%;
+    }
+
+    .pbg-side-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        transition: transform 0.25s ease;
+    }
+
+    .pbg-main-slot:active img,
+    .pbg-side-item:active img,
+    .pbg-single-slot:active img {
+        transform: scale(1.04);
+    }
+
+    /* Single photo hero banner */
+
+    .phone-bldg-gallery-grid.single-photo {
+        height: 180px;
+        display: block;
+        cursor: pointer;
+    }
+
+    .pbg-single-slot {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .pbg-single-slot img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        transition: transform 0.25s ease;
+    }
+
+    /* Photos badge pill (e.g., "📷 Photos") */
+
+    .pbg-badge-pill {
+        position: absolute;
+        bottom: 8px;
+        right: 8px;
+        background: rgba(15, 23, 42, 0.85);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        color: #f8fafc;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 4px 9px;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        pointer-events: none;
+        z-index: 2;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+
+    /* No photo placeholder */
+
+    .pbg-empty-card {
+        padding: 22px 16px;
+        text-align: center;
+        border-radius: 14px;
+        background: linear-gradient(135deg, rgba(30, 41, 59, 0.5), rgba(15, 23, 42, 0.7));
+        border: 1px dashed rgba(255, 255, 255, 0.15);
+        color: #94a3b8;
+        font-size: 13px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .pbg-empty-icon {
+        font-size: 28px;
+        opacity: 0.6;
+    }
+
+    /* Action Buttons inside Building Details scroll view, right under pictures */
+
+    .phone-bldg-actions-inline {
+        display: flex;
+        gap: 10px;
+        margin-top: 2px;
+        margin-bottom: 2px;
+    }
+
+    .phone-btn.kiosk-btn {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: #ffffff;
+        box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+        border: 1px solid rgba(52, 211, 153, 0.3);
+    }
+
+    .phone-btn.gps-btn {
+        background: linear-gradient(135deg, #0ea5e9, #2563eb);
+        color: #ffffff;
+        box-shadow: 0 4px 14px rgba(14, 165, 233, 0.35);
+        border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    .phone-bldg-info-card {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        border-radius: 14px;
+        padding: 14px 16px;
+    }
+
+    .phone-bldg-info-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        font-size: 13.5px;
+        color: #cbd5e1;
+    }
+
+    .phone-bldg-info-row .pbi-icon {
+        font-size: 18px;
+        line-height: 1.2;
+        flex-shrink: 0;
+    }
+
+    .pbi-text-group {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+    }
+
+    .pbi-lbl {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #64748b;
+    }
+
+    .phone-bldg-info-row .pbi-val {
+        font-weight: 600;
+        color: #f1f5f9;
+    }
+
+    /* Pinned Action Buttons at Bottom of Sheet */
+
+    .phone-sheet-actions {
+        padding: 10px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+        background: rgba(15, 23, 42, 0.98);
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        display: flex;
+        gap: 10px;
+        flex-shrink: 0;
+    }
+
+    .phone-btn {
+        flex: 1;
+        min-height: 48px;
+        border-radius: 12px;
+        border: none;
+        font-size: 15px;
+        font-weight: 700;
+        font-family: inherit;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        cursor: pointer;
+        transition: transform 0.15s, opacity 0.15s;
+    }
+
+    .phone-btn:active {
+        transform: scale(0.98);
+    }
+
+    .phone-btn.primary {
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        color: #ffffff;
+        box-shadow: 0 4px 14px rgba(34, 197, 94, 0.4);
+    }
+
+    .phone-btn.secondary {
+        background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        color: #ffffff;
+        border: 1px solid rgba(96, 165, 250, 0.4);
+        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+    }
+
+    .phone-btn.subtle {
+        background: rgba(255, 255, 255, 0.08);
+        color: #e2e8f0;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .phone-btn.danger {
+        background: rgba(239, 68, 68, 0.15);
+        color: #fca5a5;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    /* --- FLOATING TOP TURN-BY-TURN HUD (Google Maps Style) --- */
+
+    .phone-top-nav-hud {
+        position: fixed;
+        top: calc(var(--safe-top) + 12px);
+        left: 12px;
+        right: 12px;
+        z-index: 1000;
+        background: rgba(15, 23, 42, 0.96);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        border: 1.5px solid rgba(56, 189, 248, 0.45);
+        border-radius: 20px;
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.75), 0 0 20px rgba(56, 189, 248, 0.2);
+        padding: 12px 16px;
+        display: none;
+        align-items: center;
+        gap: 12px;
+        opacity: 0;
+        transform: translateY(-130%);
+        transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+        pointer-events: auto;
+    }
+
+    .phone-top-nav-hud.active {
+        display: flex !important;
+        opacity: 1 !important;
+        transform: translateY(0) !important;
+    }
+
+    .ptnh-icon-wrap {
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #0284c7, #2563eb);
+        color: #ffffff;
+        font-size: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4);
+    }
+
+    .ptnh-text-wrap {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .ptnh-primary-step {
+        font-size: 15px;
+        font-weight: 700;
+        color: #f8fafc;
+        line-height: 1.25;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .ptnh-secondary-step {
+        font-size: 12px;
+        color: #94a3b8;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .ptnh-dist-pill {
+        background: rgba(56, 189, 248, 0.15);
+        border: 1px solid rgba(56, 189, 248, 0.35);
+        color: #38bdf8;
+        font-size: 13px;
+        font-weight: 800;
+        padding: 6px 10px;
+        border-radius: 12px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    /* --- 3. ACTIVE ROUTE VIEW BOTTOM SLIDER --- */
+
+    .phone-route-peek-panel {
+        padding: 4px 16px 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+
+    .phone-route-peek-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .phone-route-dest-badge {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        font-size: 13.5px;
+        color: #cbd5e1;
+    }
+
+    .phone-route-dest-badge strong {
+        color: #38bdf8;
+    }
+
+    .remain-tag {
+        background: rgba(34, 197, 94, 0.15);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+        color: #4ade80;
+        font-size: 11.5px;
+        font-weight: 700;
+        padding: 3px 9px;
+        border-radius: 10px;
+        white-space: nowrap;
+    }
+
+    .phone-route-peek-controls {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+    }
+
+    .phone-speed-bar {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+        padding: 3px 7px;
+        flex-shrink: 0;
+    }
+
+    .phone-speed-label {
+        font-size: 10px;
+        font-weight: 800;
+        color: #94a3b8;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+    }
+
+    .phone-speed-pills {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+    }
+
+    .phone-speed-pills .speed-pill {
+        height: 28px;
+        min-width: 32px;
+        padding: 0 6px;
+        font-size: 11.5px;
+        font-weight: 700;
+        border-radius: 7px;
+        background: transparent;
+        border: 1px solid transparent;
+        color: #94a3b8;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .phone-speed-pills .speed-pill.active {
+        background: #0284c7;
+        border-color: #38bdf8;
+        color: #ffffff;
+        box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
+    }
+
+    .phone-peek-action-btns {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    .phone-btn-mini {
+        height: 34px;
+        padding: 0 11px;
+        border-radius: 10px;
+        font-size: 12.5px;
+        font-weight: 700;
+        font-family: inherit;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        cursor: pointer;
+        border: none;
+        transition: transform 0.15s ease, background 0.15s ease;
+    }
+
+    .phone-btn-mini:active {
+        transform: scale(0.96);
+    }
+
+    .phone-btn-mini.subtle {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        color: #f1f5f9;
+    }
+
+    .phone-btn-mini.danger {
+        background: rgba(239, 68, 68, 0.2);
+        border: 1px solid rgba(239, 68, 68, 0.4);
+        color: #fca5a5;
+    }
+
+    .phone-btn-mini.primary {
+        background: rgba(14, 165, 233, 0.2);
+        border: 1px solid rgba(56, 189, 248, 0.45);
+        color: #38bdf8;
+        box-shadow: 0 2px 8px rgba(14, 165, 233, 0.2);
+    }
+
+    .phone-btn-mini.primary:active {
+        background: rgba(14, 165, 233, 0.35);
+    }
+
+    .phone-btn-mini.primary.needs-recenter {
+        animation: recenterPulse 1.6s infinite ease-in-out;
+        background: #0284c7 !important;
+        border-color: #38bdf8 !important;
+        color: #ffffff !important;
+        box-shadow: 0 0 14px rgba(56, 189, 248, 0.7) !important;
+    }
+
+    /* Toggle between simulation speed bar and GPS live controls */
+
+    .phone-gps-nav-controls {
+        display: none;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        width: 100%;
+    }
+
+    body.phone-gps-active #phone-sim-controls {
+        display: none !important;
+    }
+
+    body.phone-gps-active #phone-gps-nav-controls {
+        display: flex !important;
+    }
+
+    body:not(.phone-gps-active) #phone-gps-nav-controls {
+        display: none !important;
+    }
+
+    .phone-gps-eta-chip {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        background: rgba(34, 197, 94, 0.12);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+        padding: 6px 12px;
+        border-radius: 12px;
+    }
+
+    .phone-gps-eta-time {
+        font-size: 15px;
+        font-weight: 800;
+        color: #4ade80;
+        letter-spacing: -0.01em;
+    }
+
+    .phone-gps-eta-dot {
+        color: #64748b;
+        font-size: 12px;
+    }
+
+    .phone-gps-eta-dist {
+        font-size: 12px;
+        font-weight: 600;
+        color: #94a3b8;
+    }
+
+    @keyframes recenterPulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.06); }
+        100% { transform: scale(1); }
+    }
+
+    .phone-route-scrollable {
+        flex: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 6px 16px calc(24px + env(safe-area-inset-bottom, 0px));
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .phone-steps-list-header {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: #94a3b8;
+        margin-top: 4px;
+    }
+
+    .phone-steps-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .phone-step-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 10px 12px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 10px;
+        font-size: 14px;
+        color: #cbd5e1;
+    }
+
+    .phone-step-item.active {
+        background: rgba(34, 197, 94, 0.12);
+        border: 1px solid rgba(74, 222, 128, 0.3);
+        color: #ffffff;
+    }
+
+    .phone-step-item .psi-icon {
+        font-size: 18px;
+        line-height: 1;
+    }
+
+    /* --- 4. ARRIVED VIEW --- */
+
+    .phone-arrived-card {
+        padding: 20px 16px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .pac-icon {
+        font-size: 40px;
+    }
+
+    .pac-title {
+        font-size: 22px;
+        font-weight: 800;
+        color: #f8fafc;
+    }
+
+    .pac-sub {
+        font-size: 14px;
+        color: #94a3b8;
+    }
+}
+
+
+
+@media (max-width: 768px) {
+    /* 1. Hide Mapbox NavigationControl (Zoom In, Zoom Out, Compass) on mobile */
+    .mapboxgl-ctrl-group:has(.mapboxgl-ctrl-zoom-in),
+    .mapboxgl-ctrl-group:has(.mapboxgl-ctrl-compass),
+    .mapboxgl-ctrl-zoom-in,
+    .mapboxgl-ctrl-zoom-out,
+    .mapboxgl-ctrl-compass {
+        display: none !important;
+    }
+
+    /* 2. Style Orbit and Fullscreen to match the 38px circular floating control buttons */
+    .ctrl-orbit-group,
+    .mapboxgl-ctrl-group:has(.mapboxgl-ctrl-fullscreen) {
+        width: 38px !important;
+        height: 38px !important;
+        border-radius: 50% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    .ctrl-orbit-btn,
+    .mapboxgl-ctrl-fullscreen {
+        width: 38px !important;
+        height: 38px !important;
+        border-radius: 50% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    /* 3. Parallel right-side control column: Settings, Map Layer (Drone/Map), Orbit, Fullscreen */
+    .map-settings-widget {
+        display: flex !important;
+        top: calc(var(--safe-top, 0px) + 14px) !important;
+        right: 14px !important;
+        left: auto !important;
+        z-index: 160 !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        transition: top 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease !important;
+    }
+
+    .map-layer-widget {
+        display: flex !important;
+        top: calc(var(--safe-top, 0px) + 60px) !important;
+        right: 14px !important;
+        left: auto !important;
+        z-index: 160 !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        transition: top 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease !important;
+    }
+
+    .mapboxgl-ctrl-top-right {
+        top: calc(var(--safe-top, 0px) + 106px) !important;
+        right: 14px !important;
+        left: auto !important;
+        z-index: 100 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        width: 38px !important;
+        transition: top 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+
+    .ctrl-orbit-group {
+        margin-top: 0 !important;
+    }
+
+    .map-layer-flyout {
+        display: none !important; /* On mobile, only use pop-up modal sheet! */
+    }
+
+    /* Fade out top logo bar during active navigation so it never ghosts behind the HUD */
+    body.phone-nav-active .phone-top-bar {
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(-16px);
+        transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    /* Shift parallel right rail smoothly down below Top Nav HUD during active navigation */
+    body.phone-nav-active .map-settings-widget {
+        display: flex !important;
+        top: calc(var(--safe-top, 0px) + 88px) !important;
+        right: 14px !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+    }
+
+    body.phone-nav-active .map-layer-widget {
+        display: flex !important;
+        top: calc(var(--safe-top, 0px) + 134px) !important;
+        right: 14px !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        transform: translateY(0);
+    }
+
+    body.phone-nav-active .mapboxgl-ctrl-top-right {
+        top: calc(var(--safe-top, 0px) + 180px) !important;
+        right: 14px !important;
+    }
+
+    body.sidebar-collapsed .floating-camera-controls.active {
+        bottom: 96px !important;
+    }
+
+    body.sidebar-collapsed .floating-speed-controls.active,
+    body.sidebar-collapsed .floating-camera-controls.active ~ .floating-speed-controls {
+        display: flex !important;
+        bottom: 44px !important;
+    }
+
+    body:not(.sidebar-collapsed) .floating-speed-controls {
+        display: none !important;
+    }
+
+    /* On mobile phone route sheet: when sheet is popped UP (snap-half or snap-full), speed bar vanishes */
+
+    .phone-bottom-sheet.snap-half #phone-speed-bar,
+    .phone-bottom-sheet.snap-full #phone-speed-bar {
+        display: none !important;
+    }
+}
+
+
+
+/* Mobile GPS Permission Request / Denied Banner */
+
+.phone-gps-permission-card {
+    position: fixed;
+    top: calc(var(--safe-top) + 14px);
+    left: 14px;
+    right: 14px;
+    background: rgba(15, 23, 42, 0.96);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1.5px solid rgba(56, 189, 248, 0.45);
+    border-radius: 16px;
+    padding: 14px 16px;
+    z-index: 99999;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.7), 0 0 24px rgba(56, 189, 248, 0.25);
+    color: #f8fafc;
+    animation: slideDownIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+@keyframes slideDownIn {
+    from { transform: translateY(-30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.pgpc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.pgpc-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pgpc-icon {
+    font-size: 18px;
+}
+
+.pgpc-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.pgpc-close-btn {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px;
+    line-height: 1;
+}
+
+.pgpc-desc {
+    font-size: 12px;
+    color: #cbd5e1;
+    line-height: 1.4;
+}
+
+.pgpc-tip {
+    font-size: 11px;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.1);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    border-radius: 8px;
+    padding: 8px 10px;
+    line-height: 1.45;
+}
+
+.pgpc-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+}
+
+.pgpc-btn {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 100px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    font-size: 11.5px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s;
+}
+
+.pgpc-btn.primary {
+    background: linear-gradient(135deg, #0ea5e9, #2563eb);
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(14, 165, 233, 0.4);
+}
+
+.pgpc-btn.primary:active {
+    transform: scale(0.97);
+}
+
+.pgpc-btn.secondary {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #cbd5e1;
+}
+
+/* --- MOBILE WELCOME / ONBOARDING MODAL --- */
+
+.phone-welcome-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(2, 6, 23, 0.84);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    z-index: 999990;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    animation: fadeInModal 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.phone-welcome-modal-backdrop.closing {
+    animation: fadeOutModal 0.25s ease-in forwards;
+}
+
+@keyframes fadeInModal {
+    from { opacity: 0; transform: scale(0.94); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fadeOutModal {
+    from { opacity: 1; transform: scale(1); }
+    to { opacity: 0; transform: scale(0.95); }
+}
+
+.phone-welcome-modal-card {
+    width: 100%;
+    max-width: 440px;
+    background: linear-gradient(170deg, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.99));
+    border: 1.5px solid rgba(56, 189, 248, 0.45);
+    border-radius: 24px;
+    padding: 22px 20px 20px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 32px rgba(56, 189, 248, 0.28);
+    color: #f8fafc;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.pwm-badge-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.pwm-logo-badge {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.12);
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid rgba(56, 189, 248, 0.25);
+}
+
+.pwm-status-pill {
+    font-size: 11px;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+.pwm-title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.25;
+    letter-spacing: -0.3px;
+}
+
+.pwm-subtitle {
+    margin: -8px 0 0;
+    font-size: 12.5px;
+    color: #94a3b8;
+    line-height: 1.4;
+}
+
+.pwm-cards-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 2px;
+}
+
+.pwm-info-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.pwm-info-card.highlighted {
+    background: rgba(56, 189, 248, 0.08);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.pwm-card-icon {
+    font-size: 20px;
+    line-height: 1;
+    padding-top: 2px;
+    flex-shrink: 0;
+}
+
+.pwm-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.pwm-card-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #f1f5f9;
+}
+
+.pwm-info-card.highlighted .pwm-card-title {
+    color: #38bdf8;
+}
+
+.pwm-card-desc {
+    font-size: 11.5px;
+    color: #cbd5e1;
+    line-height: 1.4;
+}
+
+.pwm-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.pwm-btn-continue {
+    width: 100%;
+    height: 48px;
+    background: linear-gradient(135deg, #0ea5e9, #2563eb);
+    border: none;
+    border-radius: 14px;
+    color: #ffffff;
+    font-size: 14.5px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(14, 165, 233, 0.4);
+    transition: transform 0.15s;
+}
+
+.pwm-btn-continue:active {
+    transform: scale(0.98);
+}
+
+.pwm-btn-arrow {
+    font-size: 16px;
+    transition: transform 0.2s;
+}
+
+.pwm-btn-skip {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.pwm-btn-skip:active {
+    color: #e2e8f0;
+}
+
+
+/* --- KIOSK MODE ISOLATION --- */
+
+body.mode-kiosk #phone-bottom-sheet,
+body.mode-kiosk #phone-welcome-modal,
+body.mode-kiosk #phone-top-nav-hud,
+body.mode-kiosk #mobile-recenter-btn,
+body.mode-kiosk #mobile-gps-toast {
+    display: none !important;
+}
+
+body.mode-kiosk .sidebar {
+    display: flex;
+}
+
+/* --- PHONE MODE ISOLATION --- */
+
+body.mode-phone .sidebar,
+body.mode-phone .turn-by-turn-banner,
+body.mode-phone .floating-speed-controls,
+body.mode-phone #building-panel,
+body.mode-phone #color-picker-modal {
+    display: none !important;
+}
+
+body.mode-phone .floating-camera-controls {
+    display: none;
+}
+
+body.mode-phone .floating-camera-controls.active {
+    display: flex !important;
+    position: fixed !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    bottom: calc(var(--safe-bottom, 0px) + 138px) !important;
+    top: auto !important;
+    z-index: 90 !important;
+    padding: 4px 8px !important;
+    gap: 5px !important;
+    border-radius: 20px !important;
+    background: rgba(15, 23, 42, 0.92) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+    transition: opacity 0.25s ease, transform 0.25s ease !important;
+}
+
+body.mode-phone .floating-camera-controls .fcc-label {
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.5px !important;
+    color: #64748b !important;
+    margin-right: 2px !important;
+    margin-left: 2px !important;
+}
+
+body.mode-phone .floating-camera-controls .fcc-btn {
+    height: 32px !important;
+    padding: 0 10px !important;
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+    gap: 5px !important;
+    border-radius: 16px !important;
+}
+
+body.mode-phone .floating-camera-controls .fcc-btn svg {
+    width: 13px !important;
+    height: 13px !important;
+}
+
+body.mode-phone:has(#phone-bottom-sheet.snap-half) .floating-camera-controls,
+body.mode-phone:has(#phone-bottom-sheet.snap-full) .floating-camera-controls,
+body.mode-phone .floating-camera-controls.sheet-expanded-hidden,
+body.mode-phone .floating-camera-controls.sheet-full-hidden {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transform: translateX(-50%) scale(0.95) !important;
+    animation: none !important;
+}
+
+body.mode-phone.has-active-route .phone-top-bar,
+body.mode-phone.phone-nav-active .phone-top-bar {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-16px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+body.mode-phone .mapboxgl-ctrl-group:has(.mapboxgl-ctrl-zoom-in),
+body.mode-phone .mapboxgl-ctrl-group:has(.mapboxgl-ctrl-compass),
+body.mode-phone .mapboxgl-ctrl-zoom-in,
+body.mode-phone .mapboxgl-ctrl-zoom-out,
+body.mode-phone .mapboxgl-ctrl-compass {
+    display: none !important;
+}
+
+body.mode-phone .ctrl-orbit-group,
+body.mode-phone .mapboxgl-ctrl-group:has(.mapboxgl-ctrl-fullscreen) {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+body.mode-phone .ctrl-orbit-btn,
+body.mode-phone .mapboxgl-ctrl-fullscreen {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+body.mode-phone .map-settings-widget {
+    display: flex !important;
+    top: calc(var(--safe-top, 0px) + 14px) !important;
+    right: 14px !important;
+    left: auto !important;
+    z-index: 160 !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    transition: top 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease !important;
+}
+
+body.mode-phone .map-layer-widget {
+    display: flex !important;
+    top: calc(var(--safe-top, 0px) + 60px) !important;
+    right: 14px !important;
+    left: auto !important;
+    z-index: 160 !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    transition: top 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease !important;
+}
+
+body.mode-phone .mapboxgl-ctrl-top-right {
+    top: calc(var(--safe-top, 0px) + 106px) !important;
+    right: 14px !important;
+    left: auto !important;
+    z-index: 100 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    width: 38px !important;
+    transition: top 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+body.mode-phone .ctrl-orbit-group {
+    margin-top: 0 !important;
+}
+
+body.mode-phone.has-active-route .map-settings-widget,
+body.mode-phone.phone-nav-active .map-settings-widget {
+    display: flex !important;
+    top: calc(var(--safe-top, 0px) + 88px) !important;
+    right: 14px !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+body.mode-phone.has-active-route .map-layer-widget,
+body.mode-phone.phone-nav-active .map-layer-widget {
+    display: flex !important;
+    top: calc(var(--safe-top, 0px) + 134px) !important;
+    right: 14px !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    transform: translateY(0);
+    transition: top 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+}
+
+body.mode-phone.has-active-route .mapboxgl-ctrl-top-right,
+body.mode-phone.phone-nav-active .mapboxgl-ctrl-top-right {
+    top: calc(var(--safe-top, 0px) + 180px) !important;
+    right: 14px !important;
+}
+
+body.mode-phone #phone-bottom-sheet {
+    display: flex !important;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: -40px;
+    width: 100vw;
+    height: calc(92dvh - env(safe-area-inset-top, 0px) + 40px);
+    padding-bottom: 40px;
+    box-sizing: border-box;
+    flex-direction: column;
+    overflow: hidden;
+    overscroll-behavior-y: contain;
+    will-change: transform;
+    transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+body.mode-phone #phone-bottom-sheet.is-dragging,
+body.mode-phone #phone-bottom-sheet.dragging {
+    transition: none !important;
+}
+
+body.mode-phone #phone-bottom-sheet.snap-peek {
+    transform: translate3d(0, calc(100% - 40px - 142px - env(safe-area-inset-bottom, 0px)), 0);
+}
+
+body.mode-phone #phone-bottom-sheet.snap-peek.bldg-active {
+    transform: translate3d(0, calc(100% - 40px - 92px - env(safe-area-inset-bottom, 0px)), 0);
+}
+
+body.mode-phone #phone-bottom-sheet.snap-peek.route-active {
+    transform: translate3d(0, calc(100% - 40px - 124px - env(safe-area-inset-bottom, 0px)), 0);
+}
+
+body.mode-phone #phone-bottom-sheet.snap-half {
+    transform: translate3d(0, calc(100% - 40px - 50dvh), 0);
+}
+
+body.mode-phone #phone-bottom-sheet.snap-full {
+    transform: translate3d(0, 0px, 0);
+}
+
+body.mode-phone .kiosk-marker-label {
+    pointer-events: none !important;
+}
+
+
+
+/* 1. Floating Top Bar on Mobile */
+
+.phone-top-bar {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .phone-top-bar {
+        display: flex;
+        position: fixed;
+        top: calc(var(--safe-top, 0px) + 12px);
+        left: 14px;
+        right: 62px;
+        z-index: 105;
+        gap: 10px;
+        align-items: center;
+        pointer-events: none;
+    }
+}
+
+body.mode-phone .phone-top-bar {
+    display: flex;
+    position: fixed;
+    top: calc(var(--safe-top, 0px) + 12px);
+    left: 14px;
+    right: 62px;
+    z-index: 105;
+    gap: 10px;
+    align-items: center;
+    pointer-events: none;
+}
+
+.phone-top-badge {
+    pointer-events: auto;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: radial-gradient(circle at center, rgba(16, 185, 129, 0.22) 0%, rgba(6, 18, 12, 0.95) 100%);
+    border: 1.5px solid rgba(43, 220, 57, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), 0 0 10px rgba(43, 220, 57, 0.25);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.phone-top-badge:active {
+    transform: scale(0.92);
+}
+
+.phone-top-logo {
+    width: 82%;
+    height: 82%;
+    object-fit: contain;
+}
+
+.phone-station-pill {
+    pointer-events: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0 14px;
+    height: 44px;
+    background: rgba(15, 23, 42, 0.88);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    border: 1.5px solid rgba(56, 189, 248, 0.45);
+    border-radius: 9999px;
+    color: #f8fafc;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+    max-width: calc(100% - 54px);
+    transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.phone-station-pill:active {
+    transform: scale(0.95);
+    border-color: rgba(56, 189, 248, 0.8);
+    background: rgba(30, 41, 59, 0.95);
+}
+
+.phone-station-pill-dot {
+    color: #22c55e;
+    font-size: 11px;
+    animation: pulseGlowGreen 2s infinite ease-in-out;
+}
+
+@keyframes pulseGlowGreen {
+    0%, 100% { opacity: 1; filter: drop-shadow(0 0 2px #22c55e); }
+    50% { opacity: 0.5; filter: none; }
+}
+
+.phone-station-pill-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: -0.2px;
+}
+
+.phone-station-pill-chevron {
+    font-size: 10px;
+    color: #94a3b8;
+    margin-left: 2px;
+}
+
+/* 2. Station Banner inside Phone Directory Bottom Sheet */
+
+.phone-station-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    margin: 0 16px 12px;
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.65), rgba(15, 23, 42, 0.85));
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    border-radius: 14px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    transition: all 0.2s ease;
+}
+
+.phone-station-banner:active {
+    transform: scale(0.98);
+    border-color: rgba(56, 189, 248, 0.6);
+    background: rgba(30, 41, 59, 0.9);
+}
+
+.phone-station-banner-tag {
+    display: block;
+    font-size: 9.5px;
+    font-weight: 800;
+    color: #38bdf8;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+}
+
+.phone-station-banner-name {
+    font-size: 14px;
+    font-weight: 800;
+    color: #f8fafc;
+    line-height: 1.2;
+}
+
+.phone-station-change-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    background: rgba(56, 189, 248, 0.14);
+    border: 1px solid rgba(56, 189, 248, 0.45);
+    border-radius: 9999px;
+    color: #38bdf8;
+    font-size: 11px;
+    font-weight: 700;
+    pointer-events: none;
+    flex-shrink: 0;
+}
+
+.pscb-arrow {
+    font-size: 10px;
+}
+
+/* 3. Mobile Station Switcher Modal / Action Sheet */
+
+.phone-station-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(2, 6, 23, 0.82);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    z-index: 999999;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    animation: fadeInModalBackdrop 0.22s ease-out forwards;
+}
+
+.phone-station-modal-backdrop.closing {
+    animation: fadeOutModalBackdrop 0.2s ease-in forwards;
+}
+
+.phone-station-modal-backdrop.closing .phone-station-modal-sheet {
+    animation: slideDownModalSheet 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.phone-station-modal-sheet {
+    width: 100%;
+    max-width: 520px;
+    background: #0b1329;
+    border-top: 1.5px solid rgba(255, 255, 255, 0.14);
+    border-radius: 24px 24px 0 0;
+    padding: 20px 18px calc(24px + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.85);
+    animation: slideUpModalSheet 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.phone-station-modal-drag {
+    display: none !important;
+}
+
+.phone-station-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.phone-station-modal-badge {
+    font-size: 10px;
+    font-weight: 800;
+    color: #22c55e;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 3px;
+}
+
+.phone-station-modal-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: #f8fafc;
+    margin: 0 0 2px 0;
+    letter-spacing: -0.3px;
+}
+
+.phone-station-modal-sub {
+    font-size: 12px;
+    color: #94a3b8;
+    margin: 0;
+}
+
+.phone-station-modal-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #cbd5e1;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+}
+
+.phone-station-modal-close:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+}
+
+.phone-station-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.phone-station-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1.5px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.phone-station-card:active {
+    transform: scale(0.98);
+}
+
+.phone-station-card.active {
+    background: rgba(34, 197, 94, 0.12);
+    border-color: rgba(34, 197, 94, 0.6);
+    box-shadow: 0 4px 18px rgba(34, 197, 94, 0.18);
+}
+
+.psc-icon-wrap {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.phone-station-card.active .psc-icon-wrap {
+    background: rgba(34, 197, 94, 0.2);
+    border-color: rgba(34, 197, 94, 0.5);
+}
+
+.psc-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    line-height: 1;
+}
+
+.psc-icon svg,
+.psc-icon .lucide-icon {
+    width: 22px !important;
+    height: 22px !important;
+    display: block !important;
+    margin: auto;
+}
+
+.psc-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.psc-title-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 2px;
+    flex-wrap: wrap;
+}
+
+.psc-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: #f8fafc;
+}
+
+.psc-province {
+    font-size: 11px;
+    color: #94a3b8;
+    white-space: normal;
+}
+
+.psc-desc {
+    font-size: 11.5px;
+    color: #cbd5e1;
+    line-height: 1.4;
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: break-word;
+    margin-top: 2px;
+}
+
+.psc-status {
+    padding: 5px 12px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #94a3b8;
+    flex-shrink: 0;
+}
+
+.psc-status.active {
+    background: #22c55e;
+    border-color: #22c55e;
+    color: #022c22;
+    font-weight: 800;
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.4);
+}
+
+@keyframes fadeInModalBackdrop {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeOutModalBackdrop {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+@keyframes slideUpModalSheet {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+
+@keyframes slideDownModalSheet {
+    from { transform: translateY(0); }
+    to { transform: translateY(100%); }
+}
+

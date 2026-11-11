@@ -136,7 +136,7 @@ function executeLayerShift(dx, dy, force = false) {
     const { dLng, dLat } = metersToGPSDelta(effectiveDx, effectiveDy);
 
     // A. 3D Building Models Layer
-    const modelsSource = currentMap.getSource('lares-3d-buildings-models-source');
+    const modelsSource = currentMap.getSource('lares-3d-models-source') || currentMap.getSource('lares-3d-buildings-models-source');
     if (modelsSource && typeof CUSTOM_3D_BUILDINGS !== 'undefined') {
         const shiftedModelFeatures = Object.keys(CUSTOM_3D_BUILDINGS).map(id => {
             const b = CUSTOM_3D_BUILDINGS[id];

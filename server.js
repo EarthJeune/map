@@ -137,6 +137,26 @@ app.get('/api/qares/pin', async (req, res) => {
     res.json({ coordinates: [121.3713315, 13.9432268], station: 'qares' });
 });
 
+// Dedicated endpoint to get RARES kiosk pin
+app.get('/api/rares/pin', async (req, res) => {
+    try {
+        const rows = await query(`SELECT \`value\` FROM settings WHERE \`key\` = 'rares_kiosk_pin'`);
+        if (rows.length > 0) {
+            return res.json({ coordinates: JSON.parse(rows[0].value), station: 'rares' });
+        }
+    } catch (err) {}
+
+    try {
+        const filePath = path.join(__dirname, 'rares_pin.json');
+        if (fs.existsSync(filePath)) {
+            const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+            if (data.coordinates) return res.json({ coordinates: data.coordinates, station: 'rares' });
+        }
+    } catch (e) {}
+
+    res.json({ coordinates: [121.3393, 14.5750], station: 'rares' });
+});
+
 // API endpoint to update the "You Are Here" pin (supports station in body or query)
 app.post('/api/pin', async (req, res) => {
     const coords = req.body.coordinates;
@@ -188,6 +208,31 @@ app.post('/api/qares/pin', async (req, res) => {
     } catch (e) {}
 
     res.json({ success: true, coordinates: coords, station: 'qares' });
+});
+
+// Dedicated endpoint to update RARES kiosk pin
+app.post('/api/rares/pin', async (req, res) => {
+    const coords = req.body.coordinates;
+    if (!coords || !Array.isArray(coords) || coords.length !== 2) {
+        return res.status(400).json({ error: 'Invalid coordinates format. Expected [lng, lat]' });
+    }
+
+    try {
+        await query(
+            `INSERT INTO settings (\`key\`, \`value\`) VALUES ('rares_kiosk_pin', ?) 
+             ON DUPLICATE KEY UPDATE \`value\` = VALUES(\`value\`)`, 
+            [JSON.stringify(coords)]
+        );
+    } catch (err) {
+        console.warn('Notice: Could not persist RARES pin to DB, using JSON fallback:', err.message);
+    }
+
+    try {
+        fs.writeFileSync(path.join(__dirname, 'rares_pin.json'), JSON.stringify({ station: 'rares', coordinates: coords }, null, 2), 'utf8');
+    } catch (e) {}
+
+    console.log(`[RARES] Saved Kiosk Pin to [${coords[0].toFixed(6)}, ${coords[1].toFixed(6)}]`);
+    res.json({ success: true, coordinates: coords, station: 'rares' });
 });
 
 // API endpoint to get drone orthomosaic calibration offset
@@ -547,6 +592,203 @@ function updateQaresMaskInGeoJs(boundaryGeoJson) {
     }
 }
 
+app.get('/api/rares/buildings', (req, res) => {
+    try {
+        const filePath = path.join(__dirname, 'rares_buildings.json');
+        if (fs.existsSync(filePath)) {
+            const data = fs.readFileSync(filePath, 'utf8');
+            res.json(JSON.parse(data));
+        } else {
+            res.json({ type: 'FeatureCollection', station: 'rares', name: 'RARES Buildings', features: [] });
+        }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/rares/buildings', (req, res) => {
+    try {
+        const data = req.body;
+        if (!data || !data.features) {
+            return res.status(400).json({ error: 'Invalid GeoJSON: features array expected' });
+        }
+        const filePath = path.join(__dirname, 'rares_buildings.json');
+        if (fs.existsSync(filePath)) {
+            try {
+                const bDir = path.join(__dirname, 'archive', 'backups');
+                if (!fs.existsSync(bDir)) fs.mkdirSync(bDir, { recursive: true });
+                const ts = new Date().toISOString().replace(/[:.]/g, '-');
+                fs.copyFileSync(filePath, path.join(bDir, `rares_buildings_backup_${ts}.json`));
+            } catch (e) {}
+        }
+        fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+        console.log(`[RARES] Saved rares_buildings.json with ${data.features.length} buildings.`);
+        res.json({ success: true, count: data.features.length });
+    } catch (err) {
+        console.error('Error saving rares_buildings.json:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/rares/boundary', (req, res) => {
+    try {
+        const filePath = path.join(__dirname, 'rares_boundary.json');
+        if (fs.existsSync(filePath)) {
+            const data = fs.readFileSync(filePath, 'utf8');
+            res.json(JSON.parse(data));
+        } else {
+            res.json({ type: 'FeatureCollection', station: 'rares', name: 'DA-RARES Boundary', features: [] });
+        }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/rares/boundary', (req, res) => {
+    try {
+        const data = req.body;
+        if (!data || !data.features) {
+            return res.status(400).json({ error: 'Invalid GeoJSON: features array expected' });
+        }
+        const filePath = path.join(__dirname, 'rares_boundary.json');
+        if (fs.existsSync(filePath)) {
+            try {
+                const bDir = path.join(__dirname, 'archive', 'backups');
+                if (!fs.existsSync(bDir)) fs.mkdirSync(bDir, { recursive: true });
+                const ts = new Date().toISOString().replace(/[:.]/g, '-');
+                fs.copyFileSync(filePath, path.join(bDir, `rares_boundary_backup_${ts}.json`));
+            } catch (e) {}
+        }
+        fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+        console.log(`[RARES] Saved rares_boundary.json with ${data.features.length} features.`);
+
+        // Automatically sync RARES_MASK in js/data/geo.js
+        updateRaresMaskInGeoJs(data);
+
+        res.json({ success: true, count: data.features.length });
+    } catch (err) {
+        console.error('Error saving rares_boundary.json:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/rares/roads', (req, res) => {
+    try {
+        const filePath = path.join(__dirname, 'rares_roads.json');
+        if (fs.existsSync(filePath)) {
+            const data = fs.readFileSync(filePath, 'utf8');
+            res.json(JSON.parse(data));
+        } else {
+            res.json({ type: 'FeatureCollection', station: 'rares', name: 'DA-RARES Roads & Walkways', features: [] });
+        }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/rares/roads', (req, res) => {
+    try {
+        const data = req.body;
+        if (!data || !data.features) {
+            return res.status(400).json({ error: 'Invalid GeoJSON: features array expected' });
+        }
+        const filePath = path.join(__dirname, 'rares_roads.json');
+        if (fs.existsSync(filePath)) {
+            try {
+                const bDir = path.join(__dirname, 'archive', 'backups');
+                if (!fs.existsSync(bDir)) fs.mkdirSync(bDir, { recursive: true });
+                const ts = new Date().toISOString().replace(/[:.]/g, '-');
+                fs.copyFileSync(filePath, path.join(bDir, `rares_roads_backup_${ts}.json`));
+            } catch (e) {}
+        }
+        fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+        console.log(`[RARES] Saved rares_roads.json with ${data.features.length} features.`);
+        res.json({ success: true, count: data.features.length });
+    } catch (err) {
+        console.error('Error saving rares_roads.json:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/rares/plots', (req, res) => {
+    try {
+        const filePath = path.join(__dirname, 'rares_plots.json');
+        if (fs.existsSync(filePath)) {
+            const data = fs.readFileSync(filePath, 'utf8');
+            res.json(JSON.parse(data));
+        } else {
+            res.json({ type: 'FeatureCollection', station: 'rares', name: 'DA-RARES Agricultural Plots', features: [] });
+        }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/rares/plots', (req, res) => {
+    try {
+        const data = req.body;
+        if (!data || !data.features) {
+            return res.status(400).json({ error: 'Invalid GeoJSON: features array expected' });
+        }
+        const filePath = path.join(__dirname, 'rares_plots.json');
+        if (fs.existsSync(filePath)) {
+            try {
+                const bDir = path.join(__dirname, 'archive', 'backups');
+                if (!fs.existsSync(bDir)) fs.mkdirSync(bDir, { recursive: true });
+                const ts = new Date().toISOString().replace(/[:.]/g, '-');
+                fs.copyFileSync(filePath, path.join(bDir, `rares_plots_backup_${ts}.json`));
+            } catch (e) {}
+        }
+        fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+        console.log(`[RARES] Saved rares_plots.json with ${data.features.length} plots.`);
+        res.json({ success: true, count: data.features.length });
+    } catch (err) {
+        console.error('Error saving rares_plots.json:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+function updateRaresMaskInGeoJs(boundaryGeoJson) {
+    try {
+        if (!boundaryGeoJson || !boundaryGeoJson.features || !boundaryGeoJson.features[0]) return;
+        const coords = boundaryGeoJson.features[0].geometry.coordinates[0];
+        if (!coords || !Array.isArray(coords)) return;
+
+        const maskObj = {
+            type: 'FeatureCollection',
+            features: [{
+                type: 'Feature',
+                geometry: {
+                    type: 'Polygon',
+                    coordinates: [
+                        [[-180, -85], [180, -85], [180, 85], [-180, 85], [-180, -85]],
+                        coords
+                    ]
+                },
+                properties: {
+                    station: 'rares',
+                    description: 'DA-RARES Compound Vignette Mask'
+                }
+            }]
+        };
+
+        const geoPath = path.join(__dirname, 'js', 'data', 'geo.js');
+        if (fs.existsSync(geoPath)) {
+            let geoContent = fs.readFileSync(geoPath, 'utf8');
+            const maskRegex = /export const RARES_MASK = \{.*?\};/s;
+            if (maskRegex.test(geoContent)) {
+                geoContent = geoContent.replace(maskRegex, `export const RARES_MASK = ${JSON.stringify(maskObj)};`);
+            } else {
+                geoContent += `\nexport const RARES_MASK = ${JSON.stringify(maskObj)};\n`;
+            }
+            fs.writeFileSync(geoPath, geoContent, 'utf8');
+            console.log('[RARES] Automatically synced RARES_MASK in js/data/geo.js');
+        }
+    } catch (e) {
+        console.warn('[RARES] Notice updating geo.js mask:', e);
+    }
+}
+
 // API endpoint to get trees.json
 app.get('/api/trees', (req, res) => {
     try {
@@ -778,7 +1020,8 @@ const TILE_CACHE_MAX = 300;
 
 const stationsDb = {
     lares: { db: null, stmt: null, cache: new Map(), label: 'DA-LARES' },
-    qares: { db: null, stmt: null, cache: new Map(), label: 'DA-QARES' }
+    qares: { db: null, stmt: null, cache: new Map(), label: 'DA-QARES' },
+    rares: { db: null, stmt: null, cache: new Map(), label: 'DA-RARES' }
 };
 
 const laresCandidates = [
@@ -793,6 +1036,13 @@ const qaresCandidates = [
     path.join(__dirname, 'QARES v1.mbtiles'),
     path.join(os.homedir(), 'Downloads', 'QARES v1.mbtiles'),
     'C:\\Users\\LGU-SanPedro\\Downloads\\QARES v1.mbtiles'
+].filter(Boolean);
+
+const raresCandidates = [
+    process.env.RARES_MBTILES_PATH,
+    path.join(__dirname, 'RARES v1.mbtiles'),
+    path.join(os.homedir(), 'Downloads', 'RARES v1.mbtiles'),
+    'C:\\Users\\LGU-SanPedro\\Downloads\\RARES v1.mbtiles'
 ].filter(Boolean);
 
 function initStationMbtiles(stationKey, candidates, label) {
@@ -812,6 +1062,15 @@ function initStationMbtiles(stationKey, candidates, label) {
                     );
                     stationsDb[stationKey].db = db;
                     stationsDb[stationKey].stmt = stmt;
+                    db.all('SELECT name, value FROM metadata WHERE name IN ("minzoom", "maxzoom")', (mErr, rows) => {
+                        if (!mErr && rows) {
+                            rows.forEach(r => {
+                                if (r.name === 'minzoom') stationsDb[stationKey].minzoom = parseInt(r.value, 10);
+                                if (r.name === 'maxzoom') stationsDb[stationKey].maxzoom = parseInt(r.value, 10);
+                            });
+                            console.log(`[MBTiles] ${label} zoom range: minzoom=${stationsDb[stationKey].minzoom}, maxzoom=${stationsDb[stationKey].maxzoom}`);
+                        }
+                    });
                     console.log(`[MBTiles] ${label} prepared statement ready. Sub-millisecond tile serving active.`);
                 }
             });
@@ -822,6 +1081,7 @@ function initStationMbtiles(stationKey, candidates, label) {
 
 initStationMbtiles('lares', laresCandidates, 'DA-LARES');
 initStationMbtiles('qares', qaresCandidates, 'DA-QARES');
+initStationMbtiles('rares', raresCandidates, 'DA-RARES');
 
 const TRANSPARENT_1X1_PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQABpfZFQAAAAABJRU5ErkJggg==', 'base64');
 
@@ -865,6 +1125,10 @@ function handleStationTileRequest(stationKey, req, res) {
 
     st.stmt.get([z, x, tileRow], (err, row) => {
         if (err || !row || !row.tile_data) {
+            // When requested zoom exceeds dataset maxzoom, return 204 No Content so Mapbox overzooms parent tiles cleanly
+            if (st.maxzoom && z > st.maxzoom) {
+                return res.status(204).end();
+            }
             // Return transparent 1x1 PNG instead of 404 to avoid browser console error spam
             res.writeHead(200, {
                 'Content-Type': 'image/png',
@@ -890,6 +1154,10 @@ function handleStationTileRequest(stationKey, req, res) {
         res.end(row.tile_data);
     });
 }
+
+// RARES tile endpoints
+app.get('/api/tiles/rares/:z/:x/:y.png', (req, res) => handleStationTileRequest('rares', req, res));
+app.get('/api/tiles/rares/:z/:x/:y', (req, res) => handleStationTileRequest('rares', req, res));
 
 // QARES tile endpoints
 app.get('/api/tiles/qares/:z/:x/:y.png', (req, res) => handleStationTileRequest('qares', req, res));

@@ -364,8 +364,8 @@ export function showBuildingPanel(buildingId, targetOffice = '') {
 
     const safeId = buildingId.replace(/\//g, '_');
     const imgPath = building.isGate && building.guardHouseId
-        ? `images/${building.guardHouseId}.jpg`
-        : `images/${safeId}.jpg`;
+        ? `images/${building.guardHouseId}.webp`
+        : `images/${safeId}.webp`;
     setDrawerHeroImage({
         src: imgPath,
         title: building.name,
@@ -1668,6 +1668,11 @@ export function setDrawerHeroImage({ src, title = '', subtitle = '', badgeDotCol
     };
 
     testImg.onerror = function() {
+        // Transparent fallback: if webp requested but not found, try jpg before falling back to placeholder
+        if (src && src.endsWith('.webp') && !testImg.src.includes('?fallback=1')) {
+            testImg.src = src.replace(/\.webp$/, '.jpg') + '?fallback=1';
+            return;
+        }
         if (imgEl) imgEl.style.display = 'none';
         if (vignetteEl) vignetteEl.style.display = 'none';
         if (badgeEl) badgeEl.style.display = 'none';
@@ -1726,7 +1731,7 @@ export function setDrawerHeroSubPlot(subPlotData, parentZone) {
     let viewsList = subPlotData.images || [];
 
     if (!primarySrc && subPlotData.buildingId) {
-        primarySrc = `images/${subPlotData.buildingId}.jpg`;
+        primarySrc = `images/${subPlotData.buildingId}.webp`;
     }
 
     const imgArea = document.getElementById('bp-image-area');

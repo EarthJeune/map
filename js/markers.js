@@ -90,16 +90,24 @@ export function virtualizeMarkers() {
 
     if (state.markersVisible === false) {
 
+        if (typeof document !== 'undefined' && document.body) {
+            document.body.classList.add('labels-hidden');
+        }
+
         state.markers.forEach(m => {
 
             const el = m.getElement();
 
-            if (el && el.style.display !== 'none') el.style.display = 'none';
+            if (el) el.style.setProperty('display', 'none', 'important');
 
         });
 
         return;
 
+    }
+
+    if (typeof document !== 'undefined' && document.body) {
+        document.body.classList.remove('labels-hidden');
     }
 
 
@@ -142,7 +150,10 @@ export function virtualizeMarkers() {
 
         if (el.classList.contains('decluttered-highlight') || el.classList.contains('decluttered-dest')) {
 
-            if (el.style.display !== '') el.style.display = '';
+            if (el.style.display !== '') {
+                el.style.removeProperty('display');
+                el.style.display = '';
+            }
 
             return;
 
@@ -150,7 +161,7 @@ export function virtualizeMarkers() {
 
         if (el.classList.contains('decluttered-hide')) {
 
-            if (el.style.display !== 'none') el.style.display = 'none';
+            if (el.style.display !== 'none') el.style.setProperty('display', 'none', 'important');
 
             return;
 
@@ -172,11 +183,14 @@ export function virtualizeMarkers() {
 
         if (inFrustum) {
 
-            if (el.style.display === 'none') el.style.display = '';
+            if (el.style.display === 'none') {
+                el.style.removeProperty('display');
+                el.style.display = '';
+            }
 
         } else {
 
-            if (el.style.display !== 'none') el.style.display = 'none';
+            if (el.style.display !== 'none') el.style.setProperty('display', 'none', 'important');
 
         }
 
@@ -510,6 +524,10 @@ export function createMarkers() {
 
         : (numbersBtn ? numbersBtn.classList.contains('active') : true);
 
+    if (typeof document !== 'undefined' && document.body) {
+        document.body.classList.toggle('labels-hidden', !areMarkersVisible);
+    }
+
 
 
     let itemsToRender = [];
@@ -619,13 +637,61 @@ export function createMarkers() {
                     coords: centerCoords,
 
                     isQARES: true
-
                 };
+            });
+        }
+    } else if (currentStation === 'rares') {
+        const raresData = (typeof window !== 'undefined' && window.raresBuildingsBaseline) ? window.raresBuildingsBaseline : null;
+        if (raresData && raresData.features) {
+            const groups = new Map();
+            raresData.features.forEach(f => {
+                const props = f.properties || {};
+                const id = props.id || '';
+                const match = id.match(/_([0-9]+)/);
+                const baseNum = match ? parseInt(match[1], 10) : null;
+                const key = baseNum !== null ? baseNum : id;
 
+                if (!groups.has(key)) {
+                    groups.set(key, {
+                        baseNum: baseNum,
+                        id: `rares_building_${baseNum || id}`,
+                        name: props.name || `Facility ${baseNum || ''}`,
+                        desc: props.description || 'RARES Agricultural Facility',
+                        features: [],
+                        allCoordinates: []
+                    });
+                }
+                const group = groups.get(key);
+                group.features.push(f);
+                if (f.geometry && f.geometry.type === 'Polygon' && f.geometry.coordinates && f.geometry.coordinates[0]) {
+                    f.geometry.coordinates[0].forEach(c => group.allCoordinates.push(c));
+                }
             });
 
-        }
+            const combinedList = Array.from(groups.values()).map(g => {
+                let centerCoords = [121.3393, 14.5750];
+                const markerFeat = g.features.find(f => f.properties && f.properties.marker_coords);
+                if (markerFeat && Array.isArray(markerFeat.properties.marker_coords) && markerFeat.properties.marker_coords.length === 2) {
+                    centerCoords = markerFeat.properties.marker_coords;
+                } else if (g.allCoordinates.length > 0) {
+                    let sumLng = 0, sumLat = 0;
+                    g.allCoordinates.forEach(c => { sumLng += c[0]; sumLat += c[1]; });
+                    centerCoords = [sumLng / g.allCoordinates.length, sumLat / g.allCoordinates.length];
+                }
+                return {
+                    id: g.id,
+                    name: g.name,
+                    desc: (typeof window !== 'undefined' && window.getRARESSubtitle) ? window.getRARESSubtitle(g.name, g.desc) : g.desc,
+                    num: g.baseNum !== null ? g.baseNum : 1,
+                    color: '#10b981',
+                    coords: centerCoords,
+                    isRARES: true
+                };
+            });
 
+            combinedList.sort((a, b) => a.num - b.num);
+            itemsToRender = combinedList;
+        }
     }
 
 
@@ -644,7 +710,7 @@ export function createMarkers() {
 
         if (!areMarkersVisible) {
 
-            el.style.display = 'none';
+            el.style.setProperty('display', 'none', 'important');
 
         }
 

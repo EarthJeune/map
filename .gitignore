@@ -43,6 +43,7 @@ __pycache__/
 
 # === Raw Field Source Photos (500MB+; web drawer images are optimized in images/) ===
 Building Images/
+Building Images RARES/
 
 # === Temporary Render Outputs & Media Storage ===
 .tempmediaStorage/

@@ -1,0 +1,530 @@
+/* ==========================================================================
+   DA-CALABARZON INTERACTIVE WAYFINDING SYSTEM
+   Navigation & Live Turn-by-Turn HUD Layer
+   Author: DA-LARES / DA-CALABARZON Spatial Hub (DASH)
+   ========================================================================== */
+
+/* Turn-by-Turn Live Navigation Banner (Top Center) */
+
+.turn-by-turn-banner {
+    position: absolute;
+    top: 24px;
+    bottom: auto;
+    left: calc(var(--sidebar-offset, 380px) + (100vw - var(--sidebar-offset, 380px)) / 2);
+    transform: translateX(-50%);
+    z-index: 120;
+    display: none;
+    align-items: center;
+    gap: 16px;
+    background: rgba(15, 23, 42, 0.94);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 20px;
+    padding: 12px 24px 12px 16px;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.55), 0 0 1px rgba(255, 255, 255, 0.2);
+    user-select: none;
+    min-width: 340px;
+    max-width: min(760px, calc(100vw - var(--sidebar-offset, 380px) - 48px));
+    transition: left 0.45s cubic-bezier(.22, 1, .36, 1), transform 0.25s ease, opacity 0.25s ease;
+}
+
+.turn-by-turn-banner.active {
+    display: flex;
+    animation: fadeInDownCamera 0.25s ease-out forwards;
+}
+
+.tbt-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #16a34a, #15803d);
+    border: 1px solid rgba(74, 222, 128, 0.4);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: 800;
+    flex-shrink: 0;
+    box-shadow: 0 4px 14px rgba(22, 163, 74, 0.4);
+}
+
+.turn-by-turn-banner.arrived .tbt-icon-wrapper {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    border-color: rgba(96, 165, 250, 0.5);
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+}
+
+.tbt-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.tbt-distance {
+    font-size: 22px;
+    font-weight: 800;
+    color: #f8fafc;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+}
+
+.tbt-instruction {
+    font-size: 18px;
+    font-weight: 600;
+    color: #cbd5e1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+}
+
+/* Adaptive Long Destination Banner (Option 4 -> Option 1) */
+
+.turn-by-turn-banner.arrived.is-long-dest {
+    max-width: 660px;
+    padding: 10px 22px 10px 16px;
+    gap: 14px;
+}
+
+.turn-by-turn-banner.arrived.is-long-dest .tbt-icon-wrapper {
+    width: 44px;
+    height: 44px;
+    font-size: 22px;
+    border-radius: 12px;
+}
+
+.turn-by-turn-banner.arrived.is-long-dest .tbt-distance {
+    font-size: 19px;
+    color: #60a5fa;
+    letter-spacing: -0.01em;
+}
+
+.turn-by-turn-banner.arrived.is-long-dest .tbt-instruction {
+    font-size: 15px;
+    font-weight: 600;
+    color: #f1f5f9;
+    white-space: normal;
+    line-height: 1.25;
+    max-width: 540px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
+}
+
+/* Floating Camera Controls on the Map (Bottom Pill) */
+
+@keyframes fadeInDownCamera {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-14px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+@keyframes fadeInUpCamera {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(14px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+.floating-camera-controls {
+    position: absolute;
+    bottom: 24px;
+    top: auto;
+    left: calc(var(--sidebar-offset, 380px) + (100vw - var(--sidebar-offset, 380px)) / 2);
+    transform: translateX(-50%);
+    z-index: 100;
+    display: none;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    background: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 30px;
+    padding: 6px 12px;
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.55), 0 0 1px rgba(255, 255, 255, 0.2);
+    user-select: none;
+    transition: opacity 0.4s ease, transform 0.25s ease, left 0.45s cubic-bezier(.22, 1, .36, 1);
+}
+
+.floating-camera-controls.active {
+    display: flex;
+    animation: fadeInUpCamera 0.25s ease-out forwards;
+}
+
+.floating-camera-controls.dimmed {
+    opacity: 0.3;
+}
+
+.floating-camera-controls.dimmed:hover {
+    opacity: 1;
+}
+
+.fcc-label {
+    font-size: 11px;
+    font-weight: 800;
+    color: #64748b;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    margin-right: 4px;
+    margin-left: 4px;
+}
+
+.fcc-btn {
+    height: 40px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #cbd5e1;
+    padding: 0 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.fcc-btn:hover {
+    background: rgba(255, 255, 255, 0.14);
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+.fcc-btn.active {
+    background: rgba(22, 101, 52, 0.4);
+    border: 1px solid rgba(34, 197, 94, 0.6);
+    color: #4ade80;
+    box-shadow: 0 0 12px rgba(34, 197, 94, 0.3);
+}
+
+/* ---------- Floating Route Speed Controls (Under Camera View in Portrait/Mobile when menu is popped down) ---------- */
+
+.floating-speed-controls {
+    position: absolute;
+    bottom: 24px;
+    top: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 150;
+    display: none;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    background: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 30px;
+    padding: 6px 14px;
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.55), 0 0 1px rgba(255, 255, 255, 0.2);
+    user-select: none;
+    transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s ease, bottom 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.floating-speed-controls.dimmed {
+    opacity: 0.3;
+}
+
+.floating-speed-controls.dimmed:hover,
+.floating-speed-controls:hover {
+    opacity: 1;
+}
+
+.fsc-label {
+    font-size: 11px;
+    font-weight: 800;
+    color: #64748b;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    margin-right: 4px;
+    margin-left: 2px;
+}
+
+.fsc-pills {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.floating-speed-controls .speed-pill {
+    height: 38px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #cbd5e1;
+    padding: 0 14px;
+    border-radius: 19px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.floating-speed-controls .speed-pill:hover {
+    background: rgba(255, 255, 255, 0.14);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+.floating-speed-controls .speed-pill.active {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.95), rgba(16, 185, 129, 0.9));
+    border-color: #4ade80;
+    color: #ffffff;
+    box-shadow: 0 0 16px rgba(34, 197, 94, 0.5);
+}
+
+.dir-item-icon-number {
+    font-size: 16px;
+    font-weight: 800;
+}
+
+
+/* ========== LIVE USER GPS MARKER ========== */
+
+.user-gps-marker {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    box-sizing: border-box;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    transform-origin: center center;
+}
+
+.user-gps-dot {
+    width: 16px;
+    height: 16px;
+    background: #2563eb;
+    border: 2.5px solid #ffffff;
+    border-radius: 50%;
+    box-shadow: 0 0 10px rgba(37, 99, 235, 0.8), 0 2px 4px rgba(0, 0, 0, 0.4);
+    z-index: 2;
+    box-sizing: border-box;
+    pointer-events: none;
+}
+
+.user-gps-pulse {
+    position: absolute;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: rgba(37, 99, 235, 0.3);
+    animation: gpsPulseAnim 2.2s infinite cubic-bezier(0.2, 0.8, 0.4, 1);
+    z-index: 1;
+    pointer-events: none;
+    box-sizing: border-box;
+}
+
+@keyframes gpsPulseAnim {
+    0% {
+        transform: scale(0.85);
+        opacity: 0.7;
+    }
+
+    100% {
+        transform: scale(1.65);
+        opacity: 0;
+    }
+}
+
+.user-gps-heading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 56px;
+    height: 56px;
+    margin-top: -28px;
+    margin-left: -28px;
+    pointer-events: none;
+    z-index: 1;
+    transform-origin: 28px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.08s linear;
+}
+
+.user-gps-fan-svg {
+    display: block;
+    width: 56px;
+    height: 56px;
+    overflow: visible;
+    filter: drop-shadow(0 0 4px rgba(56, 189, 248, 0.35));
+}
+
+
+/* ==========================================================================
+
+   Spotlight HUD Badge & Ground Selection Beacon for Sub-Plots
+
+   ========================================================================== */
+
+.spotlight-beacon {
+    pointer-events: none;
+    z-index: 180;
+}
+
+.spotlight-beacon-wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transform: translateY(0);
+    animation: spotlightDropIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes spotlightDropIn {
+    0% {
+        opacity: 0;
+        transform: translateY(-24px) scale(0.85);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Floating Glassmorphic HUD Badge */
+
+.spotlight-hud-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    border-radius: 20px;
+    background: rgba(10, 15, 28, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1.5px solid var(--spotlight-color, #38bdf8);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.75), 0 0 18px var(--spotlight-color, rgba(56, 189, 248, 0.5));
+    white-space: nowrap;
+}
+
+.spotlight-hud-icon {
+    font-size: 16px;
+    filter: drop-shadow(0 0 6px var(--spotlight-color, #38bdf8));
+}
+
+.spotlight-hud-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+}
+
+.spotlight-hud-title {
+    font-size: 12.5px;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: 0.3px;
+}
+
+.spotlight-hud-sub {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--spotlight-color, #38bdf8);
+    max-width: 190px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Vertical Stalk Pointer */
+
+.spotlight-stem {
+    width: 2.5px;
+    height: 18px;
+    background: linear-gradient(to bottom, var(--spotlight-color, #38bdf8), rgba(255, 255, 255, 0.8));
+    box-shadow: 0 0 8px var(--spotlight-color, #38bdf8);
+}
+
+.spotlight-anchor-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--spotlight-color, #38bdf8);
+    border: 2px solid #ffffff;
+    box-shadow: 0 0 12px var(--spotlight-color, #38bdf8);
+    margin-top: -3px;
+}
+
+/* Ground Pulsing Ripple Beacon */
+
+.spotlight-pulse-ring {
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid var(--spotlight-color, #38bdf8);
+    background: radial-gradient(circle, var(--spotlight-color, rgba(56, 189, 248, 0.35)) 0%, transparent 70%);
+    animation: spotlightRipple 1.8s infinite ease-out;
+}
+
+@keyframes spotlightRipple {
+    0% {
+        width: 10px;
+        height: 10px;
+        opacity: 1;
+        bottom: -3px;
+    }
+
+    100% {
+        width: 60px;
+        height: 60px;
+        opacity: 0;
+        bottom: -28px;
+    }
+}
+
+/* Active State on Sub-Plot Chips in Drawer */
+
+.sub-plot-chip.active {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.22) 0%, rgba(30, 41, 59, 0.95) 100%) !important;
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 18px rgba(56, 189, 248, 0.35) !important;
+    transform: translateX(4px);
+}
+
+.sub-plot-chip.active .op-name {
+    color: #38bdf8 !important;
+}
+
+.sub-plot-chip.active .op-dot {
+    box-shadow: 0 0 10px #38bdf8, 0 0 20px #38bdf8 !important;
+    transform: scale(1.3);
+}

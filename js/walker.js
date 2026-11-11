@@ -153,6 +153,37 @@ export function navigateTo(buildingId, targetOffice = '') {
 
     if (typeof window.clearSubPlotHighlight === 'function') window.clearSubPlotHighlight();
 
+    if (state.currentStationId === 'rares') {
+        const raresData = (typeof window !== 'undefined' && window.raresBuildingsBaseline) ? window.raresBuildingsBaseline : null;
+        if (raresData && raresData.features) {
+            const baseId = buildingId ? buildingId.split('.')[0] : '';
+            const grouped = (typeof window.getGroupedRARESFacilities === 'function')
+                ? window.getGroupedRARESFacilities(raresData)
+                : null;
+            const fac = grouped ? grouped.find(g => g.id === baseId || g.id === buildingId) : null;
+            if (fac) {
+                if (typeof window.flyToRARESFacility === 'function') {
+                    window.flyToRARESFacility(fac.coords[0], fac.coords[1], fac.id);
+                }
+                return;
+            }
+            const feat = raresData.features.find(f => (f.properties && f.properties.id === buildingId));
+            if (feat && feat.geometry && feat.geometry.coordinates) {
+                let centerCoords = [121.3393, 14.5750];
+                if (feat.geometry.type === 'Polygon' && feat.geometry.coordinates[0]) {
+                    const ring = feat.geometry.coordinates[0];
+                    let sumLng = 0, sumLat = 0;
+                    ring.forEach(c => { sumLng += c[0]; sumLat += c[1]; });
+                    centerCoords = [sumLng / ring.length, sumLat / ring.length];
+                }
+                if (typeof window.flyToRARESFacility === 'function') {
+                    window.flyToRARESFacility(centerCoords[0], centerCoords[1], buildingId);
+                }
+                return;
+            }
+        }
+    }
+
     const building = (typeof getBuildingById === 'function')
 
         ? getBuildingById(buildingId)

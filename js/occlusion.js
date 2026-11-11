@@ -336,15 +336,20 @@ export function applyOcclusionFilters(occludedIds) {
 
     try {
         const visWhenActive = (state.buildingsVisible !== false) ? 'visible' : 'none';
+        const modelLayerIds = ['lares-3d-models-layer', 'rares-3d-models-layer', 'qares-3d-models-layer', '3d-buildings-models-layer'];
+        const transModelLayerIds = ['lares-3d-models-transparent', 'rares-3d-models-transparent', 'qares-3d-models-transparent', '3d-buildings-models-transparent'];
+
         if (occludedIds.length === 0) {
             // A. All solid custom 3D models (show all on solid layer, hide transparent layer completely)
-            if (map.getLayer('3d-buildings-models-layer')) {
-                map.setFilter('3d-buildings-models-layer', null);
-            }
-            if (map.getLayer('3d-buildings-models-transparent')) {
-                map.setLayoutProperty('3d-buildings-models-transparent', 'visibility', 'none');
-                map.setFilter('3d-buildings-models-transparent', ['in', ['get', 'id'], ['literal', []]]);
-            }
+            modelLayerIds.forEach(id => {
+                if (map.getLayer(id)) map.setFilter(id, null);
+            });
+            transModelLayerIds.forEach(id => {
+                if (map.getLayer(id)) {
+                    map.setLayoutProperty(id, 'visibility', 'none');
+                    map.setFilter(id, ['in', ['get', 'id'], ['literal', []]]);
+                }
+            });
 
             // B. Procedural buildings
             const baseFilter = getBaseFilter();
@@ -360,13 +365,20 @@ export function applyOcclusionFilters(occludedIds) {
             }
         } else {
             // A. Custom 3D models: Solid layer excludes occludedIds, translucent layer displays occludedIds
-            if (map.getLayer('3d-buildings-models-layer')) {
-                map.setFilter('3d-buildings-models-layer', ['!', ['in', ['get', 'id'], ['literal', occludedIds]]]);
-            }
-            if (map.getLayer('3d-buildings-models-transparent')) {
-                map.setFilter('3d-buildings-models-transparent', ['in', ['get', 'id'], ['literal', occludedIds]]);
-                map.setLayoutProperty('3d-buildings-models-transparent', 'visibility', visWhenActive);
-            }
+            modelLayerIds.forEach(id => {
+                if (map.getLayer(id)) map.setFilter(id, ['!', ['in', ['get', 'id'], ['literal', occludedIds]]]);
+            });
+            transModelLayerIds.forEach(id => {
+                if (map.getLayer(id)) {
+                    map.setFilter(id, ['in', ['get', 'id'], ['literal', occludedIds]]);
+                    // Only display transparent layer if the parent station layer is currently visible
+                    const parentSolidId = id.replace('-transparent', '-layer');
+                    const isParentVisible = map.getLayer(parentSolidId) && map.getLayoutProperty(parentSolidId, 'visibility') === 'visible';
+                    if (isParentVisible) {
+                        map.setLayoutProperty(id, 'visibility', visWhenActive);
+                    }
+                }
+            });
 
             // B. Procedural buildings (only filter if procedural buildings are involved)
             const baseFilter = getBaseFilter();
@@ -450,13 +462,15 @@ export function resetOcclusion() {
             map.setLayoutProperty('3d-drawings-roofs-transparent', 'visibility', 'none');
             map.setFilter('3d-drawings-roofs-transparent', ['all', baseFilter, ['in', ['get', 'id'], ['literal', []]]]);
         }
-        if (map.getLayer('3d-buildings-models-layer')) {
-            map.setFilter('3d-buildings-models-layer', null);
-        }
-        if (map.getLayer('3d-buildings-models-transparent')) {
-            map.setLayoutProperty('3d-buildings-models-transparent', 'visibility', 'none');
-            map.setFilter('3d-buildings-models-transparent', ['in', ['get', 'id'], ['literal', []]]);
-        }
+        ['lares-3d-models-layer', 'rares-3d-models-layer', 'qares-3d-models-layer', '3d-buildings-models-layer'].forEach(id => {
+            if (map.getLayer(id)) map.setFilter(id, null);
+        });
+        ['lares-3d-models-transparent', 'rares-3d-models-transparent', 'qares-3d-models-transparent', '3d-buildings-models-transparent'].forEach(id => {
+            if (map.getLayer(id)) {
+                map.setLayoutProperty(id, 'visibility', 'none');
+                map.setFilter(id, ['in', ['get', 'id'], ['literal', []]]);
+            }
+        });
     } catch (e) {
         console.warn('[Occlusion] Error resetting occlusion:', e);
     }
