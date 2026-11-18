@@ -1,0 +1,3227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>iGUIDE Admin — Interactive Geospatial Unified Information Directory and Explorer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/svg+xml" href="Main Icon/iGUIDE_Icon_iG_Monogram.svg?v=289">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.31.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.31.0/mapbox-gl.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-canvas: #020617;
+            --bg-sidebar: #090d16;
+            --bg-surface: rgba(15, 23, 42, 0.65);
+            --bg-surface-solid: #0f172a;
+            --bg-elevated: rgba(30, 41, 59, 0.65);
+            --bg-input: #090d16;
+            --border-subtle: rgba(255, 255, 255, 0.06);
+            --border-default: rgba(255, 255, 255, 0.10);
+            --border-hover: rgba(16, 185, 129, 0.30);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --emerald-400: #34d399;
+            --emerald-500: #10b981;
+            --emerald-glow: rgba(16, 185, 129, 0.10);
+            --blue-500: #3b82f6;
+            --blue-600: rgba(37, 99, 235, 0.90);
+            --amber-400: #fbbf24;
+            --danger-400: #f87171;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            scrollbar-width: thin;
+            scrollbar-color: #334155 transparent;
+        }
+
+        /* 2. Custom Ultra-Slim Modern Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-canvas);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Global Transitions */
+        button, a, input, select, textarea, .stat-card, .crud-table tr, .copy-pill, .station-combo-trigger, .station-combo-option {
+            transition: all 150ms ease-in-out;
+        }
+
+        /* Solo Admin Login Overlay — Split-Screen + Intro Splash (inspired by NAS Analytics, DA-CALABARZON Emerald & Gold) */
+        #login-overlay {
+            position: fixed;
+            inset: 0;
+            background: #020617;
+            z-index: 9999;
+            display: flex;
+            overflow: hidden;
+        }
+        .admin-splash-screen {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 50% 42%, #063017 0%, #020617 75%);
+            z-index: 10005;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 18px;
+            transition: opacity 0.75s ease, visibility 0.75s ease;
+        }
+        .admin-splash-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        .admin-splash-logo {
+            height: 118px;
+            width: auto;
+            filter: drop-shadow(0 12px 30px rgba(16, 185, 129, 0.35));
+            animation: splashPulse 2.2s infinite ease-in-out;
+        }
+        .admin-splash-title {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: 3.5px;
+            text-transform: uppercase;
+            background: linear-gradient(90deg, #ffffff 0%, #a7f3d0 55%, #fbbf24 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .admin-splash-sub {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            perspective: 600px;
+            font-size: 14.5px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-top: -4px;
+            padding: 0 24px;
+            text-align: center;
+            line-height: 1.6;
+        }
+        .unfold-word {
+            display: inline-flex;
+            white-space: nowrap;
+            margin: 0 5px;
+        }
+        .unfold-char {
+            display: inline-block;
+            opacity: 0;
+            color: #64748b;
+            transform-origin: 50% 0%;
+            transform: translateY(-11px) scale(0.72) rotateX(-55deg);
+            animation: iguideCharUnfold 0.62s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+        @keyframes iguideCharUnfold {
+            0% {
+                opacity: 0;
+                color: #64748b;
+                transform: translateY(-11px) scale(0.72) rotateX(-55deg);
+            }
+            45% {
+                opacity: 0.65;
+                color: #94a3b8;
+                transform: translateY(-5px) scale(0.86) rotateX(-22deg);
+            }
+            100% {
+                opacity: 1;
+                color: #f8fafc;
+                transform: translateY(0px) scale(1) rotateX(0deg);
+            }
+        }
+        @keyframes splashPulse {
+            0%, 100% {
+                transform: scale(1);
+                filter: drop-shadow(0 0 14px rgba(16, 185, 129, 0.3));
+            }
+            50% {
+                transform: scale(1.05);
+                filter: drop-shadow(0 0 28px rgba(16, 185, 129, 0.55));
+            }
+        }
+        .login-split {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.6s ease, visibility 0.6s ease;
+        }
+        .login-split.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        .login-brand-panel {
+            flex: 5.5;
+            background: linear-gradient(135deg, #020617 0%, #063017 60%, #0a3d22 100%);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 64px 76px;
+            overflow: hidden;
+            border-right: 1px solid rgba(16, 185, 129, 0.14);
+        }
+        .login-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(110px);
+            opacity: 0.38;
+            pointer-events: none;
+        }
+        .login-orb-1 {
+            top: -12%;
+            left: -10%;
+            width: 460px;
+            height: 460px;
+            background: #10b981;
+            animation: loginFloatA 12s infinite alternate ease-in-out;
+        }
+        .login-orb-2 {
+            bottom: -14%;
+            right: -10%;
+            width: 520px;
+            height: 520px;
+            background: #fbbf24;
+            opacity: 0.20;
+            animation: loginFloatB 15s infinite alternate ease-in-out;
+        }
+        @keyframes loginFloatA {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(-35px, 40px) scale(1.08); }
+        }
+        @keyframes loginFloatB {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(40px, -35px) scale(1.06); }
+        }
+        .login-brand-content {
+            position: relative;
+            z-index: 2;
+            max-width: 650px;
+        }
+        .login-brand-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: #34d399;
+            margin-bottom: 12px;
+        }
+        .login-brand-wordmark {
+            height: 108px;
+            width: auto;
+            display: block;
+            margin-bottom: 4px;
+            filter: drop-shadow(0 12px 26px rgba(0, 0, 0, 0.55));
+        }
+        .login-brand-title {
+            font-size: 62px;
+            font-weight: 800;
+            line-height: 1.06;
+            letter-spacing: -0.03em;
+            margin-bottom: 20px;
+            background: linear-gradient(120deg, #ffffff 0%, #a7f3d0 55%, #fbbf24 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .login-brand-sub {
+            font-size: 18px;
+            line-height: 1.65;
+            color: #cbd5e1;
+            margin-bottom: 28px;
+            max-width: 600px;
+        }
+        .login-sec-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .login-sec-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: #e2e8f0;
+            background: rgba(15, 23, 42, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 8px 16px;
+            border-radius: 999px;
+        }
+        .login-auth-panel {
+            flex: 4.5;
+            background: #0b1120;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px;
+            box-shadow: -20px 0 50px rgba(0, 0, 0, 0.55);
+            z-index: 3;
+        }
+        .login-card {
+            width: 100%;
+            max-width: 410px;
+            background: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            border-radius: 18px;
+            padding: 34px 32px;
+            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(16, 185, 129, 0.12);
+        }
+        .login-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            color: var(--emerald-400);
+            background: var(--emerald-glow);
+            border: 1px solid rgba(16, 185, 129, 0.22);
+            padding: 4px 10px;
+            border-radius: 999px;
+            margin-bottom: 14px;
+            text-transform: uppercase;
+        }
+        .login-card h1 {
+            font-size: 23px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 6px;
+            color: #fff;
+        }
+        .login-card p {
+            font-size: 13px;
+            line-height: 1.5;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+        }
+        .login-input-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+            transition: transform 0.2s ease;
+        }
+        .login-input-wrap:focus-within {
+            transform: scale(1.01);
+        }
+        .login-input-icon {
+            position: absolute;
+            left: 12px;
+            color: #64748b;
+            display: inline-flex;
+            pointer-events: none;
+        }
+        .login-input-wrap:focus-within .login-input-icon {
+            color: var(--emerald-400);
+        }
+        .login-input-wrap .form-control {
+            padding-left: 38px;
+            padding-right: 40px;
+            height: 42px;
+            border-radius: 10px;
+        }
+        .login-eye-btn {
+            position: absolute;
+            right: 10px;
+            background: none;
+            border: none;
+            color: #64748b;
+            cursor: pointer;
+            padding: 4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-eye-btn:hover { color: #e2e8f0; }
+        @media (max-width: 900px) {
+            .login-brand-panel { display: none; }
+            .login-auth-panel { flex: 1; }
+        }
+
+        /* Form Controls */
+        .form-group { margin-bottom: 14px; }
+        .form-group label {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .form-control {
+            width: 100%;
+            padding: 9px 12px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-default);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 13px;
+            font-family: inherit;
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: var(--emerald-500);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 12.5px;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid transparent;
+            text-decoration: none;
+            color: var(--text-primary);
+            line-height: 1.2;
+            white-space: nowrap;
+        }
+        .btn svg {
+            flex-shrink: 0;
+        }
+        /* Sleek Emerald CTA with inner top highlight */
+        .btn-emerald {
+            background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+            color: #022c22;
+            font-weight: 700;
+            border: 1px solid rgba(52, 211, 153, 0.35);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 2px 10px rgba(16, 185, 129, 0.18);
+        }
+        .btn-emerald:hover {
+            background: linear-gradient(180deg, #34d399 0%, #10b981 100%);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.38), 0 0 18px rgba(16, 185, 129, 0.38);
+            transform: translateY(-0.5px);
+        }
+        /* Muted Indigo/Blue Action Button */
+        .btn-blue {
+            background: var(--blue-600);
+            color: #fff;
+            border: 1px solid rgba(96, 165, 250, 0.25);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+        .btn-blue:hover {
+            background: #3b82f6;
+            box-shadow: 0 0 14px rgba(59, 130, 246, 0.35);
+        }
+        /* Secondary Outline Button */
+        .btn-secondary {
+            border: 1px solid #334155;
+            background: rgba(30, 41, 59, 0.50);
+            color: #e2e8f0;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .btn-secondary:hover {
+            background: #334155;
+            border-color: #475569;
+            color: #fff;
+        }
+        /* Danger Button */
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.10);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            color: var(--danger-400);
+        }
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.20);
+            border-color: rgba(239, 68, 68, 0.45);
+        }
+        /* Ghost Logout Button */
+        .btn-ghost-logout {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        .btn-ghost-logout:hover {
+            background: rgba(239, 68, 68, 0.10);
+            border-color: rgba(239, 68, 68, 0.20);
+            color: var(--danger-400);
+        }
+        .btn-sm {
+            padding: 6px 11px;
+            font-size: 12px;
+            border-radius: 7px;
+        }
+
+        /* 3. Left Sidebar & Navigation Overhaul */
+        .admin-sidebar {
+            width: 268px;
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border-subtle);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            z-index: 20;
+        }
+        .sidebar-brand {
+            padding: 18px 18px 15px;
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            gap: 11px;
+        }
+        .brand-logo-box {
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            background: var(--emerald-glow);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+            color: var(--emerald-400);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .sidebar-brand-tag {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            color: var(--emerald-400);
+            text-transform: uppercase;
+        }
+        .sidebar-brand h2 {
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: #fff;
+            margin-top: 1px;
+        }
+
+        /* Custom Station Combobox / Popover */
+        .station-picker-box {
+            padding: 14px 14px;
+            border-bottom: 1px solid var(--border-subtle);
+            position: relative;
+        }
+        .station-picker-label {
+            display: block;
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-muted);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 7px;
+            padding-left: 2px;
+        }
+        .station-combo-trigger {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 8px 11px;
+            border-radius: 8px;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid var(--border-default);
+            color: var(--text-primary);
+            font-size: 12.5px;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: left;
+        }
+        .station-combo-trigger:hover {
+            border-color: rgba(255, 255, 255, 0.22);
+            background: rgba(30, 41, 59, 0.70);
+        }
+        .station-combo-trigger.open {
+            border-color: rgba(16, 185, 129, 0.45);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+        }
+        .station-combo-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+        }
+        .station-combo-icon {
+            width: 22px;
+            height: 22px;
+            border-radius: 6px;
+            background: var(--emerald-glow);
+            color: var(--emerald-400);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .station-combo-menu {
+            position: absolute;
+            top: calc(100% - 6px);
+            left: 14px;
+            right: 14px;
+            background: #0f172a;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            padding: 5px;
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.75);
+            z-index: 100;
+            display: none;
+        }
+        .station-combo-menu.open {
+            display: block;
+        }
+        .station-combo-option {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 10px;
+            border-radius: 7px;
+            background: transparent;
+            border: none;
+            color: #cbd5e1;
+            font-size: 12.5px;
+            font-weight: 500;
+            cursor: pointer;
+            text-align: left;
+        }
+        .station-combo-option:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+        }
+        .station-combo-option.active {
+            background: var(--emerald-glow);
+            color: var(--emerald-400);
+            font-weight: 600;
+        }
+
+        /* Sidebar Navigation Items */
+        .sidebar-nav {
+            flex: 1;
+            padding: 12px 10px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .nav-section-label {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-muted);
+            letter-spacing: 0.08em;
+            padding: 12px 10px 6px;
+            text-transform: uppercase;
+        }
+        .nav-item {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            text-align: left;
+            width: 100%;
+        }
+        .nav-item svg {
+            color: var(--text-muted);
+            flex-shrink: 0;
+            transition: color 150ms ease-in-out;
+        }
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.03);
+            color: #f1f5f9;
+        }
+        .nav-item:hover svg {
+            color: #cbd5e1;
+        }
+        /* Sleek Linear/Vercel Active Indicator: 3px left bar + bg-emerald-500/10 + text-emerald-400 */
+        .nav-item.active {
+            background: var(--emerald-glow);
+            color: var(--emerald-400);
+            font-weight: 600;
+        }
+        .nav-item.active svg {
+            color: var(--emerald-400);
+        }
+        .nav-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 6px;
+            bottom: 6px;
+            width: 3px;
+            border-radius: 0 3px 3px 0;
+            background: var(--emerald-400);
+            box-shadow: 0 0 8px rgba(52, 211, 153, 0.6);
+        }
+
+        .sidebar-footer {
+            padding: 14px;
+            border-top: 1px solid var(--border-subtle);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        /* Main Workspace & Sticky Topbar */
+        .admin-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: radial-gradient(circle at 50% -10%, rgba(16, 185, 129, 0.05) 0%, transparent 55%);
+        }
+        .admin-topbar {
+            height: 60px;
+            border-bottom: 1px solid var(--border-subtle);
+            background: rgba(2, 6, 23, 0.80);
+            backdrop-filter: blur(12px);
+            padding: 0 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            z-index: 15;
+        }
+        .topbar-title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .topbar-icon-badge {
+            width: 30px;
+            height: 30px;
+            border-radius: 7px;
+            background: rgba(30, 41, 59, 0.75);
+            border: 1px solid var(--border-subtle);
+            color: var(--emerald-400);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .topbar-title {
+            font-size: 15.5px;
+            font-weight: 600;
+            letter-spacing: -0.015em;
+            color: #f8fafc;
+        }
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .admin-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px 28px;
+        }
+        .admin-content.full-bleed {
+            padding: 0;
+            overflow: hidden;
+        }
+
+        /* 4. KPI Stat Cards (Top Row) */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 14px;
+            margin-bottom: 22px;
+        }
+        @media (max-width: 1360px) {
+            .stats-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+        .stat-card {
+            background: var(--bg-surface);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 16px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .stat-card:hover {
+            border-color: var(--border-hover);
+            background: rgba(15, 23, 42, 0.85);
+        }
+        .stat-card-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            line-height: 1.3;
+        }
+        .stat-icon-badge {
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            background: var(--emerald-glow);
+            color: var(--emerald-400);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            margin: 8px 0 10px;
+            color: #ffffff;
+            line-height: 1;
+        }
+        .stat-table-pill {
+            display: inline-flex;
+            align-items: center;
+            align-self: flex-start;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 500;
+            background: rgba(30, 41, 59, 0.80);
+            color: var(--text-secondary);
+            padding: 2px 8px;
+            border-radius: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        /* 5. Panels, Tables, Badges & Micro-Interactions */
+        .panel-card {
+            background: var(--bg-surface);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 20px 22px;
+            margin-bottom: 20px;
+        }
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .panel-title-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .panel-title-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 7px;
+            background: var(--emerald-glow);
+            color: var(--emerald-400);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .panel-header h3 {
+            font-size: 14.5px;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            color: #f8fafc;
+        }
+
+        table.crud-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        table.crud-table th {
+            text-align: left;
+            padding: 11px 14px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        table.crud-table td {
+            padding: 13px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            vertical-align: middle;
+            color: #e2e8f0;
+        }
+        table.crud-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        table.crud-table tbody tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        /* Monospace Click-to-Copy Pill */
+        .copy-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--font-mono);
+            font-size: 11.5px;
+            background: rgba(15, 23, 42, 0.90);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #cbd5e1;
+            padding: 4px 9px;
+            border-radius: 6px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .copy-pill svg {
+            color: var(--text-muted);
+            opacity: 0.75;
+        }
+        .copy-pill:hover {
+            border-color: rgba(16, 185, 129, 0.35);
+            color: #fff;
+            background: rgba(30, 41, 59, 0.85);
+        }
+        .copy-pill:hover svg {
+            color: var(--emerald-400);
+            opacity: 1;
+        }
+
+        .mono-id {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        .mono-code {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            background: rgba(30, 41, 59, 0.75);
+            color: #cbd5e1;
+            padding: 2px 7px;
+            border-radius: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        /* Modern Dot-Indicator Status Pills */
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 11.5px;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+        .status-pill-live {
+            background: rgba(16, 185, 129, 0.10);
+            border: 1px solid rgba(16, 185, 129, 0.22);
+            color: var(--emerald-400);
+        }
+        .status-dot-live {
+            width: 6px;
+            height: 6px;
+            border-radius: 999px;
+            background: var(--emerald-400);
+            box-shadow: 0 0 8px var(--emerald-400);
+            animation: pulseDot 2s infinite ease-in-out;
+        }
+        .status-pill-dev {
+            background: rgba(245, 158, 11, 0.10);
+            border: 1px solid rgba(245, 158, 11, 0.22);
+            color: var(--amber-400);
+        }
+        .status-dot-dev {
+            width: 6px;
+            height: 6px;
+            border-radius: 999px;
+            background: var(--amber-400);
+        }
+        .status-pill-blue {
+            background: rgba(59, 130, 246, 0.12);
+            border: 1px solid rgba(59, 130, 246, 0.25);
+            color: #93c5fd;
+            font-family: var(--font-mono);
+            font-size: 11px;
+        }
+
+        @keyframes pulseDot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.45; transform: scale(0.88); }
+        }
+
+        .action-cell {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Pin Map Box */
+        .pin-editor-grid {
+            display: grid;
+            grid-template-columns: 1.25fr 1fr;
+            gap: 22px;
+        }
+        #admin-pin-map {
+            width: 100%;
+            height: 460px;
+            border-radius: 10px;
+            border: 1px solid var(--border-default);
+            overflow: hidden;
+        }
+
+        /* Modal */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 6, 23, 0.78);
+            backdrop-filter: blur(6px);
+            z-index: 5000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-backdrop.open { display: flex; }
+        .modal-box {
+            width: 100%;
+            max-width: 820px;
+            max-height: 90vh;
+            background: #0f172a;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 14px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85);
+        }
+        .modal-header {
+            padding: 16px 22px;
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .modal-header h3 { font-size: 15px; font-weight: 600; color: #fff; }
+        .modal-body {
+            padding: 22px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .modal-footer {
+            padding: 14px 22px;
+            border-top: 1px solid var(--border-subtle);
+            background: rgba(9, 13, 22, 0.6);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        .form-grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+        .form-grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 14px;
+        }
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+            gap: 12px;
+            margin-top: 10px;
+        }
+        .photo-card {
+            background: var(--bg-input);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            overflow: hidden;
+            padding: 8px;
+        }
+        .photo-card img {
+            width: 100%;
+            height: 105px;
+            object-fit: cover;
+            border-radius: 7px;
+            background: #000;
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 22px;
+            right: 22px;
+            background: #0f172a;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: var(--emerald-400);
+            padding: 10px 16px;
+            border-radius: 9px;
+            font-size: 12.5px;
+            font-weight: 600;
+            z-index: 99999;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 14px 32px rgba(0, 0, 0, 0.7);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- SOLO ADMIN / REVIEWER LOGIN OVERLAY -->
+    <div id="login-overlay">
+        <!-- Intro Splash Screen (shows system name before fading into login split) -->
+        <div id="admin-splash-screen" class="admin-splash-screen">
+            <img src="Main Icon/iGUIDE_Wordmark_Botanical_Animated.svg?v=290" alt="iGUIDE Logo" class="admin-splash-logo">
+            <div class="admin-splash-title" id="admin-splash-title">iGUIDE ADMIN PORTAL</div>
+            <div class="admin-splash-sub">Interactive Geospatial Unified Information Directory and Explorer</div>
+        </div>
+
+        <div class="login-split" id="login-split-wrapper">
+            <div class="login-brand-panel">
+                <div class="login-orb login-orb-1"></div>
+                <div class="login-orb login-orb-2"></div>
+                <div class="login-brand-content">
+                    <div class="login-brand-kicker" id="login-brand-kicker">Welcome to</div>
+                    <img src="Main Icon/iGUIDE_Wordmark_Botanical_Animated.svg?v=290" alt="iGUIDE" class="login-brand-wordmark" id="login-brand-wordmark">
+                    <h2 class="login-brand-title" id="login-brand-portal-title">Admin Portal</h2>
+                    <p class="login-brand-sub" id="login-brand-portal-sub">Interactive Geospatial Unified Information Directory and Explorer — manage research station 3D buildings, facility galleries, internal offices, agricultural plots, and kiosk pins.</p>
+                    <div class="login-sec-pills" id="login-brand-pills">
+                        <span class="login-sec-pill">Localhost-Only Access</span>
+                        <span class="login-sec-pill">2-Step Gmail OTP</span>
+                        <span class="login-sec-pill">Audit Logged</span>
+                    </div>
+                </div>
+            </div>
+            <div class="login-auth-panel">
+                <!-- STEP 1: Email/Username & Password -->
+                <form class="login-card" id="login-step-creds" onsubmit="handleAdminLogin(event)">
+                    <span class="login-badge">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        DA-CALABARZON • iGUIDE
+                    </span>
+                    <h1>Welcome Back</h1>
+                    <p>Sign in with your Admin or Station Reviewer email and password.</p>
+                    <div class="form-group">
+                        <label>Email or Username</label>
+                        <div class="login-input-wrap">
+                            <span class="login-input-icon">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            </span>
+                            <input type="text" id="login-user" class="form-control" placeholder="Enter email or username" autocomplete="username" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <div class="login-input-wrap">
+                            <span class="login-input-icon">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            </span>
+                            <input type="password" id="login-pass" class="form-control" placeholder="Enter password" autocomplete="current-password" required>
+                            <button type="button" class="login-eye-btn" onclick="toggleLoginPassword()" title="Show/Hide Password" aria-label="Toggle Password Visibility">
+                                <svg id="login-eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="login-error" style="color:#f87171; font-size:12.5px; margin-bottom:12px; display:none;"></div>
+                    <button type="submit" id="login-submit-btn" class="btn btn-emerald" style="width:100%; padding:11px 14px; margin-top:6px;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        Continue with Gmail OTP
+                    </button>
+                </form>
+
+                <!-- STEP 2: 6-Digit Gmail OTP Verification -->
+                <form class="login-card" id="login-step-otp" style="display:none;" onsubmit="handleOtpVerify(event)">
+                    <span class="login-badge">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                        2-STEP VERIFICATION
+                    </span>
+                    <h1>Enter Gmail OTP</h1>
+                    <p id="otp-sent-msg">We sent a 6-digit verification code to your registered Gmail.</p>
+                    <div class="form-group">
+                        <label>6-Digit Verification Code</label>
+                        <div class="login-input-wrap">
+                            <span class="login-input-icon">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                            </span>
+                            <input type="text" id="login-otp" class="form-control" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" placeholder="000000" style="letter-spacing:0.35em; font-weight:700; font-size:16px;" required>
+                        </div>
+                    </div>
+                    <div id="otp-error" style="color:#f87171; font-size:12.5px; margin-bottom:12px; display:none;"></div>
+                    <button type="submit" class="btn btn-emerald" style="width:100%; padding:11px 14px; margin-top:4px;">Verify & Sign In</button>
+                    <div style="display:flex; justify-content:space-between; margin-top:14px;">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="backToPasswordStep()">← Back</button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="resendOtpCode()">Resend Code</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- LEFT SIDEBAR -->
+    <aside class="admin-sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-logo-box" style="width:38px; height:38px; padding:4px; display:flex; align-items:center; justify-content:center;">
+                <img src="Main Icon/iGUIDE_Icon_iG_Animated.svg?v=289" alt="iGUIDE Logo" style="width:100%; height:100%; object-fit:contain;">
+            </div>
+            <div>
+                <div class="sidebar-brand-tag">LOCAL ADMIN PORTAL</div>
+                <h2>iGUIDE Admin</h2>
+            </div>
+        </div>
+
+        <!-- Custom Combobox Station Selector -->
+        <div class="station-picker-box" id="station-combo-wrap">
+            <span class="station-picker-label">Active Research Station</span>
+            <button type="button" class="station-combo-trigger" id="station-combo-btn" onclick="toggleStationCombobox(event)">
+                <span class="station-combo-left">
+                    <span class="station-combo-icon" id="station-combo-icon">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 22 16 8"/><path d="M3.47 12.53 5 11l1.53 1.53a3.5 3.5 0 0 1 0 4.94L5 19l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M7.47 8.53 9 7l1.53 1.53a3.5 3.5 0 0 1 0 4.94L9 15l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M11.47 4.53 13 3l1.53 1.53a3.5 3.5 0 0 1 0 4.94L13 11l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M20 2h2v2a4 4 0 0 1-4 4h-2V6a4 4 0 0 1 4-4Z"/></svg>
+                    </span>
+                    <span id="station-combo-label">DA-LARES (Lipa City)</span>
+                </span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="station-combo-menu" id="station-combo-menu">
+                <button type="button" class="station-combo-option active" data-station="lares" onclick="selectStationCombo('lares', 'DA-LARES (Lipa City)')">
+                    <span>DA-LARES (Lipa City)</span>
+                    <span class="mono-id" style="font-size:10.5px;">Batangas</span>
+                </button>
+                <button type="button" class="station-combo-option" data-station="qares" onclick="selectStationCombo('qares', 'DA-QARES (Tiaong)')">
+                    <span>DA-QARES (Tiaong)</span>
+                    <span class="mono-id" style="font-size:10.5px;">Quezon</span>
+                </button>
+                <button type="button" class="station-combo-option" data-station="rares" onclick="selectStationCombo('rares', 'DA-RARES (Tanay)')">
+                    <span>DA-RARES (Tanay)</span>
+                    <span class="mono-id" style="font-size:10.5px;">Rizal</span>
+                </button>
+                <button type="button" class="station-combo-option" data-station="cares" onclick="selectStationCombo('cares', 'DA-CARES (Naic)')">
+                    <span>DA-CARES (Naic)</span>
+                    <span class="mono-id" style="font-size:10.5px;">Cavite</span>
+                </button>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav" id="sidebar-nav-admin">
+            <div class="nav-section-label">Database CRUD Modules</div>
+            <button class="nav-item active" data-tab="dashboard" onclick="switchTab('dashboard')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+                <span>Dashboard & Status</span>
+            </button>
+            <button class="nav-item" data-tab="pin" onclick="switchTab('pin')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                <span>"You Are Here" Pin & Station</span>
+            </button>
+            <button class="nav-item" data-tab="buildings" onclick="switchTab('buildings')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>
+                <span>Buildings & Multi-Photos</span>
+            </button>
+            <button class="nav-item" data-tab="offices" onclick="switchTab('offices')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+                <span>Internal Offices</span>
+            </button>
+            <button class="nav-item" data-tab="plots" onclick="switchTab('plots')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></svg>
+                <span>Agricultural Plots & Crops</span>
+            </button>
+
+            <div class="nav-section-label">Review & Governance</div>
+            <button class="nav-item" data-tab="admin-reviews" onclick="switchTab('admin-reviews')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                <span>Change Requests</span>
+            </button>
+            <button class="nav-item" data-tab="admin-reviewers" onclick="switchTab('admin-reviewers')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                <span>Reviewer Accounts</span>
+            </button>
+
+            <div class="nav-section-label">Visual Map Editors</div>
+            <button class="nav-item" data-tab="editor-draw" onclick="switchTab('editor-draw')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/></svg>
+                <span>Building Footprint Editor</span>
+            </button>
+            <button class="nav-item" data-tab="editor-plot" onclick="switchTab('editor-plot')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg>
+                <span>Agricultural Plot Editor</span>
+            </button>
+            <button class="nav-item" data-tab="editor-road" onclick="switchTab('editor-road')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></svg>
+                <span>Road & Entrance Editor</span>
+            </button>
+            <button class="nav-item" data-tab="editor-tree" onclick="switchTab('editor-tree')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-7l-2-2"/><path d="M17 8v.8A6 6 0 0 1 13.8 20H10A6.5 6.5 0 0 1 7 8a5 5 0 0 1 10 0Z"/><path d="m14 14-2 2"/></svg>
+                <span>3D Tree Placement Editor</span>
+            </button>
+            <button class="nav-item" data-tab="editor-pill" onclick="switchTab('editor-pill')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>
+                <span>Pill Label Offset Editor</span>
+            </button>
+        </nav>
+
+        <nav class="sidebar-nav" id="sidebar-nav-reviewer" style="display:none;">
+            <div class="nav-section-label">Review & Approvals</div>
+            <button class="nav-item active" data-tab="review-queue" onclick="switchTab('review-queue')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                <span>Pending Reviews</span>
+            </button>
+            <div class="nav-section-label">Station Admin View (Read-Only)</div>
+            <button class="nav-item" data-tab="review-overview" onclick="switchTab('review-overview')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+                <span>Dashboard & Pin</span>
+            </button>
+            <button class="nav-item" data-tab="review-buildings" onclick="switchTab('review-buildings')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/></svg>
+                <span>Buildings & Photos</span>
+            </button>
+            <button class="nav-item" data-tab="review-offices" onclick="switchTab('review-offices')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+                <span>Internal Offices</span>
+            </button>
+            <button class="nav-item" data-tab="review-plots" onclick="switchTab('review-plots')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/></svg>
+                <span>Agricultural Plots</span>
+            </button>
+        </nav>
+
+        <div class="sidebar-footer">
+            <a href="/" target="_blank" class="btn btn-emerald" style="width:100%;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                <span>Open Live 3D Map</span>
+            </a>
+            <button class="btn btn-ghost-logout btn-sm" onclick="logoutAdmin()" style="width:100%;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+                <span>Log Out</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="admin-main">
+        <header class="admin-topbar">
+            <div class="topbar-title-wrap">
+                <div class="topbar-icon-badge" id="topbar-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+                </div>
+                <div class="topbar-title" id="topbar-title">Dashboard & Multi-Station Status Overview</div>
+            </div>
+            <div class="topbar-right">
+                <span class="status-pill status-pill-live" id="active-station-badge">
+                    <span class="status-dot-live"></span>
+                    <span id="active-station-badge-text">DA-LARES</span>
+                </span>
+                <button class="btn btn-secondary btn-sm" onclick="refreshCurrentTab()">
+                    <svg width="13.5" height="13.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+                    <span>Refresh Data</span>
+                </button>
+            </div>
+        </header>
+
+        <section class="admin-content" id="admin-content-area">
+            <!-- Dynamically rendered by JS -->
+        </section>
+    </main>
+
+    <!-- BUILDING + MULTI-PHOTO MODAL -->
+    <div class="modal-backdrop" id="building-modal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 id="bldg-modal-title">Edit Building & Photos</h3>
+                <button class="btn btn-secondary btn-sm" onclick="closeBuildingModal()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                </button>
+            </div>
+            <div class="modal-body" id="bldg-modal-body"></div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeBuildingModal()">Cancel</button>
+                <button class="btn btn-emerald" onclick="saveBuildingModal()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    <span>Save Building to MySQL</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- OFFICE MODAL -->
+    <div class="modal-backdrop" id="office-modal">
+        <div class="modal-box" style="max-width:540px;">
+            <div class="modal-header">
+                <h3 id="office-modal-title">Add / Edit Internal Office</h3>
+                <button class="btn btn-secondary btn-sm" onclick="closeOfficeModal()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                </button>
+            </div>
+            <div class="modal-body" id="office-modal-body"></div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeOfficeModal()">Cancel</button>
+                <button class="btn btn-emerald" onclick="saveOfficeModal()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    <span>Save Office to MySQL</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AGRICULTURAL PLOT MODAL -->
+    <div class="modal-backdrop" id="plot-modal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 id="plot-modal-title">Edit Agricultural Plot & Agronomic Data</h3>
+                <button class="btn btn-secondary btn-sm" onclick="closePlotModal()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                </button>
+            </div>
+            <div class="modal-body" id="plot-modal-body"></div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closePlotModal()">Cancel</button>
+                <button class="btn btn-emerald" onclick="savePlotModal()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    <span>Save Plot Data to MySQL</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="admin-toast">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        <span id="admin-toast-text">Saved successfully!</span>
+    </div>
+
+    <script type="module">
+        import { MAPBOX_ACCESS_TOKEN } from './js/data/config.js';
+        mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
+
+        // Clean 1.5px stroke monochrome SVG icons (Lucide)
+        const SVG_ICONS = {
+            dashboard: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>`,
+            pin: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`,
+            building: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>`,
+            image: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>`,
+            folder: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>`,
+            sprout: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></svg>`,
+            tree: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-7l-2-2"/><path d="M17 8v.8A6 6 0 0 1 13.8 20H10A6.5 6.5 0 0 1 7 8a5 5 0 0 1 10 0Z"/><path d="m14 14-2 2"/></svg>`,
+            route: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></svg>`,
+            landmark: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>`,
+            history: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>`,
+            copy: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>`,
+            edit: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>`,
+            trash: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>`,
+            plus: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>`,
+            upload: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>`,
+            box: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>`
+        };
+
+        try { localStorage.removeItem('da_admin_token'); } catch (e) {}
+        let adminToken = sessionStorage.getItem('da_admin_token') || '';
+        let currentStation = 'lares';
+        let currentTab = 'dashboard';
+        let cachedBuildings = [];
+        let cachedOffices = [];
+        let cachedPlots = [];
+        let cachedStations = [];
+        let editingBuilding = null;
+        let editingOffice = null;
+        let editingPlot = null;
+        let pinMapInstance = null;
+        let pinMarkerInstance = null;
+
+        // Broadcast live DB changes to any open 3D Map tabs so search, markers, and drawers update immediately
+        function broadcastDbSync() {
+            try {
+                localStorage.setItem('da_db_sync_ts', String(Date.now()));
+                if (typeof BroadcastChannel !== 'undefined') {
+                    const ch = new BroadcastChannel('da_spatial_hub_sync');
+                    ch.postMessage({ type: 'db_updated', station: currentStation, timestamp: Date.now() });
+                    ch.close();
+                }
+            } catch (e) {}
+        }
+
+        function showToast(msg) {
+            const el = document.getElementById('admin-toast');
+            const textEl = document.getElementById('admin-toast-text');
+            if (textEl) textEl.textContent = msg;
+            el.style.display = 'inline-flex';
+            clearTimeout(window._toastTimer);
+            window._toastTimer = setTimeout(() => { el.style.display = 'none'; }, 2800);
+        }
+
+        window.copyTextPill = function(text) {
+            if (!text) return;
+            navigator.clipboard?.writeText(text);
+            showToast(`Copied to clipboard: ${text}`);
+        };
+
+        // Custom Station Combobox Handlers
+        window.toggleStationCombobox = function(e) {
+            if (e) e.stopPropagation();
+            const btn = document.getElementById('station-combo-btn');
+            const menu = document.getElementById('station-combo-menu');
+            const isOpen = menu.classList.toggle('open');
+            btn.classList.toggle('open', isOpen);
+        };
+
+        window.selectStationCombo = function(stationId, labelText) {
+            const btn = document.getElementById('station-combo-btn');
+            const menu = document.getElementById('station-combo-menu');
+            const labelEl = document.getElementById('station-combo-label');
+            if (labelEl && labelText) labelEl.textContent = labelText;
+            if (menu) menu.classList.remove('open');
+            if (btn) btn.classList.remove('open');
+            document.querySelectorAll('.station-combo-option').forEach(opt => {
+                opt.classList.toggle('active', opt.dataset.station === stationId);
+            });
+            onChangeStation(stationId);
+        };
+
+        window.addEventListener('click', (e) => {
+            const wrap = document.getElementById('station-combo-wrap');
+            if (wrap && !wrap.contains(e.target)) {
+                document.getElementById('station-combo-menu')?.classList.remove('open');
+                document.getElementById('station-combo-btn')?.classList.remove('open');
+            }
+        });
+
+        async function apiFetch(url, options = {}) {
+            const headers = {
+                'Content-Type': 'application/json',
+                'X-Admin-Token': adminToken,
+                ...(options.headers || {})
+            };
+            const res = await fetch(url, { ...options, headers });
+            if (res.status === 401) {
+                document.getElementById('login-overlay').style.display = 'flex';
+                throw new Error('Unauthorized');
+            }
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Request failed');
+            return data;
+        }
+
+        let pendingOtpToken = '';
+        let currentUserRole = 'super_admin';
+        let currentUserStation = null;
+
+        window.toggleLoginPassword = function() {
+            const inp = document.getElementById('login-pass');
+            if (!inp) return;
+            inp.type = inp.type === 'password' ? 'text' : 'password';
+        };
+
+        window.backToPasswordStep = function() {
+            pendingOtpToken = '';
+            document.getElementById('login-step-otp').style.display = 'none';
+            document.getElementById('login-step-creds').style.display = 'block';
+            document.getElementById('otp-error').style.display = 'none';
+        };
+
+        window.handleAdminLogin = async function(e) {
+            e.preventDefault();
+            const username = document.getElementById('login-user').value.trim();
+            const password = document.getElementById('login-pass').value;
+            const errEl = document.getElementById('login-error');
+            const btn = document.getElementById('login-submit-btn');
+            errEl.style.display = 'none';
+            if (btn) btn.disabled = true;
+            try {
+                const res = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Login failed');
+                if (data.step === 'otp') {
+                    pendingOtpToken = data.otpToken;
+                    document.getElementById('login-step-creds').style.display = 'none';
+                    document.getElementById('login-step-otp').style.display = 'block';
+                    const msgEl = document.getElementById('otp-sent-msg');
+                    if (msgEl) {
+                        msgEl.textContent = data.mailMode === 'gmail'
+                            ? `We sent a 6-digit code to ${data.maskedEmail}.`
+                            : `OTP generated for ${data.maskedEmail} (check server terminal until Gmail App Password is set in .env).`;
+                    }
+                    document.getElementById('login-otp').value = '';
+                    document.getElementById('login-otp').focus();
+                } else if (data.token) {
+                    adminToken = data.token;
+                    sessionStorage.setItem('da_admin_token', adminToken);
+                    applyRoleUI(data.role || 'super_admin', data.stationId || null);
+                    document.getElementById('login-overlay').style.display = 'none';
+                    resetIdleLogoutTimer();
+                    loadCurrentTab();
+                }
+            } catch (err) {
+                errEl.textContent = err.message;
+                errEl.style.display = 'block';
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        };
+
+        window.handleOtpVerify = async function(e) {
+            e.preventDefault();
+            const otp = document.getElementById('login-otp').value.trim();
+            const errEl = document.getElementById('otp-error');
+            errEl.style.display = 'none';
+            try {
+                const res = await fetch('/api/admin/verify-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ otpToken: pendingOtpToken, otp })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'OTP verification failed');
+                adminToken = data.token;
+                sessionStorage.setItem('da_admin_token', adminToken);
+                pendingOtpToken = '';
+                applyRoleUI(data.role || 'super_admin', data.stationId || null);
+                document.getElementById('login-overlay').style.display = 'none';
+                resetIdleLogoutTimer();
+                loadCurrentTab();
+            } catch (err) {
+                errEl.textContent = err.message;
+                errEl.style.display = 'block';
+            }
+        };
+
+        window.resendOtpCode = async function() {
+            const errEl = document.getElementById('otp-error');
+            errEl.style.display = 'none';
+            try {
+                const res = await fetch('/api/admin/resend-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ otpToken: pendingOtpToken })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Could not resend OTP');
+                pendingOtpToken = data.otpToken;
+                showToast(`New 6-digit OTP sent to ${data.maskedEmail}`);
+            } catch (err) {
+                errEl.textContent = err.message;
+                errEl.style.display = 'block';
+            }
+        };
+
+        function applyRoleUI(role, stationId) {
+            currentUserRole = role || 'super_admin';
+            currentUserStation = stationId || null;
+            const navAdmin = document.getElementById('sidebar-nav-admin');
+            const navRev = document.getElementById('sidebar-nav-reviewer');
+            const comboWrap = document.getElementById('station-combo-wrap');
+            const tagEl = document.querySelector('.sidebar-brand-tag');
+            if (currentUserRole === 'reviewer') {
+                if (navAdmin) navAdmin.style.display = 'none';
+                if (navRev) navRev.style.display = 'flex';
+                if (comboWrap) comboWrap.style.display = 'none';
+                if (tagEl) tagEl.textContent = `REVIEWER • ${(currentUserStation || '').toUpperCase()}`;
+                if (currentUserStation) {
+                    currentStation = currentUserStation;
+                    const badgeEl = document.getElementById('active-station-badge-text');
+                    if (badgeEl) badgeEl.textContent = `DA-${currentUserStation.toUpperCase()}`;
+                }
+                if (!currentTab || !['review-queue', 'review-overview', 'review-buildings', 'review-offices', 'review-plots'].includes(currentTab)) {
+                    currentTab = 'review-queue';
+                }
+            } else {
+                if (navAdmin) navAdmin.style.display = 'flex';
+                if (navRev) navRev.style.display = 'none';
+                if (comboWrap) comboWrap.style.display = 'block';
+                if (tagEl) tagEl.textContent = 'LOCAL ADMIN PORTAL';
+                if (['review-queue', 'review-overview', 'review-buildings', 'review-offices', 'review-plots'].includes(currentTab)) {
+                    currentTab = 'dashboard';
+                }
+            }
+        }
+
+        let idleLogoutTimer = null;
+        function resetIdleLogoutTimer() {
+            if (idleLogoutTimer) clearTimeout(idleLogoutTimer);
+            if (!adminToken) return;
+            idleLogoutTimer = setTimeout(() => {
+                if (adminToken) {
+                    logoutAdmin();
+                }
+            }, 15 * 60 * 1000);
+        }
+
+        ['mousemove', 'keydown', 'click', 'touchstart'].forEach(evt => {
+            window.addEventListener(evt, resetIdleLogoutTimer, { passive: true });
+        });
+
+        function revokeSessionOnExit() {
+            if (!adminToken) return;
+            const tok = adminToken;
+            adminToken = '';
+            try { sessionStorage.removeItem('da_admin_token'); } catch (e) {}
+            try { localStorage.removeItem('da_admin_token'); } catch (e) {}
+            try {
+                if (navigator.sendBeacon) {
+                    navigator.sendBeacon('/api/admin/logout', new Blob([JSON.stringify({ token: tok })], { type: 'application/json' }));
+                } else {
+                    fetch('/api/admin/logout', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': tok },
+                        body: JSON.stringify({ token: tok }),
+                        keepalive: true
+                    }).catch(() => {});
+                }
+            } catch (e) {}
+        }
+
+        window.addEventListener('pagehide', revokeSessionOnExit);
+        window.addEventListener('beforeunload', revokeSessionOnExit);
+
+        window.logoutAdmin = async function() {
+            if (idleLogoutTimer) clearTimeout(idleLogoutTimer);
+            const tok = adminToken;
+            adminToken = '';
+            try { sessionStorage.removeItem('da_admin_token'); } catch (e) {}
+            try { localStorage.removeItem('da_admin_token'); } catch (e) {}
+            if (tok) {
+                try {
+                    await fetch('/api/admin/logout', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': tok },
+                        body: JSON.stringify({ token: tok })
+                    });
+                } catch (e) {}
+            }
+            backToPasswordStep();
+            const passEl = document.getElementById('login-pass');
+            const otpEl = document.getElementById('login-otp');
+            const errEl = document.getElementById('login-error');
+            if (passEl) passEl.value = '';
+            if (otpEl) otpEl.value = '';
+            if (errEl) errEl.style.display = 'none';
+            document.getElementById('login-overlay').style.display = 'flex';
+        };
+
+        window.onChangeStation = function(stationId) {
+            currentStation = stationId;
+            const badgeText = document.getElementById('active-station-badge-text');
+            if (badgeText) badgeText.textContent = `DA-${stationId.toUpperCase()}`;
+            const labelMap = {
+                lares: 'DA-LARES (Lipa City)',
+                qares: 'DA-QARES (Tiaong)',
+                rares: 'DA-RARES (Tanay)',
+                cares: 'DA-CARES (Naic)'
+            };
+            const labelEl = document.getElementById('station-combo-label');
+            if (labelEl && labelMap[stationId]) labelEl.textContent = labelMap[stationId];
+            document.querySelectorAll('.station-combo-option').forEach(opt => {
+                opt.classList.toggle('active', opt.dataset.station === stationId);
+            });
+            loadCurrentTab();
+        };
+
+        window.switchTab = function(tabId) {
+            currentTab = tabId;
+            document.querySelectorAll('.nav-item').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tab === tabId);
+            });
+            loadCurrentTab();
+        };
+
+        window.refreshCurrentTab = function() {
+            loadCurrentTab();
+        };
+
+        async function loadCurrentTab() {
+            const container = document.getElementById('admin-content-area');
+            const titleEl = document.getElementById('topbar-title');
+            const iconEl = document.getElementById('topbar-icon');
+            container.classList.remove('full-bleed');
+
+            if (currentTab === 'dashboard') {
+                titleEl.textContent = 'Dashboard & Multi-Station Status Overview';
+                if (iconEl) iconEl.innerHTML = SVG_ICONS.dashboard;
+                await renderDashboardTab(container);
+            } else if (currentTab === 'pin') {
+                titleEl.textContent = 'Station Settings & "You Are Here" Kiosk Pin';
+                if (iconEl) iconEl.innerHTML = SVG_ICONS.pin;
+                await renderPinTab(container);
+            } else if (currentTab === 'buildings') {
+                titleEl.textContent = 'Buildings, Descriptions & Multi-Photo Gallery CRUD';
+                if (iconEl) iconEl.innerHTML = SVG_ICONS.building;
+                await renderBuildingsTab(container);
+            } else if (currentTab === 'offices') {
+                titleEl.textContent = 'Internal Building Offices CRUD';
+                if (iconEl) iconEl.innerHTML = SVG_ICONS.folder;
+                await renderOfficesTab(container);
+            } else if (currentTab === 'plots') {
+                titleEl.textContent = 'Agricultural Plots, Planted Crops & Tree Counts CRUD';
+                if (iconEl) iconEl.innerHTML = SVG_ICONS.sprout;
+                await renderPlotsTab(container);
+            } else if (currentTab === 'admin-reviews') {
+                titleEl.textContent = 'Change Requests & Reviewer Approvals';
+                if (iconEl) iconEl.innerHTML = SVG_ICONS.history;
+                await renderAdminReviewsTab(container);
+            } else if (currentTab === 'admin-reviewers') {
+                titleEl.textContent = 'Station Reviewer Accounts';
+                if (iconEl) iconEl.innerHTML = SVG_ICONS.folder;
+                await renderReviewerAccountsTab(container);
+            } else if (currentTab === 'review-queue') {
+                titleEl.textContent = `Pending Reviews — DA-${currentStation.toUpperCase()}`;
+                if (iconEl) iconEl.innerHTML = SVG_ICONS.history;
+                await renderReviewQueueTab(container);
+            } else if (['review-overview', 'review-buildings', 'review-offices', 'review-plots'].includes(currentTab)) {
+                const labels = {
+                    'review-overview': `Station Overview & Kiosk Pin (Read-Only) — DA-${currentStation.toUpperCase()}`,
+                    'review-buildings': `Buildings & Photos (Read-Only) — DA-${currentStation.toUpperCase()}`,
+                    'review-offices': `Internal Offices (Read-Only) — DA-${currentStation.toUpperCase()}`,
+                    'review-plots': `Agricultural Plots & Crops (Read-Only) — DA-${currentStation.toUpperCase()}`
+                };
+                titleEl.textContent = labels[currentTab];
+                if (iconEl) iconEl.innerHTML = SVG_ICONS.building;
+                await renderReviewDirectoryTab(container, currentTab);
+            } else if (currentTab.startsWith('editor-')) {
+                container.classList.add('full-bleed');
+                const editorMap = {
+                    'editor-draw': { title: 'Building Footprint & 3D Model Editor', url: `/draw.html?station=${currentStation}` },
+                    'editor-plot': { title: 'Agricultural Plot Polygon Editor', url: `/plot_draw.html?station=${currentStation}` },
+                    'editor-road': { title: 'Road & Entrance Routing Graph Editor', url: `/road_draw.html?station=${currentStation}` },
+                    'editor-tree': { title: '3D Tree Placement Editor', url: `/tree_draw.html?station=${currentStation}` },
+                    'editor-pill': { title: 'Floating Pill Label Offset Editor', url: `/pill_adjust.html?station=${currentStation}` }
+                };
+                const cfg = editorMap[currentTab];
+                titleEl.textContent = cfg.title;
+                container.innerHTML = `<iframe src="${cfg.url}" style="width:100%; height:100%; border:none;"></iframe>`;
+            }
+        }
+
+        // =====================================================================
+        // TAB 1: DASHBOARD
+        // =====================================================================
+        async function renderDashboardTab(container) {
+            const data = await apiFetch(`/api/admin/dashboard?station=${currentStation}`);
+            cachedStations = data.stations || [];
+            const c = data.counts || {};
+            const activeSt = cachedStations.find(s => s.station_id === currentStation) || { name: `DA-${currentStation.toUpperCase()}`, province: 'CALABARZON', status: 'under_development' };
+
+            container.innerHTML = `
+                <div class="panel-card" style="display:flex; align-items:center; justify-content:space-between; gap:20px; padding:20px 24px; margin-bottom:20px; background:linear-gradient(135deg, rgba(16, 185, 129, 0.10) 0%, rgba(15, 23, 42, 0.90) 65%); border-color:rgba(16, 185, 129, 0.22);">
+                    <div>
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+                            <span style="font-size:11px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:#34d399;">Active Station Workspace</span>
+                            ${activeSt.status === 'live'
+                                ? `<span class="status-pill status-pill-live"><span class="status-dot-live"></span><span>Live on Public Map</span></span>`
+                                : `<span class="status-pill status-pill-dev"><span class="status-dot-dev"></span><span>Under Development</span></span>`}
+                        </div>
+                        <h2 style="font-size:20px; font-weight:700; color:#f8fafc; margin:0 0 4px;">${activeSt.name}</h2>
+                        <div style="font-size:12.5px; color:#94a3b8;">${activeSt.subtitle || ''} ${activeSt.province ? '• ' + activeSt.province : ''}</div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <button class="btn btn-secondary btn-sm" onclick="switchTab('pin')">${SVG_ICONS.pin} <span>Edit Kiosk Pin</span></button>
+                        <button class="btn btn-secondary btn-sm" onclick="switchTab('buildings')">${SVG_ICONS.building} <span>Manage Buildings</span></button>
+                        <a class="btn btn-emerald btn-sm" href="/?station=${currentStation}" target="_blank">Open Public Map</a>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-card-top">
+                            <div class="stat-label">Buildings (${currentStation.toUpperCase()})</div>
+                            <div class="stat-icon-badge">${SVG_ICONS.building}</div>
+                        </div>
+                        <div class="stat-value">${c.buildings || 0}</div>
+                        <span class="stat-table-pill">Active 3D & footprint records</span>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-top">
+                            <div class="stat-label">WebP Facility Photos</div>
+                            <div class="stat-icon-badge">${SVG_ICONS.image}</div>
+                        </div>
+                        <div class="stat-value">${c.images || 0}</div>
+                        <span class="stat-table-pill">Optimized .webp gallery assets</span>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-top">
+                            <div class="stat-label">Internal Offices</div>
+                            <div class="stat-icon-badge">${SVG_ICONS.folder}</div>
+                        </div>
+                        <div class="stat-value">${c.offices || 0}</div>
+                        <span class="stat-table-pill">Mapped station divisions</span>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-top">
+                            <div class="stat-label">Agricultural Plots</div>
+                            <div class="stat-icon-badge">${SVG_ICONS.sprout}</div>
+                        </div>
+                        <div class="stat-value">${c.plots || 0}</div>
+                        <span class="stat-table-pill">${c.subplots || 0} screenhouse sub-plots</span>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-top">
+                            <div class="stat-label">3D Campus Trees</div>
+                            <div class="stat-icon-badge">${SVG_ICONS.tree}</div>
+                        </div>
+                        <div class="stat-value">${c.trees || 0}</div>
+                        <span class="stat-table-pill">Mapped 3D tree assets</span>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-top">
+                            <div class="stat-label">Road & Entrance Nodes</div>
+                            <div class="stat-icon-badge">${SVG_ICONS.route}</div>
+                        </div>
+                        <div class="stat-value">${c.roads || 0}</div>
+                        <span class="stat-table-pill">${c.entrances || 0} building entrances</span>
+                    </div>
+                </div>
+
+                <div class="panel-card">
+                    <div class="panel-header">
+                        <div class="panel-title-group">
+                            <div class="panel-title-icon">${SVG_ICONS.landmark}</div>
+                            <h3>All 4 DA-CALABARZON Research Stations (Public Deployment Status & "You Are Here" Pin)</h3>
+                        </div>
+                    </div>
+                    <table class="crud-table">
+                        <thead>
+                            <tr>
+                                <th>Station</th>
+                                <th>Location Subtitle</th>
+                                <th>"You Are Here" Kiosk Pin</th>
+                                <th>Offline Drone MBTiles</th>
+                                <th>Public Status</th>
+                                <th>Quick Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${cachedStations.map(st => {
+                                const coordStr = `[${Number(st.kiosk_pin_lng).toFixed(6)}, ${Number(st.kiosk_pin_lat).toFixed(6)}]`;
+                                const mbtilesStr = st.mbtiles_filename || 'Pending Survey';
+                                return `
+                                <tr>
+                                    <td>
+                                        <div style="font-weight:600; color:#f8fafc;">${st.name}</div>
+                                        <div style="font-size:11.5px; color:#64748b; margin-top:2px;">${st.subtitle || ''}</div>
+                                    </td>
+                                    <td style="color:#cbd5e1;">${st.province || ''}</td>
+                                    <td>
+                                        <span class="copy-pill" onclick="copyTextPill('${coordStr}')" title="Click to copy coordinates">
+                                            <span>${coordStr}</span>
+                                            ${SVG_ICONS.copy}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="copy-pill" onclick="copyTextPill('${mbtilesStr}')" title="Click to copy filename">
+                                            <span>${mbtilesStr}</span>
+                                            ${SVG_ICONS.copy}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        ${st.status === 'live'
+                                            ? `<span class="status-pill status-pill-live"><span class="status-dot-live"></span><span>Live on Public Map</span></span>`
+                                            : `<span class="status-pill status-pill-dev"><span class="status-dot-dev"></span><span>Under Development</span></span>`
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="action-cell">
+                                            <button class="btn btn-secondary btn-sm" onclick="toggleStationLiveStatus('${st.station_id}', '${st.status === 'live' ? 'under_development' : 'live'}')">
+                                                Switch to ${st.status === 'live' ? 'Under Dev' : 'Live'}
+                                            </button>
+                                            <button class="btn btn-blue btn-sm" onclick="onChangeStation('${st.station_id}'); switchTab('pin');">
+                                                ${SVG_ICONS.pin}
+                                                <span>Edit Pin</span>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="panel-card">
+                    <div class="panel-header">
+                        <div class="panel-title-group">
+                            <div class="panel-title-icon">${SVG_ICONS.history}</div>
+                            <h3>Recent Admin Activity & Audit Logs</h3>
+                        </div>
+                    </div>
+                    <table class="crud-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Timestamp</th>
+                                <th>Action</th>
+                                <th>Target</th>
+                                <th>Summary</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${(data.auditLogs && data.auditLogs.length > 0) ? data.auditLogs.map(log => `
+                                <tr>
+                                    <td><span class="mono-id">#${log.id}</span></td>
+                                    <td style="color:#94a3b8; font-size:12px;">${new Date(log.created_at).toLocaleString()}</td>
+                                    <td><span class="status-pill status-pill-blue">${log.action}</span></td>
+                                    <td><span class="mono-code">${log.target_table}</span></td>
+                                    <td style="color:#cbd5e1;">${log.summary || ''}</td>
+                                </tr>
+                            `).join('') : `
+                                <tr>
+                                    <td colspan="5" style="text-align:center; color:#64748b; padding:24px;">No admin activity logged yet in this session.</td>
+                                </tr>
+                            `}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        window.toggleStationLiveStatus = async function(stationId, nextStatus) {
+            await apiFetch(`/api/admin/stations/${stationId}`, {
+                method: 'PUT',
+                body: JSON.stringify({ status: nextStatus })
+            });
+            broadcastDbSync();
+            showToast(`Updated ${stationId.toUpperCase()} status to ${nextStatus}`);
+            loadCurrentTab();
+        };
+
+        // =====================================================================
+        // TAB 2: STATION & "YOU ARE HERE" KIOSK PIN EDITOR
+        // =====================================================================
+        async function renderPinTab(container) {
+            const stations = await apiFetch('/api/admin/stations');
+            const st = stations.find(s => s.station_id === currentStation) || stations[0];
+            const parseJsonSafe = (val, fallback) => {
+                if (!val) return fallback;
+                if (typeof val === 'object') return val;
+                try { return JSON.parse(val); } catch (e) { return fallback; }
+            };
+            const welcomeTagsArr = parseJsonSafe(st.welcome_tags, []);
+            const quickTagsArr = parseJsonSafe(st.quick_tags, []);
+            const filterDescObj = parseJsonSafe(st.filter_descriptions, {});
+            const welcomeTagsStr = Array.isArray(welcomeTagsArr) ? welcomeTagsArr.join(', ') : '';
+            const quickTagsStr = Array.isArray(quickTagsArr)
+                ? quickTagsArr.map(t => (t && typeof t === 'object') ? `${t.label || ''}:${t.query || t.label || ''}` : String(t || '')).filter(Boolean).join(', ')
+                : '';
+
+            container.innerHTML = `
+                <div class="panel-card">
+                    <div class="panel-header">
+                        <div class="panel-title-group">
+                            <div class="panel-title-icon">${SVG_ICONS.pin}</div>
+                            <h3>Drag & Drop the "You Are Here" Kiosk Pin for ${st.name} (${st.province})</h3>
+                        </div>
+                        <button class="btn btn-emerald" onclick="saveStationAndPin('${st.station_id}')">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                            <span>Save Pin & Station Settings to MySQL</span>
+                        </button>
+                    </div>
+                    <div class="pin-editor-grid">
+                        <div>
+                            <div id="admin-pin-map"></div>
+                            <div style="font-size:12px; color:#94a3b8; margin-top:10px; display:flex; align-items:center; gap:6px;">
+                                ${SVG_ICONS.pin}
+                                <span>Drag the marker or click anywhere on the map to reposition the starting <strong>"You Are Here"</strong> kiosk point.</span>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="form-group">
+                                <label>Station Label (Top Header)</label>
+                                <input type="text" id="st-label" class="form-control" value="${st.label || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label>Full Name (Welcome Card & Modal)</label>
+                                <input type="text" id="st-fullname" class="form-control" value="${st.full_name || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label>Full Acronym Subtitle</label>
+                                <input type="text" id="st-subtitle" class="form-control" value="${st.subtitle || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label>Location Subtitle (Dropdown Menu)</label>
+                                <input type="text" id="st-province" class="form-control" value="${st.province || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label>Public Deployment Status</label>
+                                <select id="st-status" class="form-control">
+                                    <option value="live" ${st.status === 'live' ? 'selected' : ''}>Live on Public Map (Accessible to Everyone)</option>
+                                    <option value="under_development" ${st.status !== 'live' ? 'selected' : ''}>Under Development (Shows Modal on Public Web)</option>
+                                </select>
+                            </div>
+                            <div class="form-grid-2">
+                                <div class="form-group">
+                                    <label>"You Are Here" Longitude</label>
+                                    <input type="number" step="any" id="st-pin-lng" class="form-control" style="font-family:var(--font-mono);" value="${st.kiosk_pin_lng}">
+                                </div>
+                                <div class="form-group">
+                                    <label>"You Are Here" Latitude</label>
+                                    <input type="number" step="any" id="st-pin-lat" class="form-control" style="font-family:var(--font-mono);" value="${st.kiosk_pin_lat}">
+                                </div>
+                            </div>
+                            <div class="form-grid-3">
+                                <div class="form-group">
+                                    <label>Default Zoom</label>
+                                    <input type="number" step="0.1" id="st-zoom" class="form-control" style="font-family:var(--font-mono);" value="${st.default_zoom}">
+                                </div>
+                                <div class="form-group">
+                                    <label>Default Pitch (deg)</label>
+                                    <input type="number" step="1" id="st-pitch" class="form-control" style="font-family:var(--font-mono);" value="${st.default_pitch}">
+                                </div>
+                                <div class="form-group">
+                                    <label>Default Bearing (deg)</label>
+                                    <input type="number" step="1" id="st-bearing" class="form-control" style="font-family:var(--font-mono);" value="${st.default_bearing}">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Welcome Card Tags (comma-separated, up to 3)</label>
+                                <input type="text" id="st-welcome-tags" class="form-control" placeholder="e.g. 50 3D Buildings, 45 Field Plots, Live Wayfinding" value="${welcomeTagsStr}">
+                            </div>
+                            <div class="form-group">
+                                <label>Quick Search Tags (Label:Query, comma-separated)</label>
+                                <input type="text" id="st-quick-tags" class="form-control" placeholder="e.g. MIS / RAFIS:MIS, Admin:Admin, Tanco Hall:Tanco" value="${quickTagsStr}">
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin-top:20px; padding-top:16px; border-top:1px solid rgba(148,163,184,0.15);">
+                        <div style="font-size:13px; font-weight:600; color:#e2e8f0; margin-bottom:10px;">Type Filter Descriptions (Dynamic Filter Menu for ${st.name})</div>
+                        <div class="form-grid-2">
+                            <div class="form-group">
+                                <label>Agri Infrastructure / Facilities</label>
+                                <input type="text" id="st-fd-infrastructure" class="form-control" placeholder="Leave blank for default" value="${filterDescObj.infrastructure || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label>Agricultural Test / Trial Sites</label>
+                                <input type="text" id="st-fd-trial_sites" class="form-control" placeholder="Leave blank for default" value="${filterDescObj.trial_sites || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label>Orchard</label>
+                                <input type="text" id="st-fd-orchard" class="form-control" placeholder="Leave blank for default" value="${filterDescObj.orchard || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label>Office Buildings</label>
+                                <input type="text" id="st-fd-office" class="form-control" placeholder="Leave blank for default" value="${filterDescObj.office || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label>Laboratories</label>
+                                <input type="text" id="st-fd-laboratory" class="form-control" placeholder="Leave blank for default" value="${filterDescObj.laboratory || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label>Conference Hall</label>
+                                <input type="text" id="st-fd-conference" class="form-control" placeholder="Leave blank for default" value="${filterDescObj.conference || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label>Digital Agriculture Project</label>
+                                <input type="text" id="st-fd-digital_agri" class="form-control" placeholder="Leave blank for default" value="${filterDescObj.digital_agri || ''}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            setTimeout(() => {
+                const startLng = Number(st.kiosk_pin_lng);
+                const startLat = Number(st.kiosk_pin_lat);
+                const tilePath = currentStation === 'lares' ? '/api/tiles/{z}/{x}/{y}.png' : `/api/tiles/${currentStation}/{z}/{x}/{y}.png`;
+
+                pinMapInstance = new mapboxgl.Map({
+                    container: 'admin-pin-map',
+                    style: {
+                        version: 8,
+                        sources: {
+                            'google-sat': {
+                                type: 'raster',
+                                tiles: ['https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'],
+                                tileSize: 256,
+                                maxzoom: 20
+                            },
+                            'station-drone': {
+                                type: 'raster',
+                                tiles: [tilePath],
+                                tileSize: 256,
+                                minzoom: 14,
+                                maxzoom: 21
+                            }
+                        },
+                        layers: [
+                            { id: 'sat', type: 'raster', source: 'google-sat' },
+                            { id: 'drone', type: 'raster', source: 'station-drone' }
+                        ]
+                    },
+                    center: [startLng, startLat],
+                    zoom: 19.2
+                });
+
+                pinMarkerInstance = new mapboxgl.Marker({ color: '#10b981', draggable: true })
+                    .setLngLat([startLng, startLat])
+                    .addTo(pinMapInstance);
+
+                pinMarkerInstance.on('dragend', () => {
+                    const ll = pinMarkerInstance.getLngLat();
+                    document.getElementById('st-pin-lng').value = ll.lng.toFixed(8);
+                    document.getElementById('st-pin-lat').value = ll.lat.toFixed(8);
+                });
+
+                pinMapInstance.on('click', (e) => {
+                    pinMarkerInstance.setLngLat(e.lngLat);
+                    document.getElementById('st-pin-lng').value = e.lngLat.lng.toFixed(8);
+                    document.getElementById('st-pin-lat').value = e.lngLat.lat.toFixed(8);
+                });
+            }, 60);
+        }
+
+        window.saveStationAndPin = async function(stationId) {
+            const welcomeRaw = (document.getElementById('st-welcome-tags')?.value || '').trim();
+            const welcomeTags = welcomeRaw ? welcomeRaw.split(',').map(s => s.trim()).filter(Boolean).slice(0, 3) : [];
+            const quickRaw = (document.getElementById('st-quick-tags')?.value || '').trim();
+            const quickTags = quickRaw
+                ? quickRaw.split(',').map(s => s.trim()).filter(Boolean).map(entry => {
+                    const idx = entry.indexOf(':');
+                    if (idx > -1) {
+                        const label = entry.slice(0, idx).trim();
+                        const query = entry.slice(idx + 1).trim() || label;
+                        return { label, query };
+                    }
+                    return { label: entry, query: entry };
+                })
+                : [];
+            const filterDescriptions = {};
+            ['infrastructure', 'trial_sites', 'orchard', 'office', 'laboratory', 'conference', 'digital_agri'].forEach(k => {
+                const v = (document.getElementById(`st-fd-${k}`)?.value || '').trim();
+                if (v) filterDescriptions[k] = v;
+            });
+
+            const payload = {
+                label: document.getElementById('st-label').value.trim(),
+                full_name: document.getElementById('st-fullname').value.trim(),
+                subtitle: document.getElementById('st-subtitle').value.trim(),
+                province: document.getElementById('st-province').value.trim(),
+                status: document.getElementById('st-status').value,
+                kiosk_pin_lng: Number(document.getElementById('st-pin-lng').value),
+                kiosk_pin_lat: Number(document.getElementById('st-pin-lat').value),
+                default_zoom: Number(document.getElementById('st-zoom').value),
+                default_pitch: Number(document.getElementById('st-pitch').value),
+                default_bearing: Number(document.getElementById('st-bearing').value),
+                welcome_tags: welcomeTags,
+                quick_tags: quickTags,
+                filter_descriptions: filterDescriptions
+            };
+            await apiFetch(`/api/admin/stations/${stationId}`, {
+                method: 'PUT',
+                body: JSON.stringify(payload)
+            });
+            broadcastDbSync();
+            showToast(`Saved "You Are Here" Pin & Station Settings for ${stationId.toUpperCase()}!`);
+        };
+
+        // =====================================================================
+        // TAB 3: BUILDINGS & MULTI-PHOTOS CRUD
+        // =====================================================================
+        async function renderBuildingsTab(container) {
+            cachedBuildings = await apiFetch(`/api/admin/buildings?station=${currentStation}`);
+
+            container.innerHTML = `
+                <div class="panel-card">
+                    <div class="panel-header">
+                        <div>
+                            <div class="panel-title-group">
+                                <div class="panel-title-icon">${SVG_ICONS.building}</div>
+                                <h3>Buildings & Multi-Photo Directory (${cachedBuildings.length} records in <span class="mono-code">${currentStation.toUpperCase()}</span>)</h3>
+                            </div>
+                            <div style="font-size:12px; color:#94a3b8; margin-top:5px;">Edit building names, numbers, categories, descriptions, 3D models, and upload/manage multiple <span class="mono-code">.webp</span> photos.</div>
+                        </div>
+                        <div style="display:flex; gap:10px;">
+                            <input type="text" id="bldg-filter-input" class="form-control" placeholder="Search buildings..." style="width:240px;" oninput="filterBuildingsTable(this.value)">
+                            <button class="btn btn-emerald" onclick="openBuildingModal(null)">
+                                ${SVG_ICONS.plus}
+                                <span>Add Building</span>
+                            </button>
+                        </div>
+                    </div>
+                    <table class="crud-table" id="buildings-crud-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Preview</th>
+                                <th>Building Name & Code</th>
+                                <th>Category / Type</th>
+                                <th>Photos</th>
+                                <th>Offices</th>
+                                <th>3D Model</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${cachedBuildings.map(b => {
+                                const primaryImg = (b.images && b.images[0]) ? b.images[0].image_webp_url : null;
+                                return `
+                                <tr data-search="${(b.name + ' ' + b.building_code + ' ' + (b.building_num || '') + ' ' + b.category).toLowerCase()}">
+                                    <td><span class="mono-id">${b.building_num ? '#' + b.building_num : '—'}</span></td>
+                                    <td>
+                                        ${primaryImg
+                                            ? `<img src="/${primaryImg}" style="width:52px; height:36px; object-fit:cover; border-radius:6px; border:1px solid rgba(255,255,255,0.12);" onerror="this.style.display='none'">`
+                                            : `<span style="font-size:11px; color:#64748b;">No Photo</span>`}
+                                    </td>
+                                    <td>
+                                        <div style="font-weight:600; color:#f8fafc;">${b.name}</div>
+                                        <span class="mono-code" style="margin-top:3px; display:inline-block;">${b.building_code}</span>
+                                    </td>
+                                    <td>
+                                        <span class="status-pill status-pill-blue">${b.category}</span>
+                                        <div style="font-size:11px; color:#94a3b8; margin-top:4px;">${b.type_label || ''}</div>
+                                    </td>
+                                    <td>
+                                        <span class="status-pill ${b.images.length > 0 ? 'status-pill-live' : 'status-pill-dev'}">
+                                            <span class="${b.images.length > 0 ? 'status-dot-live' : 'status-dot-dev'}"></span>
+                                            <span>${b.images.length} .webp</span>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="mono-code">
+                                            ${b.offices.length === 0 ? '0 (Standalone)' : b.offices.length + (b.offices.length === 1 ? ' Office' : ' Offices')}
+                                        </span>
+                                    </td>
+                                    <td style="font-size:12px; color:#94a3b8;">
+                                        ${b.model_glb_url
+                                            ? `<span style="display:inline-flex; align-items:center; gap:5px; color:#34d399;">${SVG_ICONS.box}<span>Custom GLB</span></span>`
+                                            : 'Procedural'}
+                                    </td>
+                                    <td>
+                                        <div class="action-cell">
+                                            <button class="btn btn-blue btn-sm" onclick="openBuildingModal(${b.id})">
+                                                ${SVG_ICONS.edit}
+                                                <span>Edit & Photos</span>
+                                            </button>
+                                            <button class="btn btn-danger btn-sm" onclick="deleteBuildingRow(${b.id})" title="Delete building">
+                                                ${SVG_ICONS.trash}
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        window.filterBuildingsTable = function(q) {
+            const term = (q || '').toLowerCase();
+            document.querySelectorAll('#buildings-crud-table tbody tr').forEach(tr => {
+                tr.style.display = tr.dataset.search.includes(term) ? '' : 'none';
+            });
+        };
+
+        window.openBuildingModal = function(bldgId) {
+            editingBuilding = bldgId ? cachedBuildings.find(b => b.id === bldgId) : {
+                id: null,
+                station_id: currentStation,
+                building_code: '',
+                building_num: '',
+                name: '',
+                category: 'infrastructure',
+                type_label: 'Infrastructure Facility',
+                icon: 'building',
+                pin_color: '#10b981',
+                roof_color: '#334155',
+                description: '',
+                compact_tag: '',
+                visual_landmark: '',
+                key_services: '',
+                marker_lng: '',
+                marker_lat: '',
+                model_glb_url: '',
+                height: 5.0,
+                images: []
+            };
+
+            document.getElementById('bldg-modal-title').textContent = editingBuilding.id
+                ? `Edit Building: ${editingBuilding.name} (${editingBuilding.building_code})`
+                : `Create New Building in DA-${currentStation.toUpperCase()}`;
+
+            const categories = ['infrastructure', 'office', 'laboratory', 'conference', 'trial_sites', 'orchard', 'digital_agri'];
+
+            document.getElementById('bldg-modal-body').innerHTML = `
+                <div class="form-grid-3">
+                    <div class="form-group">
+                        <label>Building Number (#)</label>
+                        <input type="number" id="bm-num" class="form-control" style="font-family:var(--font-mono);" value="${editingBuilding.building_num ?? ''}" placeholder="e.g. 1 (or blank)">
+                    </div>
+                    <div class="form-group">
+                        <label>Building Code (Unique ID)</label>
+                        <input type="text" id="bm-code" class="form-control" style="font-family:var(--font-mono);" value="${editingBuilding.building_code || ''}" ${editingBuilding.id ? 'readonly' : ''} placeholder="e.g. tanco_hall_building">
+                    </div>
+                    <div class="form-group">
+                        <label>Directory Category</label>
+                        <select id="bm-category" class="form-control">
+                            ${categories.map(c => `<option value="${c}" ${editingBuilding.category === c ? 'selected' : ''}>${c}</option>`).join('')}
+                        </select>
+                    </div>
+                </div>
+                <div class="form-grid-2">
+                    <div class="form-group">
+                        <label>Official Building Name</label>
+                        <input type="text" id="bm-name" class="form-control" value="${editingBuilding.name || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Facility Type Badge Label</label>
+                        <input type="text" id="bm-type" class="form-control" value="${editingBuilding.type_label || ''}" placeholder="e.g. Office Building, Standalone Facility">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Summary / Directory Description</label>
+                    <textarea id="bm-desc" class="form-control" rows="2">${editingBuilding.description || ''}</textarea>
+                </div>
+                <div class="form-grid-2">
+                    <div class="form-group">
+                        <label>Visual Landmark Guidance (Drawer)</label>
+                        <textarea id="bm-landmark" class="form-control" rows="2">${editingBuilding.visual_landmark || ''}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Key Services & Purpose (Drawer)</label>
+                        <textarea id="bm-services" class="form-control" rows="2">${editingBuilding.key_services || ''}</textarea>
+                    </div>
+                </div>
+                <div class="form-grid-3">
+                    <div class="form-group">
+                        <label>3D Model Path (.glb)</label>
+                        <input type="text" id="bm-model" class="form-control" style="font-family:var(--font-mono);" value="${editingBuilding.model_glb_url || ''}" placeholder="models/example.glb">
+                    </div>
+                    <div class="form-group">
+                        <label>Pin Badge Color</label>
+                        <input type="text" id="bm-color" class="form-control" style="font-family:var(--font-mono);" value="${editingBuilding.pin_color || '#10b981'}">
+                    </div>
+                    <div class="form-group">
+                        <label>Icon Identifier</label>
+                        <input type="text" id="bm-icon" class="form-control" value="${editingBuilding.icon || 'building'}">
+                    </div>
+                </div>
+
+                ${editingBuilding.id ? `
+                <hr style="border:none; border-top:1px solid rgba(255,255,255,0.08); margin: 18px 0;">
+                <div>
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                        <span style="color:var(--emerald-400); display:inline-flex;">${SVG_ICONS.image}</span>
+                        <label style="font-size:12px; font-weight:600; color:var(--emerald-400); text-transform:uppercase; letter-spacing:0.05em;">Multi-Photo Gallery (Table: <span class="mono-code">building_images</span> — ${editingBuilding.images.length} photos)</label>
+                    </div>
+                    <div class="photo-grid">
+                        ${editingBuilding.images.map(img => `
+                            <div class="photo-card">
+                                <img src="/${img.image_webp_url}" alt="${img.caption || ''}">
+                                <div style="font-size:11.5px; font-weight:600; margin-top:6px;">${img.caption || 'Facility View'}</div>
+                                <div style="font-size:10.5px; font-family:var(--font-mono); color:#94a3b8; word-break:break-all; margin-top:2px;">${img.image_webp_url}</div>
+                                <div style="display:flex; gap:6px; margin-top:8px;">
+                                    ${img.is_primary
+                                        ? `<span class="status-pill status-pill-live" style="padding:3px 8px; font-size:10.5px;"><span class="status-dot-live"></span><span>Primary</span></span>`
+                                        : `<button type="button" class="btn btn-secondary btn-sm" onclick="setPrimaryBuildingPhoto(${img.id})">Set Primary</button>`}
+                                    <button type="button" class="btn btn-danger btn-sm" onclick="deleteBuildingPhoto(${img.id})">Remove</button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div style="margin-top:14px; background:#090d16; padding:14px; border-radius:10px; border:1px solid rgba(255,255,255,0.08);">
+                        <div style="font-size:12px; font-weight:600; margin-bottom:10px; color:#e2e8f0;">Add / Upload Another Facility Photo (.webp)</div>
+                        <div class="form-grid-3">
+                            <input type="file" id="new-photo-file" class="form-control" accept="image/*">
+                            <input type="text" id="new-photo-caption" class="form-control" placeholder="Caption (e.g. Front Facade, Inside View)">
+                            <button type="button" class="btn btn-blue" onclick="uploadBuildingPhoto('${editingBuilding.building_code}')">
+                                ${SVG_ICONS.upload}
+                                <span>Upload & Attach Photo</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                ` : `<div style="font-size:12px; color:#94a3b8; margin-top:10px;">Save the new building first to upload and attach multiple <span class="mono-code">.webp</span> photos.</div>`}
+            `;
+
+            document.getElementById('building-modal').classList.add('open');
+        };
+
+        window.closeBuildingModal = function() {
+            document.getElementById('building-modal').classList.remove('open');
+        };
+
+        window.saveBuildingModal = async function() {
+            const payload = {
+                station_id: currentStation,
+                building_num: document.getElementById('bm-num').value,
+                building_code: document.getElementById('bm-code').value.trim(),
+                category: document.getElementById('bm-category').value,
+                name: document.getElementById('bm-name').value.trim(),
+                type_label: document.getElementById('bm-type').value.trim(),
+                description: document.getElementById('bm-desc').value.trim(),
+                visual_landmark: document.getElementById('bm-landmark').value.trim(),
+                key_services: document.getElementById('bm-services').value.trim(),
+                model_glb_url: document.getElementById('bm-model').value.trim(),
+                pin_color: document.getElementById('bm-color').value.trim(),
+                icon: document.getElementById('bm-icon').value.trim()
+            };
+
+            if (editingBuilding && editingBuilding.id) {
+                await apiFetch(`/api/admin/buildings/${editingBuilding.id}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ ...editingBuilding, ...payload })
+                });
+                broadcastDbSync();
+                showToast(`Updated "${payload.name}" in MySQL!`);
+            } else {
+                await apiFetch('/api/admin/buildings', {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                broadcastDbSync();
+                showToast(`Created "${payload.name}" in MySQL!`);
+            }
+            closeBuildingModal();
+            loadCurrentTab();
+        };
+
+        window.uploadBuildingPhoto = async function(buildingCode) {
+            const fileInput = document.getElementById('new-photo-file');
+            const caption = document.getElementById('new-photo-caption').value.trim() || 'Facility View';
+            if (!fileInput.files || !fileInput.files[0]) {
+                alert('Please choose an image file to upload.');
+                return;
+            }
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = async () => {
+                await apiFetch('/api/admin/building-images', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        station_id: currentStation,
+                        building_code: buildingCode,
+                        filename: file.name,
+                        base64_data: reader.result,
+                        caption,
+                        is_primary: editingBuilding.images.length === 0 ? 1 : 0
+                    })
+                });
+                broadcastDbSync();
+                showToast('Photo uploaded and saved to building_images!');
+                cachedBuildings = await apiFetch(`/api/admin/buildings?station=${currentStation}`);
+                openBuildingModal(editingBuilding.id);
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.setPrimaryBuildingPhoto = async function(imageId) {
+            await apiFetch(`/api/admin/building-images/${imageId}`, {
+                method: 'PUT',
+                body: JSON.stringify({ is_primary: 1 })
+            });
+            broadcastDbSync();
+            showToast('Updated primary cover photo!');
+            cachedBuildings = await apiFetch(`/api/admin/buildings?station=${currentStation}`);
+            openBuildingModal(editingBuilding.id);
+        };
+
+        window.deleteBuildingPhoto = async function(imageId) {
+            if (!confirm('Remove this photo from the building gallery?')) return;
+            await apiFetch(`/api/admin/building-images/${imageId}`, { method: 'DELETE' });
+            broadcastDbSync();
+            showToast('Photo removed.');
+            cachedBuildings = await apiFetch(`/api/admin/buildings?station=${currentStation}`);
+            openBuildingModal(editingBuilding.id);
+        };
+
+        window.deleteBuildingRow = async function(id) {
+            if (!confirm('Are you sure you want to delete this building and its associated records?')) return;
+            await apiFetch(`/api/admin/buildings/${id}`, { method: 'DELETE' });
+            broadcastDbSync();
+            showToast('Building deleted from MySQL.');
+            loadCurrentTab();
+        };
+
+        // =====================================================================
+        // TAB 4: INTERNAL OFFICES CRUD
+        // =====================================================================
+        async function renderOfficesTab(container) {
+            cachedBuildings = await apiFetch(`/api/admin/buildings?station=${currentStation}`);
+            cachedOffices = await apiFetch(`/api/admin/offices?station=${currentStation}`);
+
+            container.innerHTML = `
+                <div class="panel-card">
+                    <div class="panel-header">
+                        <div>
+                            <div class="panel-title-group">
+                                <div class="panel-title-icon">${SVG_ICONS.folder}</div>
+                                <h3>Internal Building Offices (${cachedOffices.length} offices in <span class="mono-code">${currentStation.toUpperCase()}</span>)</h3>
+                            </div>
+                            <div style="font-size:12px; color:#94a3b8; margin-top:5px;">
+                                Smart UI Rule: <strong>0 offices</strong> = hides Office section (Standalone Facility) • <strong>1 office</strong> = singular header • <strong>2+ offices</strong> = plural list with count badge.
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:10px;">
+                            <select id="office-bldg-filter" class="form-control" style="width:260px;" onchange="filterOfficesTable(this.value)">
+                                <option value="">All Buildings (${cachedOffices.length} offices)</option>
+                                ${cachedBuildings.map(b => `<option value="${b.building_code}">${b.building_num ? '#' + b.building_num + ' ' : ''}${b.name} (${b.offices.length})</option>`).join('')}
+                            </select>
+                            <button class="btn btn-emerald" onclick="openOfficeModal(null)">
+                                ${SVG_ICONS.plus}
+                                <span>Add Office</span>
+                            </button>
+                        </div>
+                    </div>
+                    <table class="crud-table" id="offices-crud-table">
+                        <thead>
+                            <tr>
+                                <th>Building</th>
+                                <th>Office / Unit Name</th>
+                                <th>Floor / Room</th>
+                                <th>Order</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${cachedOffices.map(o => `
+                                <tr data-bldg="${o.building_code}">
+                                    <td>
+                                        <span class="mono-id" style="margin-right:4px;">${o.building_num ? '#' + o.building_num : ''}</span>
+                                        <strong style="color:#f8fafc;">${o.building_name || o.building_code}</strong>
+                                    </td>
+                                    <td style="font-weight:600; color:var(--emerald-400);">${o.office_name}</td>
+                                    <td>${o.floor_or_room ? `<span class="status-pill status-pill-blue">${o.floor_or_room}</span>` : '<span style="color:#64748b;">—</span>'}</td>
+                                    <td><span class="mono-id">${o.display_order || 1}</span></td>
+                                    <td>
+                                        <div class="action-cell">
+                                            <button class="btn btn-blue btn-sm" onclick="openOfficeModal(${o.id})">
+                                                ${SVG_ICONS.edit}
+                                                <span>Edit</span>
+                                            </button>
+                                            <button class="btn btn-danger btn-sm" onclick="deleteOfficeRow(${o.id})" title="Remove office">
+                                                ${SVG_ICONS.trash}
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        window.filterOfficesTable = function(bCode) {
+            document.querySelectorAll('#offices-crud-table tbody tr').forEach(tr => {
+                tr.style.display = (!bCode || tr.dataset.bldg === bCode) ? '' : 'none';
+            });
+        };
+
+        window.openOfficeModal = function(officeId) {
+            editingOffice = officeId ? cachedOffices.find(o => o.id === officeId) : {
+                id: null,
+                building_code: document.getElementById('office-bldg-filter')?.value || (cachedBuildings[0]?.building_code || ''),
+                office_name: '',
+                floor_or_room: '',
+                office_desc: '',
+                display_order: 1
+            };
+
+            document.getElementById('office-modal-body').innerHTML = `
+                <div class="form-group">
+                    <label>Parent Building</label>
+                    <select id="om-bldg" class="form-control">
+                        ${cachedBuildings.map(b => `<option value="${b.building_code}" ${editingOffice.building_code === b.building_code ? 'selected' : ''}>${b.building_num ? '#' + b.building_num + ' ' : ''}${b.name}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Official Office / Division / Unit Name</label>
+                    <input type="text" id="om-name" class="form-control" value="${editingOffice.office_name || ''}" placeholder="e.g. PMED Office of the Chief">
+                </div>
+                <div class="form-grid-2">
+                    <div class="form-group">
+                        <label>Floor or Room (Optional)</label>
+                        <input type="text" id="om-floor" class="form-control" value="${editingOffice.floor_or_room || ''}" placeholder="e.g. Ground Floor, 2nd Floor">
+                    </div>
+                    <div class="form-group">
+                        <label>Display Order</label>
+                        <input type="number" id="om-order" class="form-control" style="font-family:var(--font-mono);" value="${editingOffice.display_order || 1}">
+                    </div>
+                </div>
+            `;
+            document.getElementById('office-modal').classList.add('open');
+        };
+
+        window.closeOfficeModal = function() {
+            document.getElementById('office-modal').classList.remove('open');
+        };
+
+        window.saveOfficeModal = async function() {
+            const payload = {
+                station_id: currentStation,
+                building_code: document.getElementById('om-bldg').value,
+                office_name: document.getElementById('om-name').value.trim(),
+                floor_or_room: document.getElementById('om-floor').value.trim() || null,
+                display_order: Number(document.getElementById('om-order').value || 1)
+            };
+            if (editingOffice && editingOffice.id) {
+                await apiFetch(`/api/admin/offices/${editingOffice.id}`, { method: 'PUT', body: JSON.stringify(payload) });
+                broadcastDbSync();
+                showToast('Updated office in MySQL!');
+            } else {
+                await apiFetch('/api/admin/offices', { method: 'POST', body: JSON.stringify(payload) });
+                broadcastDbSync();
+                showToast('Added office to MySQL!');
+            }
+            closeOfficeModal();
+            loadCurrentTab();
+        };
+
+        window.deleteOfficeRow = async function(id) {
+            if (!confirm('Remove this office from the building?')) return;
+            await apiFetch(`/api/admin/offices/${id}`, { method: 'DELETE' });
+            broadcastDbSync();
+            showToast('Office deleted from MySQL.');
+            loadCurrentTab();
+        };
+
+        // =====================================================================
+        // TAB 5: AGRICULTURAL PLOTS & CROPS CRUD
+        // =====================================================================
+        async function renderPlotsTab(container) {
+            cachedPlots = await apiFetch(`/api/admin/plots?station=${currentStation}`);
+
+            container.innerHTML = `
+                <div class="panel-card">
+                    <div class="panel-header">
+                        <div>
+                            <div class="panel-title-group">
+                                <div class="panel-title-icon">${SVG_ICONS.sprout}</div>
+                                <h3>Agricultural Plots & Worker Agronomic Intelligence (${cachedPlots.length} zones in <span class="mono-code">${currentStation.toUpperCase()}</span>)</h3>
+                            </div>
+                            <div style="font-size:12px; color:#94a3b8; margin-top:5px;">
+                                Manage planted crops, tree/plant counts, annual vs. monthly/seasonal cycles, statuses, and screenhouse sub-plots for station workers and visitors.
+                            </div>
+                        </div>
+                        <button class="btn btn-emerald" onclick="openPlotModal(null)">
+                            ${SVG_ICONS.plus}
+                            <span>Add Plot Zone</span>
+                        </button>
+                    </div>
+                    <table class="crud-table">
+                        <thead>
+                            <tr>
+                                <th>Plot #</th>
+                                <th>Zone Name</th>
+                                <th>Current Planted Crop</th>
+                                <th>Tree / Plant Count</th>
+                                <th>Cropping Cycle</th>
+                                <th>Status</th>
+                                <th>Sub-Plots</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${cachedPlots.map(p => `
+                                <tr>
+                                    <td><span class="mono-id">${p.plot_number || '—'}</span></td>
+                                    <td>
+                                        <div style="font-weight:600; color:#f8fafc;">${p.zone_name}</div>
+                                        <span class="mono-code" style="margin-top:3px; display:inline-block;">${p.plot_code}</span>
+                                    </td>
+                                    <td style="color:var(--emerald-400); font-weight:600;">${p.current_crop || '—'}</td>
+                                    <td>${p.tree_or_plant_count !== null ? `<span class="mono-id" style="color:#fff;">${p.tree_or_plant_count.toLocaleString()}</span> <span style="color:#94a3b8; font-size:12px;">trees/plants</span>` : '<span style="color:#64748b;">Not set</span>'}</td>
+                                    <td>
+                                        <span class="status-pill status-pill-blue">
+                                            ${p.cycle_months || p.cropping_cycle}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="status-pill status-pill-live">
+                                            <span class="status-dot-live"></span>
+                                            <span>${p.status || 'Active'}</span>
+                                        </span>
+                                    </td>
+                                    <td>${(p.subPlots && p.subPlots.length > 0) ? `<span class="mono-code">${p.subPlots.length} Screenhouses</span>` : '<span style="color:#64748b;">—</span>'}</td>
+                                    <td>
+                                        <div class="action-cell">
+                                            <button class="btn btn-blue btn-sm" onclick="openPlotModal(${p.id})">
+                                                ${SVG_ICONS.edit}
+                                                <span>Edit Agronomics</span>
+                                            </button>
+                                            <button class="btn btn-danger btn-sm" onclick="deletePlotRow(${p.id})" title="Delete plot">
+                                                ${SVG_ICONS.trash}
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        window.openPlotModal = function(plotId) {
+            editingPlot = plotId ? cachedPlots.find(p => p.id === plotId) : {
+                id: null,
+                plot_code: '',
+                plot_number: '',
+                zone_name: '',
+                category: 'orchard',
+                icon: 'sprout',
+                color: '#10b981',
+                current_crop: '',
+                tree_or_plant_count: '',
+                cropping_cycle: 'perennial',
+                cycle_months: 'Year-round (Perennial)',
+                area_hectares: '',
+                soil_type: '',
+                status: 'Active',
+                description: '',
+                image_webp_url: ''
+            };
+
+            document.getElementById('plot-modal-body').innerHTML = `
+                <div class="form-grid-3">
+                    <div class="form-group">
+                        <label>Plot Number / Range</label>
+                        <input type="text" id="pm-num" class="form-control" style="font-family:var(--font-mono);" value="${editingPlot.plot_number || ''}" placeholder="e.g. Plot 1, Plots 6–12">
+                    </div>
+                    <div class="form-group">
+                        <label>Zone Name</label>
+                        <input type="text" id="pm-name" class="form-control" value="${editingPlot.zone_name || ''}" placeholder="e.g. Citrus Orchard">
+                    </div>
+                    <div class="form-group">
+                        <label>Plot Status</label>
+                        <select id="pm-status" class="form-control">
+                            ${['Active', 'Harvesting', 'Vegetative Growth', 'Land Preparation', 'Fallow / Soil Rest'].map(s => `<option value="${s}" ${editingPlot.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+                        </select>
+                    </div>
+                </div>
+                <div class="form-grid-3">
+                    <div class="form-group">
+                        <label>Current Planted Crop / Variety</label>
+                        <input type="text" id="pm-crop" class="form-control" value="${editingPlot.current_crop || ''}" placeholder="e.g. Ladu & Szinkom Mandarin">
+                    </div>
+                    <div class="form-group">
+                        <label>Tree / Plant Count</label>
+                        <input type="number" id="pm-trees" class="form-control" style="font-family:var(--font-mono);" value="${editingPlot.tree_or_plant_count ?? ''}" placeholder="e.g. 420">
+                    </div>
+                    <div class="form-group">
+                        <label>Area (Hectares)</label>
+                        <input type="number" step="0.01" id="pm-area" class="form-control" style="font-family:var(--font-mono);" value="${editingPlot.area_hectares ?? ''}" placeholder="e.g. 1.85">
+                    </div>
+                </div>
+                <div class="form-grid-2">
+                    <div class="form-group">
+                        <label>Cropping Cycle Type</label>
+                        <select id="pm-cycle" class="form-control">
+                            <option value="perennial" ${editingPlot.cropping_cycle === 'perennial' ? 'selected' : ''}>Perennial (Multi-Year Orchard / Trees)</option>
+                            <option value="annual" ${editingPlot.cropping_cycle === 'annual' ? 'selected' : ''}>Annual (Yearly Crop Cycle)</option>
+                            <option value="monthly_seasonal" ${editingPlot.cropping_cycle === 'monthly_seasonal' ? 'selected' : ''}>Monthly / Seasonal (3–6 Months)</option>
+                            <option value="fallow" ${editingPlot.cropping_cycle === 'fallow' ? 'selected' : ''}>Fallow / Soil Rest</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Cycle Duration / Months Label</label>
+                        <input type="text" id="pm-months" class="form-control" value="${editingPlot.cycle_months || ''}" placeholder="e.g. 3–4 Months (Dry Season) or Year-round">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Agronomic & Field Description</label>
+                    <textarea id="pm-desc" class="form-control" rows="3">${editingPlot.description || ''}</textarea>
+                </div>
+                <div class="form-grid-3">
+                    <div class="form-group">
+                        <label>Icon Identifier</label>
+                        <input type="text" id="pm-icon" class="form-control" value="${editingPlot.icon || 'sprout'}">
+                    </div>
+                    <div class="form-group">
+                        <label>Polygon Highlight Color</label>
+                        <input type="text" id="pm-color" class="form-control" style="font-family:var(--font-mono);" value="${editingPlot.color || '#10b981'}">
+                    </div>
+                    <div class="form-group">
+                        <label>Plot Photo (.webp URL)</label>
+                        <input type="text" id="pm-img" class="form-control" style="font-family:var(--font-mono);" value="${editingPlot.image_webp_url || ''}" placeholder="images/zone_example.webp">
+                    </div>
+                </div>
+            `;
+            document.getElementById('plot-modal').classList.add('open');
+        };
+
+        window.closePlotModal = function() {
+            document.getElementById('plot-modal').classList.remove('open');
+        };
+
+        window.savePlotModal = async function() {
+            const payload = {
+                station_id: currentStation,
+                plot_number: document.getElementById('pm-num').value.trim(),
+                zone_name: document.getElementById('pm-name').value.trim(),
+                status: document.getElementById('pm-status').value,
+                current_crop: document.getElementById('pm-crop').value.trim(),
+                tree_or_plant_count: document.getElementById('pm-trees').value,
+                area_hectares: document.getElementById('pm-area').value,
+                cropping_cycle: document.getElementById('pm-cycle').value,
+                cycle_months: document.getElementById('pm-months').value.trim(),
+                description: document.getElementById('pm-desc').value.trim(),
+                icon: document.getElementById('pm-icon').value.trim(),
+                color: document.getElementById('pm-color').value.trim(),
+                image_webp_url: document.getElementById('pm-img').value.trim()
+            };
+            if (editingPlot && editingPlot.id) {
+                await apiFetch(`/api/admin/plots/${editingPlot.id}`, { method: 'PUT', body: JSON.stringify(payload) });
+                broadcastDbSync();
+                showToast(`Updated plot "${payload.zone_name}" in MySQL!`);
+            } else {
+                await apiFetch('/api/admin/plots', { method: 'POST', body: JSON.stringify(payload) });
+                broadcastDbSync();
+                showToast(`Created plot "${payload.zone_name}" in MySQL!`);
+            }
+            closePlotModal();
+            loadCurrentTab();
+        };
+
+        window.deletePlotRow = async function(id) {
+            if (!confirm('Delete this agricultural plot from MySQL?')) return;
+            await apiFetch(`/api/admin/plots/${id}`, { method: 'DELETE' });
+            broadcastDbSync();
+            showToast('Plot deleted from MySQL.');
+            loadCurrentTab();
+        };
+
+        // =====================================================================
+        // REVIEW & GOVERNANCE TABS (SUPER ADMIN & STATION REVIEWER)
+        // =====================================================================
+        async function renderAdminReviewsTab(container) {
+            const rows = await apiFetch(`/api/admin/change-requests?station=${currentStation}`);
+            container.innerHTML = `
+                <div class="panel-card">
+                    <div class="panel-header">
+                        <div class="panel-title-group"><h3>Submit Change for Station Reviewer Approval (${currentStation.toUpperCase()})</h3></div>
+                    </div>
+                    <form onsubmit="submitNewChangeRequest(event)" style="display:grid; grid-template-columns:1fr 1fr 2fr auto; gap:12px; padding:16px 20px; align-items:end;">
+                        <div class="form-group" style="margin:0;"><label>Target Module</label><select id="cr-table" class="form-control"><option value="buildings">Buildings</option><option value="agricultural_plots">Agricultural Plots</option><option value="building_offices">Internal Offices</option><option value="stations">Kiosk Pin / Station</option></select></div>
+                        <div class="form-group" style="margin:0;"><label>Record ID / Code</label><input id="cr-target-id" class="form-control" placeholder="e.g. plot_17 or tanco_hall" required></div>
+                        <div class="form-group" style="margin:0;"><label>Change Summary (sent to Reviewer Gmail)</label><input id="cr-summary" class="form-control" placeholder="Describe what changed for the researcher to verify" required></div>
+                        <button type="submit" class="btn btn-emerald">Send for Review</button>
+                    </form>
+                </div>
+                <div class="panel-card">
+                    <div class="panel-header"><div class="panel-title-group"><h3>Change Requests Queue (${rows.length})</h3></div></div>
+                    <table class="crud-table">
+                        <thead><tr><th>ID</th><th>Station</th><th>Target</th><th>Summary</th><th>Status</th><th>Reviewer Comment</th><th>Action</th></tr></thead>
+                        <tbody>
+                            ${rows.length ? rows.map(r => `
+                                <tr>
+                                    <td><span class="mono-id">#${r.id}</span></td>
+                                    <td><span class="mono-code">${r.station_id.toUpperCase()}</span></td>
+                                    <td>${r.target_table} <span class="mono-id">${r.target_id}</span></td>
+                                    <td>${r.summary}</td>
+                                    <td><span class="status-pill ${r.status === 'approved' || r.status === 'published' ? 'status-pill-live' : 'status-pill-dev'}">${r.status.toUpperCase()}</span></td>
+                                    <td style="color:#94a3b8;">${r.reviewer_comment || '—'}</td>
+                                    <td>${r.status === 'approved' ? `<button class="btn btn-emerald btn-sm" onclick="publishChangeRequest(${r.id})">Publish</button>` : '—'}</td>
+                                </tr>
+                            `).join('') : `<tr><td colspan="7" style="text-align:center; color:#64748b; padding:24px;">No change requests submitted for ${currentStation.toUpperCase()} yet.</td></tr>`}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        window.submitNewChangeRequest = async function(e) {
+            e.preventDefault();
+            const res = await apiFetch('/api/admin/change-requests', {
+                method: 'POST',
+                body: JSON.stringify({
+                    station_id: currentStation,
+                    target_table: document.getElementById('cr-table').value,
+                    target_id: document.getElementById('cr-target-id').value.trim(),
+                    summary: document.getElementById('cr-summary').value.trim()
+                })
+            });
+            showToast(`Submitted for review! Notified ${res.notifiedReviewers || 0} reviewer(s).`);
+            loadCurrentTab();
+        };
+
+        window.publishChangeRequest = async function(id) {
+            await apiFetch(`/api/admin/change-requests/${id}/publish`, { method: 'POST' });
+            showToast(`Change #${id} marked as Published!`);
+            loadCurrentTab();
+        };
+
+        async function renderReviewerAccountsTab(container) {
+            const rows = await apiFetch('/api/admin/reviewers');
+            container.innerHTML = `
+                <div class="panel-card">
+                    <div class="panel-header"><div class="panel-title-group"><h3>Add Station Reviewer Account</h3></div></div>
+                    <form onsubmit="createReviewerAccount(event)" style="display:grid; grid-template-columns:1.3fr 1.2fr 1fr 1fr auto; gap:12px; padding:16px 20px; align-items:end;">
+                        <div class="form-group" style="margin:0;"><label>Gmail Address</label><input type="email" id="rev-email" class="form-control" placeholder="researcher@gmail.com" required></div>
+                        <div class="form-group" style="margin:0;"><label>Full Name</label><input type="text" id="rev-name" class="form-control" placeholder="Dr. Juan Dela Cruz" required></div>
+                        <div class="form-group" style="margin:0;"><label>Assigned Station</label><select id="rev-station" class="form-control"><option value="lares">DA-LARES</option><option value="qares">DA-QARES</option><option value="rares">DA-RARES</option><option value="cares">DA-CARES</option></select></div>
+                        <div class="form-group" style="margin:0;"><label>Initial Password</label><input type="password" id="rev-pass" class="form-control" placeholder="Min 8 chars" required></div>
+                        <button type="submit" class="btn btn-emerald">Create Reviewer</button>
+                    </form>
+                </div>
+                <div class="panel-card">
+                    <div class="panel-header"><div class="panel-title-group"><h3>Active Station Reviewers (${rows.length})</h3></div></div>
+                    <table class="crud-table">
+                        <thead><tr><th>Email</th><th>Name</th><th>Station</th><th>Status</th><th>Action</th></tr></thead>
+                        <tbody>
+                            ${rows.map(r => `
+                                <tr>
+                                    <td>${r.email}</td>
+                                    <td>${r.full_name || '—'}</td>
+                                    <td>
+                                        <select class="form-control" style="height:32px; width:145px; padding:4px 8px;" onchange="reassignReviewerStation(${r.id}, this.value)">
+                                            ${['lares', 'qares', 'rares', 'cares'].map(st => `<option value="${st}" ${(r.station_id || '') === st ? 'selected' : ''}>DA-${st.toUpperCase()}</option>`).join('')}
+                                        </select>
+                                    </td>
+                                    <td><span class="status-pill ${r.is_active ? 'status-pill-live' : 'status-pill-dev'}">${r.is_active ? 'Active' : 'Disabled'}</span></td>
+                                    <td><button class="btn btn-secondary btn-sm" onclick="toggleReviewerAccount(${r.id})">${r.is_active ? 'Disable' : 'Enable'}</button></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        window.createReviewerAccount = async function(e) {
+            e.preventDefault();
+            await apiFetch('/api/admin/reviewers', {
+                method: 'POST',
+                body: JSON.stringify({
+                    email: document.getElementById('rev-email').value.trim(),
+                    full_name: document.getElementById('rev-name').value.trim(),
+                    station_id: document.getElementById('rev-station').value,
+                    password: document.getElementById('rev-pass').value
+                })
+            });
+            showToast('Station reviewer account created!');
+            loadCurrentTab();
+        };
+
+        window.toggleReviewerAccount = async function(id) {
+            await apiFetch(`/api/admin/reviewers/${id}/toggle`, { method: 'PUT' });
+            showToast('Reviewer status updated.');
+            loadCurrentTab();
+        };
+
+        window.reassignReviewerStation = async function(id, stationId) {
+            await apiFetch(`/api/admin/reviewers/${id}/station`, {
+                method: 'PUT',
+                body: JSON.stringify({ station_id: stationId })
+            });
+            showToast(`Reviewer reassigned to DA-${stationId.toUpperCase()}.`);
+            loadCurrentTab();
+        };
+
+        async function renderReviewQueueTab(container) {
+            const data = await apiFetch(`/api/review/requests?station=${currentStation}`);
+            const rows = data.requests || [];
+            container.innerHTML = `
+                <div class="panel-card">
+                    <div class="panel-header"><div class="panel-title-group"><h3>Pending & Past Change Requests — DA-${(data.stationId || '').toUpperCase()}</h3></div></div>
+                    <table class="crud-table">
+                        <thead><tr><th>ID</th><th>Module</th><th>Target</th><th>Proposed Change</th><th>Status</th><th>Your Review & Comment</th></tr></thead>
+                        <tbody>
+                            ${rows.length ? rows.map(r => `
+                                <tr>
+                                    <td><span class="mono-id">#${r.id}</span></td>
+                                    <td><span class="mono-code">${r.target_table}</span></td>
+                                    <td>${r.target_id}</td>
+                                    <td>${r.summary}</td>
+                                    <td><span class="status-pill ${r.status === 'approved' || r.status === 'published' ? 'status-pill-live' : 'status-pill-dev'}">${r.status.toUpperCase()}</span></td>
+                                    <td>
+                                        ${r.status === 'pending' ? `
+                                            <div style="display:flex; gap:6px; align-items:center;">
+                                                <input type="text" id="rev-cmt-${r.id}" class="form-control" placeholder="Add review comment..." style="height:32px; min-width:180px;">
+                                                <button class="btn btn-emerald btn-sm" onclick="decideReviewRequest(${r.id}, 'approved')">Approve</button>
+                                                <button class="btn btn-danger btn-sm" onclick="decideReviewRequest(${r.id}, 'rejected')">Reject</button>
+                                            </div>
+                                        ` : `<span style="color:#94a3b8;">${r.reviewer_comment || 'Reviewed'}</span>`}
+                                    </td>
+                                </tr>
+                            `).join('') : `<tr><td colspan="6" style="text-align:center; color:#64748b; padding:24px;">No pending changes to review for DA-${(data.stationId || '').toUpperCase()}.</td></tr>`}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        window.decideReviewRequest = async function(id, decision) {
+            const cmtEl = document.getElementById(`rev-cmt-${id}`);
+            const comment = cmtEl ? cmtEl.value.trim() : '';
+            if (decision === 'rejected' && !comment) {
+                alert('Please enter a comment explaining why you are rejecting this change.');
+                if (cmtEl) cmtEl.focus();
+                return;
+            }
+            const res = await apiFetch(`/api/review/requests/${id}/decide`, {
+                method: 'POST',
+                body: JSON.stringify({ decision, comment })
+            });
+            showToast(`Change #${id} ${decision}${res.adminNotified ? ' & Admin notified via Gmail!' : '!'}`);
+            loadCurrentTab();
+        };
+
+        async function renderReviewDirectoryTab(container, viewMode = 'review-overview') {
+            try {
+                const data = await apiFetch(`/api/review/station-overview?station=${currentStation}`);
+                const st = data.station || {};
+                const c = data.counts || {};
+                if (viewMode === 'review-overview') {
+                    container.innerHTML = `
+                        <div class="panel-card" style="padding:20px 24px; margin-bottom:20px;">
+                            <div style="font-size:11px; font-weight:700; color:#34d399; text-transform:uppercase; margin-bottom:4px;">Read-Only Station Overview</div>
+                            <h2 style="font-size:20px; color:#f8fafc; margin:0 0 6px;">${st.name || 'DA-' + currentStation.toUpperCase()}</h2>
+                            <div style="font-size:13px; color:#94a3b8;">${st.subtitle || ''} ${st.province ? '• ' + st.province : ''} • Kiosk Pin: <span class="mono-code">[${Number(st.kiosk_pin_lng || 0).toFixed(6)}, ${Number(st.kiosk_pin_lat || 0).toFixed(6)}]</span></div>
+                        </div>
+                        <div class="stats-grid">
+                            <div class="stat-card"><div class="stat-label">Buildings</div><div class="stat-value">${c.buildings || 0}</div><span class="stat-table-pill">Read-only view</span></div>
+                            <div class="stat-card"><div class="stat-label">WebP Facility Photos</div><div class="stat-value">${c.images || 0}</div><span class="stat-table-pill">Read-only view</span></div>
+                            <div class="stat-card"><div class="stat-label">Internal Offices</div><div class="stat-value">${c.offices || 0}</div><span class="stat-table-pill">Read-only view</span></div>
+                            <div class="stat-card"><div class="stat-label">Agricultural Plots</div><div class="stat-value">${c.plots || 0}</div><span class="stat-table-pill">${c.subplots || 0} sub-plots</span></div>
+                            <div class="stat-card"><div class="stat-label">3D Campus Trees</div><div class="stat-value">${c.trees || 0}</div><span class="stat-table-pill">Read-only view</span></div>
+                            <div class="stat-card"><div class="stat-label">Road & Entrance Nodes</div><div class="stat-value">${c.roads || 0}</div><span class="stat-table-pill">Read-only view</span></div>
+                        </div>
+                    `;
+                } else if (viewMode === 'review-buildings') {
+                    container.innerHTML = `
+                        <div class="panel-card">
+                            <div class="panel-header"><div class="panel-title-group"><h3>Station Buildings & Photos (${(data.buildings || []).length}) — Read-Only</h3></div></div>
+                            <table class="crud-table">
+                                <thead><tr><th>#</th><th>Name</th><th>Category</th><th>Photos</th><th>Description</th></tr></thead>
+                                <tbody>
+                                    ${(data.buildings || []).map(b => `<tr><td><span class="mono-id">${b.building_num ?? '—'}</span></td><td><b>${b.name}</b></td><td>${b.category || '—'}</td><td>${(b.images || []).length} photo(s)</td><td style="color:#94a3b8;">${(b.description || '').slice(0, 120)}</td></tr>`).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                } else if (viewMode === 'review-offices') {
+                    container.innerHTML = `
+                        <div class="panel-card">
+                            <div class="panel-header"><div class="panel-title-group"><h3>Internal Building Offices (${(data.offices || []).length}) — Read-Only</h3></div></div>
+                            <table class="crud-table">
+                                <thead><tr><th>Building</th><th>Office / Unit Name</th><th>Room / Floor</th></tr></thead>
+                                <tbody>
+                                    ${(data.offices || []).length ? data.offices.map(o => `<tr><td><span class="mono-code">${o.building_code || '—'}</span></td><td>${o.office_name || '—'}</td><td style="color:#94a3b8;">${o.floor_label || o.room_label || '—'}</td></tr>`).join('') : `<tr><td colspan="3" style="text-align:center; color:#64748b; padding:24px;">No offices recorded for this station.</td></tr>`}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                } else if (viewMode === 'review-plots') {
+                    container.innerHTML = `
+                        <div class="panel-card">
+                            <div class="panel-header"><div class="panel-title-group"><h3>Agricultural Plots & Crops (${(data.plots || []).length}) — Read-Only</h3></div></div>
+                            <table class="crud-table">
+                                <thead><tr><th>Plot</th><th>Zone Name</th><th>Planted Crops</th><th>Cycle</th><th>Sub-Plots</th></tr></thead>
+                                <tbody>
+                                    ${(data.plots || []).length ? data.plots.map(p => `<tr><td><span class="mono-id">${p.plot_number || p.plot_code || '—'}</span></td><td><b>${p.zone_name || p.name || '—'}</b></td><td>${p.planted_crops || '—'}</td><td>${p.crop_cycle || '—'}</td><td>${(p.subPlots || []).length}</td></tr>`).join('') : `<tr><td colspan="5" style="text-align:center; color:#64748b; padding:24px;">No agricultural plots recorded for this station.</td></tr>`}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                container.innerHTML = `<div class="panel-card" style="padding:24px; color:#f87171;">Failed to load station view: ${err.message}</div>`;
+            }
+        }
+
+        // Configure Admin vs Reviewer Portal branding & run NAS-style Splash -> Login Fade Animation
+        (function setupLoginSplashAndBranding() {
+            const isReviewRoute = window.location.pathname.toLowerCase().startsWith('/review');
+            const splashTitle = document.getElementById('admin-splash-title');
+            const portalTitle = document.getElementById('login-brand-portal-title');
+            const portalSub = document.getElementById('login-brand-portal-sub');
+            const pillsWrap = document.getElementById('login-brand-pills');
+            if (isReviewRoute) {
+                document.title = 'iGUIDE Reviewer Portal — Interactive Geospatial Unified Information Directory and Explorer';
+                if (splashTitle) splashTitle.textContent = 'iGUIDE STATION REVIEWER PORTAL';
+                if (portalTitle) portalTitle.textContent = 'Reviewer Portal';
+                if (portalSub) {
+                    portalSub.textContent = 'Interactive Geospatial Unified Information Directory and Explorer — review station facility updates, verify agricultural plot records, and submit change requests for DA-CALABARZON campuses.';
+                }
+                if (pillsWrap) {
+                    pillsWrap.innerHTML = `
+                        <span class="login-sec-pill">Station-Scoped Review</span>
+                        <span class="login-sec-pill">2-Step Gmail OTP</span>
+                        <span class="login-sec-pill">Email Notifications</span>
+                    `;
+                }
+            }
+
+            const splashEl = document.getElementById('admin-splash-screen');
+            const splitEl = document.getElementById('login-split-wrapper');
+            const splashSubEl = splashEl ? splashEl.querySelector('.admin-splash-sub') : null;
+            if (splashSubEl) {
+                const text = 'Interactive Geospatial Unified Information Directory and Explorer';
+                let charIdx = 0;
+                splashSubEl.innerHTML = text.split(' ').map(word => {
+                    const chars = word.split('').map(ch => {
+                        const delay = 520 + (charIdx++ * 24);
+                        return `<span class="unfold-char" style="animation-delay:${delay}ms">${ch}</span>`;
+                    }).join('');
+                    return `<span class="unfold-word">${chars}</span>`;
+                }).join('');
+            }
+            setTimeout(() => {
+                if (splashEl) splashEl.classList.add('hidden');
+                setTimeout(() => {
+                    if (splitEl) splitEl.classList.add('visible');
+                    const wm = document.getElementById('login-brand-wordmark');
+                    if (wm) wm.src = 'Main Icon/iGUIDE_Wordmark_Botanical_Animated.svg?t=' + Date.now();
+                }, 450);
+            }, 4400);
+        })();
+
+        // Check existing token on boot
+        (async function initAdmin() {
+            if (adminToken) {
+                try {
+                    const v = await apiFetch('/api/admin/verify');
+                    applyRoleUI(v.role || 'super_admin', v.stationId || null);
+                    document.getElementById('login-overlay').style.display = 'none';
+                    loadCurrentTab();
+                } catch (e) {}
+            }
+        })();
+    </script>
+</body>
+</html>

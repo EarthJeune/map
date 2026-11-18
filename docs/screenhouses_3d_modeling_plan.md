@@ -1,7 +1,7 @@
 # DA-LARES Plots 17 & 18 Screenhouses 3D Modeling Plan
 
 ## 📌 Executive Summary
-This document establishes the official engineering and architectural roadmap for modeling, texturing, optimizing, and integrating the agricultural screenhouses and research propagation facilities across **Plot 17** and **Plot 18** at the Department of Agriculture - Southern Tagalog Integrated Agricultural Research Center (DA-LARES).
+This document establishes the official engineering and architectural roadmap for modeling, texturing, optimizing, and integrating the agricultural screenhouses and research propagation facilities across **Plot 17** and **Plot 18** at the Department of Agriculture - Lipa Agricultural Research and Experiment Station (DA-LARES).
 
 All 3D models are based directly on:
 1. **High-Resolution Drone Orthomosaic Footprints:** Hand-traced curb walls from `draw.html` saved in `buildings.json`.
@@ -78,7 +78,7 @@ The placement of the numbers (1 to 9) on the polygon indicates the **Front Facad
 
 ### Phase 1: Screenhouse 1 (`plot17_screenhouse_1`) — ✅ Complete
 - **Status:** Complete & Fully Registered
-- **Model File:** [models/plot17_screenhouse_1.glb](file:///c:/Users/LGU-SanPedro/Downloads/map/models/plot17_screenhouse_1.glb) ($262.8\text{ KB}$, strictly under $300\text{ KB}$ budget).
+- **Model File:** [models/plot17_screenhouse_1.glb](models/plot17_screenhouse_1.glb) ($262.8\text{ KB}$, strictly under $300\text{ KB}$ budget).
 - **Map Alignment:** Coords `[121.16731230, 13.95915280]`, Rotation $69.8^\circ$ (front entrance faces WSW compound road).
 - **Entrance & Wayfinding:** `roads.json` entrance node `entrance_35` at `[121.16722, 13.959124]` with dedicated connector walkway `road_walkway_sh1` to `road_21`.
 - **Architectural Features Modeled:**
@@ -92,7 +92,7 @@ The placement of the numbers (1 to 9) on the polygon indicates the **Front Facad
 
 ### Phase 2: Screenhouse 2 (`plot17_screenhouse_2`) — ✅ Complete
 - **Status:** Complete & Fully Registered
-- **Model File:** [models/plot17_screenhouse_2.glb](file:///c:/Users/LGU-SanPedro/Downloads/map/models/plot17_screenhouse_2.glb) ($265.4\text{ KB}$, strictly under $300\text{ KB}$ budget).
+- **Model File:** [models/plot17_screenhouse_2.glb](models/plot17_screenhouse_2.glb) ($265.4\text{ KB}$, strictly under $300\text{ KB}$ budget).
 - **Map Alignment:** Coords `[121.16733397, 13.95909642]`, Rotation $69.8^\circ$ (front entrance faces WSW compound access walkway).
 - **Entrance & Wayfinding:** `roads.json` entrance node `entrance_36` at `[121.167258, 13.959074]` with dedicated connector walkway `road_walkway_sh2` to `road_21`.
 - **Architectural Features Modeled:**
@@ -108,7 +108,7 @@ The placement of the numbers (1 to 9) on the polygon indicates the **Front Facad
 
 ### Phase 3: Screenhouse 3 (`plot17_screenhouse_3`) — ✅ Complete
 - **Status:** Complete & Fully Registered
-- **Model File:** [models/plot17_screenhouse_3.glb](file:///c:/Users/LGU-SanPedro/Downloads/map/models/plot17_screenhouse_3.glb) ($247.5\text{ KB}$, strictly under $300\text{ KB}$ budget).
+- **Model File:** [models/plot17_screenhouse_3.glb](models/plot17_screenhouse_3.glb) ($247.5\text{ KB}$, strictly under $300\text{ KB}$ budget).
 - **Map Alignment:** Coords `[121.16735615, 13.95903957]`, Rotation $69.8^\circ$ (front entrance faces WSW compound walkway).
 - **Entrance & Wayfinding:** `roads.json` entrance node `entrance_37` at `[121.167262, 13.959005]` with dedicated connector walkway `road_walkway_sh3` to `road_21`.
 - **Architectural Features Modeled:**
@@ -122,7 +122,7 @@ The placement of the numbers (1 to 9) on the polygon indicates the **Front Facad
 
 ### Phase 4: Screenhouse 4 (`plot17_screenhouse_4`) — ✅ Complete
 - **Status:** Complete & Fully Registered
-- **Model File:** [models/plot17_screenhouse_4.glb](file:///c:/Users/LGU-SanPedro/Downloads/map/models/plot17_screenhouse_4.glb) ($229.1\text{ KB}$, strictly under $300\text{ KB}$ budget).
+- **Model File:** [models/plot17_screenhouse_4.glb](models/plot17_screenhouse_4.glb) ($229.1\text{ KB}$, strictly under $300\text{ KB}$ budget).
 - **Map Alignment:** Coords `[121.16738144, 13.95897382]`, Rotation $69.8^\circ$ (front entrance faces WSW compound walkway).
 - **Entrance & Wayfinding:** `roads.json` entrance node `entrance_38` at `[121.167305, 13.958918]` with dedicated connector walkway `road_walkway_sh4` to compound road network.
 - **Architectural Features Modeled:**
@@ -138,7 +138,7 @@ The placement of the numbers (1 to 9) on the polygon indicates the **Front Facad
 
 ### Phase 5: Screenhouse 5 (`plot17_screenhouse_5`) — ✅ Complete
 - **Status:** Complete & Fully Registered
-- **Model File:** [models/plot17_screenhouse_5.glb](file:///c:/Users/LGU-SanPedro/Downloads/map/models/plot17_screenhouse_5.glb) ($148.5\text{ KB}$, strictly under $300\text{ KB}$ budget).
+- **Model File:** [models/plot17_screenhouse_5.glb](models/plot17_screenhouse_5.glb) ($148.5\text{ KB}$, strictly under $300\text{ KB}$ budget).
 - **Map Alignment:** Coords `[121.16741435, 13.95882594]`, Rotation $69.8^\circ$ (NW corner entrance faces North toward the alleyway between Screenhouse 4 and 5).
 - **Entrance & Wayfinding:** `roads.json` entrance node `entrance_39` at `[121.167310, 13.958894]` with dedicated connector walkway `road_walkway_sh5` to compound road network.
 - **Architectural Features Modeled:**

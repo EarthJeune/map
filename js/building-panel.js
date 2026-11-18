@@ -858,37 +858,30 @@ export function showPlotPanel(zoneId) {
 
 
     if (srvEl) {
-
-
+        const cropLine = zone.currentCrop
+            ? `<div><strong style="color:#4ade80;">Current Planted Crop:</strong> <span style="color:#f8fafc;">${zone.currentCrop}</span></div>`
+            : '';
+        const treeLine = (zone.treeCount !== null && zone.treeCount !== undefined && zone.treeCount !== '')
+            ? `<div><strong style="color:#4ade80;">Tree / Plant Count:</strong> <span style="color:#f8fafc;">${Number(zone.treeCount).toLocaleString()} trees/plants</span></div>`
+            : '';
+        const cycleLine = zone.cycleMonths
+            ? `<div><strong style="color:#38bdf8;">Cropping Cycle:</strong> <span style="color:#f8fafc;">${zone.cycleMonths}</span></div>`
+            : '';
+        const statusLine = zone.status
+            ? `<div><strong style="color:#38bdf8;">Plot Status:</strong> <span style="color:#86efac; font-weight:700;">${zone.status}</span></div>`
+            : '';
 
         srvEl.innerHTML = `
-
-
-
             <div class="bp-plot-metrics" style="display:flex; flex-direction:column; gap:6px; font-size:12px;">
-
-
-
+                ${cropLine}
+                ${treeLine}
+                ${cycleLine}
+                ${statusLine}
                 <div><strong style="color:#38bdf8;">Estimated Area:</strong> <span style="color:#f8fafc;">${areaText}</span></div>
-
-
-
                 <div><strong style="color:#38bdf8;">Total Plots:</strong> <span style="color:#f8fafc;">${plotCountText} (${rangeText})</span></div>
-
-
-
                 <div><strong style="color:#38bdf8;">Commodity Category:</strong> <span style="color:#f8fafc;">${(zone.category || 'Agricultural Field').toUpperCase()}</span></div>
-
-
-
             </div>
-
-
-
         `;
-
-
-
     }
 
 

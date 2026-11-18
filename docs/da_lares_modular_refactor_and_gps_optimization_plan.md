@@ -6,7 +6,7 @@ This document outlines the detailed execution strategy for modularizing the DA-L
 
 ## 1. Goal Description
 
-The current application is contained within a monolithic, 9,288-line [`index.html`](file:///c:/Users/LGU-SanPedro/Downloads/map/index.html) file (~458 KB) comprising:
+The current application is contained within a monolithic, 9,288-line [`index.html`](index.html) file (~458 KB) comprising:
 - **~3,860 lines of inline CSS styles**
 - **~460 lines of HTML markup**
 - **~4,940 lines of inline JavaScript**, including raw GeoJSON datasets, state management, pathfinding graph algorithms, Mapbox WebGL rendering, mobile GPS tracking, and claymation animations.
@@ -37,7 +37,7 @@ graph TD
 
 ## 3. Open Questions & Design Decisions
 
-1. **Static File Serving**: [`server.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/server.js) already serves `__dirname` with `express.static(__dirname, { etag: false, maxAge: 0 })`. New subdirectories (`/data/`, `/styles/`, `/js/`) will be immediately accessible with zero backend changes.
+1. **Static File Serving**: [`server.js`](server.js) already serves `__dirname` with `express.static(__dirname, { etag: false, maxAge: 0 })`. New subdirectories (`/data/`, `/styles/`, `/js/`) will be immediately accessible with zero backend changes.
 2. **Backups Preservation**: All existing backup files (`index_backup_*.html`, `server_backup_*.js`) will be preserved untouched.
 3. **Mode Decision Logic**:
    - `?mode=kiosk` or `localhost` / `127.0.0.1` $\rightarrow$ **Kiosk Mode** (`body.mode-kiosk`)
@@ -112,7 +112,7 @@ classDiagram
 
 ### PHASE 0: SAFETY & BASELINE COMMIT
 
-#### [NEW] [`.gitignore`](file:///c:/Users/LGU-SanPedro/Downloads/map/.gitignore)
+#### [NEW] [`.gitignore`](.gitignore)
 Create `.gitignore` to protect node modules, logs, and binaries:
 ```gitignore
 node_modules/
@@ -133,26 +133,26 @@ Run `git init`, stage all project files (including existing backups), and create
 
 #### Step 1.1: Extract Data Constants
 Extract static geometry and catalog data out of `index.html`:
-- [NEW] [`data/buildings.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/data/buildings.js): `LARES_DRAWINGS` (QGIS 3D building polygons, properties, heights)
-- [NEW] [`data/mask.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/data/mask.js): `DA_LARES_OUTER_PERIMETER`, `LARES_MASK`, `LARES_COMPOUND_OUTLINE`
-- [NEW] [`data/trees.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/data/trees.js): `LARES_TREES` GeoJSON
-- [NEW] [`data/boundary.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/data/boundary.js): `LARES_BOUNDARY`, `SECTION_COLORS`, `SECTION_PASTEL_COLORS`
-- [NEW] [`data/directory.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/data/directory.js): `BUILDING_DIRECTORY`, `KNOWN_BUILDING_NAMES`, `CUSTOM_BUILDING_CENTERS`, building photos array
+- [NEW] [`data/buildings.js`](data/buildings.js): `LARES_DRAWINGS` (QGIS 3D building polygons, properties, heights)
+- [NEW] [`data/mask.js`](data/mask.js): `DA_LARES_OUTER_PERIMETER`, `LARES_MASK`, `LARES_COMPOUND_OUTLINE`
+- [NEW] [`data/trees.js`](data/trees.js): `LARES_TREES` GeoJSON
+- [NEW] [`data/boundary.js`](data/boundary.js): `LARES_BOUNDARY`, `SECTION_COLORS`, `SECTION_PASTEL_COLORS`
+- [NEW] [`data/directory.js`](data/directory.js): `BUILDING_DIRECTORY`, `KNOWN_BUILDING_NAMES`, `CUSTOM_BUILDING_CENTERS`, building photos array
 
 #### Step 1.2: Extract CSS Stylesheets
 Extract ~3,860 lines of CSS from `<style>` tags into modular stylesheets under `styles/`:
-- [NEW] [`styles/base.css`](file:///c:/Users/LGU-SanPedro/Downloads/map/styles/base.css): CSS reset, font imports (`Inter`), CSS variables (`--primary`, `--safe-top`), map canvas layout, toast alerts.
-- [NEW] [`styles/kiosk.css`](file:///c:/Users/LGU-SanPedro/Downloads/map/styles/kiosk.css): Left glass sidebar, search bar, directory items, building information panel, floating camera control toolbar.
-- [NEW] [`styles/phone.css`](file:///c:/Users/LGU-SanPedro/Downloads/map/styles/phone.css): Draggable bottom sheet (`peek`, `half`, `full`), top turn-by-turn navigation HUD, GPS permission prompt banner, mobile recenter floating action button.
-- [NEW] [`styles/components.css`](file:///c:/Users/LGU-SanPedro/Downloads/map/styles/components.css): Map markers (building badges, section labels, entrance arrows, destination flags, kiosk pin), color picker modal, photo mosaic and lightbox, QR code handoff card.
-- [NEW] [`styles/avatar.css`](file:///c:/Users/LGU-SanPedro/Downloads/map/styles/avatar.css): `.route-walker-avatar`, claymation stepped keyframes (`steps(4)`/`steps(6)`), squash-and-stretch torso, chunky limbs, contact shadow, dust clouds `💨`, speed lines `⚡`, speed classes (`1x`, `2x`, `4x`, `6x`).
+- [NEW] [`styles/base.css`](styles/base.css): CSS reset, font imports (`Inter`), CSS variables (`--primary`, `--safe-top`), map canvas layout, toast alerts.
+- [NEW] [`styles/kiosk.css`](styles/kiosk.css): Left glass sidebar, search bar, directory items, building information panel, floating camera control toolbar.
+- [NEW] [`styles/phone.css`](styles/phone.css): Draggable bottom sheet (`peek`, `half`, `full`), top turn-by-turn navigation HUD, GPS permission prompt banner, mobile recenter floating action button.
+- [NEW] [`styles/components.css`](styles/components.css): Map markers (building badges, section labels, entrance arrows, destination flags, kiosk pin), color picker modal, photo mosaic and lightbox, QR code handoff card.
+- [NEW] [`styles/avatar.css`](styles/avatar.css): `.route-walker-avatar`, claymation stepped keyframes (`steps(4)`/`steps(6)`), squash-and-stretch torso, chunky limbs, contact shadow, dust clouds `💨`, speed lines `⚡`, speed classes (`1x`, `2x`, `4x`, `6x`).
 
 #### Step 1.3: Extract JavaScript Modules
 Extract the ~4,940 lines of JavaScript into dedicated single-responsibility ES modules:
 
-1. [NEW] [`js/config.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/js/config.js):
+1. [NEW] [`js/config.js`](js/config.js):
    - Access token, center coordinates, default camera presets (`DEFAULT_MAP_VIEW`, `VIEWS`, `INTRO_START_VIEW`), `IDLE_TIMEOUT`.
-2. [NEW] [`js/state.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/js/state.js):
+2. [NEW] [`js/state.js`](js/state.js):
    - Central mutable reactive state container:
      ```javascript
      export const state = {
@@ -179,33 +179,33 @@ Extract the ~4,940 lines of JavaScript into dedicated single-responsibility ES m
          savedBuildingColors: {}
      };
      ```
-3. [NEW] [`js/api.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/js/api.js):
+3. [NEW] [`js/api.js`](js/api.js):
    - REST API requests: `fetchKioskPin()`, `saveKioskPin(coords)`, `fetchTunnelUrl()`, `fetchBuildingColors()`, `fetchRoadNetwork()`.
-4. [NEW] [`js/map.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/js/map.js):
+4. [NEW] [`js/map.js`](js/map.js):
    - Mapbox instance initialization, raster satellite source, vector building 3D extrusions, boundary masking, section polygon fills, terrain toggle, Mapbox standard style transitions.
-5. [NEW] [`js/markers.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/js/markers.js):
+5. [NEW] [`js/markers.js`](js/markers.js):
    - 3D building labels creation, collision detection, route corridor label decluttering (`declutterLabelsForRoute()`, `restoreLabels()`), entrance arrow markers.
-6. [NEW] [`js/routing.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/js/routing.js):
+6. [NEW] [`js/routing.js`](js/routing.js):
    - Graph builder `buildRoadGraph()`, Dijkstra implementation `findShortestPath()`, route computation `computeRouteFromKiosk()`, route layers (`route-glow`, `route-casing`, `route-line`, `route-traveled-line`), `drawRoute()`, `clearRoute()`.
-7. [NEW] [`js/steps.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/js/steps.js):
+7. [NEW] [`js/steps.js`](js/steps.js):
    - `buildSteps()` calculating bearing delta angles, turn-by-turn banner update, step list DOM rendering (`renderStepsList()`, `renderPhoneStepsList()`).
-8. [NEW] [`js/avatar.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/js/avatar.js):
+8. [NEW] [`js/avatar.js`](js/avatar.js):
    - Claymation avatar DOM and SVG generation, `setRouteSpeed(multiplier)`, screen-relative facing flip logic (`map.project()`), stepped animation control, arrival celebration hop and idle states.
-9. [NEW] [`js/kiosk-ui.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/js/kiosk-ui.js):
+9. [NEW] [`js/kiosk-ui.js`](js/kiosk-ui.js):
    - Sidebar directory rendering, live search filter, building info panel (`showBuildingPanel()`), category filter chips, settings chips (trees, buildings, numbers, boundary), QR handoff card generator.
-10. [NEW] [`js/kiosk-camera.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/js/kiosk-camera.js):
+10. [NEW] [`js/kiosk-camera.js`](js/kiosk-camera.js):
     - Camera toolbar modes (`follow`, `3D`, `2D`, `free`), orbit animation around selected building, 45s idle screensaver attractor loop.
-11. [NEW] [`js/phone-sheet.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/js/phone-sheet.js):
+11. [NEW] [`js/phone-sheet.js`](js/phone-sheet.js):
     - Draggable bottom sheet snap transitions (`peek`, `half`, `full`), phone building details form, photo gallery mosaic and lightbox, phone directory search.
-12. [NEW] [`js/phone-gps.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/js/phone-gps.js):
+12. [NEW] [`js/phone-gps.js`](js/phone-gps.js):
     - Device orientation compass sensor binding, flashlight beam cone, GPS permission banner handlers, initial GPS watch registration.
-13. [NEW] [`js/admin.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/js/admin.js):
+13. [NEW] [`js/admin.js`](js/admin.js):
     - "You Are Here" kiosk pin unlocking and drag-and-drop relocation with MySQL persistence, custom building color picker eyedropper and saving.
-14. [NEW] [`js/main.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/js/main.js):
+14. [NEW] [`js/main.js`](js/main.js):
     - Central initialization point, event delegation listeners (replacing inline `onclick` attributes), URL query parameter router (`?dest=...`).
 
 #### Step 1.4: Refactor index.html
-- [MODIFY] [`index.html`](file:///c:/Users/LGU-SanPedro/Downloads/map/index.html):
+- [MODIFY] [`index.html`](index.html):
   - Replace `<style>` block with `<link rel="stylesheet">` tags pointing to `styles/*.css`.
   - Replace inline `onclick="..."` with `data-action="..."` attributes.
   - Replace monolithic `<script>` block with `<script type="module" src="js/main.js"></script>`.
@@ -239,8 +239,8 @@ Extract the ~4,940 lines of JavaScript into dedicated single-responsibility ES m
    - Change desktop queries `@media (min-width: 769px)` to `body.mode-kiosk` selectors.
    - Result: A mobile device rotated into landscape orientation **stays in phone mode**, keeping the active GPS tracking and bottom sheet without breaking.
 4. Update launch scripts:
-   - [MODIFY] [`start_kiosk.bat`](file:///c:/Users/LGU-SanPedro/Downloads/map/start_kiosk.bat): change URLs to `http://localhost:8080/?mode=kiosk`.
-   - [MODIFY] [`start_kiosk_silent.vbs`](file:///c:/Users/LGU-SanPedro/Downloads/map/start_kiosk_silent.vbs): verify argument pass-through.
+   - [MODIFY] [`start_kiosk.bat`](start_kiosk.bat): change URLs to `http://localhost:8080/?mode=kiosk`.
+   - [MODIFY] [`start_kiosk_silent.vbs`](start_kiosk_silent.vbs): verify argument pass-through.
 
 ---
 

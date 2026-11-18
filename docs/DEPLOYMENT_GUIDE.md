@@ -74,7 +74,7 @@ The server uses `path.join(__dirname, 'LARES v1.mbtiles')`. Placing the file ins
 
 ## 4. Database Resilience Architecture
 
-The backend ([server.js](file:///c:/Users/LGU-SanPedro/Downloads/map/server.js)) is architected with a **3-tier fail-safe design** so the kiosk will **never crash** or display a `500 Server Error`, even if the database service is stopped or uninstalled:
+The backend ([server.js](server.js)) is architected with a **3-tier fail-safe design** so the kiosk will **never crash** or display a `500 Server Error`, even if the database service is stopped or uninstalled:
 
 ```mermaid
 flowchart TD
@@ -113,11 +113,11 @@ For the production domain deployment:
 
 ### How to Relocate the Kiosk in the Future (If Moved):
 If DA staff ever moves the physical kiosk to another building:
-- Open [pin.json](file:///c:/Users/LGU-SanPedro/Downloads/map/pin.json) on the Server PC and update the coordinates:
+- Open [pin.json](pin.json) on the Server PC and update the coordinates:
   ```json
   { "coordinates": [121.16657, 13.95811], "station": "lares" }
   ```
-- Or launch the internal developer drawing tool ([draw.html](file:///c:/Users/LGU-SanPedro/Downloads/map/draw.html)) locally on the server PC.
+- Or launch the internal developer drawing tool ([draw.html](draw.html)) locally on the server PC.
 
 ---
 
@@ -229,9 +229,9 @@ Kiosk Backend Server running at http://localhost:8080
 ### Step 6: Configure Hands-Free Auto-Boot on Power-On
 To make the kiosk automatically boot if the building ever has a power interruption:
 1. Press `Win + R`, type **`shell:startup`**, and hit Enter.
-2. Create a shortcut to [start_kiosk_silent.vbs](file:///c:/Users/LGU-SanPedro/Downloads/map/start_kiosk_silent.vbs) inside the Startup folder.
+2. Create a shortcut to [start_kiosk_silent.vbs](start_kiosk_silent.vbs) inside the Startup folder.
 3. **Done!** Whenever the PC turns on, it will silently launch the Node backend and open the borderless hardware-accelerated kiosk screen.
 
 ---
 
-*DA-LARES Interactive Campus Map Project • Department of Agriculture Southern Tagalog Integrated Agricultural Research Center (Lipa City, Batangas)*
+*DA-LARES Interactive Campus Map Project • Department of Agriculture Lipa Agricultural Research and Experiment Station (Lipa City, Batangas)*

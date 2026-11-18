@@ -250,11 +250,10 @@ export const BUILDING_SEARCH_ALIASES = {
         'Regional Executive Director (RED)'
     ],
     'admin_building': [
-        'STIARC — Southern Tagalog Integrated Agricultural Research Center',
-        'Southern Tagalog Integrated Agricultural Research Center (STIARC) Multi-Function Administrative Building',
         'Administrative Building',
-        'Administrative and Finance Division (AFD)',
-        'STIARC'
+        'Administrative & Finance Division (AFD)',
+        'Admin Building',
+        'AFD'
     ],
     'amad_building': [
         'AMAD — Agribusiness and Marketing Assistance Division',
@@ -262,9 +261,8 @@ export const BUILDING_SEARCH_ALIASES = {
         'Agri-Business and Marketing Assistance Division'
     ],
     'lares_building': [
-        'LARES — Lipa Agricultural Research and Experiment Station',
-        'Lipa Agricultural Research and Experiment Station (LARES)',
-        'Southern Tagalog Integrated Agricultural Research Center (STIARC)'
+        'LARES — Lipa Agricultural Research & Experiment Station',
+        'Lipa Agricultural Research & Experiment Station (LARES)'
     ],
     'ild_building': [
         'ILD — Integrated Laboratories Division',
@@ -377,32 +375,32 @@ export const BUILDING_SEARCH_ALIASES = {
         'Restroom'
     ],
     'plot22_water_tank': [
-        'LARES — Lipa Agricultural Research and Experiment Station Water Tank',
-        'Lipa Agricultural Research and Experiment Station (LARES) Water Tank'
+        'LARES — Lipa Agricultural Research & Experiment Station Water Tank',
+        'Lipa Agricultural Research & Experiment Station (LARES) Water Tank'
     ],
     'lares_agricultural_supplies_storage': [
-        'LARES — Lipa Agricultural Research and Experiment Station Supplies Storage',
-        'Lipa Agricultural Research and Experiment Station (LARES) Agricultural Supplies Storage'
+        'LARES — Lipa Agricultural Research & Experiment Station Supplies Storage',
+        'Lipa Agricultural Research & Experiment Station (LARES) Agricultural Supplies Storage'
     ],
     'warehouse_1': [
-        'LARES — Lipa Agricultural Research and Experiment Station Fertilizer & Pesticide Storage',
-        'Lipa Agricultural Research and Experiment Station (LARES) Synthetic Fertilizer & Pesticide Storage'
+        'LARES — Lipa Agricultural Research & Experiment Station Fertilizer & Pesticide Storage',
+        'Lipa Agricultural Research & Experiment Station (LARES) Synthetic Fertilizer & Pesticide Storage'
     ],
     'lares_farm_machinery_shed_1': [
-        'LARES — Lipa Agricultural Research and Experiment Station Farm Machinery Shed 1',
-        'Lipa Agricultural Research and Experiment Station (LARES) Farm Machinery Shed 1'
+        'LARES — Lipa Agricultural Research & Experiment Station Farm Machinery Shed 1',
+        'Lipa Agricultural Research & Experiment Station (LARES) Farm Machinery Shed 1'
     ],
     'lares_organic_fertilizer_storage': [
-        'LARES — Lipa Agricultural Research and Experiment Station Organic Fertilizer Storage',
-        'Lipa Agricultural Research and Experiment Station (LARES) Organic Fertilizer Storage'
+        'LARES — Lipa Agricultural Research & Experiment Station Organic Fertilizer Storage',
+        'Lipa Agricultural Research & Experiment Station (LARES) Organic Fertilizer Storage'
     ],
     'warehouse_3': [
-        'LARES — Lipa Agricultural Research and Experiment Station Corn Seed Processing',
-        'Lipa Agricultural Research and Experiment Station (LARES) Corn Seed Processing Facility'
+        'LARES — Lipa Agricultural Research & Experiment Station Corn Seed Processing',
+        'Lipa Agricultural Research & Experiment Station (LARES) Corn Seed Processing Facility'
     ],
     'warehouse_4': [
-        'LARES — Lipa Agricultural Research and Experiment Station Farm Machinery Shed 2',
-        'Lipa Agricultural Research and Experiment Station (LARES) Farm Machinery Shed 2'
+        'LARES — Lipa Agricultural Research & Experiment Station Farm Machinery Shed 2',
+        'Lipa Agricultural Research & Experiment Station (LARES) Farm Machinery Shed 2'
     ]
 };
 
@@ -593,6 +591,10 @@ export function isBuildingMatched(building, query) {
 
     if (matchesSearchText(building.name, normQuery)) return true;
     if (building.desc && matchesSearchText(building.desc, normQuery)) return true;
+    if (building.type && matchesSearchText(building.type, normQuery)) return true;
+    if (building.compactTag && matchesSearchText(building.compactTag, normQuery)) return true;
+    if (building.visualLandmark && matchesSearchText(building.visualLandmark, normQuery)) return true;
+    if (building.keyServices && matchesSearchText(building.keyServices, normQuery)) return true;
 
     const aliases = BUILDING_SEARCH_ALIASES[building.id];
     if (Array.isArray(aliases) && aliases.some(alias => matchesSearchText(alias, normQuery))) {
@@ -637,6 +639,7 @@ export function isPlotZoneMatched(zone, query) {
     if (matchesSearchText(zone.name, normQuery)) return true;
     if (zone.description && matchesSearchText(zone.description, normQuery)) return true;
     if (zone.plotRange && matchesSearchText(zone.plotRange, normQuery)) return true;
+    if (zone.currentCrop && matchesSearchText(zone.currentCrop, normQuery)) return true;
 
     const aliases = PLOT_ZONE_SEARCH_ALIASES[zone.id];
     if (Array.isArray(aliases) && aliases.some(alias => matchesSearchText(alias, normQuery))) {

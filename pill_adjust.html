@@ -204,6 +204,7 @@
         <button class="station-btn" id="btn-lares" onclick="switchStation('lares')">🌾 DA-LARES</button>
         <button class="station-btn" id="btn-qares" onclick="switchStation('qares')">🌱 DA-QARES</button>
         <button class="station-btn active" id="btn-rares" onclick="switchStation('rares')">🌿 DA-RARES</button>
+        <button class="station-btn" id="btn-cares" onclick="switchStation('cares')">🌴 DA-CARES</button>
       </div>
     </div>
 
@@ -249,9 +250,17 @@
         name: 'DA-LARES (Lipa)',
         center: [121.16645, 13.95875],
         zoom: 18.2,
-        endpoint: '/api/lares/buildings',
-        tileUrl: null,
+        endpoint: '/api/buildings',
+        tileUrl: '/api/tiles/{z}/{x}/{y}.png',
         dataFile: 'buildings.json'
+      },
+      cares: {
+        name: 'DA-CARES (Naic)',
+        center: [120.7712, 14.3164],
+        zoom: 17.5,
+        endpoint: null,
+        tileUrl: null,
+        dataFile: null
       }
     };
 
@@ -320,6 +329,10 @@
       markersMap.clear();
 
       const cfg = STATIONS[currentStation];
+      if (!cfg.endpoint) {
+        showToast('ℹ️ DA-CARES is pending field survey — no building footprints yet.');
+        return;
+      }
       try {
         const resp = await fetch(cfg.endpoint + '?t=' + Date.now());
         currentBuildingsData = await resp.json();
@@ -474,6 +487,10 @@
       btn.disabled = true;
 
       const cfg = STATIONS[currentStation];
+      if (!cfg.endpoint) {
+        showToast('ℹ️ DA-CARES is pending field survey — no building footprints yet.');
+        return;
+      }
       try {
         const resp = await fetch(cfg.endpoint, {
           method: 'POST',

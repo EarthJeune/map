@@ -27,6 +27,7 @@ function detectInitialStationId() {
 try {
     if (typeof window !== 'undefined' && window.localStorage) {
         localStorage.removeItem('da_current_station');
+        localStorage.removeItem('da_admin_mode');
     }
 } catch (e) {}
 
@@ -39,7 +40,7 @@ export const state = {
     // Mode & Orientation
     appMode: 'kiosk',
     kioskOrientation: 'landscape',
-    isAdmin: (urlAdminParam === '1' || urlAdminParam === 'true' || (typeof localStorage !== 'undefined' && localStorage.getItem('da_admin_mode') === 'true')),
+    isAdmin: (urlAdminParam === '1' || urlAdminParam === 'true'),
     isLegacyMode: false,
 
     // Map & Style

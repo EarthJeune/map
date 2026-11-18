@@ -13,8 +13,8 @@
         "num": 1,
         "has_3d_model": true,
         "marker_coords": [
-          121.34054276,
-          14.576475
+          121.34054217,
+          14.57644312
         ]
       },
       "geometry": {
@@ -58,7 +58,8 @@
         "marker_coords": [
           121.34065549,
           14.57620905
-        ]
+        ],
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -130,9 +131,10 @@
         "height": 7,
         "min_height": 0,
         "num": 3,
+        "has_3d_model": true,
         "marker_coords": [
-          121.34044987,
-          14.57593327
+          121.34043623,
+          14.5759098
         ]
       },
       "geometry": {
@@ -190,9 +192,10 @@
         "min_height": 0,
         "num": 4,
         "marker_coords": [
-          121.34059446,
-          14.57586305
-        ]
+          121.34057258,
+          14.57586942
+        ],
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -234,8 +237,9 @@
         "num": 5,
         "marker_coords": [
           121.34053863,
-          14.57576479
-        ]
+          14.57577666
+        ],
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -274,7 +278,8 @@
         "station": "rares",
         "height": 4,
         "min_height": 0,
-        "num": 6
+        "num": 6,
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -314,6 +319,7 @@
         "height": 5,
         "min_height": 0,
         "num": 7,
+        "has_3d_model": true,
         "marker_coords": [
           121.34043464,
           14.57548795
@@ -372,7 +378,8 @@
         "station": "rares",
         "height": 3,
         "min_height": 0,
-        "num": 8
+        "num": 8,
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -411,7 +418,8 @@
         "station": "rares",
         "height": 5,
         "min_height": 0,
-        "num": 9
+        "num": 9,
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -450,7 +458,8 @@
         "station": "rares",
         "height": 5,
         "min_height": 0,
-        "num": 10
+        "num": 10,
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -497,7 +506,8 @@
         "station": "rares",
         "height": 5,
         "min_height": 0,
-        "num": 11
+        "num": 11,
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -536,7 +546,8 @@
         "station": "rares",
         "height": 3,
         "min_height": 0,
-        "num": 12
+        "num": 12,
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -575,7 +586,12 @@
         "station": "rares",
         "height": 5,
         "min_height": 0,
-        "num": 13
+        "num": 13,
+        "has_3d_model": true,
+        "marker_coords": [
+          121.34064777,
+          14.57557007
+        ]
       },
       "geometry": {
         "coordinates": [
@@ -630,7 +646,11 @@
         "station": "rares",
         "height": 3,
         "min_height": 0,
-        "num": 13
+        "num": 13,
+        "marker_coords": [
+          121.34064777,
+          14.57557007
+        ]
       },
       "geometry": {
         "coordinates": [
@@ -669,7 +689,8 @@
         "station": "rares",
         "height": 5,
         "min_height": 0,
-        "num": 14
+        "num": 14,
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -708,7 +729,8 @@
         "station": "rares",
         "height": 5,
         "min_height": 0,
-        "num": 15
+        "num": 15,
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -763,7 +785,8 @@
         "station": "rares",
         "height": 5,
         "min_height": 0,
-        "num": 16
+        "num": 16,
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -803,6 +826,7 @@
         "height": 6,
         "min_height": 0,
         "num": 17,
+        "has_3d_model": true,
         "marker_coords": [
           121.34105076,
           14.57610274
@@ -861,7 +885,8 @@
         "station": "rares",
         "height": 5,
         "min_height": 0,
-        "num": 18
+        "num": 18,
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -900,7 +925,8 @@
         "station": "rares",
         "height": 3,
         "min_height": 0,
-        "num": 19
+        "num": 19,
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -939,7 +965,8 @@
         "station": "rares",
         "height": 5,
         "min_height": 0,
-        "num": 20
+        "num": 20,
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -978,7 +1005,8 @@
         "station": "rares",
         "height": 5,
         "min_height": 0,
-        "num": 21
+        "num": 21,
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -1017,7 +1045,8 @@
         "station": "rares",
         "height": 5,
         "min_height": 0,
-        "num": 22
+        "num": 22,
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -1056,7 +1085,8 @@
         "station": "rares",
         "height": 5,
         "min_height": 0,
-        "num": 23
+        "num": 23,
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -1107,7 +1137,8 @@
         "station": "rares",
         "height": 5,
         "min_height": 0,
-        "num": 24
+        "num": 24,
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -1146,7 +1177,8 @@
         "station": "rares",
         "height": 5,
         "min_height": 0,
-        "num": 24
+        "num": 24,
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -1185,7 +1217,8 @@
         "station": "rares",
         "height": 3,
         "min_height": 0,
-        "num": 25
+        "num": 25,
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -1224,7 +1257,8 @@
         "station": "rares",
         "height": 5,
         "min_height": 0,
-        "num": 26
+        "num": 26,
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -1289,9 +1323,10 @@
         "min_height": 0,
         "num": 27,
         "marker_coords": [
-          121.33957746,
-          14.57648317
-        ]
+          121.33957986,
+          14.57649912
+        ],
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -1332,9 +1367,10 @@
         "min_height": 0,
         "num": 28,
         "marker_coords": [
-          121.33953459,
-          14.5765424
-        ]
+          121.33952514,
+          14.57653277
+        ],
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -1375,9 +1411,10 @@
         "min_height": 0,
         "num": 29,
         "marker_coords": [
-          121.33944436,
-          14.57653183
-        ]
+          121.33946117,
+          14.57654224
+        ],
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -1416,7 +1453,8 @@
         "station": "rares",
         "height": 5,
         "min_height": 0,
-        "num": 30
+        "num": 30,
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -1455,7 +1493,8 @@
         "station": "rares",
         "height": 3,
         "min_height": 0,
-        "num": 31
+        "num": 31,
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -1495,9 +1534,10 @@
         "height": 5,
         "min_height": 0,
         "num": 32,
+        "has_3d_model": true,
         "marker_coords": [
-          121.33939318,
-          14.57686182
+          121.3394005,
+          14.57687915
         ]
       },
       "geometry": {
@@ -1537,7 +1577,8 @@
         "station": "rares",
         "height": 5,
         "min_height": 0,
-        "num": 33
+        "num": 33,
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -1577,9 +1618,10 @@
         "height": 5,
         "min_height": 0,
         "num": 34,
+        "has_3d_model": true,
         "marker_coords": [
-          121.3394221,
-          14.57695514
+          121.339424,
+          14.57696274
         ]
       },
       "geometry": {
@@ -1620,9 +1662,10 @@
         "height": 4,
         "min_height": 0,
         "num": 35,
+        "has_3d_model": true,
         "marker_coords": [
-          121.33944284,
-          14.57702585
+          121.33944058,
+          14.57702194
         ]
       },
       "geometry": {
@@ -1666,7 +1709,8 @@
         "marker_coords": [
           121.33984083,
           14.5751789
-        ]
+        ],
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -1709,7 +1753,8 @@
         "marker_coords": [
           121.33984083,
           14.5751789
-        ]
+        ],
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -1752,7 +1797,8 @@
         "marker_coords": [
           121.33984083,
           14.5751789
-        ]
+        ],
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -1795,7 +1841,8 @@
         "marker_coords": [
           121.33984083,
           14.5751789
-        ]
+        ],
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -1838,7 +1885,8 @@
         "marker_coords": [
           121.33984083,
           14.5751789
-        ]
+        ],
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -1881,7 +1929,8 @@
         "marker_coords": [
           121.33984083,
           14.5751789
-        ]
+        ],
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -1948,7 +1997,8 @@
         "marker_coords": [
           121.33984083,
           14.5751789
-        ]
+        ],
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -2007,7 +2057,8 @@
         "marker_coords": [
           121.33984083,
           14.5751789
-        ]
+        ],
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -2046,7 +2097,8 @@
         "station": "rares",
         "height": 5,
         "min_height": 0,
-        "num": 37
+        "num": 37,
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -2085,7 +2137,8 @@
         "station": "rares",
         "height": 5,
         "min_height": 0,
-        "num": 38
+        "num": 38,
+        "has_3d_model": true
       },
       "geometry": {
         "coordinates": [
@@ -2132,7 +2185,12 @@
         "station": "rares",
         "height": 5,
         "min_height": 0,
-        "num": 39
+        "num": 39,
+        "has_3d_model": true,
+        "marker_coords": [
+          121.33753028,
+          14.57648477
+        ]
       },
       "geometry": {
         "coordinates": [
@@ -2171,7 +2229,12 @@
         "station": "rares",
         "height": 5,
         "min_height": 0,
-        "num": 39
+        "num": 39,
+        "has_3d_model": true,
+        "marker_coords": [
+          121.33753028,
+          14.57648477
+        ]
       },
       "geometry": {
         "coordinates": [
@@ -2210,7 +2273,12 @@
         "station": "rares",
         "height": 5,
         "min_height": 0,
-        "num": 39
+        "num": 39,
+        "has_3d_model": true,
+        "marker_coords": [
+          121.33753028,
+          14.57648477
+        ]
       },
       "geometry": {
         "coordinates": [

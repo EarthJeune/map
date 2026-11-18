@@ -45,6 +45,9 @@ __pycache__/
 Building Images/
 Building Images RARES/
 
-# === Temporary Render Outputs & Media Storage ===
+# === Temporary Render Outputs, Dumps & Media Storage ===
 .tempmediaStorage/
 temp/
+*.tmp
+*.bak
+*.sql

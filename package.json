@@ -10,12 +10,16 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@turf/turf": "^7.4.0",
+    "@turf/turf": "6.5.0",
     "cors": "^2.8.6",
     "dotenv": "^18.0.5",
     "express": "^5.2.1",
     "mysql2": "^3.24.4",
+    "nodemailer": "^9.1.1",
     "sqlite3": "^5.1.7",
     "three": "^0.186.1"
+  },
+  "overrides": {
+    "concaveman": "1.2.1"
   }
 }

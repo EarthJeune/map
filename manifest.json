@@ -1,7 +1,7 @@
 {
-  "name": "DA-LARES Wayfinding",
-  "short_name": "DA-LARES",
-  "description": "Interactive 3D Wayfinding and Live GPS Campus Navigation for DA-LARES",
+  "name": "iGUIDE — DA-CALABARZON",
+  "short_name": "iGUIDE",
+  "description": "Interactive Geospatial Unified Information Directory and Explorer for DA-CALABARZON research stations.",
   "start_url": "./index.html?mode=mobile",
   "display": "standalone",
   "background_color": "#0a0f1c",

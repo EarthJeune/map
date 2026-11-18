@@ -7,12 +7,14 @@ import { lucideIcon } from './data/icons.js';
 
 let gpuInfoCache = null;
 let activePixelRatio = 1.0;
+let dynamicResolutionScale = 1.0; // 1.0, 0.85, or 0.75 (adjusted in real time by Auto mode)
 let fpsHistory = [];
 let lastFpsCheckTime = 0;
 let isLowEndHardwareDetected = false;
+let isIntegratedGpuDetected = false;
 let styleGraceUntil = 0;
 const moduleLoadTime = (typeof performance !== 'undefined') ? performance.now() : Date.now();
-const STARTUP_GRACE_MS = 10000; // Ignore startup GLB parsing, shader compile, and intro fly-in
+const STARTUP_GRACE_MS = 4000; // Wait 4s for initial map load before real-time FPS adaptation
 
 export function notifyStyleTransitionGrace(durationMs = 4500) {
     const now = (typeof performance !== 'undefined') ? performance.now() : Date.now();
@@ -107,8 +109,12 @@ export function detectGpuHardware() {
     };
 
     isLowEndHardwareDetected = isLowEnd;
+    isIntegratedGpuDetected = isIntegratedGpu;
+    if (isIntegratedGpu || isLowEnd) {
+        state.lowPerformanceMode = true;
+    }
     const modeLabel = isMobileDevice() ? 'Mobile' : 'Kiosk';
-    console.log(`[Performance] Hardware Profile (${modeLabel}): ${renderer} | Cores: ${cores} | RAM: ~${memory}GB | Integrated GPU: ${isIntegratedGpu ? 'YES (1.0x Native)' : 'NO'} | Low-End Profile: ${isLowEnd ? 'ACTIVE' : 'OFF'}`);
+    console.log(`[Performance] Hardware Profile (${modeLabel}): ${renderer} | Cores: ${cores} | RAM: ~${memory}GB | Integrated GPU: ${isIntegratedGpu ? 'YES (Auto Eco-Tuned)' : 'NO'} | Low-End Profile: ${isLowEnd ? 'ACTIVE' : 'OFF'}`);
     applyPerformanceProfileClass();
     return gpuInfoCache;
 }
@@ -117,7 +123,7 @@ export function applyPerformanceProfileClass() {
     if (typeof document === 'undefined') return;
     const profile = getActivePerformanceProfile();
     const isEco = (profile === 'eco');
-    const isLowPerf = isEco || (profile === 'auto' && (isLowEndHardwareDetected || state.lowPerformanceMode));
+    const isLowPerf = isEco || (profile === 'auto' && (isLowEndHardwareDetected || isIntegratedGpuDetected || state.lowPerformanceMode));
     
     const applyToDoc = () => {
         if (document.body) {
@@ -161,11 +167,10 @@ export function getOptimalPixelRatio() {
             activePixelRatio = 1.0;
         } else {
             // Auto Adaptive (Mobile):
-            if (hardware.isLowEnd || hardware.cores <= 4 || hardware.memory <= 4) {
-                activePixelRatio = 1.0;
-            } else {
-                activePixelRatio = Math.min(nativeDpr, 1.25);
-            }
+            const baseRatio = (hardware.isLowEnd || hardware.cores <= 4 || hardware.memory <= 4 || state.lowPerformanceMode)
+                ? 1.0
+                : Math.min(nativeDpr, 1.25);
+            activePixelRatio = Math.max(0.75, Math.round(baseRatio * dynamicResolutionScale * 100) / 100);
         }
     } else {
         // KIOSK / DESKTOP HARDWARE CALIBRATION:
@@ -173,22 +178,21 @@ export function getOptimalPixelRatio() {
             // Native DPI with anti-aliasing (up to 1.5x)
             activePixelRatio = Math.min(nativeDpr, 1.5);
         } else if (profile === 'eco') {
-            // Kiosk Eco: Strictly 1.0x (optimized for Intel Core i3 / i5 integrated GPUs)
+            // Kiosk Eco: Strictly 1.0x (optimized for Intel Core i3 / i5 & AMD Radeon integrated GPUs)
             activePixelRatio = 1.0;
         } else {
             // Auto Adaptive (Kiosk):
-            if (hardware.isLowEnd || hardware.isIntegratedGpu || window.innerWidth > 1920 || nativeDpr > 1.5) {
-                activePixelRatio = 1.0;
-            } else {
-                activePixelRatio = Math.min(nativeDpr, 1.25);
-            }
+            const baseRatio = (hardware.isLowEnd || hardware.isIntegratedGpu || state.lowPerformanceMode || window.innerWidth > 1920 || nativeDpr > 1.5)
+                ? 1.0
+                : Math.min(nativeDpr, 1.25);
+            activePixelRatio = Math.max(0.75, Math.round(baseRatio * dynamicResolutionScale * 100) / 100);
         }
     }
 
     return activePixelRatio;
 }
 
-// 3. Real-Time Adaptive Performance Engine
+// 3. Real-Time Multi-Tier Adaptive Performance Engine
 export function reportFrameRate(fps) {
     if (typeof fps !== 'number' || isNaN(fps) || fps <= 0) return;
     if (typeof document !== 'undefined' && document.hidden) return;
@@ -203,25 +207,55 @@ export function reportFrameRate(fps) {
     }
 
     fpsHistory.push(fps);
-    if (fpsHistory.length > 8) fpsHistory.shift();
+    if (fpsHistory.length > 6) fpsHistory.shift();
 
-    if (now - lastFpsCheckTime < 2500 || fpsHistory.length < 6) return; // Require sustained samples before evaluating
+    if (now - lastFpsCheckTime < 1500 || fpsHistory.length < 3) return; // Evaluate every 1.5s (3 active samples)
     lastFpsCheckTime = now;
 
     const avgFps = Math.round(fpsHistory.reduce((a, b) => a + b, 0) / fpsHistory.length);
     const profile = getActivePerformanceProfile();
 
-    // In 'auto' mode:
-    // - Only downgrade when sustained FPS drops below 22 FPS (avoids false positives on 30Hz V-sync / power-saver lock)
-    // - Automatically recover if hardware is not low-end and FPS returns to >= 28 FPS
+    // In 'auto' mode, dynamically adapt in 3 tiers so the map never lags:
+    // - Tier 1 (avgFps < 45): Enable low-perf-mode (turns off heavy CSS backdrop-filter blur & infinite marker pulses)
+    // - Tier 2 (avgFps < 34 while in low-perf-mode): Scale WebGL pixelRatio to 0.85x (-28% fragment shader load)
+    // - Tier 3 (avgFps < 25 while at 0.85x): Scale WebGL pixelRatio to 0.75x (-44% fragment shader load)
+    // - Smooth Recovery (avgFps >= 56 for 6 samples): Step pixelRatio back up toward 1.0x without re-enabling laggy blur
     if (profile === 'auto') {
-        if (avgFps < 22 && !state.lowPerformanceMode) {
-            console.warn(`[Performance] Sustained FPS dropped to ${avgFps}. Activating lowPerformanceMode.`);
+        const isCurrentlyLowPerf = isLowEndHardwareDetected || isIntegratedGpuDetected || state.lowPerformanceMode;
+
+        if (avgFps < 45 && !isCurrentlyLowPerf) {
+            console.info(`[Performance] Auto Adaptive Tier 1: Active FPS (${avgFps}) < 45. Disabling heavy glass blur & pulse animations.`);
             state.lowPerformanceMode = true;
             applyPerformanceProfileClass();
-        } else if (avgFps >= 28 && state.lowPerformanceMode && !isLowEndHardwareDetected) {
-            state.lowPerformanceMode = false;
-            applyPerformanceProfileClass();
+            const newRatio = getOptimalPixelRatio();
+            if (state.map && typeof state.map.setPixelRatio === 'function') {
+                try { state.map.setPixelRatio(newRatio); } catch (e) {}
+            }
+            updatePerformanceUI();
+        } else if (avgFps < 34 && isCurrentlyLowPerf && dynamicResolutionScale > 0.85) {
+            dynamicResolutionScale = 0.85;
+            const newRatio = getOptimalPixelRatio();
+            console.info(`[Performance] Auto Adaptive Tier 2: Active FPS (${avgFps}) < 34. Scaling render resolution to ${newRatio.toFixed(2)}x.`);
+            if (state.map && typeof state.map.setPixelRatio === 'function') {
+                try { state.map.setPixelRatio(newRatio); } catch (e) {}
+            }
+            updatePerformanceUI();
+        } else if (avgFps < 25 && isCurrentlyLowPerf && dynamicResolutionScale > 0.75) {
+            dynamicResolutionScale = 0.75;
+            const newRatio = getOptimalPixelRatio();
+            console.info(`[Performance] Auto Adaptive Tier 3: Active FPS (${avgFps}) < 25. Scaling render resolution to ${newRatio.toFixed(2)}x.`);
+            if (state.map && typeof state.map.setPixelRatio === 'function') {
+                try { state.map.setPixelRatio(newRatio); } catch (e) {}
+            }
+            updatePerformanceUI();
+        } else if (avgFps >= 56 && fpsHistory.length >= 6 && dynamicResolutionScale < 1.0) {
+            dynamicResolutionScale = dynamicResolutionScale < 0.85 ? 0.85 : 1.0;
+            const newRatio = getOptimalPixelRatio();
+            console.info(`[Performance] Auto Adaptive Recovery: Sustained ${avgFps} FPS. Restoring render resolution to ${newRatio.toFixed(2)}x.`);
+            if (state.map && typeof state.map.setPixelRatio === 'function') {
+                try { state.map.setPixelRatio(newRatio); } catch (e) {}
+            }
+            updatePerformanceUI();
         }
     }
 }
@@ -231,6 +265,10 @@ export function setPerformanceProfile(profile) {
     if (!profile || !['auto', 'eco', 'high'].includes(profile)) {
         profile = 'auto';
     }
+
+    // Reset dynamic resolution scale when user explicitly switches profiles
+    dynamicResolutionScale = 1.0;
+    fpsHistory = [];
 
     const isMobile = isMobileDevice();
     const key = getProfileStorageKey();
@@ -336,17 +374,26 @@ export function updatePerformanceUI() {
         btnAuto.classList.toggle('active', p === 'auto');
         btnAuto.title = isMobile
             ? 'Smart adaptive balance between battery life and crisp rendering'
-            : 'Automatically calibrate rendering based on GPU detection';
+            : 'Automatically adjusts UI effects and render resolution to prevent lag';
     }
     if (iconAuto) iconAuto.innerHTML = lucideIcon('zap', 16);
     if (nameAuto) nameAuto.textContent = 'Auto';
-    if (subAuto) subAuto.textContent = isMobile ? 'Balanced' : 'Adaptive';
+    if (subAuto) {
+        const isAutoEco = (p === 'auto') && (isLowEndHardwareDetected || isIntegratedGpuDetected || state.lowPerformanceMode);
+        if (p === 'auto' && dynamicResolutionScale < 1.0) {
+            subAuto.textContent = `Scaled ${activePixelRatio.toFixed(2)}x`;
+        } else if (isAutoEco) {
+            subAuto.textContent = 'Eco-Tuned';
+        } else {
+            subAuto.textContent = isMobile ? 'Balanced' : 'Adaptive';
+        }
+    }
 
     if (btnEco) {
         btnEco.classList.toggle('active', p === 'eco');
         btnEco.title = isMobile
             ? 'Locks rendering to 1.0x to maximize battery life and keep device cool'
-            : 'Low-power mode optimized for Intel Core i3 / i5 Integrated Graphics';
+            : 'Low-power mode optimized for Intel Core i3 / i5 & AMD Radeon Integrated Graphics';
     }
     if (iconEco) iconEco.innerHTML = lucideIcon(isMobile ? 'battery-charging' : 'leaf', 16);
     if (nameEco) nameEco.textContent = isMobile ? 'Battery Saver' : 'Kiosk Eco';
@@ -369,7 +416,10 @@ export function updatePerformanceUI() {
         const devLabel = isMobile ? `${lucideIcon('smartphone', 12)} Mobile` : `${lucideIcon('monitor', 12)} Kiosk`;
         const renderer = (hw && hw.renderer) ? hw.renderer : 'Standard';
         const shortGpu = renderer.length > 28 ? renderer.substring(0, 28) + '…' : renderer;
-        descEl.innerHTML = `<strong>Device:</strong> ${devLabel} • <strong>GPU:</strong> ${shortGpu} • <strong>Render:</strong> ${activePixelRatio.toFixed(2)}x`;
+        const autoModeNote = (p === 'auto' && (hw.isIntegratedGpu || hw.isLowEnd || state.lowPerformanceMode))
+            ? ' <span style="color:#10b981;font-weight:700;">(Eco-Tuned)</span>'
+            : '';
+        descEl.innerHTML = `<strong>Device:</strong> ${devLabel} • <strong>GPU:</strong> ${shortGpu} • <strong>Render:</strong> ${activePixelRatio.toFixed(2)}x${autoModeNote}`;
     }
 }
 

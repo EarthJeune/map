@@ -62,6 +62,7 @@ import { stopOrbit } from './idle.js';
 import { updateRouteQR, closeQRZoomModal } from './qr.js';
 
 import { updateOcclusion, resetOcclusion } from './occlusion.js';
+import { updateSidebarToggleIcon } from './sidebar.js';
 
 
 
@@ -2117,8 +2118,21 @@ export function getDirections() {
 
 
     // Close the building panel
-
     document.getElementById('building-panel')?.classList.remove('active');
+
+    // In portrait kiosk mode, default the route menu to folded so the screen shows the clean 3D navigation view (Picture 2)
+    if (document.body.classList.contains('kiosk-portrait')) {
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar) {
+            sidebar.classList.add('collapsed');
+            document.body.classList.add('sidebar-collapsed');
+            if (typeof updateSidebarToggleIcon === 'function') {
+                updateSidebarToggleIcon();
+            } else if (typeof window.updateSidebarToggleIcon === 'function') {
+                window.updateSidebarToggleIcon();
+            }
+        }
+    }
 
 }
 

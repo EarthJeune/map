@@ -2,7 +2,7 @@
 // High-precision road snapping, Kalman-style jitter filtering, haptics, and compass sync
 
 import { BUILDING_DIRECTORY, getBuildingById } from './data/buildings.js';
-import { DA_LARES_OUTER_PERIMETER, QARES_MASK } from './data/geo.js';
+import { DA_LARES_OUTER_PERIMETER, QARES_MASK, RARES_MASK } from './data/geo.js';
 import { lucideIcon } from './data/icons.js';
 import { state } from './data/state.js';
 import { map, stopIntroAnimation } from './map-setup.js';
@@ -37,6 +37,7 @@ class GPSFilter {
         this.lastRawCoord = null;
         this.lastFilteredCoord = null;
         this.lastUpdateTime = 0;
+        this.lastAccuracy = null;
         this.currentSpeedMps = 0;
         this.isStationary = true;
     }
@@ -45,6 +46,7 @@ class GPSFilter {
         this.lastRawCoord = null;
         this.lastFilteredCoord = null;
         this.lastUpdateTime = 0;
+        this.lastAccuracy = null;
         this.currentSpeedMps = 0;
         this.isStationary = true;
     }
@@ -52,14 +54,21 @@ class GPSFilter {
     filter(rawLng, rawLat, accuracy, timestamp) {
         const now = timestamp || Date.now();
         const rawPt = [rawLng, rawLat];
+        const safeAccuracy = Math.max(4, accuracy || 15);
 
         if (!this.lastFilteredCoord) {
             this.lastRawCoord = rawPt;
             this.lastFilteredCoord = rawPt;
             this.lastUpdateTime = now;
+            this.lastAccuracy = safeAccuracy;
             this.currentSpeedMps = 0;
             this.isStationary = true;
             return { coord: rawPt, speed: 0, isStationary: true };
+        }
+
+        // Ignore coarse WiFi/cell fallback fixes when we already have a tight satellite lock
+        if (this.lastAccuracy !== null && this.lastAccuracy <= 20 && safeAccuracy > 45) {
+            return { coord: this.lastFilteredCoord, speed: this.currentSpeedMps, isStationary: this.isStationary };
         }
 
         const dtSec = Math.max(0.2, (now - this.lastUpdateTime) / 1000);
@@ -73,32 +82,42 @@ class GPSFilter {
 
         this.currentSpeedMps = moveDist / dtSec;
 
+        // Snap immediately when a tight satellite fix replaces an earlier coarse fix
+        if (safeAccuracy <= 15 && this.lastAccuracy !== null && this.lastAccuracy > 30) {
+            this.lastFilteredCoord = rawPt;
+            this.lastRawCoord = rawPt;
+            this.lastAccuracy = safeAccuracy;
+            this.isStationary = false;
+            return { coord: this.lastFilteredCoord, speed: this.currentSpeedMps, isStationary: false };
+        }
+
         // Reject GPS teleport spikes (> 15 m/s when accuracy is loose)
-        if (this.currentSpeedMps > 15 && accuracy > 12) {
+        if (this.currentSpeedMps > 15 && safeAccuracy > 12) {
             console.warn('[GPS Filter] Suppressed multipath GPS jump:', Math.round(moveDist), 'm');
             return { coord: this.lastFilteredCoord, speed: this.currentSpeedMps, isStationary: this.isStationary };
         }
 
         // Stationary Deadband: suppress jitter while user is standing still
-        if (moveDist < 1.6 && (this.currentSpeedMps < 0.5 || accuracy > 15)) {
+        if (moveDist < 1.2 && (this.currentSpeedMps < 0.45 || safeAccuracy > 25)) {
             this.isStationary = true;
-            const alpha = 0.08;
+            const alpha = 0.12;
             const lng = this.lastFilteredCoord[0] + (rawLng - this.lastFilteredCoord[0]) * alpha;
             const lat = this.lastFilteredCoord[1] + (rawLat - this.lastFilteredCoord[1]) * alpha;
             this.lastFilteredCoord = [lng, lat];
+            this.lastAccuracy = safeAccuracy;
             return { coord: this.lastFilteredCoord, speed: 0, isStationary: true };
         }
 
         this.isStationary = false;
 
         // Dynamic Confidence Weighting based on satellite accuracy
-        const safeAccuracy = Math.max(5, accuracy || 15);
-        const alpha = Math.min(0.85, Math.max(0.25, 12 / safeAccuracy));
+        const alpha = Math.min(0.88, Math.max(0.30, 12 / safeAccuracy));
 
         const lng = this.lastFilteredCoord[0] + (rawLng - this.lastFilteredCoord[0]) * alpha;
         const lat = this.lastFilteredCoord[1] + (rawLat - this.lastFilteredCoord[1]) * alpha;
         this.lastFilteredCoord = [lng, lat];
         this.lastRawCoord = rawPt;
+        this.lastAccuracy = safeAccuracy;
 
         return {
             coord: this.lastFilteredCoord,
@@ -171,10 +190,12 @@ export function evaluateCampusPerimeter(coord, toleranceMeters = CAMPUS_GATE_BUF
     }
     try {
         const pt = turf.point(coord);
-        const isQares = state.currentStationId === 'qares';
-        const ring = isQares
+        const stationId = state.currentStationId || 'lares';
+        const ring = stationId === 'qares'
             ? (QARES_MASK?.features?.[0]?.geometry?.coordinates?.[1] || DA_LARES_OUTER_PERIMETER)
-            : DA_LARES_OUTER_PERIMETER;
+            : stationId === 'rares'
+                ? (RARES_MASK?.features?.[0]?.geometry?.coordinates?.[1] || DA_LARES_OUTER_PERIMETER)
+                : DA_LARES_OUTER_PERIMETER;
 
         const poly = turf.polygon([ring]);
         if (turf.booleanPointInPolygon(pt, poly)) {
@@ -545,6 +566,9 @@ export function startContinuousTracking(buildingId) {
         (pos) => handleGPSPositionUpdate(pos, buildingId),
         (err) => {
             console.warn('Continuous GPS tracking warning:', err);
+            if (err && err.code === 1) {
+                handleGPSError(err, buildingId);
+            }
         },
         { enableHighAccuracy: true, maximumAge: 0, timeout: 7000 }
     );
@@ -845,13 +869,14 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
     if (!targetBuildingId) targetBuildingId = state.selectedBuildingId;
     const rawLng = pos.coords.longitude;
     const rawLat = pos.coords.latitude;
-    const accuracy = Math.max(5, pos.coords.accuracy || 10);
+    const accuracy = Math.max(4, pos.coords.accuracy || 10);
     const nowTime = Date.now();
+    const fixTimestamp = pos.timestamp || nowTime;
 
     dismissGPSPermissionCard(false);
 
     // 1. Pass raw GPS through Kalman-style Jitter Filter
-    const filterResult = gpsFilter.filter(rawLng, rawLat, accuracy, nowTime);
+    const filterResult = gpsFilter.filter(rawLng, rawLat, accuracy, fixTimestamp);
     const [filteredLng, filteredLat] = filterResult.coord;
     const userCoord = [filteredLng, filteredLat];
     const userPt = turf.point(userCoord);
@@ -884,7 +909,11 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
             const distLabel = perimStatus.distanceOutsideMeters >= 1000
                 ? `${(perimStatus.distanceOutsideMeters / 1000).toFixed(1)} km`
                 : `${Math.round(perimStatus.distanceOutsideMeters)} m`;
-            const stationLabel = state.currentStationId === 'qares' ? 'DA-QARES' : 'DA-LARES';
+            const stationLabel = state.currentStationId === 'qares'
+                ? 'DA-QARES'
+                : state.currentStationId === 'rares'
+                    ? 'DA-RARES'
+                    : 'DA-LARES';
             showMobileToast(`📍 Outside ${stationLabel} (${distLabel} away). Showing campus route from Kiosk — live GPS activates when you enter.`, 4500);
             const kCoords = computeRouteFromKiosk(targetBuildingId);
             state.activeFullRouteCoords = kCoords;

@@ -4,7 +4,7 @@
 
 import { DEFAULT_MAP_VIEW } from './data/config.js';
 
-import { getActiveStationDefaultView } from './data/stations.js';
+import { getActiveStationDefaultView, STATIONS } from './data/stations.js';
 
 import { BUILDING_DIRECTORY, DEFAULT_BUILDING_COLORS, STANDALONE_GATES, getBuildingById } from './data/buildings.js';
 
@@ -1009,17 +1009,58 @@ export function closePhotoLightbox(e) {
 
 // --- System-Wide DASH Welcome & Intro Modal Handlers ---
 
-export function showDashWelcomeModal() {
+let selectedWelcomeStationId = 'lares';
 
-    const modal = document.getElementById('dash-welcome-modal') || document.getElementById('phone-welcome-modal');
-
-    if (!modal) return;
-
-    modal.style.display = 'flex';
-
+export function selectWelcomeStation(stationId) {
+    if (!stationId) return;
+    selectedWelcomeStationId = stationId;
+    const cards = document.querySelectorAll('.dash-welcome-station-card');
+    cards.forEach(card => {
+        card.classList.toggle('active', card.dataset.station === stationId);
+    });
 }
 
+export function updateWelcomeModalActiveStation() {
+    const currentId = selectedWelcomeStationId || (state && state.currentStationId) || 'lares';
+    selectedWelcomeStationId = currentId;
+    const cards = document.querySelectorAll('.dash-welcome-station-card');
+    cards.forEach(card => {
+        const sId = card.dataset.station;
+        card.classList.toggle('active', sId === currentId);
+    });
 
+    const proceedBtn = document.getElementById('dash-proceed-btn');
+    if (proceedBtn) {
+        const btnText = proceedBtn.querySelector('span:first-child');
+        if (btnText) {
+            btnText.textContent = 'Explore Campus';
+        }
+    }
+}
+
+export function goToWelcomeStep(step) {
+    const stepIntro = document.getElementById('dash-welcome-step-intro');
+    const stepStations = document.getElementById('dash-welcome-step-stations');
+    if (!stepIntro || !stepStations) return;
+
+    if (step === 'stations') {
+        stepIntro.style.display = 'none';
+        stepStations.style.display = 'flex';
+        selectedWelcomeStationId = (state && state.currentStationId) || 'lares';
+        updateWelcomeModalActiveStation();
+    } else {
+        stepIntro.style.display = 'flex';
+        stepStations.style.display = 'none';
+    }
+}
+
+export function showDashWelcomeModal(initialStep = 'intro') {
+    const modal = document.getElementById('dash-welcome-modal') || document.getElementById('phone-welcome-modal');
+    if (!modal) return;
+    goToWelcomeStep(initialStep);
+    updateWelcomeModalActiveStation();
+    modal.style.display = 'flex';
+}
 
 export function closeDashWelcomeModal(event) {
     if (event && event.target && event.target.id !== 'dash-welcome-modal' && event.target.id !== 'phone-welcome-modal') return;
@@ -1041,7 +1082,8 @@ export function closeDashWelcomeModal(event) {
     }
 }
 
-export function handleDashWelcomeProceed() {
+export function handleWelcomeProceed() {
+    const targetId = selectedWelcomeStationId || (state && state.currentStationId) || 'lares';
     const modal = document.getElementById('dash-welcome-modal') || document.getElementById('phone-welcome-modal');
     if (modal) {
         modal.classList.add('closing');
@@ -1051,17 +1093,42 @@ export function handleDashWelcomeProceed() {
         }, 260);
     }
 
-    // Play signature cinematic intro fly-in once upon first proceed
-    // (skip generic campus intro if user scanned a specific destination building via QR)
-    if (!state.hasInitialIntroPlayed) {
-        state.hasInitialIntroPlayed = true;
-        if (!state.selectedBuildingId && !state.activeRoute && typeof window.playIntroAnimation === 'function') {
-            window.playIntroAnimation(null, true);
+    const stationsDict = (typeof STATIONS !== 'undefined') ? STATIONS : (window.STATIONS || {});
+    const targetStation = stationsDict[targetId];
+    const urlParams = (typeof window !== 'undefined') ? new URLSearchParams(window.location.search) : null;
+    const isDevOverride = Boolean((state && state.isAdmin) || (urlParams && urlParams.get('dev') === '1'));
+
+    // The second picture (#station-dev-modal) only pops up when clicking "Explore Campus" if the station is under development
+    if (targetStation && targetStation.status === 'under_development' && !isDevOverride) {
+        if (typeof window.showStationDevModal === 'function') {
+            window.showStationDevModal(targetId);
         }
+        return;
     }
 
-    // Note: GPS Location & Compass permissions are requested on-demand when the user
-    // explicitly taps "Guide me live (GPS)" (startPhoneLiveGPS), avoiding premature popups on Proceed.
+    // If selecting a different station, trigger multi-station switch
+    if (state && targetId !== state.currentStationId) {
+        if (typeof window.switchResearchStation === 'function') {
+            window.switchResearchStation(targetId, true);
+        }
+    } else {
+        // Staying on same station (e.g. initial LARES)
+        if (!state.hasInitialIntroPlayed) {
+            state.hasInitialIntroPlayed = true;
+            if (!state.selectedBuildingId && !state.activeRoute && typeof window.playIntroAnimation === 'function') {
+                window.playIntroAnimation(null, true);
+            }
+        }
+    }
+}
+
+export function handleWelcomeSelectStation(stationId) {
+    selectWelcomeStation(stationId);
+    handleWelcomeProceed();
+}
+
+export function handleDashWelcomeProceed() {
+    handleWelcomeProceed();
 }
 
 
@@ -2284,11 +2351,19 @@ window.openPhotoLightbox = openPhotoLightbox;
 
 window.closePhotoLightbox = closePhotoLightbox;
 
+window.selectWelcomeStation = selectWelcomeStation;
+window.handleWelcomeProceed = handleWelcomeProceed;
 window.showDashWelcomeModal = showDashWelcomeModal;
+
+window.goToWelcomeStep = goToWelcomeStep;
 
 window.closeDashWelcomeModal = closeDashWelcomeModal;
 
 window.handleDashWelcomeProceed = handleDashWelcomeProceed;
+
+window.handleWelcomeSelectStation = handleWelcomeSelectStation;
+
+window.updateWelcomeModalActiveStation = updateWelcomeModalActiveStation;
 
 window.showPhoneWelcomeModal = showPhoneWelcomeModal;
 

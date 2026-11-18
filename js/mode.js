@@ -15,22 +15,16 @@ export function detectAppMode() {
         return 'kiosk';
     }
 
-    // 2. Cloudflare Tunnel hostname check:
-    // If accessed via public tunnel (trycloudflare.com), it's overwhelmingly a mobile phone visitor!
-    const host = window.location.hostname || '';
-    if (host.includes('trycloudflare.com') || host.includes('cloudflare')) {
-        return 'phone';
-    }
-
-    // 3. User-Agent mobile detection:
+    // 2. User-Agent mobile detection:
     const isMobileUA = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|Mobile/i.test(navigator.userAgent);
 
-    // 4. Viewport size check:
+    // 3. Viewport size check:
+    // QR codes already pass ?mode=phone explicitly; desktop/kiosk screens (>768px) over Cloudflare tunnels stay in Kiosk Mode
     if (window.innerWidth <= 768 || isMobileUA) {
         return 'phone';
     }
 
-    // 5. Default is kiosk
+    // 4. Default is kiosk
     return 'kiosk';
 }
 

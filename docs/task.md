@@ -19,7 +19,7 @@
 ---
 
 # Agricultural Research Plots Master Plan (45 Calibrated Plots) — [ON HOLD]
-*Status: Kept on hold and fully documented in markdown. All 45 calibrated plots, coordinates, master zones, and phase specs are preserved in [agricultural_plots_master_plan.md](file:///c:/Users/LGU-SanPedro/Downloads/map/docs/agricultural_plots_master_plan.md) and [plot_draw.html](file:///c:/Users/LGU-SanPedro/Downloads/map/plot_draw.html).*
+*Status: Kept on hold and fully documented in markdown. All 45 calibrated plots, coordinates, master zones, and phase specs are preserved in [agricultural_plots_master_plan.md](docs/agricultural_plots_master_plan.md) and [plot_draw.html](plot_draw.html).*
 
 - [x] **Phase 1: Master Delineation & Dynamic Sub-Plot Cuts**
   - [x] True merged outer rectangles (zero middle lines in overview)

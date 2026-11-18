@@ -1,6 +1,6 @@
-# DA-CALABARZON Interactive 3D Research Station Mapping & Wayfinding System — Use Cases
+# iGUIDE — Use Cases
 
-**Document Purpose:** Complete catalog of public user, visitor, station worker, and administrator workflows supported by the **DA-CALABARZON Interactive 3D Research Station Mapping & Wayfinding System** (working title: **DASH**), grounded in the actual functions and files in the codebase and consistent with [`docs/00-system-overview.md`](file:///c:/Users/LGU-SanPedro/Downloads/map/docs/00-system-overview.md) and [`docs/01-modules.md`](file:///c:/Users/LGU-SanPedro/Downloads/map/docs/01-modules.md).
+**Document Purpose:** Complete catalog of public user, visitor, station worker, reviewer, and administrator workflows supported by **iGUIDE** (*Interactive Geospatial Unified Information Directory and Explorer*), grounded in the actual functions and files in the codebase and consistent with [`docs/00-system-overview.md`](docs/00-system-overview.md) and [`docs/01-modules.md`](docs/01-modules.md).
 
 ---
 
@@ -8,8 +8,8 @@
 
 | Use Case ID | Title | Primary Actor(s) | Goal | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **UC-01** | Browse a Building, Gate, or Agricultural Plot (Visitor & Worker View) | Public Online User, Campus Visitor, DA Station Worker / Researcher | Visually explore the 3D campus map or directory list online or on-site and inspect a facility's `.webp` photos, services, agricultural plot boundaries, and sub-plots (with planned plot crop/tree/cycle records for workers). | `IMPLEMENTED` |
-| **UC-02** | Search for a Building, Internal Office, Agricultural Plot, or Category | Public Online User, Campus Visitor, DA Station Worker | Quickly find which building houses a specific division, office, laboratory, conference hall, or which field plot holds a specific commodity zone. | `IMPLEMENTED` |
+| **UC-01** | Browse a Building, Gate, or Agricultural Plot (Visitor & Worker View) | Public Online User, Campus Visitor, DA Station Worker / Researcher | Visually explore the 3D campus map or directory list online or on-site and inspect a facility's `.webp` photos, services, agricultural plot boundaries, sub-plots, and live MySQL plot crop/tree/cycle records for workers. | `IMPLEMENTED` |
+| **UC-02** | Search for a Building, Internal Office, Agricultural Plot, Planted Crop, or Category | Public Online User, Campus Visitor, DA Station Worker | Quickly find which building houses a specific division, office, laboratory, conference hall, or which field plot holds a specific commodity zone or planted crop (`current_crop`). | `IMPLEMENTED` |
 | **UC-03** | Get Walking Directions (Online Preview or Lobby Kiosk) | Public Online User, Campus Visitor, DA Station Worker | Compute and view the shortest pedestrian route and landmark turn-by-turn steps from the starting pin to any building or plot entrance. | `IMPLEMENTED` |
 | **UC-04** | Watch the 3D Route Walkthrough and Change Speed or Camera View | Public Online User, Campus Visitor | Preview the walk in 3D using the animated avatar with X-ray building transparency and adjust playback speed (`1x`–`6x`) or camera angle. | `IMPLEMENTED` |
 | **UC-05** | Take the Route to a Phone via QR Code | Campus Visitor, DA Station Worker | Transfer a selected building, office, or active walking route from the kiosk screen to a personal smartphone. | `IMPLEMENTED` |
@@ -17,9 +17,9 @@
 | **UC-07** | Replay or Cancel a Route | Public Online User, Campus Visitor | Restart the animated walking preview from the beginning or exit navigation to look for another destination. | `IMPLEMENTED` |
 | **UC-08** | Arrive at the Destination | Campus Visitor | Receive visual (and mobile haptic) confirmation upon reaching the destination, followed by automatic or manual reset. | `IMPLEMENTED` |
 | **UC-09** | Idle / Screensaver Auto-Reset & Thermal Rest | System Timer (triggered after Visitor leaves Kiosk) | Automatically clear abandoned kiosk sessions after 45 seconds of inactivity and enter a 3D attract loop with 5-minute thermal rest. | `IMPLEMENTED` |
-| **UC-10** | Customize Map Layers, Lighting, 1-Finger Orbit, and Performance | Public Online User, Campus Visitor, DA Station Worker, Administrator | Toggle 3D layers, switch Drone vs. Mapbox 3D views, toggle Full Pill vs. Compact Number labels, enable 1-Finger Orbit accessibility mode, or select Eco/High performance. | `IMPLEMENTED` |
-| **UC-11** | Switch Research Station (`DA-LARES`, `DA-QARES`, `DA-RARES`, `DA-CARES`) & View Deployed "Under Development" Notice | Public Online User, DA Staff, Administrator | Switch between the 4 DA-CALABARZON research stations—exploring flagship **DA-LARES** live while viewing the official *"Station Under Development"* modal for QARES, RARES, and CARES in public deployed mode (or inspecting their live development layers on `localhost`). | `IMPLEMENTED` |
-| **UC-12** | Admin Updates (Move Kiosk Pin, Calibrate Drone Map, Adjust Pills, Edit Colors & Geometry) | Administrator, IT / Maintainer | Reposition the `"You Are Here"` pin, align 3D models to drone imagery, adjust floating marker pills, customize roof/badge colors, or edit polygons, roads, and plots. | `IMPLEMENTED` |
+| **UC-10** | Customize Map Layers, Lighting, 1-Finger Orbit, and Performance | Public Online User, Campus Visitor, DA Station Worker, Administrator | Toggle 3D layers, switch Drone vs. Mapbox 3D views, toggle Full Pill vs. Compact Number labels, enable 1-Finger Orbit accessibility mode, or select Auto/Eco/High performance. | `IMPLEMENTED` |
+| **UC-11** | Switch Research Station (`DA-LARES`, `DA-QARES`, `DA-RARES`, `DA-CARES`) & View Deployed "Under Development" Notice | Public Online User, DA Staff, Administrator | Switch between the 4 DA-CALABARZON research stations—exploring flagship **DA-LARES** live while viewing the official *"Station Under Development"* modal for stations marked `under_dev` in MySQL (or toggling their live status in `/admin`). | `IMPLEMENTED` |
+| **UC-12** | Web `/admin` Portal CRUD, Hashed Login & Live Cross-Tab Sync | Administrator, IT / Maintainer, Farm Superintendent | Sign into `/admin` (`admin.html`) with hashed credentials to manage the 11-table MySQL database (`kiosk`), drag the `"You Are Here"` pin, upload `.webp` photos, edit internal offices, update plot crops/tree counts, and sync open 3D Map tabs in real time. | `IMPLEMENTED` |
 
 ---
 
@@ -75,7 +75,7 @@
 - **Title:** Get Walking Directions (Online Preview or Lobby Kiosk)
 - **Actor:** Public Online User, Campus Visitor, DA Station Worker
 - **Goal:** Calculate the shortest pedestrian route from the `"📍 You Are Here"` pin to a target building or agricultural plot and view step-by-step walking instructions.
-- **Preconditions:** `roads.json` is loaded and `state.ROAD_GRAPH` (2,678 nodes) is built (`buildRoadGraph()` in `js/routing.js`). A building or plot is selected.
+- **Preconditions:** `roads.json` is loaded and `state.ROAD_GRAPH` (2,668 nodes) is built (`buildRoadGraph()` in `js/routing.js`). A building or plot is selected.
 - **Main Steps:**
   1. In the Detail Drawer (`#building-panel`), the user taps the green **Get Directions** button (`onclick="navigateTo(selectedBuildingId)"`).
   2. `navigateTo(buildingId)` (`js/walker.js`) stops any active inspection orbit, closes the right detail drawer, locks map markers to show only the origin and destination (`setRouteMarkerLock()` in `js/markers.js`), and calls `computeRouteFromKiosk(building)` (`js/routing.js`).
@@ -249,26 +249,28 @@
   3. The user clicks **Stay on DA-LARES** (`closeStationDevModal()`), returning seamlessly to the live DA-LARES map.
 - **Alternative Paths:**
   - **A1 — Developer Workstation Mode (`localhost` — `isDeployedMode() === false`):** On the local authoring workstation, selecting **DA-RARES** or **DA-QARES** flies the camera directly to Tanay, Rizal or Tiaong, Quezon, loads the station's `.mbtiles` drone orthomosaic, footprints, plots, and roads, and toggles the station-isolated 3D model layers (`lares-3d-models-layer` ↔ `rares-3d-models-layer` / `qares-3d-models-layer`) with zero data loss when switching back to DA-LARES.
-- **Result:** Public users clearly see that the platform serves all 4 DA-CALABARZON research stations while interacting solely with the 100%-complete **DA-LARES** campus during the initial launch.
+- **Result:** Public users clearly see that the platform serves all 4 DA-CALABARZON research stations while interacting with the completed **DA-LARES** campus (49 custom 3D models, 47 offices, 45 field plots) during the initial launch.
 - **Modules Involved:** `js/stations.js`, `js/sidebar.js`, `js/map-setup.js`, `js/data/stations.js`, `server.js`.
 - **Status:** `IMPLEMENTED`
 
 ---
 
-### UC-12: Admin Updates (Move Kiosk Pin, Calibrate Drone Map, Adjust Pills, Edit Colors & Geometry)
+### UC-12: Web `/admin` Portal CRUD, Hashed Login & Live Cross-Tab Sync
 
 - **ID:** `UC-12`
-- **Title:** Admin Updates (Move Kiosk Pin, Calibrate Drone Map, Adjust Pills, Edit Colors & Geometry)
-- **Actor:** System Administrator, IT / Maintainer
-- **Goal:** Update the physical `"You Are Here"` kiosk location, fine-tune the alignment between 3D models and aerial drone imagery, adjust floating marker pills, customize building roof/badge colors, or edit building footprints, roads, plots, and trees.
-- **Preconditions:** The administrator opens the app via `start_admin.bat` (`http://localhost:8080/?admin=1`), presses `Alt + Shift + A` (`toggleAdminMode()` in `js/app.js`), or opens one of the standalone authoring pages (`draw.html`, `road_draw.html`, `plot_draw.html`, `tree_draw.html`, `pill_adjust.html`).
+- **Title:** Web `/admin` Portal CRUD, Hashed Login & Live Cross-Tab Sync
+- **Actor:** System Administrator, IT / Maintainer, Farm Superintendent
+- **Goal:** Securely manage the 11-table MySQL database (`kiosk`)—including station deployment statuses, the `"You Are Here"` kiosk pin, building descriptions, multi-angle `.webp` photos, internal offices, and live worker plot records (planted crop/variety, tree counts, and perennial/seasonal cycles)—with instant live synchronization across open 3D Map tabs.
+- **Preconditions:** The administrator opens `http://localhost:8080/admin` (`admin.html`) and signs in with their username and password, which are verified against hashed credentials in the **`admin_users` MySQL table** (`POST /api/admin/login` in `database/admin_api.js`).
 - **Main Steps:**
-  1. **Move the Kiosk Pin (`js/idle.js`):** Drag the unlocked `"📍 You Are Here 🔓"` badge to the new lobby position; `repositionActiveKioskPin(newCoords)` saves to `POST /api/pin` (MySQL + `pin.json`).
-  2. **Edit Building Roof & Marker Badge Colors (`js/building-panel.js`):** Open any building drawer in Admin Mode, pick a new Roof or Badge Color (`previewColor()`), and click **Save Colors** (`saveCurrentColor()` → `POST /api/colors`).
-  3. **Calibrate Drone Orthomosaic Alignment (`js/drone-calibration.js`):** Click **Drone Calibration** (`Alt + Shift + D`), nudge all 3D models, footprints, markers, and boundaries in real time (`applyDroneOffset()`), and click **Save Offset** (`POST /api/drone-offset`).
-  4. **Edit Building, Road, Plot, Pill, or Tree Geometry (Standalone Editors):** Open `draw.html`, `road_draw.html`, `plot_draw.html`, `tree_draw.html`, or `pill_adjust.html` to visually edit campus geometries over the drone map and save directly to disk.
-- **Result:** Updated kiosk pin coordinates, color schemes, drone alignment offsets, pill positions, or campus geometries are persisted on the server and reflected immediately on reload.
-- **Modules Involved:** `js/app.js`, `js/idle.js`, `js/building-panel.js`, `js/drone-calibration.js`, `draw.html`, `road_draw.html`, `plot_draw.html`, `tree_draw.html`, `pill_adjust.html`, `server.js`.
+  1. **Switch Station Status or Move the `"You Are Here"` Kiosk Pin (`/admin` Modules 1 & 2):** Toggle any station between `Live on Public Map` and `Under Development`, or drag the red pin on the interactive satellite map and click **Save Kiosk Pin to MySQL** (`PUT /api/admin/stations/:id`).
+  2. **Edit Buildings & Upload Multi-Angle `.webp` Photos (`/admin` Module 3):** Select any building to edit its name, category, *"How to Spot It"*, or *"What's Inside"*, or upload additional `.webp` photos (`POST /api/admin/buildings/:id/images`).
+  3. **Manage Internal Offices (`/admin` Module 4):** Add, edit, or delete internal offices (`building_offices`). Buildings with `0` offices automatically hide the Offices card on the public map; `1` office shows a singular header; `2+` offices show a count badge.
+  4. **Update Worker Agronomic Plot Intelligence (`/admin` Module 5):** Update any plot's **Planted Crop / Variety (`current_crop`)**, **Tree / Plant Count (`tree_count`)**, **Planting Cycle** (`Perennial`, `Annual`, or `Monthly / Seasonal`), **Status**, and **Worker Notes** (`PUT /api/admin/plots/:id`).
+  5. **Real-Time Cross-Tab Sync (`BroadcastChannel`):** Every save in `/admin` fires `notifyLiveMapSync()`, causing any open 3D Map tab (`syncDatabaseBootstrap()` in `js/app.js`) to immediately refresh its directory, live search bar index, and map pins without reloading the page.
+  6. **Edit Building, Road, Plot, Pill, or Tree Geometry (Standalone Editors):** Open `draw.html`, `road_draw.html`, `plot_draw.html`, `tree_draw.html`, or `pill_adjust.html` from the `/admin` sidebar to visually edit campus geometries over the drone map.
+- **Result:** All database changes are persisted in the 11-table MySQL `kiosk` database (also viewable in phpMyAdmin), logged in `admin_audit_logs`, and reflected instantaneously in open 3D Map tabs.
+- **Modules Involved:** `admin.html`, `database/admin_api.js`, `app/Http/Controllers/AdminCrudController.php`, `js/app.js` (`syncDatabaseBootstrap`), `js/drone-calibration.js`, `draw.html`, `road_draw.html`, `plot_draw.html`, `tree_draw.html`, `pill_adjust.html`, `server.js`.
 - **Status:** `IMPLEMENTED`
 
 ---

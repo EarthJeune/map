@@ -25,6 +25,9 @@ export function handleLayerToggle(type, isChecked) {
 
     if (type === 'buildings') {
         state.buildingsVisible = isChecked;
+        try {
+            localStorage.setItem('da_buildings_visible', isChecked ? 'true' : 'false');
+        } catch (e) { }
         const vis = isChecked ? 'visible' : 'none';
         if (currentMap) {
             const currentStation = state.currentStationId || 'lares';
@@ -73,6 +76,9 @@ export function handleLayerToggle(type, isChecked) {
 
     } else if (type === 'numbers' || type === 'labels') {
         state.markersVisible = isChecked;
+        try {
+            localStorage.setItem('da_markers_visible', isChecked ? 'true' : 'false');
+        } catch (e) { }
         const markersShouldShow = isChecked;
         if (document.body) {
             document.body.classList.toggle('labels-hidden', !markersShouldShow);
@@ -134,6 +140,9 @@ export function handleLayerToggle(type, isChecked) {
 
     } else if (type === 'boundary') {
         state.boundaryVisible = isChecked;
+        try {
+            localStorage.setItem('da_boundary_visible', isChecked ? 'true' : 'false');
+        } catch (e) { }
         const vis = isChecked ? 'visible' : 'none';
         if (currentMap) {
             const isMapbox = (state.currentMapStyleMode === 'mapbox');
@@ -299,7 +308,19 @@ export function initMapSettings() {
         setEnvironmentLighting('auto');
     }
 
-    // 3. Restore agricultural plots visibility preference
+    // 3. Restore layer visibility preferences (buildings, markers, boundary, plots)
+    try {
+        const savedBuildings = localStorage.getItem('da_buildings_visible');
+        if (savedBuildings !== null) state.buildingsVisible = (savedBuildings === 'true');
+    } catch (e) { }
+    try {
+        const savedMarkers = localStorage.getItem('da_markers_visible');
+        if (savedMarkers !== null) state.markersVisible = (savedMarkers === 'true');
+    } catch (e) { }
+    try {
+        const savedBoundary = localStorage.getItem('da_boundary_visible');
+        if (savedBoundary !== null) state.boundaryVisible = (savedBoundary === 'true');
+    } catch (e) { }
     try {
         const savedPlots = localStorage.getItem('da_plots_visible');
         if (savedPlots !== null) {
@@ -313,6 +334,20 @@ export function initMapSettings() {
 
     syncLayerToggleCheckboxes();
     updatePerformanceUI();
+
+    // Re-apply saved layer visibility & lighting once the map finishes loading
+    const m = state.map || window.map;
+    if (m && typeof m.once === 'function') {
+        m.once('load', () => {
+            if (state.buildingsVisible === false) handleLayerToggle('buildings', false);
+            if (state.markersVisible === false) handleLayerToggle('numbers', false);
+            if (state.boundaryVisible === false) handleLayerToggle('boundary', false);
+            if (state.plotsVisible === true) handleLayerToggle('plots', true);
+            if (state.lightingMode && state.lightingMode !== 'auto') {
+                setEnvironmentLighting(state.lightingMode);
+            }
+        });
+    }
 
     // 4. Bind Kiosk Performance Profile Button Listeners
     const btnAuto = document.getElementById('perf-btn-auto');

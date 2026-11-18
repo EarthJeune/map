@@ -10,9 +10,18 @@ const os = require('os');
 
 const app = express();
 const port = process.env.PORT || 8080;
+const SERVER_BOOT_ID = Date.now().toString(36);
+const APP_VERSION = '2.6.6';
 
+app.disable('x-powered-by');
+app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    next();
+});
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '25mb' }));
 
 function getLocalIpAddress() {
     try {
@@ -1192,18 +1201,125 @@ app.get('/api/tiles-metadata', (req, res) => {
     });
 });
 
+// Admin & Editor Local-Only Security Guard:
+// - Set ENABLE_ADMIN=false in .env on the 24/7 production Server PC to disable all admin/editor routes.
+// - Even when enabled (e.g. on dev laptop), block requests arriving via internet tunnels/proxies or non-localhost IPs.
+const ADMIN_ENABLED = String(process.env.ENABLE_ADMIN ?? 'true').toLowerCase() !== 'false';
+const REVIEWER_PORTAL_ENABLED = String(process.env.ENABLE_REVIEWER_PORTAL ?? 'true').toLowerCase() !== 'false';
+const ADMIN_ONLY_EXACT_PATHS = new Set([
+    '/admin', '/admin/', '/admin.html',
+    '/draw.html', '/road_draw.html', '/plot_draw.html', '/tree_draw.html', '/pill_adjust.html',
+    '/qares_draw.html', '/qares_road_draw.html', '/qares_boundary_draw.html'
+]);
+const REVIEWER_AUTH_PATHS = new Set([
+    '/api/admin/login', '/api/admin/verify-otp', '/api/admin/resend-otp', '/api/admin/verify', '/api/admin/logout'
+]);
+function isLoopbackRequest(req) {
+    if (req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for'] || req.headers['x-real-ip']) {
+        return false;
+    }
+    const addr = (req.socket && req.socket.remoteAddress) || req.ip || '';
+    return addr === '127.0.0.1' || addr === '::1' || addr === '::ffff:127.0.0.1';
+}
+app.use((req, res, next) => {
+    const lowerPath = decodeURIComponent(req.path || '').toLowerCase();
+    const isReviewerRoute =
+        lowerPath === '/review' ||
+        lowerPath === '/review/' ||
+        lowerPath.startsWith('/api/review/') ||
+        REVIEWER_AUTH_PATHS.has(lowerPath);
+    if (isReviewerRoute) {
+        if (!REVIEWER_PORTAL_ENABLED) {
+            return res.status(403).json({ error: 'Reviewer portal is disabled on this server' });
+        }
+        return next();
+    }
+    const isAdminRoute =
+        ADMIN_ONLY_EXACT_PATHS.has(lowerPath) ||
+        lowerPath === '/api/admin' ||
+        lowerPath.startsWith('/api/admin/');
+    if (isAdminRoute) {
+        if (!ADMIN_ENABLED) {
+            return res.status(403).json({ error: 'Admin interface is disabled on this server' });
+        }
+        if (!isLoopbackRequest(req)) {
+            return res.status(403).json({ error: 'Admin interface is restricted to localhost only' });
+        }
+    }
+    next();
+});
+
+// 10-Table MySQL Admin CRUD API & Public Bootstrap Router
+const createAdminApiRouter = require('./database/admin_api');
+const adminApiRouter = createAdminApiRouter(pool, __dirname);
+app.use('/api', adminApiRouter);
+
+// Live Application & Database Version Endpoint (for automatic Kiosk & Mobile cache/version management)
+app.get('/api/version', async (req, res) => {
+    let dbUpdatedAt = null;
+    try {
+        const rows = await query(`SELECT MAX(created_at) AS latest FROM admin_audit_logs`);
+        if (rows && rows[0] && rows[0].latest) {
+            dbUpdatedAt = rows[0].latest;
+        }
+    } catch (e) {}
+    res.json({
+        version: APP_VERSION,
+        bootId: SERVER_BOOT_ID,
+        dbUpdatedAt
+    });
+});
+
+// Dedicated Admin & Station Reviewer Command Center Routes (/admin, /review)
+app.get(['/admin', '/admin/', '/review', '/review/'], (req, res) => {
+    res.sendFile(path.join(__dirname, 'admin.html'));
+});
+
 // Permanently redirect legacy URLs to upgraded modern 3D map
 app.get(['/legacy.html', '/legacy'], (req, res) => {
     const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
     res.redirect(301, '/' + qs);
 });
 
-// Serve static files (like index.html, assets, etc.) with no-cache for instant development updates
+// Security Guard: Block Inspect-Element / Direct URL access to backend source code, credentials, and raw MBTiles
+const BLOCKED_PATH_PREFIXES = [
+    '/database', '/app', '/config', '/routes', '/tools', '/docs', '/archive', '/renders',
+    '/.env', '/.git', '/.vscode', '/.agents', '/node_modules'
+];
+const BLOCKED_EXACT_FILES = new Set([
+    '/server.js', '/artisan', '/package.json', '/package-lock.json', '/composer.json',
+    '/AGENTS.md', '/README.md'
+]);
+const BLOCKED_EXTENSIONS = /\.(env|mbtiles|php|py|mjs|sh|bat|exe|sql|log|blend|blend1)$/i;
+
+app.use((req, res, next) => {
+    const reqPath = decodeURIComponent(req.path || '');
+    const lowerPath = reqPath.toLowerCase();
+    if (
+        lowerPath.includes('..') ||
+        BLOCKED_EXACT_FILES.has(reqPath) ||
+        BLOCKED_EXACT_FILES.has(lowerPath) ||
+        BLOCKED_EXTENSIONS.test(lowerPath) ||
+        lowerPath.endsWith('.backup.json') ||
+        BLOCKED_PATH_PREFIXES.some(prefix => lowerPath === prefix || lowerPath.startsWith(prefix + '/'))
+    ) {
+        return res.status(403).json({ error: 'Access denied' });
+    }
+    next();
+});
+
+// Serve static files with Smart Tiered HTTP Caching:
+// - 3D GLB models, WebP photos, and fonts are cached with ETag + 24h max-age for zero-lag reloads
+// - HTML, JS, CSS, and JSON validate via ETag on each load so code/data updates take effect immediately
 app.use(express.static(__dirname, {
-    etag: false,
-    maxAge: 0,
-    setHeaders: (res, path) => {
-        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    dotfiles: 'deny',
+    etag: true,
+    setHeaders: (res, filePath) => {
+        if (/\.(webp|png|jpg|jpeg|svg|woff2|ico)$/i.test(filePath)) {
+            res.set('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+        } else {
+            res.set('Cache-Control', 'no-cache, must-revalidate');
+        }
     }
 }));
 
@@ -1271,20 +1387,31 @@ function startFallbackTunnel() {
     }
 }
 
+let tunnelStartTimer = null;
+
 function restartCloudflareTunnel() {
     console.log('[Cloudflare] Tunnel unhealthy or disconnected. Restarting...');
     currentTunnelUrl = '';
+    if (tunnelStartTimer) {
+        clearTimeout(tunnelStartTimer);
+        tunnelStartTimer = null;
+    }
     if (tunnelProcess) {
-        try { tunnelProcess.kill(); } catch (e) {}
+        const oldProc = tunnelProcess;
         tunnelProcess = null;
+        try { oldProc.kill(); } catch (e) {}
     }
     try {
         execSync('taskkill /F /IM cloudflared.exe 2>NUL', { stdio: 'ignore' });
     } catch (e) {}
-    setTimeout(startCloudflareTunnel, 1500);
+    tunnelStartTimer = setTimeout(startCloudflareTunnel, 1500);
 }
 
 function startCloudflareTunnel() {
+    if (tunnelStartTimer) {
+        clearTimeout(tunnelStartTimer);
+        tunnelStartTimer = null;
+    }
     if (process.env.NO_TUNNEL || process.argv.includes('--no-tunnel')) {
         console.log('[Cloudflare] Tunnel disabled via configuration (--no-tunnel or NO_TUNNEL=1).');
         return;
@@ -1312,7 +1439,8 @@ function startCloudflareTunnel() {
     console.log('[Cloudflare] Launching Cloudflare Tunnel for port ' + port + '...');
     lastTunnelError = '';
     try {
-        tunnelProcess = spawn(cloudflaredExe, ['tunnel', '--url', `http://localhost:${port}`]);
+        const spawnedProc = spawn(cloudflaredExe, ['tunnel', '--url', `http://localhost:${port}`]);
+        tunnelProcess = spawnedProc;
 
         const parseTunnelOutput = (data) => {
             const str = data.toString();
@@ -1346,35 +1474,38 @@ function startCloudflareTunnel() {
             }
         };
 
-        tunnelProcess.stdout.on('data', parseTunnelOutput);
-        tunnelProcess.stderr.on('data', parseTunnelOutput);
+        spawnedProc.stdout.on('data', parseTunnelOutput);
+        spawnedProc.stderr.on('data', parseTunnelOutput);
 
-        tunnelProcess.on('exit', (code) => {
+        spawnedProc.on('exit', (code) => {
+            // Ignore stale exit events from a process already replaced/killed by restartCloudflareTunnel()
+            if (tunnelProcess !== spawnedProc) return;
+            tunnelProcess = null;
+
             if (lastTunnelError) {
                 console.log(`[Cloudflare] Tunnel note: ${lastTunnelError}`);
             }
 
             if (lastTunnelError.includes('429')) {
                 consecutive429Count++;
-                // 15-minute cooldown to let Cloudflare rate limit truly reset
                 cloudflareCooldownUntil = Date.now() + 15 * 60 * 1000;
                 console.log(`[Cloudflare] Rate limited (HTTP 429). Pausing Cloudflare retries for 15 minutes to allow cooldown.`);
                 console.log(`[Cloudflare] Engaging immediate fallback tunnel...`);
                 startFallbackTunnel();
-                setTimeout(startCloudflareTunnel, 15 * 60 * 1000);
+                if (!tunnelStartTimer) tunnelStartTimer = setTimeout(startCloudflareTunnel, 15 * 60 * 1000);
             } else {
                 tunnelRetryDelay = Math.min(tunnelRetryDelay * 1.5, 60000);
                 console.log(`[Cloudflare] Tunnel exited with code ${code}. Restarting in ${Math.round(tunnelRetryDelay / 1000)}s...`);
-                setTimeout(startCloudflareTunnel, tunnelRetryDelay);
+                if (!tunnelStartTimer) tunnelStartTimer = setTimeout(startCloudflareTunnel, tunnelRetryDelay);
             }
 
             if (!currentTunnelUrl.includes('.lhr.life')) {
                 currentTunnelUrl = '';
             }
-            tunnelProcess = null;
         });
 
-        tunnelProcess.on('error', (err) => {
+        spawnedProc.on('error', (err) => {
+            if (tunnelProcess !== spawnedProc) return;
             console.error('[Cloudflare] Error launching tunnel:', err.message);
             tunnelProcess = null;
             startFallbackTunnel();

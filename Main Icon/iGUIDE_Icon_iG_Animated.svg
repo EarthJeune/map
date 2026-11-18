@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="46 44 208 208" width="512" height="512">
+  <style>
+    #leaf-left-anim {
+      animation: idleSwayLeafLeft 2.8s ease-in-out infinite;
+    }
+    #leaf-right-anim {
+      animation: idleSwayLeafRight 2.8s ease-in-out infinite;
+    }
+    #pin-anim {
+      animation: idleFloatPin 2.8s ease-in-out infinite;
+    }
+    @keyframes idleSwayLeafLeft {
+      0%, 100% { transform: rotate(0deg) scale(1.0); }
+      50%      { transform: rotate(-6deg) scale(1.03); }
+    }
+    @keyframes idleSwayLeafRight {
+      0%, 100% { transform: rotate(0deg) scale(1.0); }
+      50%      { transform: rotate(6deg) scale(1.03); }
+    }
+    @keyframes idleFloatPin {
+      0%, 100% { transform: translateY(0px) scale(1.0); }
+      50%      { transform: translateY(-5.5px) scale(1.03); }
+    }
+  </style>
+  <g id="iguide-iG-animated">
+    <path d="M1174 34Q936 -27 776 -27Q432 -27 254.5 161.5Q77 350 77 619Q77 902 270.5 1111.0Q464 1320 807 1320Q968 1320 1091 1291L1058 1055Q901 1096 776 1096Q565 1096 461.0 966.5Q357 837 357 650Q357 459 473.5 317.0Q590 175 795 175Q852 175 927 187Q912 298 912 405Q912 513 891 648H1174Q1166 494 1166 338Q1166 225 1174 34Z" transform="translate(112.76,222.00) scale(0.102539,-0.102539)" fill="#16A34A"/>
+    <path d="M395 0H126Q140 207 140 475Q140 741 106 941L394 970Q381 776 381 475Q381 218 395 0Z" transform="translate(62.00,222.00) scale(0.102539,-0.102539)" fill="#10B981"/>
+    <g transform="translate(87.04,118.38)">
+      <path id="leaf-left-anim" d="M 0 0 C -13 0 -27 -6.5 -29 -18.5 C -15 -20.5 -3.5 -12 0 0 Z" fill="#059669"/>
+    </g>
+    <g transform="translate(93.04,118.38)">
+      <path id="leaf-right-anim" d="M 0 0 C 4.5 -15 18.5 -25 33.5 -22 C 30 -6.5 16.5 2 0 0 Z" fill="#10B981"/>
+    </g>
+    <g transform="translate(90.04,101.88)">
+      <path id="pin-anim" d="M 0 0 C -9 -9 -12.80 -18.00 -12.80 -22.50 A 12.80 12.80 0 1 1 12.80 -22.50 C 12.80 -18.00 9 -9 0 0 Z M 4.6 -22.50 A 4.6 4.6 0 1 0 -4.6 -22.50 A 4.6 4.6 0 1 0 4.6 -22.50 Z" fill="#34D399" fill-rule="evenodd"/>
+    </g>
+  </g>
+</svg>

@@ -28,6 +28,7 @@ import {
     BUILDING_DIRECTORY,
     CUSTOM_3D_BUILDINGS
 } from './data/buildings.js';
+if (typeof window !== 'undefined') window.CUSTOM_3D_BUILDINGS = CUSTOM_3D_BUILDINGS;
 
 import { state } from './data/state.js';
 
@@ -453,7 +454,7 @@ export function setupLayers() {
 
     // Strip unused Mapbox base style layers to keep style graph ultra-lean (~110 layers removed)
     // We provide our own Google satellite tiles + custom layers, so nothing from the base is needed.
-    const customPrefixes = ['sec-', 'lares-', 'qares-', 'route-', 'google-', 'drone-', '3d-', 'gps-', 'phone-', 'plots-'];
+    const customPrefixes = ['sec-', 'lares-', 'qares-', 'rares-', 'cares-', 'route-', 'google-', 'drone-', '3d-', 'gps-', 'phone-', 'plots-'];
     const currentLayers = map.getStyle().layers || [];
     currentLayers.forEach(layer => {
         const isCustom = customPrefixes.some(p => layer.id.startsWith(p));
@@ -757,6 +758,27 @@ export function setupMapboxStandardLayers() {
     setMapStyleMode(state.currentMapStyleMode);
 }
 
+/** Move a layer to the top only when it is not scoped to a Mapbox Standard slot. */
+export function safeMoveLayer(m, layerId) {
+    try {
+        if (!m) return;
+        const layer = m.getLayer(layerId);
+        if (!layer) return;
+        const style = m.getStyle();
+        if (!style || !Array.isArray(style.layers)) return;
+        if (Array.isArray(style.imports) && style.imports.length > 0) {
+            return;
+        }
+        const styleLayer = style.layers.find(l => l.id === layerId);
+        const slot = styleLayer?.slot
+            || layer.slot
+            || (typeof layer.serialize === 'function' ? layer.serialize().slot : null);
+        if (!slot) {
+            m.moveLayer(layerId);
+        }
+    } catch (e) {}
+}
+
 export function setupStation3DModels(map, stationId = 'lares', isStandardMode = false) {
     if (!CUSTOM_3D_BUILDINGS || typeof CUSTOM_3D_BUILDINGS !== 'object') return;
     const targetStation = stationId || state.currentStationId || 'lares';
@@ -804,27 +826,43 @@ export function setupStation3DModels(map, stationId = 'lares', isStandardMode = 
             map.addSource(sourceId, {
                 type: 'geojson',
                 tolerance: 0,
-                buffer: 0,
-                maxzoom: 24,
+                buffer: 64,
+                maxzoom: 16,
                 data: {
                     type: 'FeatureCollection',
                     features: features
                 }
             });
+        } else {
+            try {
+                map.getSource(sourceId).setData({
+                    type: 'FeatureCollection',
+                    features: features
+                });
+            } catch (e) {}
         }
 
         // Also maintain lares-3d-buildings-models-source alias for LARES backwards-compatibility with drone calibration
-        if (targetStation === 'lares' && !map.getSource('lares-3d-buildings-models-source')) {
-            map.addSource('lares-3d-buildings-models-source', {
-                type: 'geojson',
-                tolerance: 0,
-                buffer: 0,
-                maxzoom: 24,
-                data: {
-                    type: 'FeatureCollection',
-                    features: features
-                }
-            });
+        if (targetStation === 'lares') {
+            if (!map.getSource('lares-3d-buildings-models-source')) {
+                map.addSource('lares-3d-buildings-models-source', {
+                    type: 'geojson',
+                    tolerance: 0,
+                    buffer: 64,
+                    maxzoom: 16,
+                    data: {
+                        type: 'FeatureCollection',
+                        features: features
+                    }
+                });
+            } else {
+                try {
+                    map.getSource('lares-3d-buildings-models-source').setData({
+                        type: 'FeatureCollection',
+                        features: features
+                    });
+                } catch (e) {}
+            }
         }
 
         const isCurrentStation = (state.currentStationId || 'lares') === targetStation;
@@ -859,7 +897,7 @@ export function setupStation3DModels(map, stationId = 'lares', isStandardMode = 
         } else {
             try {
                 map.setLayoutProperty(layerId, 'visibility', shouldBeVisible ? 'visible' : 'none');
-                map.moveLayer(layerId);
+                safeMoveLayer(map, layerId);
             } catch (e) {}
         }
 
@@ -891,15 +929,13 @@ export function setupStation3DModels(map, stationId = 'lares', isStandardMode = 
             }
             map.addLayer(transLayerDef);
         } else {
-            try {
-                map.moveLayer(transLayerId);
-            } catch (e) {}
+            safeMoveLayer(map, transLayerId);
         }
 
         // If target station is active, guarantee its 3D model layer is elevated to the top
         if (isCurrentStation) {
-            try { map.moveLayer(layerId); } catch (e) {}
-            try { map.moveLayer(transLayerId); } catch (e) {}
+            safeMoveLayer(map, layerId);
+            safeMoveLayer(map, transLayerId);
         }
 
         // For backwards compatibility: if 3d-buildings-models-layer is queried by legacy scripts, alias LARES to it
@@ -1054,9 +1090,25 @@ export function revealMap() {
     mapReady = true;
     state.mapReady = true;
     window.mapReady = true;
-    document.getElementById('loading-overlay').classList.add('hidden');
-    setTimeout(() => document.getElementById('sidebar').classList.add('visible'), 500);
-    setTimeout(() => document.getElementById('coords-badge').classList.add('visible'), 800);
+
+    const minSplashMs = 4400;
+    const elapsed = window.__iguideSplashStart ? (Date.now() - window.__iguideSplashStart) : minSplashMs;
+    const waitMs = Math.max(0, minSplashMs - elapsed);
+
+    setTimeout(() => {
+        const overlay = document.getElementById('loading-overlay');
+        if (overlay) {
+            overlay.classList.add('hidden');
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                const splashLogo = document.getElementById('map-splash-logo');
+                if (splashLogo) splashLogo.removeAttribute('src');
+            }, 800);
+        }
+    }, waitMs);
+
+    setTimeout(() => document.getElementById('sidebar').classList.add('visible'), waitMs + 500);
+    setTimeout(() => document.getElementById('coords-badge').classList.add('visible'), waitMs + 800);
 
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('dest')) {
@@ -1249,6 +1301,9 @@ setInterval(syncLightingWithTime, 60000);
 
 export function toggleBuildings(btn) {
     state.buildingsVisible = !state.buildingsVisible;
+    try {
+        localStorage.setItem('da_buildings_visible', state.buildingsVisible ? 'true' : 'false');
+    } catch (e) { }
     if (btn) btn.classList.toggle('active', state.buildingsVisible);
     const chip = document.getElementById('chip-buildings');
     if (chip && chip !== btn) chip.classList.toggle('active', state.buildingsVisible);
@@ -1345,16 +1400,6 @@ export function selectMapStyle(mode) {
 
     notifyStyleTransitionGrace(4500);
 
-    if (mode === 'mapbox') {
-        map.setStyle('mapbox://styles/mapbox/standard', { diff: false });
-    } else {
-        map.setStyle('mapbox://styles/mapbox/satellite-streets-v12', { diff: false });
-    }
-
-    if (typeof window.resetOcclusion === 'function') {
-        window.resetOcclusion();
-    }
-
     map.once('style.load', () => {
         map.jumpTo({
             center: currentCenter,
@@ -1369,6 +1414,16 @@ export function selectMapStyle(mode) {
         }
         setMapStyleMode(mode);
     });
+
+    if (mode === 'mapbox') {
+        map.setStyle('mapbox://styles/mapbox/standard', { diff: false });
+    } else {
+        map.setStyle('mapbox://styles/mapbox/satellite-streets-v12', { diff: false });
+    }
+
+    if (typeof window.resetOcclusion === 'function') {
+        window.resetOcclusion();
+    }
 
     setMapStyleMode(mode);
 }
@@ -1427,6 +1482,9 @@ export function setMapStyleMode(mode) {
     }
 
     removeSectionBadges();
+    if (!map || (typeof map.isStyleLoaded === 'function' && !map.isStyleLoaded())) {
+        return;
+    }
     try {
         if (map.getLayer('google-satellite-layer')) {
             map.setLayoutProperty('google-satellite-layer', 'visibility', isMapbox ? 'none' : 'visible');
@@ -1456,14 +1514,10 @@ export function setMapStyleMode(mode) {
             map.setLayoutProperty('rares-mask-layer', 'visibility', showRaresMask ? 'visible' : 'none');
         }
         ['lares-3d-models-layer', 'rares-3d-models-layer', 'qares-3d-models-layer', '3d-buildings-models-layer'].forEach(lid => {
-            if (map.getLayer(lid)) {
-                try { map.moveLayer(lid); } catch (e) {}
-            }
+            safeMoveLayer(map, lid);
         });
         ['lares-3d-models-transparent', 'rares-3d-models-transparent', 'qares-3d-models-transparent', '3d-buildings-models-transparent'].forEach(lid => {
-            if (map.getLayer(lid)) {
-                try { map.moveLayer(lid); } catch (e) {}
-            }
+            safeMoveLayer(map, lid);
         });
         if (map.getLayer('3d-trees-layer')) {
             map.setLayoutProperty('3d-trees-layer', 'visibility', (isMapbox && state.treesVisible) ? 'visible' : 'none');

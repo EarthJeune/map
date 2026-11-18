@@ -93,7 +93,7 @@ When the visitor reaches the building entrance (Kiosk stop-motion avatar or mobi
 
 ## 3. Data Schema & Backwards Compatibility
 
-Location: [js/data/offices.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/data/offices.js)
+Location: [js/data/offices.js](js/data/offices.js)
 
 ```javascript
 export const BUILDING_OFFICES = {
@@ -160,7 +160,7 @@ export const BUILDING_OFFICES = {
 
 ## 6. Implementation Phasing
 
-- **Phase A (Data & Adapter):** Update [js/data/offices.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/data/offices.js) with structured office schema for primary buildings (Tanco Hall, Admin, RAED, MIS/RAFIS) while retaining legacy string fallbacks.
-- **Phase B (Left Menu & Dropdown):** Implement Picture 1 styling (`X offices inside` count) in [js/sidebar.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/sidebar.js) and Picture 2 acronym-first dropdown layout.
-- **Phase C (Office View Level):** Build the Level 2 slide view inside [js/building-panel.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/building-panel.js) with carousel, chips, indoor path hints, and deep-link URL handler (`?dest=...&office=...`).
-- **Phase D (Arrival Card Integration):** Connect the office door photo and indoor hint to the arrival banners in [js/steps.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/steps.js) and [js/walker.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/walker.js).
+- **Phase A (Data & Adapter):** Update [js/data/offices.js](js/data/offices.js) with structured office schema for primary buildings (Tanco Hall, Admin, RAED, MIS/RAFIS) while retaining legacy string fallbacks.
+- **Phase B (Left Menu & Dropdown):** Implement Picture 1 styling (`X offices inside` count) in [js/sidebar.js](js/sidebar.js) and Picture 2 acronym-first dropdown layout.
+- **Phase C (Office View Level):** Build the Level 2 slide view inside [js/building-panel.js](js/building-panel.js) with carousel, chips, indoor path hints, and deep-link URL handler (`?dest=...&office=...`).
+- **Phase D (Arrival Card Integration):** Connect the office door photo and indoor hint to the arrival banners in [js/steps.js](js/steps.js) and [js/walker.js](js/walker.js).

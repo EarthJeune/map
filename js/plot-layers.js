@@ -348,12 +348,11 @@ export function initPlotLayers() {
 
 
 
-    // Clear hover whenever camera moves (prevents stuck hover when flying/panning)
-
-    currentMap.on('movestart', () => {
-
-        clearPlotZoneHover();
-
+    // Clear hover only on user-initiated camera movement (prevents stuck hover when panning without wiping hover during building orbit)
+    currentMap.on('movestart', (e) => {
+        if (e && e.originalEvent) {
+            clearPlotZoneHover();
+        }
     });
 
 
@@ -458,7 +457,7 @@ export function updatePlotMarkerLOD() {
 
     if (!currentMap) return;
 
-    const isClose = currentMap.getZoom() >= 17.4;
+    const isClose = currentMap.getZoom() >= 17.8;
 
     const isCompactMode = (state.labelDisplayMode === 'compact') || (typeof document !== 'undefined' && document.body.classList.contains('label-mode-compact'));
 
@@ -492,7 +491,7 @@ export function createPlotMarkers() {
 
 
 
-    const isClose = currentMap.getZoom() >= 17.4;
+    const isClose = currentMap.getZoom() >= 17.8;
 
     const isCompactMode = (state.labelDisplayMode === 'compact') || (typeof document !== 'undefined' && document.body.classList.contains('label-mode-compact'));
 

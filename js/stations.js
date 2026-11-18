@@ -1,9 +1,9 @@
 // DA-CALABARZON Multi-Station Wayfinding Manager
 // Manages station selection, lag-free regional camera flyovers, and station data hydration.
 
-import { STATIONS, DEFAULT_STATION_ID, getActiveStationDefaultView, getStationIntroViews } from './data/stations.js';
+import { STATIONS, DEFAULT_STATION_ID, DEFAULT_FILTER_TYPES, getActiveStationDefaultView, getStationIntroViews } from './data/stations.js';
 import { state } from './data/state.js';
-import { map, stopIntroAnimation, playIntroAnimation, setupMapboxStandardLayers, setup3DBuildingModelsLayer, setupStation3DModels } from './map-setup.js';
+import { map, stopIntroAnimation, playIntroAnimation, setupMapboxStandardLayers, setup3DBuildingModelsLayer, setupStation3DModels, safeMoveLayer } from './map-setup.js';
 import { INTRO_START_VIEW } from './data/config.js';
 import { buildDirectory } from './sidebar.js';
 import { removeMarkers, createMarkers, createEntranceArrowMarker, removeSectionBadges } from './markers.js';
@@ -16,22 +16,26 @@ let activeFlyNotificationTimer = null;
 let activeStationSwitchTimer = null;
 let activeCurtainDismissTimer = null;
 let activeStationSwitchSafetyTimer = null;
+let stationDropdownListenerBound = false;
 
 export function initStationSelector() {
     const activeStationId = state.currentStationId || DEFAULT_STATION_ID;
     updateStationUI(activeStationId);
     renderStationCategoryBar(activeStationId);
 
-    // Click-outside listener to close dropdown
-    document.addEventListener('click', (e) => {
-        const flyout = document.getElementById('station-dropdown-flyout');
-        const btn = document.getElementById('station-dropdown-btn');
-        if (flyout && flyout.classList.contains('active')) {
-            if (!flyout.contains(e.target) && !btn.contains(e.target)) {
-                closeStationDropdown();
+    // Click-outside listener to close dropdown (guarded so it only binds once)
+    if (!stationDropdownListenerBound && typeof document !== 'undefined') {
+        stationDropdownListenerBound = true;
+        document.addEventListener('click', (e) => {
+            const flyout = document.getElementById('station-dropdown-flyout');
+            const btn = document.getElementById('station-dropdown-btn');
+            if (flyout && flyout.classList.contains('active')) {
+                if (!flyout.contains(e.target) && (!btn || !btn.contains(e.target))) {
+                    closeStationDropdown();
+                }
             }
-        }
-    });
+        });
+    }
 
     // Ensure bounds are not clamped on startup until intro sequence completes
     if (map) {
@@ -54,7 +58,161 @@ export function closeStationDropdown() {
     }
 }
 
+const STATION_ICON_MAP = {
+    lares: 'wheat',
+    qares: 'sprout',
+    rares: 'trees',
+    cares: 'leaf'
+};
+
+const FILTER_ICON_MAP = {
+    infrastructure: 'hard-hat',
+    trial_sites: 'wheat',
+    orchard: 'trees',
+    office: 'building-2',
+    laboratory: 'flask-conical',
+    conference: 'landmark',
+    digital_agri: 'radio'
+};
+
+function escapeHtml(str) {
+    return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function renderDynamicStationContainers(activeStationId) {
+    const stationList = Object.values(STATIONS);
+
+    // 1. Top-left station dropdown list
+    const dropdownList = document.getElementById('station-dropdown-list');
+    if (dropdownList) {
+        dropdownList.innerHTML = stationList.map(st => {
+            const isActive = st.id === activeStationId;
+            const isDev = st.status === 'under_development';
+            const badgeClass = isActive ? 'active-badge' : (isDev ? 'dev-badge' : '');
+            const badgeText = isActive ? 'Active' : (isDev ? 'Under Dev' : 'Select');
+            return `
+                <div class="station-dropdown-item${isActive ? ' active' : ''}" data-station="${escapeHtml(st.id)}" onclick="switchResearchStation('${escapeHtml(st.id)}')">
+                    <div class="station-item-icon">${lucideIcon(STATION_ICON_MAP[st.id] || 'map-pin', 16)}</div>
+                    <div class="station-item-info">
+                        <div class="station-item-title">${escapeHtml(st.name)}</div>
+                        <div class="station-item-sub">${escapeHtml(st.province)}</div>
+                    </div>
+                    <span class="station-item-status ${badgeClass}">${badgeText}</span>
+                </div>`;
+        }).join('');
+    }
+
+    // 2. Welcome modal 4-station grid
+    const welcomeGrid = document.getElementById('dash-welcome-stations-grid');
+    if (welcomeGrid) {
+        welcomeGrid.innerHTML = stationList.map(st => {
+            const isActive = st.id === activeStationId;
+            const isLive = st.status === 'active';
+            const tags = Array.isArray(st.welcomeTags) ? st.welcomeTags.slice(0, 3) : [];
+            const badgeHtml = isLive
+                ? `<span class="dash-wsc-badge active"><span class="dash-pulse-dot"></span> Active Flagship</span>`
+                : `<span class="dash-wsc-badge dev">Under Development</span>`;
+            const ctaText = isLive ? 'Enter Campus' : 'Preview Station';
+            return `
+                <div class="dash-welcome-station-card${isActive ? ' active' : ''}" data-station="${escapeHtml(st.id)}" onclick="selectWelcomeStation('${escapeHtml(st.id)}')" title="Select ${escapeHtml(st.name)} Station">
+                    <div class="dash-wsc-top">
+                        <div class="dash-wsc-icon-wrap ${escapeHtml(st.id)}">
+                            ${lucideIcon(STATION_ICON_MAP[st.id] || 'map-pin', 22)}
+                        </div>
+                        <div class="dash-wsc-meta">
+                            <div class="dash-wsc-code-row">
+                                <span class="dash-wsc-code">${escapeHtml(st.name)}</span>
+                                ${badgeHtml}
+                            </div>
+                            <div class="dash-wsc-province">${escapeHtml(st.province)}</div>
+                        </div>
+                    </div>
+                    <div class="dash-wsc-fullname">${escapeHtml(st.fullName || st.sub)}</div>
+                    <div class="dash-wsc-tags">
+                        ${tags.map(t => `<span class="dash-wsc-tag">${escapeHtml(t)}</span>`).join('')}
+                    </div>
+                    <div class="dash-wsc-cta">
+                        <span>${ctaText}</span>
+                        ${lucideIcon('arrow-right', 16)}
+                    </div>
+                </div>`;
+        }).join('');
+    }
+
+    // 3. Mobile station switcher modal list
+    const phoneList = document.getElementById('phone-station-list');
+    if (phoneList) {
+        phoneList.innerHTML = stationList.map(st => {
+            const isActive = st.id === activeStationId;
+            const isDev = st.status === 'under_development';
+            const statusClass = isActive ? 'active' : (isDev ? 'dev-badge' : '');
+            const statusText = isActive ? 'Active' : (isDev ? 'Under Dev' : 'Select');
+            const suffix = st.status === 'active' ? 'Main Campus' : 'Under Development';
+            return `
+                <div class="phone-station-card${isActive ? ' active' : ''}" data-station="${escapeHtml(st.id)}" onclick="handlePhoneSelectStation('${escapeHtml(st.id)}')">
+                    <div class="psc-icon-wrap">
+                        <span class="psc-icon">${lucideIcon(STATION_ICON_MAP[st.id] || 'map-pin', 16)}</span>
+                    </div>
+                    <div class="psc-info">
+                        <div class="psc-title-row">
+                            <span class="psc-title">${escapeHtml(st.name)}</span>
+                            <span class="psc-province">${escapeHtml(st.province)}</span>
+                        </div>
+                        <div class="psc-desc">${escapeHtml(st.fullName || st.sub)} • ${suffix}</div>
+                    </div>
+                    <span class="psc-status ${statusClass}">${statusText}</span>
+                </div>`;
+        }).join('');
+    }
+
+    // 4. Filter by type dropdown options (station-aware descriptions, preserving checked state)
+    const fdmOptions = document.getElementById('fdm-options');
+    if (fdmOptions) {
+        const prevChecked = new Set(
+            Array.from(fdmOptions.querySelectorAll('.fdm-checkbox:checked')).map(cb => cb.value)
+        );
+        const activeSt = STATIONS[activeStationId] || STATIONS.lares;
+        const customDescs = (activeSt && activeSt.filterDescriptions) || {};
+        fdmOptions.innerHTML = DEFAULT_FILTER_TYPES.map(ft => {
+            const desc = customDescs[ft.id] || ft.defaultDesc;
+            const checkedAttr = prevChecked.has(ft.id) ? ' checked' : '';
+            return `
+                <label class="fdm-item" data-type="${escapeHtml(ft.id)}">
+                    <input type="checkbox" class="fdm-checkbox" value="${escapeHtml(ft.id)}"${checkedAttr} onchange="toggleTypeFilter('${escapeHtml(ft.id)}', this.checked)">
+                    <span class="fdm-item-icon">${lucideIcon(FILTER_ICON_MAP[ft.id] || 'filter', 16)}</span>
+                    <div class="fdm-item-text">
+                        <span class="fdm-item-name">${escapeHtml(ft.name)}</span>
+                        <span class="fdm-item-desc">${escapeHtml(desc)}</span>
+                    </div>
+                </label>`;
+        }).join('');
+    }
+
+    // 5. Quick search suggestion tags
+    const quickTagsEl = document.getElementById('kiosk-quick-tags');
+    if (quickTagsEl) {
+        const activeSt = STATIONS[activeStationId] || STATIONS.lares;
+        const tags = Array.isArray(activeSt?.quickTags) ? activeSt.quickTags : [];
+        if (tags.length > 0) {
+            quickTagsEl.innerHTML = `<span class="quick-tag-label">Popular:</span>` + tags.map(t => {
+                const label = typeof t === 'object' ? (t.label || t.query || '') : String(t);
+                const query = typeof t === 'object' ? (t.query || t.label || '') : String(t);
+                return `<button class="quick-tag" onclick="quickSearch('${escapeHtml(query).replace(/'/g, "\\'")}')">${escapeHtml(label)}</button>`;
+            }).join('');
+            quickTagsEl.style.display = 'flex';
+        } else {
+            quickTagsEl.innerHTML = '';
+            quickTagsEl.style.display = 'none';
+        }
+    }
+}
+
 function updateStationUI(stationId) {
+    renderDynamicStationContainers(stationId);
     const st = STATIONS[stationId] || STATIONS.lares;
     const labelEl = document.getElementById('station-current-label');
     const subEl = document.getElementById('station-subtitle');
@@ -99,6 +257,10 @@ function updateStationUI(stationId) {
         const isActive = sId === stationId;
         const isDev = targetSt && targetSt.status === 'under_development';
         card.classList.toggle('active', isActive);
+        const subCardEl = card.querySelector('.psc-sub');
+        if (subCardEl && targetSt && targetSt.province) {
+            subCardEl.textContent = targetSt.province;
+        }
         const statusEl = card.querySelector('.psc-status');
         if (statusEl) {
             if (isActive) {
@@ -113,6 +275,11 @@ function updateStationUI(stationId) {
             }
         }
     });
+
+    // Update Welcome Modal active card highlight & button text if rendered
+    if (typeof window.updateWelcomeModalActiveStation === 'function') {
+        window.updateWelcomeModalActiveStation();
+    }
 }
 
 function showStationFlyNotification(text) {
@@ -153,9 +320,11 @@ export function switchResearchStation(stationId, forceBypass = false) {
     if (state.currentStationId === stationId) return;
 
     const targetStation = STATIONS[stationId];
-    // "When deployed make sure that other research stations will be shown as Under Development when they choose it."
-    // In local development, developers can freely switch to and build QARES.
-    if (isDeployedMode() && targetStation && targetStation.status === 'under_development' && !forceBypass) {
+    // Respect MySQL station status ('under_development' vs 'active'/'live') controlled in /admin.
+    // Only authenticated Admins (state.isAdmin) or explicit ?dev=1 bypass the Under Development modal.
+    const urlParams = (typeof window !== 'undefined') ? new URLSearchParams(window.location.search) : null;
+    const isDevOverride = Boolean(state.isAdmin || (urlParams && urlParams.get('dev') === '1'));
+    if (targetStation && targetStation.status === 'under_development' && !forceBypass && !isDevOverride) {
         showStationDevModal(stationId);
         return;
     }
@@ -344,12 +513,8 @@ export function performStationSwitch(stationId) {
                     }
                 });
 
-                if (map.getLayer('lares-3d-models-layer')) {
-                    try { map.moveLayer('lares-3d-models-layer'); } catch (e) {}
-                }
-                if (map.getLayer('lares-3d-models-transparent')) {
-                    try { map.moveLayer('lares-3d-models-transparent'); } catch (e) {}
-                }
+                safeMoveLayer(map, 'lares-3d-models-layer');
+                safeMoveLayer(map, 'lares-3d-models-transparent');
 
                 const bndLayers = [
                     'lares-boundary-line',
@@ -524,12 +689,10 @@ export function performStationSwitch(stationId) {
                 if (map.getLayer('rares-3d-models-layer')) {
                     try {
                         map.setLayoutProperty('rares-3d-models-layer', 'visibility', bldgVis);
-                        map.moveLayer('rares-3d-models-layer');
+                        safeMoveLayer(map, 'rares-3d-models-layer');
                     } catch (e) {}
                 }
-                if (map.getLayer('rares-3d-models-transparent')) {
-                    try { map.moveLayer('rares-3d-models-transparent'); } catch (e) {}
-                }
+                safeMoveLayer(map, 'rares-3d-models-transparent');
 
                 if (typeof createKioskMarker === 'function') {
                     createKioskMarker();
@@ -1476,7 +1639,11 @@ export function loadRARESData() {
     }
 
     // 1. High-Resolution RARES Drone Orthomosaic Layer (Offline MBTiles, Zooms 14-21)
-    const bldgsModelBeforeId = map.getLayer('rares-3d-models-layer') ? 'rares-3d-models-layer' : (map.getLayer('3d-buildings-models-layer') ? '3d-buildings-models-layer' : undefined);
+    const styleLayers = map.getStyle()?.layers;
+    const isMiddleSlot = (id) => Array.isArray(styleLayers) && styleLayers.some(l => l.id === id && l.slot === 'middle');
+    const bldgsModelBeforeId = isMiddleSlot('rares-3d-models-layer')
+        ? 'rares-3d-models-layer'
+        : (isMiddleSlot('3d-buildings-models-layer') ? '3d-buildings-models-layer' : undefined);
     try {
         if (!map.getSource('rares-drone-source')) {
             map.addSource('rares-drone-source', {
@@ -1503,7 +1670,7 @@ export function loadRARESData() {
                     'raster-opacity': 1.0,
                     'raster-fade-duration': 0
                 }
-            }, bldgsModelBeforeId);
+            });
         } else if (map.getLayer('rares-ortho-layer')) {
             try { map.setLayoutProperty('rares-ortho-layer', 'visibility', isDrone ? 'visible' : 'none'); } catch (e) { }
         }
@@ -1676,11 +1843,38 @@ export function loadRARESData() {
             .catch(e => console.warn('[RARES] Dynamic boundary sync notice:', e));
     } catch (e) { }
 
-    // 5. Check if buildings exist in rares_buildings.json
+    // 5. Check if buildings exist in rares_buildings.json and hydrate live MySQL overrides
     renderRARESDirectory();
-    fetch('rares_buildings.json?v=' + Date.now())
-        .then(r => r.json())
-        .then(data => {
+    Promise.all([
+        fetch('rares_buildings.json?v=' + Date.now()).then(r => r.json()),
+        fetch(`/api/bootstrap?station=rares&_t=${Date.now()}`).then(r => r.ok ? r.json() : null).catch(() => null)
+    ])
+        .then(([data, boot]) => {
+            if (data && data.features && boot && Array.isArray(boot.buildings)) {
+                const byCode = new Map();
+                boot.buildings.forEach(b => {
+                    if (b && b.building_code) byCode.set(b.building_code, b);
+                });
+                data.features.forEach(f => {
+                    const p = f.properties || {};
+                    const dbBldg = byCode.get(p.id);
+                    if (dbBldg) {
+                        if (dbBldg.name) p.name = dbBldg.name;
+                        if (dbBldg.description !== undefined && dbBldg.description !== null) p.description = dbBldg.description;
+                        if (dbBldg.category) p.category = dbBldg.category;
+                        if (dbBldg.type_label) p.type = dbBldg.type_label;
+                        if (dbBldg.pin_color) p.color = dbBldg.pin_color;
+                        if (dbBldg.icon) p.icon = dbBldg.icon;
+                        if (Array.isArray(dbBldg.images) && dbBldg.images.length > 0) {
+                            p.image = dbBldg.images[0].image_webp_url;
+                            p.images = dbBldg.images.map(img => ({
+                                src: img.image_webp_url,
+                                label: img.caption || 'Facility View'
+                            }));
+                        }
+                    }
+                });
+            }
             if (data && data.features) {
                 raresBuildingsBaseline = data;
                 renderRARESDirectory(data);
@@ -1768,9 +1962,7 @@ export function loadRARESData() {
 
             // Guarantee 3D architectural models sit strictly above all ground rasters, footprints, and plots
             ['rares-3d-models-layer', 'rares-3d-models-transparent', '3d-buildings-models-layer', '3d-buildings-models-transparent'].forEach(lid => {
-                if (map.getLayer(lid)) {
-                    try { map.moveLayer(lid); } catch (e) {}
-                }
+                safeMoveLayer(map, lid);
             });
 
             if (typeof window.createMarkers === 'function') {
@@ -1804,7 +1996,8 @@ export function renderStationCategoryBar(stationId) {
         phoneCatBar.style.display = 'none';
     }
     if (quickTags) {
-        quickTags.style.display = (stationId === 'lares') ? 'flex' : 'none';
+        const tags = STATIONS[stationId]?.quickTags;
+        quickTags.style.display = (Array.isArray(tags) && tags.length > 0) ? 'flex' : 'none';
     }
 }
 
@@ -2072,7 +2265,7 @@ export function showStationDevModal(stationId) {
     if (previewBtn) {
         // In local development or admin mode (?admin=1), allow exploring preview
         const isDev = !isDeployedMode();
-        const isAdmin = (typeof window !== 'undefined' && (new URLSearchParams(window.location.search).get('admin') === '1' || localStorage.getItem('da_admin_mode') === 'true'));
+        const isAdmin = (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('admin') === '1');
         previewBtn.style.display = (isDev || isAdmin) ? 'inline-flex' : 'none';
         previewBtn.dataset.targetStation = stationId;
         previewBtn.innerHTML = `<span>${isDev ? 'Explore Station (Dev)' : 'Explore Preview (Admin)'}</span>`;

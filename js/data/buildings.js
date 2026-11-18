@@ -5260,11 +5260,11 @@ for (const f of LARES_DRAWINGS.features) {
 
         : (id === 'admin_building')
 
-        ? 'STIARC Multi-Function Administrative Building | DA-RFO IVA'
+        ? 'Administrative Building | DA-RFO IVA'
 
         : (id === 'lares_building')
 
-        ? 'Lipa Agricultural Research and Experiment Station | Main Research Office'
+        ? 'Lipa Agricultural Research & Experiment Station | Main Research Office'
 
         : (id === 'laboratory_building')
 
@@ -5629,6 +5629,66 @@ export function getBuildingById(buildingId) {
                 type: 'Research Facility',
 
                 isQARES: true
+
+            };
+
+        }
+
+    }
+
+    const raresData = (typeof window !== "undefined" && window.raresBuildingsBaseline) ? window.raresBuildingsBaseline : null;
+
+    if (raresData && raresData.features) {
+
+        const feat = raresData.features.find(f => {
+
+            const pid = f.properties && f.properties.id;
+
+            return pid === buildingId;
+
+        });
+
+        if (feat) {
+
+            const p = feat.properties || {};
+
+            let centerCoords = [121.34062, 14.57621];
+
+            if (p.marker_coords && Array.isArray(p.marker_coords) && p.marker_coords.length === 2) {
+
+                centerCoords = p.marker_coords;
+
+            } else if (feat.geometry && feat.geometry.type === 'Polygon' && feat.geometry.coordinates && feat.geometry.coordinates[0]) {
+
+                const ring = feat.geometry.coordinates[0];
+
+                let sumLng = 0, sumLat = 0;
+
+                ring.forEach(c => { sumLng += c[0]; sumLat += c[1]; });
+
+                centerCoords = [sumLng / ring.length, sumLat / ring.length];
+
+            }
+
+            return {
+
+                id: p.id || buildingId,
+
+                name: p.name || 'Admin Building',
+
+                desc: p.description || (typeof window !== 'undefined' && window.getRARESSubtitle ? window.getRARESSubtitle(p.name, '') : 'Administrative & Station Management'),
+
+                num: p.num || 2,
+
+                color: '#10b981',
+
+                coords: centerCoords,
+
+                section: 'Tanay Compound',
+
+                type: 'Facility',
+
+                isRARES: true
 
             };
 
@@ -6342,7 +6402,951 @@ export const CUSTOM_3D_BUILDINGS = {
 
         coords: [121.34054276, 14.57644291],
 
-        rotation: 194.7,
+        rotation: 14.7,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_2': {
+
+        modelId: 'rares_admin_building_v11',
+
+        modelUrl: 'models/rares_admin_building.glb?v=11',
+
+        coords: [121.34062777, 14.57621614],
+
+        rotation: 103.5,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_3': {
+
+        modelId: 'rares_seed_storage_v4',
+
+        modelUrl: 'models/rares_seed_storage.glb?v=4',
+
+        coords: [121.34043528, 14.57587020],
+
+        rotation: 193.8,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_4': {
+
+        modelId: 'rares_chemical_storage_v4',
+
+        modelUrl: 'models/rares_chemical_storage.glb?v=4',
+
+        coords: [121.34056209, 14.57586902],
+
+        rotation: 193.5,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_5': {
+
+        modelId: 'rares_flatbed_dryer_v6',
+
+        modelUrl: 'models/rares_flatbed_dryer.glb?v=6',
+
+        coords: [121.34053816, 14.57578799],
+
+        rotation: 283.5,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_6': {
+
+        modelId: 'rares_nursery_a_v1',
+
+        modelUrl: 'models/rares_nursery_a.glb?v=1',
+
+        coords: [121.34044084, 14.57563655],
+
+        rotation: 283.5,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_7': {
+
+        modelId: 'rares_apco_v1',
+
+        modelUrl: 'models/rares_apco.glb?v=2',
+
+        coords: [121.34043045, 14.57548121],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_8': {
+
+        modelId: 'rares_common_cr_v1',
+
+        modelUrl: 'models/rares_common_cr.glb?v=1',
+
+        coords: [121.34089997, 14.57638765],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_9': {
+
+        modelId: 'rares_vermicomposting_v1',
+
+        modelUrl: 'models/rares_vermicomposting.glb?v=1',
+
+        coords: [121.34081784, 14.57615839],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_8': {
+
+        modelId: 'rares_common_cr_v1',
+
+        modelUrl: 'models/rares_common_cr.glb?v=1',
+
+        coords: [121.34089997, 14.57638765],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_9': {
+
+        modelId: 'rares_vermicomposting_v1',
+
+        modelUrl: 'models/rares_vermicomposting.glb?v=1',
+
+        coords: [121.34081784, 14.57615839],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_10': {
+
+        modelId: 'rares_office_supply_v1',
+
+        modelUrl: 'models/rares_office_supply.glb?v=2',
+
+        coords: [121.3407453, 14.57597093],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_11': {
+
+        modelId: 'rares_machinery_v1',
+
+        modelUrl: 'models/rares_machinery.glb?v=1',
+
+        coords: [121.34074092, 14.57578665],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_12': {
+
+        modelId: 'rares_hydro_storage_v1',
+
+        modelUrl: 'models/rares_hydro_storage.glb?v=1',
+
+        coords: [121.34069114, 14.57569225],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_13': {
+
+        modelId: 'rares_gh_hydro_v1',
+
+        modelUrl: 'models/rares_gh_hydro.glb?v=1',
+
+        coords: [121.340648, 14.57559411],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_14': {
+
+        modelId: 'rares_nursery_b_v1',
+
+        modelUrl: 'models/rares_nursery_b.glb?v=1',
+
+        coords: [121.34078448, 14.57551896],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_15': {
+
+        modelId: 'rares_staff_house_a_v1',
+
+        modelUrl: 'models/rares_staff_house_a.glb?v=1',
+
+        coords: [121.3408581, 14.57576915],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_16': {
+
+        modelId: 'rares_sgpp_storage_v2',
+
+        modelUrl: 'models/rares_sgpp_storage.glb?v=2',
+
+        coords: [121.34094060, 14.57575305],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_17': {
+
+        modelId: 'rares_multipurpose_rnd_v1',
+
+        modelUrl: 'models/rares_multipurpose_rnd.glb?v=2',
+
+        coords: [121.34102373, 14.57611083],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_18': {
+
+        modelId: 'rares_low_cost_greenhouse_v1',
+
+        modelUrl: 'models/rares_low_cost_greenhouse.glb?v=1',
+
+        coords: [121.34126214, 14.57604238],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_19': {
+
+        modelId: 'rares_low_cost_hydroponics_v1',
+
+        modelUrl: 'models/rares_low_cost_hydroponics.glb?v=1',
+
+        coords: [121.34122749, 14.57588399],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_20': {
+
+        modelId: 'rares_staff_house_b_v2',
+
+        modelUrl: 'models/rares_staff_house_b.glb?v=2',
+
+        coords: [121.34110878, 14.57575607],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_21': {
+
+        modelId: 'rares_staff_house_c_v2',
+
+        modelUrl: 'models/rares_staff_house_c.glb?v=2',
+
+        coords: [121.34125735, 14.57575693],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_23': {
+
+        modelId: 'rares_staff_house_d_v1',
+
+        modelUrl: 'models/rares_staff_house_d.glb?v=1',
+
+        coords: [121.34180481, 14.57600488],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_24': {
+
+        modelId: 'rares_mini_conference_hall_v1',
+
+        modelUrl: 'models/rares_mini_conference_hall.glb?v=1',
+
+        coords: [121.34183453, 14.57622646],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_22': {
+
+        modelId: 'rares_mushroom_laboratory_v1',
+
+        modelUrl: 'models/rares_mushroom_laboratory.glb?v=1',
+
+        coords: [121.34141289, 14.57578984],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_25': {
+
+        modelId: 'rares_poultry_house_v1',
+
+        modelUrl: 'models/rares_poultry_house.glb?v=1',
+
+        coords: [121.34050882, 14.57692863],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_26': {
+
+        modelId: 'rares_farm_house_v3',
+
+        modelUrl: 'models/rares_farm_house.glb?v=3',
+
+        coords: [121.33974695, 14.57645235],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_27': {
+
+        modelId: 'rares_vermicomposting_new_v1',
+
+        modelUrl: 'models/rares_vermicomposting_new.glb?v=1',
+
+        coords: [121.33957310, 14.57650315],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_28': {
+
+        modelId: 'rares_machinery_equipment_storage_v1',
+
+        modelUrl: 'models/rares_machinery_equipment_storage.glb?v=1',
+
+        coords: [121.33952432, 14.57652877],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_29': {
+
+        modelId: 'rares_pre_composting_area_v1',
+
+        modelUrl: 'models/rares_pre_composting_area.glb?v=1',
+
+        coords: [121.33946875, 14.57654436],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_30': {
+
+        modelId: 'rares_automated_weather_station_v2',
+
+        modelUrl: 'models/rares_aws.glb?v=1',
+
+        coords: [121.33931970, 14.57665004],
+
+        rotation: 343.8,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_31': {
+
+        modelId: 'rares_rest_area_v1',
+
+        modelUrl: 'models/rares_rest_area.glb?v=1',
+
+        coords: [121.33922360, 14.57685651],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_32': {
+
+        modelId: 'rares_hatchery_area_v1',
+
+        modelUrl: 'models/rares_hatchery_area.glb?v=1',
+
+        coords: [121.33940046, 14.57688097],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_33': {
+
+        modelId: 'rares_palay_shed_v1',
+
+        modelUrl: 'models/rares_palay_shed.glb?v=1',
+
+        coords: [121.33948858, 14.57692401],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_34': {
+
+        modelId: 'rares_botanical_storage_v1',
+
+        modelUrl: 'models/rares_botanical_storage.glb?v=1',
+
+        coords: [121.33942874, 14.57696641],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_35': {
+
+        modelId: 'rares_wood_vinegar_v1',
+
+        modelUrl: 'models/rares_wood_vinegar.glb?v=1',
+
+        coords: [121.33944308, 14.57701457],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_39': {
+
+        modelId: 'rares_spis_tank_v1',
+
+        modelUrl: 'models/rares_spis_tank.glb?v=1',
+
+        coords: [121.33745556, 14.57647764],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_39.1': {
+
+        modelId: 'rares_spis_array_mid_v1',
+
+        modelUrl: 'models/rares_spis_array_mid.glb?v=1',
+
+        coords: [121.33754401, 14.57648985],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_39.2': {
+
+        modelId: 'rares_spis_array_east_v1',
+
+        modelUrl: 'models/rares_spis_array_east.glb?v=1',
+
+        coords: [121.33760607, 14.57647796],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_37': {
+
+        modelId: 'rares_breeder_house_v2',
+
+        modelUrl: 'models/rares_breeder_house.glb?v=2',
+
+        coords: [121.34018452, 14.57325788],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_38': {
+
+        modelId: 'rares_brooder_house_v2',
+
+        modelUrl: 'models/rares_brooder_house.glb?v=2',
+
+        coords: [121.34006473, 14.57328253],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_32': {
+
+        modelId: 'rares_hatchery_area_v1',
+
+        modelUrl: 'models/rares_hatchery_area.glb?v=1',
+
+        coords: [121.33940046, 14.57688097],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_33': {
+
+        modelId: 'rares_palay_shed_v1',
+
+        modelUrl: 'models/rares_palay_shed.glb?v=1',
+
+        coords: [121.33948858, 14.57692401],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_34': {
+
+        modelId: 'rares_botanical_storage_v1',
+
+        modelUrl: 'models/rares_botanical_storage.glb?v=1',
+
+        coords: [121.33942874, 14.57696641],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_35': {
+
+        modelId: 'rares_wood_vinegar_v1',
+
+        modelUrl: 'models/rares_wood_vinegar.glb?v=1',
+
+        coords: [121.33944308, 14.57701457],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_39': {
+
+        modelId: 'rares_spis_tank_v1',
+
+        modelUrl: 'models/rares_spis_tank.glb?v=1',
+
+        coords: [121.33745556, 14.57647764],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_39.1': {
+
+        modelId: 'rares_spis_array_mid_v1',
+
+        modelUrl: 'models/rares_spis_array_mid.glb?v=1',
+
+        coords: [121.33754401, 14.57648985],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_39.2': {
+
+        modelId: 'rares_spis_array_east_v1',
+
+        modelUrl: 'models/rares_spis_array_east.glb?v=1',
+
+        coords: [121.33760607, 14.57647796],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_37': {
+
+        modelId: 'rares_breeder_house_v2',
+
+        modelUrl: 'models/rares_breeder_house.glb?v=2',
+
+        coords: [121.34018452, 14.57325788],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_38': {
+
+        modelId: 'rares_brooder_house_v2',
+
+        modelUrl: 'models/rares_brooder_house.glb?v=2',
+
+        coords: [121.34006473, 14.57328253],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_36': {
+
+        modelId: 'rares_sgpp_bay0_v2',
+
+        modelUrl: 'models/rares_sgpp_bay0.glb?v=2',
+
+        coords: [121.33975462, 14.57479782],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_36.1': {
+
+        modelId: 'rares_sgpp_bay1_v2',
+
+        modelUrl: 'models/rares_sgpp_bay1.glb?v=2',
+
+        coords: [121.33976960, 14.57488984],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_36.2': {
+
+        modelId: 'rares_sgpp_bay2_v2',
+
+        modelUrl: 'models/rares_sgpp_bay2.glb?v=2',
+
+        coords: [121.33978219, 14.57498106],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_36.3': {
+
+        modelId: 'rares_sgpp_bay3_v2',
+
+        modelUrl: 'models/rares_sgpp_bay3.glb?v=2',
+
+        coords: [121.33978786, 14.57507331],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_36.4': {
+
+        modelId: 'rares_sgpp_bay4_v2',
+
+        modelUrl: 'models/rares_sgpp_bay4.glb?v=2',
+
+        coords: [121.33980748, 14.57516430],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_36.5': {
+
+        modelId: 'rares_sgpp_bay5_v4',
+
+        modelUrl: 'models/rares_sgpp_bay5.glb?v=4',
+
+        coords: [121.33981883, 14.57525706],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_36.5_ent': {
+
+        modelId: 'rares_sgpp_entrance_v1',
+
+        modelUrl: 'models/rares_sgpp_entrance.glb?v=1',
+
+        coords: [121.34006097, 14.57520991],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_36.6': {
+
+        modelId: 'rares_sgpp_combined_v2',
+
+        modelUrl: 'models/rares_sgpp_combined.glb?v=2',
+
+        coords: [121.33995690, 14.57536715],
+
+        rotation: 0.0,
+
+        scale: [1.0, 1.0, 1.0],
+
+        stationId: 'rares'
+
+    },
+
+    'rares_building_36.7': {
+
+        modelId: 'rares_sgpp_aws_v2',
+
+        modelUrl: 'models/rares_sgpp_aws.glb?v=2',
+
+        coords: [121.33983390, 14.57531028],
+
+        rotation: 0.0,
 
         scale: [1.0, 1.0, 1.0],
 

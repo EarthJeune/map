@@ -33,7 +33,7 @@ In `LARES_MASK`, the GeoJSON feature had three separate holes corresponding to S
 #### Solution
 Merge the three sections into a single, continuous 21-vertex outer boundary polygon hole wound in uniform clockwise order with valid Web Mercator bounds `[-180, -85.051129]` to `[180, 85.051129]`. This guarantees a 100% solid, glitch-free dark mask that conceals all satellite imagery outside DA-LARES.
 
-#### [MODIFY] [index.html](file:///c:/Users/LGU-SanPedro/Downloads/map/index.html)
+#### [MODIFY] [index.html](index.html)
 - Update `LARES_MASK` with the unified 21-point compound perimeter.
 - Define `LARES_COMPOUND_OUTLINE` GeoJSON for the unified border line.
 
@@ -89,7 +89,7 @@ Merge the three sections into a single, continuous 21-vertex outer boundary poly
 - **Trees**: No trees should be shown in Mapbox mode (disable native 3D trees and custom billboard trees).
 - **Roads**: Roads must remain visible — both Mapbox basemap roads and custom internal DA-LARES roads from `roads.json`.
 
-#### [MODIFY] [index.html](file:///c:/Users/LGU-SanPedro/Downloads/map/index.html) (`setupMapboxStandardLayers`)
+#### [MODIFY] [index.html](index.html) (`setupMapboxStandardLayers`)
 - Configure standard style basemap to turn off 3D objects, 3D buildings, 3D trees, 3D landmarks, and make 2D basemap buildings transparent:
 ```javascript
 map.setConfigProperty('basemap', 'show3dObjects', false);
@@ -109,7 +109,7 @@ map.setConfigProperty('basemap', 'showRoadLabels', true);
 - Do NOT fill the sections or compound with solid washes of green, blue, or yellow.
 - Distinguish the DA-LARES compound using a prominent, stylish border-like outline tracing the QGIS boundary.
 
-#### [MODIFY] [index.html](file:///c:/Users/LGU-SanPedro/Downloads/map/index.html)
+#### [MODIFY] [index.html](index.html)
 1. In `setupLayers()` and `setupMapboxStandardLayers()`:
    - Set `sec-fill-${fid}` `fill-opacity` to `0.0` (or remove fill rendering so ground imagery/standard map is 100% visible).
 2. Add a dedicated compound border layer (`lares-compound-border-casing` and `lares-compound-border-line`):
@@ -125,7 +125,7 @@ map.setConfigProperty('basemap', 'showRoadLabels', true);
 - Camera angle logic when toggling between Google Satellite and Mapbox view must be the same as Google Maps (seamless).
 - Do NOT jerk or fly away to `MAPBOX_VIEW_PRESET`.
 
-#### [MODIFY] [index.html](file:///c:/Users/LGU-SanPedro/Downloads/map/index.html)
+#### [MODIFY] [index.html](index.html)
 1. Remove `map.flyTo(MAPBOX_VIEW_PRESET)` from `setupMapboxStandardLayers()`.
 2. When calling `toggleMapboxView(btn)`, capture current camera parameters (`center`, `zoom`, `pitch`, `bearing`):
 ```javascript

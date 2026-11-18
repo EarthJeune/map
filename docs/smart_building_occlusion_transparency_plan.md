@@ -110,11 +110,11 @@ Because the walker animation runs at 60fps (`requestAnimationFrame`), running po
 
 ## 5. Dual-Platform Integration
 
-### 5.1. Kiosk Follow Mode ([js/walker.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/walker.js))
+### 5.1. Kiosk Follow Mode ([js/walker.js](js/walker.js))
 - Runs seamlessly alongside the claymation stop-motion runner.
 - When turning corners behind Argosino Hall or Canteen, the building fades into a clean cyan/white frosted glass volume, revealing the runner and dust puffs beneath.
 
-### 5.2. Mobile Live GPS Navigation ([js/gps.js](file:///c:/Users/LGU-SanPedro/Downloads/map/js/gps.js))
+### 5.2. Mobile Live GPS Navigation ([js/gps.js](js/gps.js))
 - When walking on campus with a smartphone in compass-follow mode:
 - As the user approaches a tall building along a narrow walkway, the building becomes translucent on their phone screen, ensuring they clearly see the blue pulse dot and route line.
 

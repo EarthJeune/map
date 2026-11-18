@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="32 42 660 228" width="660" height="228">
+  <defs>
+    <clipPath id="guide-expand-clip">
+      <rect id="guide-clip-rect" x="122.0" y="42" width="570.0" height="228"/>
+    </clipPath>
+  </defs>
+
+  <style>
+    #i-mover {
+      animation: introMoveI 2.2s cubic-bezier(0.25, 1, 0.35, 1) 1 forwards;
+    }
+    #i-scaler {
+      animation: introScaleI 2.2s cubic-bezier(0.25, 1, 0.35, 1) 1 forwards;
+    }
+    #guide-slide-group {
+      transform-box: fill-box;
+      animation: introExpandGuide 2.2s cubic-bezier(0.22, 1, 0.36, 1) 1 forwards;
+    }
+
+    #leaf-left-anim {
+      animation: idleSwayLeafLeft 2.8s ease-in-out 3 forwards;
+    }
+    #leaf-right-anim {
+      animation: idleSwayLeafRight 2.8s ease-in-out 3 forwards;
+    }
+    #pin-anim {
+      animation: idleFloatPin 2.8s ease-in-out 3 forwards;
+    }
+
+    @keyframes introMoveI {
+      0%, 34% {
+        transform: translate(271.96px, 8.00px);
+      }
+      64%, 100% {
+        transform: translate(0px, 0px);
+      }
+    }
+
+    @keyframes introScaleI {
+      0% {
+        transform: translate(90.04px, 148.00px) scale(0.95) translate(-90.04px, -148.00px);
+      }
+      18%, 34% {
+        transform: translate(90.04px, 148.00px) scale(1.22) translate(-90.04px, -148.00px);
+      }
+      64%, 100% {
+        transform: translate(90.04px, 148.00px) scale(1.0) translate(-90.04px, -148.00px);
+      }
+    }
+
+    @keyframes introExpandGuide {
+      0%, 56% {
+        clip-path: inset(0 100% 0 0);
+        transform: translateX(-28px);
+        opacity: 0;
+      }
+      62% {
+        opacity: 1;
+      }
+      100% {
+        clip-path: inset(0 0% 0 0);
+        transform: translateX(0px);
+        opacity: 1;
+      }
+    }
+
+    @keyframes idleSwayLeafLeft {
+      0%, 100% { transform: rotate(0deg) scale(1.0); }
+      50%      { transform: rotate(-6deg) scale(1.03); }
+    }
+
+    @keyframes idleSwayLeafRight {
+      0%, 100% { transform: rotate(0deg) scale(1.0); }
+      50%      { transform: rotate(6deg) scale(1.03); }
+    }
+
+    @keyframes idleFloatPin {
+      0%, 100% { transform: translateY(0px) scale(1.0); }
+      50%      { transform: translateY(-5.5px) scale(1.03); }
+    }
+  </style>
+
+  <g clip-path="url(#guide-expand-clip)">
+    <g id="guide-slide-group">
+        <path id="glyph-1-G" d="M1174 34Q936 -27 776 -27Q432 -27 254.5 161.5Q77 350 77 619Q77 902 270.5 1111.0Q464 1320 807 1320Q968 1320 1091 1291L1058 1055Q901 1096 776 1096Q565 1096 461.0 966.5Q357 837 357 650Q357 459 473.5 317.0Q590 175 795 175Q852 175 927 187Q912 298 912 405Q912 513 891 648H1174Q1166 494 1166 338Q1166 225 1174 34Z" transform="translate(112.76,222.00) scale(0.102539,-0.102539)" fill="#16A34A"/>
+        <path id="glyph-2-U" d="M1225 1302Q1216 966 1216 630Q1216 -34 672 -34Q403 -34 267.0 113.0Q131 260 131 641Q131 977 122 1302H405Q392 964 392 650Q392 375 462.0 273.0Q532 171 678 171Q831 171 899.0 272.5Q967 374 967 652Q967 957 954 1302Z" transform="translate(239.39,222.00) scale(0.102539,-0.102539)" fill="#16A34A"/>
+        <path id="glyph-3-I" d="M427 0H144Q157 310 157 681Q157 1046 144 1302H427Q414 1050 414 681Q414 304 427 0Z" transform="translate(375.67,222.00) scale(0.102539,-0.102539)" fill="#16A34A"/>
+        <path id="glyph-4-D" d="M1244 696Q1244 412 1062.0 200.0Q880 -12 552 -12Q404 -12 144 0Q157 302 157 681Q157 1045 144 1302H319Q362 1302 447.0 1305.0Q532 1308 558 1308Q919 1308 1081.5 1128.0Q1244 948 1244 696ZM971 653Q971 845 859.0 976.5Q747 1108 517 1108Q474 1108 399 1099Q409 899 409 681Q409 442 419 207Q484 194 549 194Q764 194 867.5 327.5Q971 461 971 653Z" transform="translate(432.78,222.00) scale(0.102539,-0.102539)" fill="#16A34A"/>
+        <path id="glyph-5-E" d="M1003 220 995 0H144Q157 302 157 681Q157 1045 144 1302H956L945 1083Q645 1099 401 1099Q411 960 411 771Q620 771 858 782V573Q624 583 411 583Q411 380 419 203Q693 203 1003 220Z" transform="translate(565.36,222.00) scale(0.102539,-0.102539)" fill="#16A34A"/>
+    </g>
+  </g>
+
+  <g id="i-mover">
+    <g id="i-scaler">
+      <path id="i-stem" d="M395 0H126Q140 207 140 475Q140 741 106 941L394 970Q381 776 381 475Q381 218 395 0Z" transform="translate(62.00,222.00) scale(0.102539,-0.102539)" fill="#10B981"/>
+      <g transform="translate(87.04,118.38)">
+        <path id="leaf-left-anim" d="M 0 0 C -13 0 -27 -6.5 -29 -18.5 C -15 -20.5 -3.5 -12 0 0 Z" fill="#059669"/>
+      </g>
+      <g transform="translate(93.04,118.38)">
+        <path id="leaf-right-anim" d="M 0 0 C 4.5 -15 18.5 -25 33.5 -22 C 30 -6.5 16.5 2 0 0 Z" fill="#10B981"/>
+      </g>
+      <g transform="translate(90.04,101.88)">
+        <path id="pin-anim" d="M 0 0 C -9 -9 -12.80 -18.00 -12.80 -22.50 A 12.80 12.80 0 1 1 12.80 -22.50 C 12.80 -18.00 9 -9 0 0 Z M 4.6 -22.50 A 4.6 4.6 0 1 0 -4.6 -22.50 A 4.6 4.6 0 1 0 4.6 -22.50 Z" fill="#34D399" fill-rule="evenodd"/>
+      </g>
+    </g>
+  </g>
+</svg>

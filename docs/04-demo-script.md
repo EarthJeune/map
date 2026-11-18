@@ -1,6 +1,7 @@
-# DA-CALABARZON Interactive 3D Research Station Mapping & Wayfinding System — 10-Minute Live Demo Script
+# iGUIDE — 10-Minute Live Demo Script
 
 **Target Audience:** DA CALABARZON (Region IV-A) Supervisors, Division/Station Staff, Researchers, and IT Personnel  
+**System:** **iGUIDE** (*Interactive Geospatial Unified Information Directory and Explorer*)  
 **Total Duration:** 10 Minutes (plus Q&A)  
 **Presenter Setup:** Laptop or Touchscreen connected to the projector running the system (showing both public web / kiosk mode and the `?deployed=1` *"Station Under Development"* modal), plus a smartphone ready to scan the on-screen QR code.
 
@@ -12,6 +13,7 @@
 2. **Verify the Welcome Screen:** Ensure the **Welcome Modal** (`#welcome-modal`) is visible over the stationary 3D aerial view (`index.html`).
 3. **Pre-Test the QR Tunnel:** Scan the QR code once on your phone before the meeting starts and leave that mobile tab open in a background browser tab (this also serves as your instant backup if venue Wi-Fi/cellular lags during the live scan).
 4. **Open a Second Browser Tab for Mobile Projection (Optional):** Keep `http://localhost:8080/?dest=rnd_building&mode=phone` open in a second browser tab sized to a narrow phone window (`400px` wide via DevTools `F12` Device Toolbar) so the audience on the projector can clearly see what the smartphone screen looks like.
+5. **Verify Offline Interaction vs. Fresh Reload (`LIM-01` Check):** Load the page with the network connected, disconnect the network, test map interaction (confirming that local drone tiles, 3D models, `.webp` photos, search, and Dijkstra routing continue working in the already-open tab), then reconnect the network and test a page reload (confirming that CDN scripts `mapbox-gl.js`, `@turf/turf@6.5.0`, and Google Fonts load cleanly).
 
 ---
 
@@ -25,7 +27,7 @@
   3. Click the green **Proceed to Campus Map** button (`dismissWelcomeModal()`).
   4. Let the 3D camera perform its smooth fly-in down to the DA-LARES compound overview, showing the `📍 You Are Here` pin at **Argosino Hall** (`[121.1664336, 13.9581208]`), the **39 numbered building pins**, the **49 custom 3D building models**, and the **131 3D trees** sitting on top of the local **210.66 MB drone orthomosaic**.
 - **What to Say:**
-  > *"Good morning/afternoon everyone. Today we are presenting our interactive 3D mapping and wayfinding platform for **all four DA-CALABARZON Research Stations**—DA-LARES in Lipa, DA-QARES in Tiaong, DA-RARES in Tanay, and DA-CARES in Naic. Once deployed, **anyone can search and explore this system online**, in addition to using it on our lobby touchscreen kiosk and via smartphone GPS. Today we are presenting **DA-LARES** first because this is where we started and completed 100% of our 3D campus modeling, while QARES, RARES, and CARES are displayed as 'Under Development' during this initial launch. And importantly, we built this not just for first-time visitors asking for directions, but also for **our own station workers and researchers**."*
+  > *"Good morning/afternoon everyone. Today we are presenting our interactive 3D mapping and wayfinding platform for **all four DA-CALABARZON Research Stations**—DA-LARES in Lipa, DA-QARES in Tiaong, DA-RARES in Tanay, and DA-CARES in Naic. Once deployed, **anyone can search and explore this system online**, in addition to using it on our lobby touchscreen kiosk and via smartphone GPS. Today we are presenting **DA-LARES** first because this is where we started and completed 49 custom 3D building models, 47 office listings, and 45 field plots, while QARES, RARES, and CARES are displayed as 'Under Development' during this initial launch. And importantly, we built this not just for first-time visitors asking for directions, but also for **our own station workers and researchers**."*
 
 ---
 
@@ -43,14 +45,14 @@
 
 ---
 
-### Minute 3:30 – 5:15 | Segment 3: For Both Visitors & Station Workers — The 45 Agricultural Plots & Future Agronomic Intelligence (`UC-01`)
+### Minute 3:30 – 5:15 | Segment 3: For Both Visitors & Station Workers — The 45 Agricultural Plots & Live MySQL Agronomic Intelligence (`UC-01`)
 - **What to Click:**
   1. In the left sidebar, click **Filter** and select **Agri-Eco Trial Sites** or **Orchard & Plantation** (or toggle **Agricultural Plots** in the Map Settings menu).
   2. Scroll to and click **TC Makapuno & Banana Screenhouse (`Plot 17`)** or **Coffee Orchard (`Plot 22`)** or **Citrus Orchard (`Plots 6–12`)**.
   3. Show how the map illuminates the exact field boundary and internal sub-plot cut lines (`selectPlotZone()`).
-  4. In the right-hand plot drawer (`showPlotPanel()`), click one of the sub-plot cards (e.g., **Screenhouse 1** in Plot 17, or **LARES Water Tank** / **Plot 22 Comfort Room** in Plot 22) to zoom straight to that structure.
+  4. In the right-hand plot drawer (`showPlotPanel()`), point out the live MySQL agronomic fields (**Current Planted Crop**, **Tree/Plant Count**, **Planting Cycle**: *Perennial / Annual / Monthly-Seasonal*, and **Plot Status**), and click one of the sub-plot cards (e.g., **Screenhouse 1** in Plot 17, or **LARES Water Tank** / **Plot 22 Comfort Room** in Plot 22) to zoom straight to that structure.
 - **What to Say:**
-  > *"Here is why this system is equally important for **our own station workers, researchers, and farm superintendents**—not just visitors. We mapped all **45 numbered experimental field plots** grouped into **23 official commodity zones**, including individual screenhouses in Plots 17 and 18 and field utilities in Plot 22. Right now, workers and guests can locate and route to any plot on campus. Moving forward, this exact plot drawer is designed to hold **plot-level agronomic intelligence for our workers**: knowing **what specific crop or variety is currently planted in that plot**, **what the exact tree count is** for orchard plots, and distinguishing **which plots are for annual/perennial crops** versus **which plots are for monthly or seasonal trials**."*
+  > *"Here is why this system is equally important for **our own station workers, researchers, and farm superintendents**—not just visitors. We mapped all **45 numbered experimental field plots** grouped into **23 official commodity zones**, including individual screenhouses in Plots 17 and 18 and field utilities in Plot 22. Backed by our 11-table MySQL database, workers can inspect any plot—and even search directly by crop name—to see **what specific crop or variety is currently planted**, **the exact tree or plant count**, and whether that plot is designated for **perennial orchards, annual crops, or monthly/seasonal trials**."*
 
 ---
 
@@ -79,17 +81,18 @@
 
 ---
 
-### Minute 8:45 – 10:00 | Segment 6: Accessibility, Hardware Eco Mode & Admin Pin Management (`UC-09`, `UC-10`, `UC-12`)
+### Minute 8:45 – 10:00 | Segment 6: Accessibility, 3-Tier Adaptive GPU Engine & Web Admin Portal (`UC-09`, `UC-10`, `UC-12`)
 - **What to Click:**
   1. Return to the main kiosk tab and exit the route (`Exit Route`).
   2. Click the **3D Orbit** accessibility button in the bottom-right toolbar (`toggleOneFingerOrbitMode()`) and drag with a single mouse button / single finger to show how users who cannot do two-finger gestures can still rotate the 3D map. Click it again to return to normal pan.
   3. Click the **Map Settings (Gear)** icon (`toggleMapSettingsPanel()`):
+      - Show the **Basemap Layer Mode**: click **Mapbox View** to switch to the clean 3D vector cartography mode, then click **Aerial Drone View** to demonstrate returning seamlessly to the authentic sub-centimeter drone orthomosaic without losing camera position or 3D buildings.
       - Show the **Layer Visibility** toggles (**3D Buildings**, **Building Labels**, **Perimeter Boundary**, **Agricultural Plots**) and **Label Display Mode** (**Full Pill View** vs. **Compact Number**).
       - Briefly toggle **Dawn / Day / Dusk / Night** lighting (`setLightingPreset()`).
-      - Point out the **Performance Profile** (`⚡ Auto`, `🌿 Kiosk Eco`, `💎 High`).
-  4. Press **`Alt + Shift + A`** (`toggleAdminMode()`) to show how an administrator can unlock and drag the yellow **`📍 You Are Here 🔓 (Drag to move)`** pin if the physical kiosk totem is moved to another building lobby, saving immediately to the database. Press `Alt + Shift + A` again to lock it.
+      - Point out the **Performance Profile** (`Auto — Adaptive`, `Kiosk Eco`, `High`) and how `Auto (Adaptive)` automatically enables `Eco-Tuned` mode on integrated GPUs.
+  4. Switch to the open **`http://localhost:8080/admin`** tab (pre-logged into the password-protected admin portal). Briefly show the **Dashboard & Status** KPI cards, the interactive **"`You Are Here` Pin & Station"** satellite map editor, the **Multi-Photo `.webp` Uploader**, **Internal Offices**, and **Agricultural Plots & Crops**—explaining how any save in `/admin` immediately updates the live 3D map and search bar via `BroadcastChannel` without reloading.
 - **What to Say:**
-  > *"Finally, we built this for real-world daily operations. For accessibility, there is a 1-Finger Orbit toggle so anyone can rotate the 3D map with a single finger, plus Full Pill and Compact Number label modes. Under Settings, the system automatically adapts to the computer's graphics chip—or a phone's battery—and includes a 45-second idle reset so the kiosk stays cool running 24/7. And if we move the physical kiosk to another lobby for a summit, an admin simply unlocks the 'You Are Here' pin and drags it to the new spot."*
+  > *"Finally, we built this for real-world daily operations. For accessibility, there is a 1-Finger Orbit toggle so anyone can rotate the 3D map with a single finger, plus Full Pill and Compact Number label modes. Under Settings, our 3-Tier Adaptive Performance Engine automatically detects integrated GPUs and tunes rendering to keep frame rates smooth, paired with a 45-second idle reset so the kiosk stays cool running 24/7. And through our password-protected admin portal—backed by an 11-table MySQL database—staff can drag the 'You Are Here' pin, upload new WebP photos, manage internal offices, or update planted crops and tree counts with instant live synchronization across the map."*
 
 ---
 
@@ -97,19 +100,19 @@
 
 | Failure Scenario | What Still Works Locally | Exact Presenter Recovery Step |
 | :--- | :--- | :--- |
-| **1. Cloudflare Tunnel Is Slow or Blocked by Venue Firewall** | Everything on the presenter laptop (`http://localhost:8080`) works at 100% speed. Only the phone scanning over cellular data is affected. | **Option A (Same Wi-Fi):** Connect the demo laptop and demo phone to the same mobile hotspot, click the green Tunnel badge in Admin Mode (`Alt+Shift+A` → click tunnel badge → `promptCustomTunnelUrl()` in `js/qr.js`), and enter `http://<laptop-LAN-IP>:8080`.<br>**Option B (On-Screen Phone Simulation):** Switch to your pre-opened second browser tab running `http://localhost:8080/?dest=rnd_building&mode=phone` in mobile responsive view (`400x820`). |
-| **2. Venue Internet Drops Completely Mid-Demo** | If the browser tab is **already open**, the 210.66 MB drone map (`LARES v1.mbtiles`), all 54 3D `.glb` models, all 63 `.webp` photos, directory search, and A*/Dijkstra routing run **100% from local disk** (`localhost:8080`). | **Do NOT press `F5` / Refresh** if internet is completely down. Stay in the already-open tab, keep the map in **Aerial Drone View** (which reads tiles locally from `LARES v1.mbtiles`), and run Segments 1–4 and 6 normally. |
-| **3. Local MySQL Service Is Stopped on Demo Laptop** | 100% of the application still works. | Do nothing—`server.js` automatically falls back to reading/writing `pin.json`, `colors.json`, and `drone_offset.json` on disk without throwing any user-facing errors. |
+| **1. Cloudflare Tunnel Is Slow or Blocked by Venue Firewall** | Everything on the presenter laptop (`http://localhost:8080`) works at full speed. Only the phone scanning over cellular data is affected. | **Option A (Same Wi-Fi):** Connect the demo laptop and demo phone to the same mobile hotspot and open `http://<laptop-LAN-IP>:8080/?dest=rnd_building&mode=phone`.<br>**Option B (On-Screen Phone Simulation):** Switch to your pre-opened second browser tab running `http://localhost:8080/?dest=rnd_building&mode=phone` in mobile responsive view (`400x820`). |
+| **2. Venue Internet Drops Completely Mid-Demo** | If the browser tab is **already open** (so CDN libraries `mapbox-gl.js`, `@turf/turf@6.5.0`, and Google Fonts are already in memory — `LIM-01`), the 210.66 MB drone map (`LARES v1.mbtiles`), all 54 3D `.glb` models, all 63 `.webp` photos, directory search, and Dijkstra routing are served locally from `localhost:8080`. A fresh page reload requires internet access to fetch the CDN libraries and Mapbox base styles. | **Do NOT press `F5` / Refresh** if internet is completely down. Stay in the already-open tab, keep the map in **Aerial Drone View** (which reads tiles locally from `LARES v1.mbtiles`), and run Segments 1–4 and 6 normally. |
+| **3. Local MySQL Service Is Stopped on Demo Laptop** | All public map features continue working. | Do nothing—`server.js` automatically falls back to reading/writing local JSON files (`pin.json`, `colors.json`, `drone_offset.json`) and in-memory defaults without throwing any user-facing errors. |
 
 ---
 
 ## Likely Questions from the Audience & Factual Answers
 
 ### 1. *"Why are we presenting DA-LARES today while QARES, RARES, and CARES say 'Under Development'?"*
-- **Answer:** The platform was architected from day one for **all four DA-CALABARZON research stations** (`js/data/stations.js`, `js/stations.js`). We started with **DA-LARES** as our flagship pilot station and completed 100% of its 49 custom 3D building models, 47 office listings, 45 field plots, and 2.68 km routing graph. While we are already onboarding the drone maps and 3D models for **DA-RARES**, **DA-QARES**, and **DA-CARES** (including RARES's drone orthomosaic, 39 footprints, 45 plots, and custom 3D Guard House), gating them as *"Under Development"* in public deployed mode ensures that anyone searching the live system today gets a 100%-verified experience on DA-LARES while seeing the regional roadmap.
+- **Answer:** The platform was architected from day one for **all four DA-CALABARZON research stations** (`stations` MySQL table, `js/data/stations.js`, `js/stations.js`). We started with **DA-LARES** as our flagship pilot station and completed its 49 custom 3D building models, 47 office listings, 45 field plots, and 2.68 km routing graph. While we have already onboarded the drone maps and footprints for **DA-RARES** (206.54 MB MBTiles, 45 footprints, 45 plots, custom 3D Guard House) and **DA-QARES** (223.44 MB MBTiles, 53 footprints, 31 roads), gating them as *"Under Development"* in public deployed mode ensures that anyone searching the live system today gets a verified experience on DA-LARES—and administrators can unlock each station with a single click in `/admin` once its 3D models are complete.
 
-### 2. *"How will station workers and researchers use this differently from visitors?"*
-- **Answer:** Visitors primarily use the system to find offices, buildings, and walking routes. For **station workers, researchers, and farm superintendents**, the **Agricultural Plots** module (covering Plots 1–45 across 23 commodity zones) is designed to serve as an operational field map. In our next phase, clicking any plot will show workers **what specific crop or variety is currently planted there**, the **exact tree count** for orchard plots, planting schedules, and whether that plot is designated for **annual/perennial crops** or **monthly/seasonal trials**.
+### 2. *"How do station workers and researchers use this differently from visitors?"*
+- **Answer:** Visitors primarily use the system to find offices, buildings, and walking routes. For **station workers, researchers, and farm superintendents**, the **Agricultural Plots** module (covering Plots 1–45 across 23 commodity zones and backed by the `agricultural_plots` MySQL table) serves as a live operational field map. Clicking any plot shows workers **what specific crop or variety is currently planted there**, the **exact tree or plant count**, **plot status**, and whether that plot is designated for **perennial orchards, annual crops, or monthly/seasonal trials**—all editable in real time via `/admin` and searchable in the map's search bar.
 
 ### 3. *"Can anyone search this system online, or do they have to be standing at the kiosk?"*
 - **Answer:** **Anyone can search and use it online.** Once deployed, the web map is publicly accessible from any desktop computer, tablet, or smartphone browser—so farmers, guests, and staff can look up buildings, offices, and plots from anywhere, in addition to using the lobby touchscreen kiosk and QR-code GPS handoff on-site.

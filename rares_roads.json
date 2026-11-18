@@ -574,8 +574,8 @@
             14.576008786728451
           ],
           [
-            121.34046015754546,
-            14.575964533183608
+            121.34045903104413,
+            14.575965917660724
           ]
         ],
         "type": "LineString"
@@ -653,8 +653,8 @@
       "geometry": {
         "coordinates": [
           [
-            121.34066957755192,
-            14.57592579089777
+            121.34067024513558,
+            14.575926503651317
           ],
           [
             121.34065159369504,
@@ -1809,7 +1809,7 @@
       }
     },
     {
-      "id": "ae8db4b43f9c3293edac7c8fc6e88d12",
+      "id": "68686a55fda1ef79a235a23bd7d69ea6",
       "type": "Feature",
       "properties": {
         "id": "rares_road_40",
@@ -1818,29 +1818,8 @@
       "geometry": {
         "coordinates": [
           [
-            121.33937925748614,
-            14.576809138321991
-          ],
-          [
-            121.33939402483696,
-            14.576853905593268
-          ]
-        ],
-        "type": "LineString"
-      }
-    },
-    {
-      "id": "68686a55fda1ef79a235a23bd7d69ea6",
-      "type": "Feature",
-      "properties": {
-        "id": "rares_road_41",
-        "station": "rares"
-      },
-      "geometry": {
-        "coordinates": [
-          [
-            121.33940877240224,
-            14.576803579057739
+            121.339408623775,
+            14.576802428775082
           ],
           [
             121.33944977527835,
@@ -1862,7 +1841,7 @@
       "id": "01ab110a9a0c2a40b19d2f322b39fa26",
       "type": "Feature",
       "properties": {
-        "id": "rares_road_42",
+        "id": "rares_road_41",
         "station": "rares"
       },
       "geometry": {
@@ -1874,10 +1853,6 @@
           [
             121.33942123995627,
             14.576842910779007
-          ],
-          [
-            121.33939333026098,
-            14.576850950977928
           ]
         ],
         "type": "LineString"
@@ -1887,7 +1862,7 @@
       "id": "1a6f3a8750d60fe9fd3cf2748ded9aca",
       "type": "Feature",
       "properties": {
-        "id": "rares_road_43",
+        "id": "rares_road_42",
         "station": "rares"
       },
       "geometry": {
@@ -1912,7 +1887,7 @@
       "id": "4e0da8307ed12a24563d216c0c9462ad",
       "type": "Feature",
       "properties": {
-        "id": "rares_road_44",
+        "id": "rares_road_43",
         "station": "rares"
       },
       "geometry": {
@@ -1933,7 +1908,7 @@
       "id": "1748a7df540c1abf2e7b21ea45a3b0b7",
       "type": "Feature",
       "properties": {
-        "id": "rares_road_45",
+        "id": "rares_road_44",
         "station": "rares"
       },
       "geometry": {
@@ -1954,7 +1929,7 @@
       "id": "42c4942faadc14dd55eb702c52ae150f",
       "type": "Feature",
       "properties": {
-        "id": "rares_road_46",
+        "id": "rares_road_45",
         "station": "rares"
       },
       "geometry": {
@@ -1975,18 +1950,18 @@
       "id": "1d42c11ce7db67255554aab3c119bdc8",
       "type": "Feature",
       "properties": {
-        "id": "rares_road_47",
+        "id": "rares_road_46",
         "station": "rares"
       },
       "geometry": {
         "coordinates": [
           [
-            121.3404932407264,
-            14.575425215135809
+            121.34036045424011,
+            14.57545351918337
           ],
           [
-            121.34049968866452,
-            14.575448994795295
+            121.34036690217823,
+            14.575477298842856
           ]
         ],
         "type": "LineString"
@@ -1996,7 +1971,7 @@
       "id": "808bcab7efa7a03c70cb5a4322851027",
       "type": "Feature",
       "properties": {
-        "id": "rares_road_48",
+        "id": "rares_road_47",
         "station": "rares"
       },
       "geometry": {
@@ -2008,6 +1983,984 @@
           [
             121.3405294912701,
             14.575547353869993
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "c4eaa88ac651be2bcacbb90527dbbac3",
+      "type": "Feature",
+      "properties": {
+        "id": "rares_road_48",
+        "station": "rares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.34122683558365,
+            14.575826178220723
+          ],
+          [
+            121.34122455762287,
+            14.575862995792747
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "8e09b8c7b1735f6fad11c3c2b04f9109",
+      "type": "Feature",
+      "properties": {
+        "id": "rares_road_49",
+        "station": "rares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.34126330994263,
+            14.575829860889911
+          ],
+          [
+            121.34126101238269,
+            14.575872387493817
+          ],
+          [
+            121.34126359713764,
+            14.57591213457448
+          ],
+          [
+            121.34126876664624,
+            14.57594687852044
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "56c3b23429abaed3bc6732ad6a80e434",
+      "type": "Feature",
+      "properties": {
+        "id": "rares_road_50",
+        "station": "rares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.3412569654567,
+            14.576276847861578
+          ],
+          [
+            121.34125847860105,
+            14.576184304336593
+          ],
+          [
+            121.34125926979254,
+            14.576155425947718
+          ],
+          [
+            121.34125812821225,
+            14.576138366585923
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "cf7548797b777ec39f5f33e18c688f6e",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_1",
+        "name": "Entrance: rares_building_1",
+        "station": "rares",
+        "id": "rares_entrance_1"
+      },
+      "geometry": {
+        "coordinates": [
+          121.34053571241265,
+          14.576414603682252
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "27dafbb2fa8c0395f3e4d3a081cd000d",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_2",
+        "name": "Entrance: rares_building_2",
+        "station": "rares",
+        "id": "rares_entrance_2"
+      },
+      "geometry": {
+        "coordinates": [
+          121.34058424717148,
+          14.576225933458005
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "8cbeb582ca8ab9135b3731db5e94f1a7",
+      "type": "Feature",
+      "properties": {
+        "id": "rares_road_51",
+        "station": "rares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.34051259812884,
+            14.575999468521601
+          ],
+          [
+            121.34067862413218,
+            14.575958867940642
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "81dd33e9af7f9e1bbd2314acfd11e24f",
+      "type": "Feature",
+      "properties": {
+        "id": "rares_road_52",
+        "station": "rares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.34058729379029,
+            14.575980869192549
+          ],
+          [
+            121.34057246859845,
+            14.575920531214024
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "fd125bcc8535621a58bd88fab615595a",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_4",
+        "name": "Entrance: rares_building_4",
+        "station": "rares",
+        "id": "rares_entrance_3"
+      },
+      "geometry": {
+        "coordinates": [
+          121.34057249376752,
+          14.575919776498154
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "e3f1db5f8a01bdb745598729e644ab34",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_3",
+        "name": "Entrance: rares_building_3",
+        "station": "rares",
+        "id": "rares_entrance_4"
+      },
+      "geometry": {
+        "coordinates": [
+          121.34045884421022,
+          14.575965186244005
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "3ca8da81b772ec6d8e4172dbec445e2c",
+      "type": "Feature",
+      "properties": {
+        "id": "rares_road_53",
+        "station": "rares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.34063576695047,
+            14.575765577510822
+          ],
+          [
+            121.34058028806118,
+            14.575778839724677
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "dbc2ca427394ae4b717d88c80328e4cf",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_5",
+        "name": "Entrance: rares_building_5",
+        "station": "rares",
+        "id": "rares_entrance_5"
+      },
+      "geometry": {
+        "coordinates": [
+          121.34057997614917,
+          14.575779108442347
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "38f42322c090119a3d787dd07856cad3",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_6",
+        "name": "Entrance: rares_building_6",
+        "station": "rares",
+        "id": "rares_entrance_6"
+      },
+      "geometry": {
+        "coordinates": [
+          121.34052889386004,
+          14.575547631550862
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "40f344568b86540db079fd6f087395ba",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_7",
+        "name": "Entrance: rares_building_7",
+        "station": "rares",
+        "id": "rares_entrance_7"
+      },
+      "geometry": {
+        "coordinates": [
+          121.34036757092917,
+          14.575478737036661
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "4d40fb97e53e736323789be45b465156",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_8",
+        "name": "Entrance: rares_building_8",
+        "station": "rares",
+        "id": "rares_entrance_8"
+      },
+      "geometry": {
+        "coordinates": [
+          121.34089646601609,
+          14.57636993383818
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "4ca11e04e90d3a451fd3eaf2e0b02271",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_9",
+        "name": "Entrance: rares_building_9",
+        "station": "rares",
+        "id": "rares_entrance_9"
+      },
+      "geometry": {
+        "coordinates": [
+          121.34080997674226,
+          14.576246485592748
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "68bd20d4bd7b284c8282419250e65f11",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_10",
+        "name": "Entrance: rares_building_10",
+        "station": "rares",
+        "id": "rares_entrance_10"
+      },
+      "geometry": {
+        "coordinates": [
+          121.34069605812931,
+          14.57592076336259
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "b86822885637945f163e80d977dd9a69",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_11",
+        "name": "Entrance: rares_building_11",
+        "station": "rares",
+        "id": "rares_entrance_11"
+      },
+      "geometry": {
+        "coordinates": [
+          121.34069086684332,
+          14.575798888066444
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "87d1b9261430dec15758b11b37ef6cb2",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_12",
+        "name": "Entrance: rares_building_12",
+        "station": "rares",
+        "id": "rares_entrance_12"
+      },
+      "geometry": {
+        "coordinates": [
+          121.3406645022078,
+          14.575698745701956
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "97b8b74025c6ca5ea9d2ecc62de75fb0",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_13",
+        "name": "Entrance: rares_building_13",
+        "station": "rares",
+        "id": "rares_entrance_13"
+      },
+      "geometry": {
+        "coordinates": [
+          121.34065680969161,
+          14.575631656528373
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "0e208f471bb31094726342c68c374eac",
+      "type": "Feature",
+      "properties": {
+        "id": "rares_road_54",
+        "station": "rares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.34080198178992,
+            14.575603082995144
+          ],
+          [
+            121.34080109004049,
+            14.575599263457633
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "44ae786bfb64391ad38a95d4a0914bfe",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_14",
+        "name": "Entrance: rares_building_14",
+        "station": "rares",
+        "id": "rares_entrance_14"
+      },
+      "geometry": {
+        "coordinates": [
+          121.34080111576054,
+          14.575599083737572
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "535a57bdebecc62d1ddd20c14aba10ab",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_15",
+        "name": "Entrance: rares_building_15",
+        "station": "rares",
+        "id": "rares_entrance_15"
+      },
+      "geometry": {
+        "coordinates": [
+          121.34086260862387,
+          14.575803934195804
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "0e61cd76997bf5b38e7196a197d23689",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_16",
+        "name": "Entrance: rares_building_16",
+        "station": "rares",
+        "id": "rares_entrance_16"
+      },
+      "geometry": {
+        "coordinates": [
+          121.34094767137157,
+          14.575787919135081
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "96c9d13cf99b52e56f5cff6720e88075",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_17",
+        "name": "Entrance: rares_building_17",
+        "station": "rares",
+        "id": "rares_entrance_17"
+      },
+      "geometry": {
+        "coordinates": [
+          121.34099041398201,
+          14.576118601342941
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "b542e651168111318ee5a2725308b58b",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_18",
+        "name": "Entrance: rares_building_18",
+        "station": "rares",
+        "id": "rares_entrance_18"
+      },
+      "geometry": {
+        "coordinates": [
+          121.3412579697769,
+          14.576137565624734
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "dbedaa274a403bb187e18a7c90996a59",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_18",
+        "name": "Entrance: rares_building_18",
+        "station": "rares",
+        "id": "rares_entrance_19"
+      },
+      "geometry": {
+        "coordinates": [
+          121.34126905452086,
+          14.57594705570395
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "fcaefe70b51405b1479bf6714fa4e92a",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_19",
+        "name": "Entrance: rares_building_19",
+        "station": "rares",
+        "id": "rares_entrance_20"
+      },
+      "geometry": {
+        "coordinates": [
+          121.34122502531022,
+          14.575862993911912
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "668d04ccf8cd179264777bf21462848e",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_20",
+        "name": "Entrance: rares_building_20",
+        "station": "rares",
+        "id": "rares_entrance_21"
+      },
+      "geometry": {
+        "coordinates": [
+          121.34110271197136,
+          14.575801934163081
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "507f5376b43e80e6f57b0fb5d55b77af",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_21",
+        "name": "Entrance: rares_building_21",
+        "station": "rares",
+        "id": "rares_entrance_22"
+      },
+      "geometry": {
+        "coordinates": [
+          121.34124823577429,
+          14.575817780720158
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "1f61ee79d260edf8a0dfb391d99b447a",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_22",
+        "name": "Entrance: rares_building_22",
+        "station": "rares",
+        "id": "rares_entrance_23"
+      },
+      "geometry": {
+        "coordinates": [
+          121.341417333619,
+          14.575835750379042
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "6a2a5e7719e560c7bcc3aaf77a080c3e",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_24",
+        "name": "Entrance: rares_building_24",
+        "station": "rares",
+        "id": "rares_entrance_24"
+      },
+      "geometry": {
+        "coordinates": [
+          121.34178672495318,
+          14.57623172430388
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "6e4e6b8293edda29bb07e9a7536d841b",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_23",
+        "name": "Entrance: rares_building_23",
+        "station": "rares",
+        "id": "rares_entrance_25"
+      },
+      "geometry": {
+        "coordinates": [
+          121.341757844759,
+          14.576010698033542
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "083a97f8fcaff2296881a8f7cd17dd67",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_36",
+        "name": "Entrance: rares_building_36",
+        "station": "rares",
+        "id": "rares_entrance_26"
+      },
+      "geometry": {
+        "coordinates": [
+          121.34008932357438,
+          14.575206337230654
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "4bb2f9e61363ade94de761ed62e80b24",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_37",
+        "name": "Entrance: rares_building_37",
+        "station": "rares",
+        "id": "rares_entrance_27"
+      },
+      "geometry": {
+        "coordinates": [
+          121.3401515251046,
+          14.573265659821146
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "388928e6728f0474a189dcebb536e41c",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_38",
+        "name": "Entrance: rares_building_38",
+        "station": "rares",
+        "id": "rares_entrance_28"
+      },
+      "geometry": {
+        "coordinates": [
+          121.3400376276528,
+          14.573277796077662
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "eeddee63ebcd0c1f5461a3aaed925841",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_25",
+        "name": "Entrance: rares_building_25",
+        "station": "rares",
+        "id": "rares_entrance_29"
+      },
+      "geometry": {
+        "coordinates": [
+          121.34053051119662,
+          14.57692601100004
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "50d92c457d990f054f1fdda3ce36b14c",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_26",
+        "name": "Entrance: rares_building_26",
+        "station": "rares",
+        "id": "rares_entrance_30"
+      },
+      "geometry": {
+        "coordinates": [
+          121.33974211146642,
+          14.5764871255613
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "100573b7a3ed82c63c8b1c29d1e268f9",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_27",
+        "name": "Entrance: rares_building_27",
+        "station": "rares",
+        "id": "rares_entrance_31"
+      },
+      "geometry": {
+        "coordinates": [
+          121.33958875132583,
+          14.576533744641026
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "cca2742c2e0304d594e5ff621aded63a",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_28",
+        "name": "Entrance: rares_building_28",
+        "station": "rares",
+        "id": "rares_entrance_32"
+      },
+      "geometry": {
+        "coordinates": [
+          121.33953985758154,
+          14.576556915424803
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "80d82f2be8ef8303972f4cc0021edeec",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_29",
+        "name": "Entrance: rares_building_29",
+        "station": "rares",
+        "id": "rares_entrance_33"
+      },
+      "geometry": {
+        "coordinates": [
+          121.33948183082583,
+          14.576576758844595
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "3537661ec10f095eb77e3aeb2da7aa24",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_39",
+        "name": "Entrance: rares_building_39",
+        "station": "rares",
+        "id": "rares_entrance_34"
+      },
+      "geometry": {
+        "coordinates": [
+          121.337633031971,
+          14.576400699087984
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "da92692606665f9d7c280b4340c97747",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_33",
+        "name": "Entrance: rares_building_33",
+        "station": "rares",
+        "id": "rares_entrance_35"
+      },
+      "geometry": {
+        "coordinates": [
+          121.33946097197583,
+          14.57684176187658
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "00354f8a457b12b1d6b6ea0af6e9fd02",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_32",
+        "name": "Entrance: rares_building_32",
+        "station": "rares",
+        "id": "rares_entrance_36"
+      },
+      "geometry": {
+        "coordinates": [
+          121.33941130527671,
+          14.576906863567203
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "c54e894312d5a5df2c009f184c6b21e1",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_34",
+        "name": "Entrance: rares_building_34",
+        "station": "rares",
+        "id": "rares_entrance_37"
+      },
+      "geometry": {
+        "coordinates": [
+          121.33941920162312,
+          14.576948616367346
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "4fa2c98ecd8b412dce34448e2a8a40cb",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_35",
+        "name": "Entrance: rares_building_35",
+        "station": "rares",
+        "id": "rares_entrance_38"
+      },
+      "geometry": {
+        "coordinates": [
+          121.3394392416551,
+          14.576999056571438
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "0a9fe4a1c76bf48f2c1bc4e04591ff5b",
+      "type": "Feature",
+      "properties": {
+        "id": "rares_road_55",
+        "station": "rares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.33944971597754,
+            14.576934157942006
+          ],
+          [
+            121.3394651064736,
+            14.57698613957703
+          ],
+          [
+            121.3394369114215,
+            14.576994078373048
+          ],
+          [
+            121.33943857655538,
+            14.57699907895234
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "7b09d547433be21c56bf821bc816b102",
+      "type": "Feature",
+      "properties": {
+        "id": "rares_road_56",
+        "station": "rares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.33938396946843,
+            14.57657824723313
+          ],
+          [
+            121.3393878543813,
+            14.57660549218339
+          ],
+          [
+            121.33938762560268,
+            14.5766215940315
+          ],
+          [
+            121.33938506021218,
+            14.576633774406034
+          ],
+          [
+            121.33937116620089,
+            14.57664019201654
+          ],
+          [
+            121.3393561681196,
+            14.576643871863851
+          ],
+          [
+            121.339338137205,
+            14.576647967983007
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "31c40e6090a9fce8a42aa6ce1db059c9",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_30",
+        "name": "Entrance: rares_building_30",
+        "station": "rares",
+        "id": "rares_entrance_39"
+      },
+      "geometry": {
+        "coordinates": [
+          121.33933746439402,
+          14.576648243525838
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "f72cb70aa83f8df116021f0b3fa0c667",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "rares_building_31",
+        "name": "Entrance: rares_building_31",
+        "station": "rares",
+        "id": "rares_entrance_40"
+      },
+      "geometry": {
+        "coordinates": [
+          121.33924431624615,
+          14.576851971900624
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "d1ba6c37f562b33005150e6c84eee104",
+      "type": "Feature",
+      "properties": {
+        "id": "rares_road_57",
+        "station": "rares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.33944411739088,
+            14.576915647067537
+          ],
+          [
+            121.33941640521152,
+            14.576923942149847
+          ],
+          [
+            121.33941107596229,
+            14.576907005671458
           ]
         ],
         "type": "LineString"

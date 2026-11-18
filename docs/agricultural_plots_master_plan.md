@@ -1,7 +1,7 @@
 # DA-LARES Agricultural Field Plot Master Plan
 
 **Comprehensive Phased Implementation & Architecture Guide**  
-*Department of Agriculture - Southern Tagalog Integrated Agricultural Research Center (DA-LARES), Lipa City, Batangas*
+*Department of Agriculture - Lipa Agricultural Research and Experiment Station (DA-LARES), Lipa City, Batangas*
 
 ---
 

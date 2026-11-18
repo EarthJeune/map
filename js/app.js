@@ -3,6 +3,10 @@
 
 import { MAPBOX_ACCESS_TOKEN, DEFAULT_MAP_VIEW, SAVED_MAIN_KIOSK_COORDS } from './data/config.js';
 import { BUILDING_DIRECTORY, DEFAULT_BUILDING_COLORS } from './data/buildings.js';
+import { STATIONS } from './data/stations.js';
+import { BUILDING_OFFICES, OFFICE_SEARCH_ALIASES } from './data/offices.js';
+import { BUILDING_WAYFINDING_INFO } from './data/descriptions.js';
+import { FIELD_COMMODITY_ZONES } from './data/plots.js';
 import { state } from './data/state.js';
 import { createMarkers, removeMarkers } from './markers.js';
 import {
@@ -304,6 +308,232 @@ fetch('/api/rares/pin')
     })
     .catch(err => console.error("Could not fetch RARES pin location", err));
 
+// Hydrate live station, building, office, photo, and agronomic plot records from 10-table MySQL database
+export function syncDatabaseBootstrap(stationId = 'lares') {
+    return fetch(`/api/bootstrap?station=${encodeURIComponent(stationId)}&_t=${Date.now()}`)
+        .then(res => res.ok ? res.json() : null)
+        .catch(() => null)
+        .then(boot => {
+            if (!boot || boot.error) return;
+
+            // 1. Sync all 4 stations status, subtitles, UI metadata, and "You Are Here" pins
+            if (Array.isArray(boot.allStations)) {
+                const parseJsonMeta = (val, fallback) => {
+                    if (!val) return fallback;
+                    if (typeof val === 'object') return val;
+                    try { return JSON.parse(val); } catch (e) { return fallback; }
+                };
+                boot.allStations.forEach(st => {
+                    if (STATIONS[st.station_id]) {
+                        if (st.name) STATIONS[st.station_id].name = st.name;
+                        STATIONS[st.station_id].label = st.label || STATIONS[st.station_id].label;
+                        STATIONS[st.station_id].sub = st.subtitle || STATIONS[st.station_id].sub;
+                        STATIONS[st.station_id].fullName = st.full_name || STATIONS[st.station_id].fullName || STATIONS[st.station_id].sub;
+                        STATIONS[st.station_id].province = st.province || STATIONS[st.station_id].province;
+                        STATIONS[st.station_id].status = st.status === 'live' ? 'active' : 'under_development';
+
+                        const parsedWelcome = parseJsonMeta(st.welcome_tags, null);
+                        if (Array.isArray(parsedWelcome) && parsedWelcome.length > 0) {
+                            STATIONS[st.station_id].welcomeTags = parsedWelcome;
+                        }
+                        const parsedQuick = parseJsonMeta(st.quick_tags, null);
+                        if (Array.isArray(parsedQuick)) {
+                            STATIONS[st.station_id].quickTags = parsedQuick;
+                        }
+                        const parsedFilterDesc = parseJsonMeta(st.filter_descriptions, null);
+                        if (parsedFilterDesc && typeof parsedFilterDesc === 'object' && !Array.isArray(parsedFilterDesc)) {
+                            STATIONS[st.station_id].filterDescriptions = {
+                                ...(STATIONS[st.station_id].filterDescriptions || {}),
+                                ...parsedFilterDesc
+                            };
+                        }
+                        if (st.kiosk_pin_lng && st.kiosk_pin_lat) {
+                            const coords = [Number(st.kiosk_pin_lng), Number(st.kiosk_pin_lat)];
+                            STATIONS[st.station_id].kioskCoords = coords;
+                            if (st.station_id === 'lares') {
+                                state.KIOSK_COORDS = coords;
+                                window.KIOSK_COORDS = coords;
+                            } else if (st.station_id === 'qares') {
+                                state.QARES_KIOSK_COORDS = coords;
+                                window.QARES_KIOSK_COORDS = coords;
+                            } else if (st.station_id === 'rares') {
+                                state.RARES_KIOSK_COORDS = coords;
+                                window.RARES_KIOSK_COORDS = coords;
+                            }
+                            if (state.kioskMarkerInstance && state.currentStationId === st.station_id) {
+                                state.kioskMarkerInstance.setLngLat(coords);
+                            }
+                        }
+                    }
+                });
+                initStationSelector();
+            }
+
+            // 2. Sync buildings, descriptions, multi-photos, and offices
+            if (Array.isArray(boot.buildings)) {
+                // Also sync RARES/QARES baseline GeoJSON features if loaded
+                const stationBaseline = stationId === 'rares'
+                    ? window.raresBuildingsBaseline
+                    : (stationId === 'qares' ? window.qaresBuildingsBaseline : null);
+                const baselineMap = new Map();
+                if (stationBaseline && Array.isArray(stationBaseline.features)) {
+                    stationBaseline.features.forEach(f => {
+                        if (f.properties && f.properties.id) baselineMap.set(f.properties.id, f.properties);
+                    });
+                }
+
+                boot.buildings.forEach(dbBldg => {
+                    const bProp = baselineMap.get(dbBldg.building_code);
+                    if (bProp) {
+                        if (dbBldg.name) bProp.name = dbBldg.name;
+                        if (dbBldg.description !== undefined && dbBldg.description !== null) bProp.description = dbBldg.description;
+                        if (dbBldg.category) bProp.category = dbBldg.category;
+                        if (dbBldg.type_label) bProp.type = dbBldg.type_label;
+                        if (dbBldg.pin_color) bProp.color = dbBldg.pin_color;
+                        if (dbBldg.icon) bProp.icon = dbBldg.icon;
+                        if (Array.isArray(dbBldg.images) && dbBldg.images.length > 0) {
+                            bProp.image = dbBldg.images[0].image_webp_url;
+                            bProp.images = dbBldg.images.map(img => ({
+                                src: img.image_webp_url,
+                                label: img.caption || 'Facility View'
+                            }));
+                        }
+                    }
+
+                    const target = BUILDING_DIRECTORY.find(b => b.id === dbBldg.building_code);
+                    if (target) {
+                        if (dbBldg.name) target.name = dbBldg.name;
+                        if (dbBldg.building_num !== undefined) target.num = dbBldg.building_num;
+                        if (dbBldg.category) target.category = dbBldg.category;
+                        if (dbBldg.type_label) target.type = dbBldg.type_label;
+                        if (dbBldg.description !== undefined && dbBldg.description !== null) target.desc = dbBldg.description;
+                        if (dbBldg.pin_color) target.color = dbBldg.pin_color;
+                        if (dbBldg.icon) target.icon = dbBldg.icon;
+                        if (dbBldg.compact_tag !== undefined) target.compactTag = dbBldg.compact_tag || '';
+                        if (dbBldg.visual_landmark !== undefined) target.visualLandmark = dbBldg.visual_landmark || '';
+                        if (dbBldg.key_services !== undefined) target.keyServices = dbBldg.key_services || '';
+                        if (Array.isArray(dbBldg.images) && dbBldg.images.length > 0) {
+                            target.image = dbBldg.images[0].image_webp_url;
+                            target.images = dbBldg.images.map(img => ({
+                                src: img.image_webp_url,
+                                label: img.caption || 'Facility View'
+                            }));
+                        }
+                    }
+
+                    // Sync wayfinding info
+                    if (dbBldg.visual_landmark || dbBldg.key_services || dbBldg.compact_tag) {
+                        BUILDING_WAYFINDING_INFO[dbBldg.building_code] = {
+                            ...(BUILDING_WAYFINDING_INFO[dbBldg.building_code] || {}),
+                            compactTag: dbBldg.compact_tag || (BUILDING_WAYFINDING_INFO[dbBldg.building_code]?.compactTag) || '',
+                            visualLandmark: dbBldg.visual_landmark || (BUILDING_WAYFINDING_INFO[dbBldg.building_code]?.visualLandmark) || '',
+                            keyServices: dbBldg.key_services || (BUILDING_WAYFINDING_INFO[dbBldg.building_code]?.keyServices) || ''
+                        };
+                    }
+
+                    // Sync offices & search aliases (supports 0, 1, or multiple offices with floor grouping)
+                    if (Array.isArray(dbBldg.offices)) {
+                        dbBldg.offices.forEach(o => {
+                            if (o.office_name && o.search_aliases) {
+                                const parsedAliases = Array.isArray(o.search_aliases)
+                                    ? o.search_aliases
+                                    : String(o.search_aliases).split(',').map(s => s.trim()).filter(Boolean);
+                                if (parsedAliases.length > 0) {
+                                    OFFICE_SEARCH_ALIASES[o.office_name] = parsedAliases;
+                                }
+                            }
+                        });
+                        if (dbBldg.offices.length === 0) {
+                            delete BUILDING_OFFICES[dbBldg.building_code];
+                        } else {
+                            const hasFloors = dbBldg.offices.some(o => o.floor_or_room);
+                            if (hasFloors) {
+                                const floorGroups = {};
+                                dbBldg.offices.forEach(o => {
+                                    const fl = o.floor_or_room || 'General';
+                                    if (!floorGroups[fl]) floorGroups[fl] = [];
+                                    floorGroups[fl].push(o.office_name);
+                                });
+                                BUILDING_OFFICES[dbBldg.building_code] = Object.entries(floorGroups).map(([floor, offices]) => ({ floor, offices }));
+                            } else {
+                                BUILDING_OFFICES[dbBldg.building_code] = dbBldg.offices.map(o => o.office_name);
+                            }
+                        }
+                    }
+                });
+                if (stationId === 'rares' && typeof window.renderRARESDirectory === 'function') {
+                    window.renderRARESDirectory(window.raresBuildingsBaseline);
+                    if (typeof window.createMarkers === 'function') window.createMarkers();
+                } else if (stationId === 'qares' && typeof window.renderQARESDirectory === 'function') {
+                    window.renderQARESDirectory(window.qaresBuildingsBaseline);
+                    if (typeof window.createMarkers === 'function') window.createMarkers();
+                }
+            }
+
+            // 3. Sync agricultural plots & agronomic records
+            if (Array.isArray(boot.plots)) {
+                boot.plots.forEach(dbPlot => {
+                    const targetZone = FIELD_COMMODITY_ZONES.find(z => z.id === dbPlot.plot_code);
+                    if (targetZone) {
+                        if (dbPlot.zone_name) targetZone.name = dbPlot.zone_name;
+                        if (dbPlot.plot_number) targetZone.plotRange = dbPlot.plot_number;
+                        if (dbPlot.category) targetZone.category = dbPlot.category;
+                        if (dbPlot.icon) targetZone.icon = dbPlot.icon;
+                        if (dbPlot.color) targetZone.color = dbPlot.color;
+                        if (dbPlot.description !== undefined && dbPlot.description !== null) targetZone.description = dbPlot.description;
+                        if (dbPlot.image_webp_url) targetZone.image = dbPlot.image_webp_url;
+                        targetZone.currentCrop = dbPlot.current_crop || null;
+                        targetZone.treeCount = dbPlot.tree_or_plant_count;
+                        targetZone.croppingCycle = dbPlot.cropping_cycle || 'perennial';
+                        targetZone.cycleMonths = dbPlot.cycle_months || null;
+                        targetZone.areaHectares = dbPlot.area_hectares || null;
+                        targetZone.status = dbPlot.status || 'Active';
+                    }
+                });
+            }
+
+            if (state.currentStationId === 'lares') {
+                // Re-run filterDirectory so active search bar queries immediately reflect MySQL updates
+                if (typeof filterDirectory === 'function') {
+                    filterDirectory();
+                } else {
+                    buildDirectory();
+                }
+                if (typeof renderPhoneDirectory === 'function') {
+                    const phoneQuery = document.getElementById('phone-search-input')?.value || '';
+                    renderPhoneDirectory(phoneQuery);
+                }
+                if (state.mapReady) {
+                    removeMarkers();
+                    createMarkers();
+                }
+            }
+        });
+}
+
+// Initial database bootstrap on startup
+syncDatabaseBootstrap('lares');
+
+// Live Cross-Tab Sync: Whenever Admin saves changes in /admin, automatically refresh map, search, and directory
+if (typeof window !== 'undefined') {
+    window.syncDatabaseBootstrap = syncDatabaseBootstrap;
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'da_db_sync_ts') {
+            syncDatabaseBootstrap(state.currentStationId || 'lares');
+        }
+    });
+    if (typeof BroadcastChannel !== 'undefined') {
+        try {
+            const syncChannel = new BroadcastChannel('da_spatial_hub_sync');
+            syncChannel.onmessage = (ev) => {
+                if (ev.data && ev.data.type === 'db_updated') {
+                    syncDatabaseBootstrap(state.currentStationId || 'lares');
+                }
+            };
+        } catch (e) {}
+    }
+}
+
 // Initial Map load sequence
 function initViewportTelemetry() {
     const coordsEl = document.getElementById('coords-text');
@@ -384,7 +614,9 @@ function initViewportTelemetry() {
 
             // Check if animations or movement are ongoing
             const isAnyAnimationActive = state.isWalking || state.isOrbiting || state.idleRotating || state.isIntroAnimating;
-            if (!isAnyAnimationActive && (Date.now() - lastActivityTimestamp > 2000)) {
+            if (isAnyAnimationActive) {
+                lastActivityTimestamp = Date.now();
+            } else if (Date.now() - lastActivityTimestamp > 2000) {
                 // Enter idle sleep to free CPU cores
                 sleepFpsMeter();
                 return;
@@ -398,6 +630,11 @@ function initViewportTelemetry() {
     map.on('zoomstart', wakeFpsMeter);
     map.on('rotatestart', wakeFpsMeter);
     map.on('pitchstart', wakeFpsMeter);
+    if (typeof window !== 'undefined') {
+        window.wakeFpsMeter = wakeFpsMeter;
+        window.addEventListener('pointerdown', wakeFpsMeter, { passive: true });
+        window.addEventListener('wheel', wakeFpsMeter, { passive: true });
+    }
 
     // Initial warm-up for 3 seconds to measure baseline hardware FPS
     wakeFpsMeter();
@@ -579,56 +816,10 @@ window.closeStationDropdown = closeStationDropdown;
 window.switchResearchStation = switchResearchStation;
 window.state = state;
 
-// Sync Admin Mode state to DOM
+// Public 3D Map strictly runs in Visitor / Kiosk mode (All Admin CRUD & Pin Calibration live at /admin)
 if (typeof document !== 'undefined') {
-    document.documentElement.classList.toggle('admin-mode', !!state.isAdmin);
-    document.body.classList.toggle('admin-mode', !!state.isAdmin);
-}
-
-// Secret Admin Mode Toggle Shortcut: Alt + Shift + A
-window.addEventListener('keydown', (e) => {
-    if (e.altKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
-        e.preventDefault();
-        state.isAdmin = !state.isAdmin;
-        state.isKioskDraggable = state.isAdmin;
-        if (typeof localStorage !== 'undefined') {
-            localStorage.setItem('da_admin_mode', state.isAdmin ? 'true' : 'false');
-        }
-        document.documentElement.classList.toggle('admin-mode', state.isAdmin);
-        document.body.classList.toggle('admin-mode', state.isAdmin);
-        if (typeof window.syncAdminDroneDOM === 'function') {
-            window.syncAdminDroneDOM();
-        }
-        if (state.currentStationId === 'lares') {
-            buildDirectory();
-        } else if (state.currentStationId === 'qares') {
-            if (typeof window.renderQARESDirectory === 'function' && window.qaresBuildingsBaseline) {
-                window.renderQARESDirectory(window.qaresBuildingsBaseline);
-            }
-        } else if (state.currentStationId === 'rares') {
-            if (typeof window.renderRARESDirectory === 'function') {
-                window.renderRARESDirectory();
-            }
-        }
-        createKioskMarker();
-        const activeStationLabel = (state.currentStationId === 'qares') ? 'DA-QARES (Tiaong)' : (state.currentStationId === 'rares') ? 'DA-RARES (Tanay)' : 'DA-LARES (Lipa)';
-        const msg = state.isAdmin
-            ? `🔓 Admin Mode Enabled (${activeStationLabel})\n\n• Kiosk Pin Calibration: Drag the "You Are Here" pin or Alt + Click anywhere on the map to place it\n• Drone Calibration: Click 🛰️ in the top-right toolbar or press Alt + Shift + D`
-            : '🔒 Visitor Kiosk Mode (Admin Controls Hidden)';
-        console.log(msg);
-        alert(msg);
-    }
-});
-
-// Admin Mode Quick Pin Placement: Alt + Click anywhere on the map to relocate the active station's Kiosk Pin
-if (map) {
-    map.on('click', (e) => {
-        if (state.isAdmin && e.originalEvent && e.originalEvent.altKey) {
-            e.preventDefault();
-            const newCoords = [e.lngLat.lng, e.lngLat.lat];
-            if (typeof window.repositionActiveKioskPin === 'function') {
-                window.repositionActiveKioskPin(newCoords);
-            }
-        }
-    });
+    state.isAdmin = false;
+    state.isKioskDraggable = false;
+    document.documentElement.classList.remove('admin-mode');
+    document.body.classList.remove('admin-mode');
 }

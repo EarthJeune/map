@@ -1126,11 +1126,14 @@ body.kiosk-portrait .sidebar {
     right: 24px;
     width: auto;
     height: var(--portrait-panel-height);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 28px;
+    background: rgba(10, 15, 28, 0.96);
+    backdrop-filter: blur(28px) saturate(1.8);
+    -webkit-backdrop-filter: blur(28px) saturate(1.8);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 36px;
     transform: none;
     opacity: 1;
-    box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.1);
     z-index: 200;
     overflow: visible;
     transition: transform .45s cubic-bezier(.22, 1, .36, 1), box-shadow .3s;
@@ -1149,14 +1152,14 @@ body.kiosk-portrait .sidebar-toggle-btn {
     top: auto;
     left: 50%;
     transform: translateX(-50%);
-    width: 64px;
-    height: 32px;
+    width: 88px;
+    height: 36px;
     background: #0a0f1c;
     backdrop-filter: blur(24px) saturate(1.6);
     -webkit-backdrop-filter: blur(24px) saturate(1.6);
-    border: 1px solid rgba(255, 255, 255, .12);
+    border: 1px solid rgba(255, 255, 255, .14);
     border-bottom: none;
-    border-radius: 14px 14px 0 0;
+    border-radius: 18px 18px 0 0;
     color: #94a3b8;
     align-items: center;
     justify-content: center;
@@ -1195,24 +1198,46 @@ body.kiosk-portrait .sidebar-toggle-icon {
     pointer-events: none;
 }
 
-/* Fully closed collapsed state in portrait (zero leftover menu, only the attached arrow tab visible) */
+/* Fully closed collapsed state in portrait:
+   When folding the buildings menu or route directions, the container is 100% OFF-SCREEN below the bottom edge.
+   ONLY the attached glowing toggle button tab remains visible at the bottom center of the screen!
+   This applies universally whether browsing the directory OR actively navigating a route. */
 
 body.kiosk-portrait .sidebar.collapsed,
 body.kiosk-portrait .sidebar.visible.collapsed {
     transform: translateY(calc(100% + 24px)) !important;
     box-shadow: none !important;
-    pointer-events: none;
+    pointer-events: none !important;
+    overflow: visible !important;
 }
 
 body.kiosk-portrait .sidebar.collapsed .sidebar-toggle-btn,
 body.kiosk-portrait .sidebar.visible.collapsed .sidebar-toggle-btn {
-    pointer-events: auto;
+    pointer-events: auto !important;
+    z-index: 500 !important;
+    cursor: pointer;
+    width: 96px;
+    height: 44px;
+    border-radius: 22px 22px 0 0;
+    border: 1px solid rgba(34, 197, 94, 0.7) !important;
+    border-bottom: none !important;
+    color: #4ade80;
+    background: #0a0f1c !important;
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.6), 0 -2px 10px rgba(34, 197, 94, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 /* ---------- Sidebar Header — Horizontal compact row ---------- */
 
 body.kiosk-portrait .sidebar-header {
     padding: 20px 28px 14px;
+    border-top-left-radius: 36px;
+    border-top-right-radius: 36px;
+    overflow: hidden;
     gap: 16px;
 }
 
@@ -1318,6 +1343,13 @@ body.kiosk-portrait .directory {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    border-bottom-left-radius: 36px;
+    border-bottom-right-radius: 36px;
+}
+
+body.kiosk-portrait .route-info {
+    border-bottom-left-radius: 36px;
+    border-bottom-right-radius: 36px;
 }
 
 body.kiosk-portrait .dir-section-title {
@@ -1454,11 +1486,11 @@ body.kiosk-portrait .building-panel {
     top: auto;
     left: 24px;
     right: 24px;
-    width: auto;
-    max-width: 620px;
+    width: calc(100vw - 48px) !important;
+    max-width: min(940px, calc(100vw - 48px));
     margin: 0 auto;
-    max-height: 48vh;
-    border-radius: 28px;
+    max-height: min(68vh, 1200px);
+    border-radius: 36px;
     z-index: 220;
     transform: translateY(calc(100% + 40px));
     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
@@ -1472,7 +1504,7 @@ body.kiosk-portrait .building-panel {
     display: flex;
     flex-direction: column;
     overflow-y: auto;
-    padding-bottom: 12px;
+    padding-bottom: 20px;
 }
 
 body.kiosk-portrait .building-panel.active {
@@ -1493,21 +1525,25 @@ body.kiosk-portrait.has-active-bldg-panel .sidebar {
     transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease !important;
 }
 
+body.kiosk-portrait .bp-header {
+    padding: 22px 28px 14px;
+}
+
 body.kiosk-portrait .bp-back-to-dir-btn {
     display: inline-flex !important;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.15);
     color: #e2e8f0;
-    padding: 6px 14px;
+    padding: 8px 16px;
     border-radius: 12px;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.2s ease;
-    height: 38px;
-    margin-right: 8px;
+    height: 42px;
+    margin-right: 10px;
 }
 
 body.kiosk-portrait .bp-back-to-dir-btn:hover {
@@ -1520,14 +1556,74 @@ body.kiosk-portrait .bp-back-to-dir-btn:hover {
     display: none;
 }
 
-body.kiosk-portrait .bp-directions-btn {
-    height: 54px;
+body.kiosk-portrait .bp-number {
+    width: 40px;
+    height: 40px;
     font-size: 16px;
-    border-radius: 14px;
+    border-radius: 12px;
 }
 
 body.kiosk-portrait .bp-title {
-    font-size: 19px;
+    font-size: 22px;
+    line-height: 1.25;
+}
+
+body.kiosk-portrait .bp-subtitle {
+    font-size: 13px;
+    margin-top: 3px;
+}
+
+body.kiosk-portrait .bp-close {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+}
+
+body.kiosk-portrait .bp-image-area {
+    padding: 6px 28px 12px;
+}
+
+body.kiosk-portrait .bp-image-wrapper {
+    height: 220px;
+}
+
+body.kiosk-portrait #bp-real-image {
+    height: 220px !important;
+    border-radius: 16px;
+}
+
+body.kiosk-portrait .bp-image-placeholder {
+    height: 180px !important;
+    border-radius: 16px;
+}
+
+body.kiosk-portrait .bp-body {
+    padding: 0 28px 10px;
+}
+
+body.kiosk-portrait .bp-wf-card {
+    padding: 12px 16px;
+    border-radius: 12px;
+}
+
+body.kiosk-portrait .bp-wf-title {
+    font-size: 11px;
+}
+
+body.kiosk-portrait .bp-wf-text {
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+body.kiosk-portrait .bp-actions {
+    padding: 10px 28px 16px;
+}
+
+body.kiosk-portrait .bp-directions-btn {
+    height: 60px;
+    font-size: 18px;
+    font-weight: 700;
+    border-radius: 16px;
 }
 
 /* ---------- Turn-by-Turn Banner — Top of map area, centered ---------- */
@@ -1577,27 +1673,27 @@ body.kiosk-portrait .floating-camera-controls {
     border-radius: 24px;
 }
 
-/* When route is active in portrait mode: camera controls sit right above compact route panel */
+/* When route is active in portrait mode: camera controls sit right above compact route panel IF expanded */
 
-body.kiosk-portrait:has(.sidebar.route-active) .floating-camera-controls,
-body.kiosk-portrait.has-active-route .floating-camera-controls {
+body.kiosk-portrait:has(.sidebar.route-active:not(.collapsed)) .floating-camera-controls,
+body.kiosk-portrait.has-active-route:not(.sidebar-collapsed) .floating-camera-controls {
     bottom: calc(35vh + 36px) !important;
 }
 
-/* When the menu is popped DOWN (collapsed), Camera View is lowered */
-
-body.kiosk-portrait.sidebar-collapsed .floating-camera-controls.active,
-body.kiosk-portrait:has(.sidebar.collapsed) .floating-camera-controls.active {
-    bottom: 96px !important;
-}
+/* When the menu is folded (collapsed), Camera and Speed sit comfortably separated above the folded toggle button */
 
 body.kiosk-portrait.sidebar-collapsed .floating-speed-controls.active,
 body.kiosk-portrait:has(.sidebar.collapsed) .floating-speed-controls.active,
 body.kiosk-portrait.sidebar-collapsed .floating-camera-controls.active ~ .floating-speed-controls,
 body.kiosk-portrait:has(.sidebar.collapsed) .floating-camera-controls.active ~ .floating-speed-controls {
     display: flex !important;
-    bottom: 44px !important;
+    bottom: 54px !important;
     animation: fadeInUpCamera 0.25s ease-out forwards;
+}
+
+body.kiosk-portrait.sidebar-collapsed .floating-camera-controls.active,
+body.kiosk-portrait:has(.sidebar.collapsed) .floating-camera-controls.active {
+    bottom: 120px !important;
 }
 
 /* When the menu is popped UP (sidebar NOT collapsed): speed controls stay inside menu */
@@ -1812,7 +1908,7 @@ body.kiosk-portrait .route-steps-container.expanded {
 body.kiosk-portrait .sidebar.route-active {
     height: auto !important;
     max-height: 35vh !important;
-    overflow: hidden !important;
+    overflow: visible !important;
 }
 
 body.kiosk-portrait .sidebar.route-active .route-info {
@@ -4452,9 +4548,9 @@ body.kiosk-portrait .orbit-toast-badge {
     cursor: pointer;
     transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease, border-color 0.25s ease;
     overflow: hidden;
-    padding: 3px;
-    background: radial-gradient(circle at center, rgba(16, 185, 129, 0.18) 0%, rgba(6, 18, 12, 0.92) 100%);
-    border: 1.5px solid rgba(43, 220, 57, 0.45);
+    padding: 5px;
+    background: radial-gradient(circle at center, rgba(16, 185, 129, 0.22) 0%, rgba(6, 18, 12, 0.92) 100%);
+    border: 1.5px solid rgba(16, 185, 129, 0.55);
     border-radius: 14px;
     display: flex;
     align-items: center;
@@ -4462,20 +4558,19 @@ body.kiosk-portrait .orbit-toast-badge {
     width: 48px;
     height: 48px;
     flex-shrink: 0;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45), 0 0 12px rgba(43, 220, 57, 0.2);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45), 0 0 12px rgba(16, 185, 129, 0.22);
 }
 
 .dash-header-badge:hover {
-    transform: scale(1.08);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6), 0 0 22px rgba(43, 220, 57, 0.6);
-    border-color: rgba(43, 220, 57, 0.9);
+    transform: scale(1.06);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6), 0 0 22px rgba(16, 185, 129, 0.55);
+    border-color: rgba(52, 211, 153, 0.95);
 }
 
 .dash-badge-img {
     width: 100%;
     height: 100%;
     object-fit: contain;
-    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
 }
 
 /* System-Wide DASH Welcome & Intro Modal */
@@ -4483,9 +4578,9 @@ body.kiosk-portrait .orbit-toast-badge {
 .dash-welcome-modal-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(2, 6, 23, 0.88);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    background: rgba(2, 6, 23, 0.68);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     z-index: 999995;
     display: flex;
     align-items: center;
@@ -4509,14 +4604,14 @@ body.kiosk-portrait .orbit-toast-badge {
 }
 
 .dash-welcome-modal-card {
-    width: 92%;
-    max-width: 760px;
+    width: 94%;
+    max-width: 860px;
     max-height: 90vh;
     overflow-y: auto;
-    background: linear-gradient(170deg, rgba(18, 26, 43, 0.98), rgba(10, 15, 26, 0.99));
+    background: linear-gradient(165deg, rgba(14, 23, 42, 0.94), rgba(8, 14, 26, 0.97));
     border: 1.5px solid rgba(43, 220, 57, 0.45);
-    border-radius: 24px;
-    padding: 26px 30px 24px;
+    border-radius: 26px;
+    padding: 24px 28px 22px;
     box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 40px rgba(0, 102, 20, 0.35);
     color: #f8fafc;
     display: flex;
@@ -4526,11 +4621,30 @@ body.kiosk-portrait .orbit-toast-badge {
     scrollbar-color: rgba(43, 220, 57, 0.3) transparent;
 }
 
+.dash-welcome-step {
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+    width: 100%;
+    animation: fadeInDashStep 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeInDashStep {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 .dash-welcome-emblem-wrap {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 120px;
+    height: 110px;
     margin-top: -4px;
     margin-bottom: 2px;
     cursor: pointer;
@@ -4544,9 +4658,8 @@ body.kiosk-portrait .orbit-toast-badge {
 .dash-welcome-emblem-img {
     height: 100%;
     width: auto;
-    max-width: 260px;
+    max-width: 310px;
     object-fit: contain;
-    filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.45));
 }
 
 .dash-welcome-badge-row {
@@ -4557,7 +4670,7 @@ body.kiosk-portrait .orbit-toast-badge {
 }
 
 .dash-welcome-agency-badge {
-    font-size: 11.5px;
+    font-size: 11px;
     font-weight: 800;
     color: #2bdc39;
     background: rgba(0, 102, 20, 0.3);
@@ -4566,12 +4679,21 @@ body.kiosk-portrait .orbit-toast-badge {
     border-radius: 20px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .dash-welcome-status-pill {
     font-size: 11px;
     color: #94a3b8;
     font-weight: 600;
+}
+
+.dash-welcome-header-text {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
 }
 
 .dash-welcome-title {
@@ -4584,13 +4706,233 @@ body.kiosk-portrait .orbit-toast-badge {
 }
 
 .dash-welcome-subtitle {
-    margin: -6px 0 0;
+    margin: 0;
     font-size: 13.5px;
     color: #ffad00;
     font-weight: 600;
     line-height: 1.4;
 }
 
+.dash-welcome-prompt {
+    font-size: 12.5px;
+    color: #94a3b8;
+    font-weight: 600;
+    margin-top: 2px;
+}
+
+/* 4-Station Interactive Grid */
+.dash-welcome-stations-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-top: 4px;
+}
+
+.dash-welcome-station-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding: 13px 15px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1.5px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.dash-welcome-station-card:hover {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(43, 220, 57, 0.45);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+}
+
+.dash-welcome-station-card:active {
+    transform: translateY(0);
+}
+
+.dash-welcome-station-card.active {
+    background: linear-gradient(145deg, rgba(0, 102, 20, 0.32), rgba(15, 23, 42, 0.65));
+    border: 1.5px solid #2bdc39;
+    box-shadow: 0 0 24px rgba(43, 220, 57, 0.25), 0 8px 20px rgba(0, 0, 0, 0.5);
+}
+
+.dash-wsc-top {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+}
+
+.dash-wsc-icon-wrap {
+    width: 42px;
+    height: 42px;
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    flex-shrink: 0;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.dash-welcome-station-card:hover .dash-wsc-icon-wrap {
+    transform: scale(1.08);
+}
+
+.dash-wsc-icon-wrap.lares {
+    color: #2bdc39;
+    background: rgba(43, 220, 57, 0.14);
+    border-color: rgba(43, 220, 57, 0.35);
+}
+
+.dash-wsc-icon-wrap.qares {
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.14);
+    border-color: rgba(56, 189, 248, 0.35);
+}
+
+.dash-wsc-icon-wrap.rares {
+    color: #a78bfa;
+    background: rgba(167, 139, 250, 0.14);
+    border-color: rgba(167, 139, 250, 0.35);
+}
+
+.dash-wsc-icon-wrap.cares {
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.14);
+    border-color: rgba(245, 158, 11, 0.35);
+}
+
+.dash-wsc-meta {
+    flex: 1;
+    min-width: 0;
+}
+
+.dash-wsc-code-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.dash-wsc-code {
+    font-size: 15px;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: -0.2px;
+}
+
+.dash-wsc-province {
+    font-size: 11.5px;
+    color: #94a3b8;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dash-wsc-badge {
+    font-size: 9.5px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 12px;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.dash-wsc-badge.active {
+    background: rgba(43, 220, 57, 0.18);
+    color: #2bdc39;
+    border: 1px solid rgba(43, 220, 57, 0.4);
+}
+
+.dash-wsc-badge.dev {
+    background: rgba(245, 158, 11, 0.16);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.dash-pulse-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #2bdc39;
+    box-shadow: 0 0 8px #2bdc39;
+    animation: dashPulseDot 1.8s infinite;
+}
+
+@keyframes dashPulseDot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.35; transform: scale(0.75); }
+}
+
+.dash-wsc-fullname {
+    font-size: 11.5px;
+    color: #cbd5e1;
+    line-height: 1.35;
+    font-weight: 500;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.dash-wsc-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 1px;
+}
+
+.dash-wsc-tag {
+    font-size: 10.5px;
+    color: #94a3b8;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 2px 6px;
+    border-radius: 6px;
+    white-space: nowrap;
+}
+
+.dash-welcome-station-card.active .dash-wsc-tag {
+    background: rgba(43, 220, 57, 0.1);
+    border-color: rgba(43, 220, 57, 0.25);
+    color: #a7f3d0;
+}
+
+.dash-wsc-cta {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #94a3b8;
+    margin-top: 2px;
+    transition: color 0.2s, transform 0.2s;
+}
+
+.dash-welcome-station-card:hover .dash-wsc-cta {
+    color: #2bdc39;
+}
+
+.dash-welcome-station-card:hover .dash-wsc-cta svg {
+    transform: translateX(3px);
+}
+
+.dash-welcome-station-card.active .dash-wsc-cta {
+    color: #2bdc39;
+}
+
+/* Fallback cards list */
 .dash-welcome-cards-list {
     display: flex;
     flex-direction: column;
@@ -4635,7 +4977,7 @@ body.kiosk-portrait .orbit-toast-badge {
 }
 
 .dash-welcome-actions {
-    margin-top: 6px;
+    margin-top: 5px;
 }
 
 .dash-btn-proceed {
@@ -4666,6 +5008,61 @@ body.kiosk-portrait .orbit-toast-badge {
     transform: translateY(0);
 }
 
+.dash-btn-back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: #94a3b8;
+    padding: 10px 18px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    margin-top: 4px;
+}
+
+.dash-btn-back:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.28);
+    color: #f8fafc;
+    transform: translateX(-2px);
+}
+
+.dash-btn-back:active {
+    transform: translateX(0);
+}
+
+.dash-btn-back svg {
+    transition: transform 0.2s ease;
+}
+
+.dash-btn-back:hover svg {
+    transform: translateX(-3px);
+}
+
+.dash-welcome-footer-hint {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    font-size: 11.5px;
+    color: #94a3b8;
+    text-align: center;
+    margin-top: 1px;
+    line-height: 1.4;
+}
+
+.dash-welcome-footer-hint svg {
+    flex-shrink: 0;
+    color: #ffad00;
+}
+
 .dash-btn-arrow {
     font-size: 16px;
     transition: transform 0.2s;
@@ -4679,9 +5076,9 @@ body.kiosk-portrait .orbit-toast-badge {
 
 @media (min-width: 900px) {
     .dash-welcome-modal-card {
-        max-width: 840px;
-        padding: 30px 38px 26px;
-        gap: 15px;
+        max-width: 860px;
+        padding: 28px 34px 24px;
+        gap: 14px;
     }
 
     .dash-welcome-title {
@@ -4690,6 +5087,27 @@ body.kiosk-portrait .orbit-toast-badge {
 
     .dash-welcome-subtitle {
         font-size: 14.5px;
+    }
+
+    .dash-welcome-prompt {
+        font-size: 13.5px;
+    }
+
+    .dash-welcome-stations-grid {
+        gap: 14px;
+    }
+
+    .dash-welcome-station-card {
+        padding: 16px 18px;
+        gap: 8px;
+    }
+
+    .dash-wsc-code {
+        font-size: 16px;
+    }
+
+    .dash-wsc-fullname {
+        font-size: 12px;
     }
 
     .dash-welcome-card {
@@ -4721,20 +5139,39 @@ body.kiosk-portrait .orbit-toast-badge {
 @media (orientation: portrait) and (min-width: 720px) {
     .dash-welcome-modal-card {
         width: 88%;
-        max-width: 760px;
-        padding: 36px 38px 30px;
-        gap: 18px;
+        max-width: 780px;
+        padding: 34px 36px 30px;
+        gap: 16px;
         border-radius: 28px;
         box-shadow: 0 30px 75px rgba(0, 0, 0, 0.9), 0 0 50px rgba(43, 220, 57, 0.35);
     }
 
-    .dash-welcome-emblem-wrap {
-        height: 145px;
-        margin-bottom: 6px;
+    .dash-welcome-step {
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+    width: 100%;
+    animation: fadeInDashStep 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeInDashStep {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dash-welcome-emblem-wrap {
+        height: 135px;
+        margin-bottom: 4px;
     }
 
     .dash-welcome-agency-badge {
-        font-size: 12.5px;
+        font-size: 12px;
         padding: 5px 12px;
     }
 
@@ -4747,7 +5184,52 @@ body.kiosk-portrait .orbit-toast-badge {
     }
 
     .dash-welcome-subtitle {
-        font-size: 15.5px;
+        font-size: 15px;
+    }
+
+    .dash-welcome-prompt {
+        font-size: 14px;
+    }
+
+    .dash-welcome-stations-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 14px;
+        margin-top: 6px;
+    }
+
+    .dash-welcome-station-card {
+        padding: 18px 20px;
+        gap: 10px;
+        border-radius: 18px;
+    }
+
+    .dash-wsc-icon-wrap {
+        width: 48px;
+        height: 48px;
+        border-radius: 13px;
+    }
+
+    .dash-wsc-code {
+        font-size: 17px;
+    }
+
+    .dash-wsc-province {
+        font-size: 12.5px;
+    }
+
+    .dash-wsc-fullname {
+        font-size: 12.5px;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+    }
+
+    .dash-wsc-tag {
+        font-size: 11.5px;
+        padding: 3px 8px;
+    }
+
+    .dash-wsc-cta {
+        font-size: 13px;
     }
 
     .dash-welcome-cards-list {
@@ -4780,6 +5262,10 @@ body.kiosk-portrait .orbit-toast-badge {
         font-size: 17.5px;
         border-radius: 16px;
     }
+
+    .dash-welcome-footer-hint {
+        font-size: 12.5px;
+    }
 }
 
 /* Compact Mobile Screens */
@@ -4788,22 +5274,131 @@ body.kiosk-portrait .orbit-toast-badge {
     .dash-welcome-modal-card {
         width: 95%;
         max-width: 440px;
-        padding: 20px 18px 18px;
-        gap: 12px;
+        padding: 16px 14px 14px;
+        gap: 8px;
         border-radius: 20px;
+        max-height: 94vh;
     }
 
-    .dash-welcome-emblem-wrap {
-        height: 105px;
+    .dash-welcome-step {
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+    width: 100%;
+    animation: fadeInDashStep 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeInDashStep {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dash-welcome-emblem-wrap {
+        height: 60px;
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+
+    .dash-welcome-agency-badge {
+        font-size: 9.5px;
+        padding: 3px 8px;
+    }
+
+    .dash-welcome-status-pill {
+        font-size: 9.5px;
     }
 
     .dash-welcome-title {
-        font-size: 20px;
+        font-size: 19px;
+    }
+
+    .dash-welcome-subtitle {
+        font-size: 11.5px;
+    }
+
+    .dash-welcome-prompt {
+        font-size: 11px;
+        margin-top: 1px;
+    }
+
+    .dash-welcome-stations-grid {
+        grid-template-columns: 1fr;
+        gap: 6px;
+        margin-top: 2px;
+    }
+
+    .dash-welcome-station-card {
+        padding: 8px 10px;
+        gap: 4px;
+        border-radius: 12px;
+    }
+
+    .dash-wsc-top {
+        gap: 9px;
+    }
+
+    .dash-wsc-icon-wrap {
+        width: 32px;
+        height: 32px;
+        border-radius: 9px;
+    }
+
+    .dash-wsc-icon-wrap svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    .dash-wsc-code {
+        font-size: 13.5px;
+    }
+
+    .dash-wsc-province {
+        font-size: 10.5px;
+    }
+
+    .dash-wsc-badge {
+        font-size: 8.5px;
+        padding: 1px 5px;
+    }
+
+    .dash-wsc-fullname {
+        display: none;
+    }
+
+    .dash-wsc-tags {
+        gap: 4px;
+        margin-top: 0;
+    }
+
+    .dash-wsc-tag {
+        font-size: 9.5px;
+        padding: 1.5px 5px;
+    }
+
+    .dash-wsc-cta {
+        display: none;
     }
 
     .dash-welcome-card {
-        padding: 11px 12px;
-        gap: 10px;
+        padding: 9px 11px;
+        gap: 8px;
+    }
+
+    .dash-btn-proceed {
+        padding: 12px 16px;
+        font-size: 13.5px;
+        white-space: nowrap;
+    }
+
+    .dash-welcome-footer-hint {
+        font-size: 10px;
+        margin-top: 0;
     }
 }
 
@@ -4812,12 +5407,31 @@ body.kiosk-portrait .orbit-toast-badge {
 @media (orientation: landscape) and (max-height: 850px) {
     .dash-welcome-modal-card {
         max-width: 820px;
-        padding: 18px 28px 16px;
-        gap: 10px;
+        padding: 16px 26px 14px;
+        gap: 8px;
     }
 
-    .dash-welcome-emblem-wrap {
-        height: 85px;
+    .dash-welcome-step {
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+    width: 100%;
+    animation: fadeInDashStep 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeInDashStep {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dash-welcome-emblem-wrap {
+        height: 75px;
         margin-top: 0;
         margin-bottom: 0;
     }
@@ -4827,40 +5441,44 @@ body.kiosk-portrait .orbit-toast-badge {
     }
 
     .dash-welcome-title {
-        font-size: 22px;
+        font-size: 21px;
     }
 
     .dash-welcome-subtitle {
-        font-size: 13px;
-        margin-top: -8px;
+        font-size: 12.5px;
+        margin-top: -2px;
     }
 
-    .dash-welcome-cards-list {
+    .dash-welcome-prompt {
+        font-size: 11.5px;
+    }
+
+    .dash-welcome-stations-grid {
         gap: 8px;
     }
 
-    .dash-welcome-card {
-        padding: 10px 14px;
-        gap: 12px;
+    .dash-welcome-station-card {
+        padding: 10px 12px;
+        gap: 5px;
     }
 
-    .dash-card-icon {
-        font-size: 20px;
+    .dash-wsc-icon-wrap {
+        width: 34px;
+        height: 34px;
     }
 
-    .dash-card-title {
-        font-size: 13.5px;
-        margin-bottom: 1px;
+    .dash-wsc-icon-wrap svg {
+        width: 18px;
+        height: 18px;
     }
 
-    .dash-card-desc {
-        font-size: 11.5px;
-        line-height: 1.4;
+    .dash-wsc-fullname {
+        font-size: 11px;
     }
 
     .dash-btn-proceed {
-        padding: 12px 20px;
-        font-size: 15px;
+        padding: 11px 18px;
+        font-size: 14.5px;
     }
 }
 

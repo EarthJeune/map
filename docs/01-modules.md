@@ -1,6 +1,6 @@
-# DA-CALABARZON Interactive 3D Research Station Mapping & Wayfinding System — Module Reference
+# iGUIDE — Module Reference
 
-**Document Purpose:** Detailed breakdown of every software module in the **DA-CALABARZON Interactive 3D Research Station Mapping & Wayfinding System** (working title: **DASH**), including its one-sentence purpose, behavior, inputs/outputs, implementing files and functions, module dependencies, and current implementation status. All metrics and statuses match [`docs/00-system-overview.md`](file:///c:/Users/LGU-SanPedro/Downloads/map/docs/00-system-overview.md).
+**Document Purpose:** Detailed breakdown of every software module in **iGUIDE** (*Interactive Geospatial Unified Information Directory and Explorer*), including its one-sentence purpose, behavior, inputs/outputs, implementing files and functions, module dependencies, and current implementation status. All metrics and statuses match [`docs/00-system-overview.md`](docs/00-system-overview.md).
 
 ---
 
@@ -139,9 +139,9 @@ Bootstraps the web application, detects whether the device is a desktop browser/
 - **Outputs:** Populated `state` singleton (`js/data/state.js`), compiled routing graph (`state.ROAD_GRAPH`), initialized Mapbox layers, active station UI state, and `#station-dev-modal` in deployed mode.
 
 ### Main Files and Functions
-- [`js/app.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/js/app.js) (495 lines): `initializeCampusData()`, `playIntroAnimation()`, `dismissWelcomeModal()`, `returnToWelcomeMenu()`, `initAdminMode()`, `toggleAdminMode()`, `setElevationView()`.
-- [`js/stations.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/js/stations.js) (2,130 lines): `isDeployedMode()`, `showStationDevModal()`, `closeStationDevModal()`, `switchActiveStation()`, `loadQaresStationData()`, `loadRaresStationData()`, `loadCaresStationData()`, `toggleQaresLayers()`, `toggleRaresLayers()`, `toggleCaresLayers()`, `toggleLaresSpecificLayers()`.
-- [`js/mode.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/js/mode.js) (188 lines): `detectAppMode()`, `isPhoneMode()`, `isKioskMode()`, `isKioskPortrait()`, `isKioskLandscape()`, `applyAppModeToDOM()`, `setAppMode()`, `initAppMode()`.
+- [`js/app.js`](js/app.js) (495 lines): `initializeCampusData()`, `playIntroAnimation()`, `dismissWelcomeModal()`, `returnToWelcomeMenu()`, `initAdminMode()`, `toggleAdminMode()`, `setElevationView()`.
+- [`js/stations.js`](js/stations.js) (2,130 lines): `isDeployedMode()`, `showStationDevModal()`, `closeStationDevModal()`, `switchActiveStation()`, `loadQaresStationData()`, `loadRaresStationData()`, `loadCaresStationData()`, `toggleQaresLayers()`, `toggleRaresLayers()`, `toggleCaresLayers()`, `toggleLaresSpecificLayers()`.
+- [`js/mode.js`](js/mode.js) (188 lines): `detectAppMode()`, `isPhoneMode()`, `isKioskMode()`, `isKioskPortrait()`, `isKioskLandscape()`, `applyAppModeToDOM()`, `setAppMode()`, `initAppMode()`.
 
 ### Dependencies on Other Modules
 Imports from all UI/logic modules in `js/` and data modules in `js/data/` (`config.js`, `stations.js`, `buildings.js`, `plots.js`, `state.js`), exposing key handlers on `window.*` for HTML controls in `index.html`.
@@ -159,7 +159,7 @@ Initializes the **Mapbox GL JS** 3D canvas, streams offline drone orthomosaic ti
 ### What It Does
 - **Map Initialization & Station-Isolated 3D Model Architecture (`js/map-setup.js`):**
   - Instantiates `mapboxgl.Map` with hardware-tuned anti-aliasing and pixel ratio settings; mounts offline drone tile sources (`/api/tiles/{z}/{x}/{y}` for LARES, `/api/qares/tiles/{z}/{x}/{y}` for QARES, `/api/rares/tiles/{z}/{x}/{y}` for RARES), perimeter masks (`LARES_MASK`, `QARES_MASK`, `RARES_MASK`), and 3D extruded footprints (`3d-drawings`).
-  - **Option C Station-Isolated 3D Layers (`setupStation3DModels()`, `setup3DBuildingModelsLayer()`):** Creates dedicated, static GeoJSON sources and Mapbox `model` layers per station—`lares-3d-models-source` / `lares-3d-models-layer` (**49** LARES 3D model placements), `rares-3d-models-source` / `rares-3d-models-layer` (RARES 3D models, starting with `rares_guard_house.glb`), and `qares-3d-models-source` / `qares-3d-models-layer`—ensuring zero `.setData()` race conditions and guaranteeing that 3D buildings never vanish when switching between research stations.
+  - **Option C Station-Isolated 3D Layers (`setupStation3DModels()`, `setup3DBuildingModelsLayer()`):** Creates dedicated, static GeoJSON sources and Mapbox `model` layers per station—`lares-3d-models-source` / `lares-3d-models-layer` (**49** LARES 3D model placements), `rares-3d-models-source` / `rares-3d-models-layer` (RARES 3D models, starting with `rares_guard_house.glb`), and `qares-3d-models-source` / `qares-3d-models-layer`—ensuring zero `.setData()` race conditions so that 3D buildings do not vanish when switching between research stations.
   - Enforces strict layer ordering so 3D building models always render cleanly above raster drone orthomosaics, world masks, footprints, and plot polygons.
   - Switches between **Drone Aerial View** and **Mapbox 3D Standard View** (`switchMapStyle()`) and applies 4 time-of-day lighting presets (`dawn`, `day`, `dusk`, `night` via `applyTimePreset()`).
 - **Numbered Markers & Viewport Virtualization (`js/markers.js`):** Creates numbered HTML badge markers (`1`–`39`) for standalone buildings (`createMarkers()`), respects custom `marker_coords` offsets calibrated via `pill_adjust.html` so floating pills never block front facades, hides off-screen markers outside a 12% viewport buffer to maintain 60 FPS (`virtualizeMarkers()`), and highlights the active destination pin during routing (`setRouteMarkerLock()`, `showDestinationSpotlight()`).
@@ -172,11 +172,11 @@ Initializes the **Mapbox GL JS** 3D canvas, streams offline drone orthomosaic ti
 - **Outputs:** Interactive WebGL 3D map canvas (`#map`), station-isolated 3D model layers, DOM marker elements (`.bldg-map-marker`, `.plot-map-marker`), spotlight beacons, and translucent occluded building states.
 
 ### Main Files and Functions
-- [`js/map-setup.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/js/map-setup.js) (1,540 lines): `map`, `getStation3DLayerIds()`, `getActive3DModelsLayerId()`, `setupStation3DModels()`, `setup3DBuildingModelsLayer()`, `setupLayers()`, `setupMapboxStandardLayers()`, `switchMapStyle()`, `applyTimePreset()`, `setBuildingHighlight()`, `setPlotsVisibility()`.
-- [`js/markers.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/js/markers.js) (1,044 lines): `createMarkers()`, `removeMarkers()`, `virtualizeMarkers()`, `updateMarkerZoomState()`, `setRouteMarkerLock()`, `declutterMarkersForOrbit()`, `restoreMarkersAfterOrbit()`, `showDestinationSpotlight()`.
-- [`js/plot-layers.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/js/plot-layers.js) (1,287 lines): `initPlotLayers()`, `renderPlotMarkers()`, `selectPlotZone()`, `deselectPlotZone()`, `highlightSubPlot()`, `clearSubPlotHighlight()`, `updatePlotLayerStyles()`.
-- [`js/occlusion.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/js/occlusion.js) (545 lines): `initBuildingSpatialIndex()`, `ensureOcclusionLayers()`, `updateOcclusion()`, `resetOcclusion()`, `fastMetersDistance()`.
-- [`js/orbit-control.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/js/orbit-control.js) (144 lines): `initOrbitControl()`, `toggleOneFingerOrbitMode()`, `isOneFingerOrbitActive()`.
+- [`js/map-setup.js`](js/map-setup.js) (1,540 lines): `map`, `getStation3DLayerIds()`, `getActive3DModelsLayerId()`, `setupStation3DModels()`, `setup3DBuildingModelsLayer()`, `setupLayers()`, `setupMapboxStandardLayers()`, `switchMapStyle()`, `applyTimePreset()`, `setBuildingHighlight()`, `setPlotsVisibility()`.
+- [`js/markers.js`](js/markers.js) (1,044 lines): `createMarkers()`, `removeMarkers()`, `virtualizeMarkers()`, `updateMarkerZoomState()`, `setRouteMarkerLock()`, `declutterMarkersForOrbit()`, `restoreMarkersAfterOrbit()`, `showDestinationSpotlight()`.
+- [`js/plot-layers.js`](js/plot-layers.js) (1,287 lines): `initPlotLayers()`, `renderPlotMarkers()`, `selectPlotZone()`, `deselectPlotZone()`, `highlightSubPlot()`, `clearSubPlotHighlight()`, `updatePlotLayerStyles()`.
+- [`js/occlusion.js`](js/occlusion.js) (545 lines): `initBuildingSpatialIndex()`, `ensureOcclusionLayers()`, `updateOcclusion()`, `resetOcclusion()`, `fastMetersDistance()`.
+- [`js/orbit-control.js`](js/orbit-control.js) (144 lines): `initOrbitControl()`, `toggleOneFingerOrbitMode()`, `isOneFingerOrbitActive()`.
 
 ### Dependencies on Other Modules
 Imports `js/data/config.js`, `js/data/stations.js`, `js/data/geo.js`, `js/data/buildings.js`, `js/data/plots.js`, `js/data/state.js`, `js/performance.js`, and `js/building-panel.js`. Requires global `mapboxgl` and `turf`.
@@ -207,10 +207,10 @@ Provides the left-hand searchable facility directory, 7-category filter dropdown
 - **Outputs:** Rendered DOM cards in `#directory-list` and `#building-panel`, camera inspection fly-to and orbit triggers, and `POST /api/colors` requests in Admin Mode.
 
 ### Main Files and Functions
-- [`js/sidebar.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/js/sidebar.js) (1,341 lines): `buildDirectory()`, `filterByCategory()`, `toggleCategoryDropdown()`, `selectCategoryFilter()`, `toggleStationDropdown()`, `updateStationSelectorUI()`, `initSidebarToggle()`.
-- [`js/building-panel.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/js/building-panel.js) (1,806 lines): `showBuildingPanel()`, `showPlotPanel()`, `closeBuildingPanel()`, `previewColor()`, `saveCurrentColor()`, `resetCurrentColor()`.
-- [`js/map-settings.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/js/map-settings.js) (330 lines): `initMapSettingsPanel()`, `toggleMapSettingsPanel()`, `closeMapSettingsPanel()`, `syncLayerToggleCheckboxes()`, `handleLayerToggle()`, `setLabelDisplayMode()`, `setLightingPreset()`.
-- Stylesheets: [`css/variables.css`](file:///c:/Users/LGU-SanPedro/Downloads/map/css/variables.css), [`css/base.css`](file:///c:/Users/LGU-SanPedro/Downloads/map/css/base.css), [`css/kiosk.css`](file:///c:/Users/LGU-SanPedro/Downloads/map/css/kiosk.css), [`css/building-panel.css`](file:///c:/Users/LGU-SanPedro/Downloads/map/css/building-panel.css), [`css/navigation.css`](file:///c:/Users/LGU-SanPedro/Downloads/map/css/navigation.css), [`css/phone.css`](file:///c:/Users/LGU-SanPedro/Downloads/map/css/phone.css), [`css/admin.css`](file:///c:/Users/LGU-SanPedro/Downloads/map/css/admin.css), [`css/main.css`](file:///c:/Users/LGU-SanPedro/Downloads/map/css/main.css) (9,852 lines total).
+- [`js/sidebar.js`](js/sidebar.js) (1,341 lines): `buildDirectory()`, `filterByCategory()`, `toggleCategoryDropdown()`, `selectCategoryFilter()`, `toggleStationDropdown()`, `updateStationSelectorUI()`, `initSidebarToggle()`.
+- [`js/building-panel.js`](js/building-panel.js) (1,806 lines): `showBuildingPanel()`, `showPlotPanel()`, `closeBuildingPanel()`, `previewColor()`, `saveCurrentColor()`, `resetCurrentColor()`.
+- [`js/map-settings.js`](js/map-settings.js) (330 lines): `initMapSettingsPanel()`, `toggleMapSettingsPanel()`, `closeMapSettingsPanel()`, `syncLayerToggleCheckboxes()`, `handleLayerToggle()`, `setLabelDisplayMode()`, `setLightingPreset()`.
+- Stylesheets: [`css/variables.css`](css/variables.css), [`css/base.css`](css/base.css), [`css/kiosk.css`](css/kiosk.css), [`css/building-panel.css`](css/building-panel.css), [`css/navigation.css`](css/navigation.css), [`css/phone.css`](css/phone.css), [`css/admin.css`](css/admin.css), [`css/main.css`](css/main.css) (9,852 lines total).
 
 ### Dependencies on Other Modules
 Imports `js/data/buildings.js`, `js/data/offices.js`, `js/data/descriptions.js`, `js/data/plots.js`, `js/data/stations.js`, `js/data/state.js`, `js/map-setup.js`, `js/qr.js`, `js/idle.js`, `js/markers.js`, and `js/performance.js`.
@@ -226,21 +226,21 @@ Imports `js/data/buildings.js`, `js/data/offices.js`, `js/data/descriptions.js`,
 Compiles the GeoJSON road and walkway network into a mathematical routing graph, calculates the shortest walking path between any two points on campus, draws the animated route line on the map, and translates the path geometry into human-readable turn-by-turn directions with landmark references.
 
 ### What It Does
-- **Road Graph Construction (`buildRoadGraph()` in `js/routing.js`):** Subdivides every `road` and `walkway` `LineString` in `roads.json` into **1 m chunks** using `turf.lineChunk`, snaps vertices within **0.5 m** (`SNAP_PRECISION = 0.000005` degrees) to form **2,678 connected graph nodes**, and links each of the **45 building entrance nodes** (`type === 'entrance'`) to its nearest road/walkway node with a tiny 2× virtual connector penalty so through-traffic never cuts across building porches.
+- **Road Graph Construction (`buildRoadGraph()` in `js/routing.js`):** Subdivides every `road` and `walkway` `LineString` in `roads.json` into **1 m chunks** using `turf.lineChunk`, snaps vertices within **0.5 m** (`SNAP_PRECISION = 0.000005` degrees) to form **2,668 connected graph nodes**, and links each of the **43 building entrance nodes** (`type === 'entrance'`) to its nearest road/walkway node with a tiny 2× virtual connector penalty so through-traffic never cuts across building porches.
 - **Shortest-Path Calculation (`findShortestPath()`, `computeRouteFromKiosk()`):** Runs **Dijkstra's shortest-path algorithm** from the active kiosk pin (or live phone GPS position) to the destination building's entrance node, applies path-simplification and right-angle corner smoothing, and caches computed routes in `ROUTE_CACHE`.
 - **Route Line Rendering (`drawRoute()`, `clearRoute()`):** Renders a multi-layered glowing green route (`route-glow`, `route-casing`, `route-line`, and `route-arrows`) on the Mapbox canvas and draws dashed connector lines at the start and end points.
 - **Landmark-Aware Turn-by-Turn Step Builder (`buildSteps()` in `js/steps.js`):** Analyzes heading changes along the route vertices, consolidates micro-bends at intersections, classifies maneuvers (`Turn left`, `Turn right`, `Slight left`, `Slight right`, `Head north/south/east/west`), identifies the nearest building landmark at each turn corner using actual polygon footprint proximity, and renders the interactive step list (`#steps-list`), top maneuver banner (`#live-turn-hud`), and progress highlights (`updateActiveStep()`, `focusRouteStep()`).
 
 ### Inputs and Outputs
-- **Inputs:** `roads.json` (104 features), `qares_roads.json` (31 features), or `rares_roads.json`, origin `[lng, lat]` (`state.KIOSK_COORDS` or live phone GPS), destination building/plot object, and current walker distance along the route.
+- **Inputs:** `roads.json` (101 features), `qares_roads.json` (31 features), or `rares_roads.json` (48 features), origin `[lng, lat]` (`state.KIOSK_COORDS` or live phone GPS), destination building/plot object, and current walker distance along the route.
 - **Outputs:** Ordered coordinate array `state.currentRouteCoords`, step objects array `state.currentRouteSteps` (`{ text, icon, coords, at, landmark }`), Mapbox `route` GeoJSON source updates, and active step UI highlights.
 
 ### Main Files and Functions
-- [`js/routing.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/js/routing.js) (1,341 lines): `buildRoadGraph()`, `findShortestPath()`, `computeRouteFromKiosk()`, `drawRoute()`, `clearRoute()`, `closeRouteAndReset()`, `getNearestNode()`.
-- [`js/steps.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/js/steps.js) (1,700 lines): `buildSteps()`, `updateActiveStep()`, `focusRouteStep()`.
+- [`js/routing.js`](js/routing.js) (1,341 lines): `buildRoadGraph()`, `findShortestPath()`, `computeRouteFromKiosk()`, `drawRoute()`, `clearRoute()`, `closeRouteAndReset()`, `getNearestNode()`.
+- [`js/steps.js`](js/steps.js) (1,700 lines): `buildSteps()`, `updateActiveStep()`, `focusRouteStep()`.
 
 ### Dependencies on Other Modules
-Imports `js/data/buildings.js`, `js/data/state.js`, `js/map-setup.js`, `js/markers.js`, `js/walker.js`, `js/mode.js`, `js/phone-nav.js`, and `js/occlusion.js`. Verified by [`tools/tests/test_routing_graph.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/tools/tests/test_routing_graph.js) (**45/45 LARES entrances 100% reachable**).
+Imports `js/data/buildings.js`, `js/data/state.js`, `js/map-setup.js`, `js/markers.js`, `js/walker.js`, `js/mode.js`, `js/phone-nav.js`, and `js/occlusion.js`. Verified by [`tools/tests/test_routing_graph.js`](tools/tests/test_routing_graph.js) (**43/43 LARES entrances reachable**).
 
 ### Status
 - **`IMPLEMENTED`**
@@ -263,8 +263,8 @@ Animates the 3D walking avatar along computed routes with adjustable playback sp
 - **Outputs:** Animated walker DOM marker (`state.walkerMarker`), camera `easeTo`/`jumpTo` transforms, `#arrived-banner` state, idle orbit state, and `POST /api/pin` updates when an admin drags the kiosk marker.
 
 ### Main Files and Functions
-- [`js/walker.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/js/walker.js) (1,053 lines): `navigateTo()`, `createWalkerMarker()`, `setRouteSpeed()`, `setCameraMode()`, `replayRoute()`, `exitRouteMode()`, `startArrivedCountdown()`, `clearArrivedCountdown()`, `selectStandaloneGate()`.
-- [`js/idle.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/js/idle.js) (585 lines): `createKioskMarker()`, `repositionActiveKioskPin()`, `toggleKioskLock()`, `orbitBuilding()`, `stopOrbit()`, `startIdleRotation()`, `stopIdleRotation()`, `resetIdle()`.
+- [`js/walker.js`](js/walker.js) (1,053 lines): `navigateTo()`, `createWalkerMarker()`, `setRouteSpeed()`, `setCameraMode()`, `replayRoute()`, `exitRouteMode()`, `startArrivedCountdown()`, `clearArrivedCountdown()`, `selectStandaloneGate()`.
+- [`js/idle.js`](js/idle.js) (585 lines): `createKioskMarker()`, `repositionActiveKioskPin()`, `toggleKioskLock()`, `orbitBuilding()`, `stopOrbit()`, `startIdleRotation()`, `stopIdleRotation()`, `resetIdle()`.
 
 ### Dependencies on Other Modules
 Imports `js/data/config.js`, `js/data/stations.js`, `js/data/buildings.js`, `js/data/state.js`, `js/map-setup.js`, `js/routing.js`, `js/steps.js`, `js/sidebar.js`, `js/building-panel.js`, `js/phone-ui.js`, `js/qr.js`, `js/mode.js`, `js/markers.js`, and `js/occlusion.js`.
@@ -291,7 +291,7 @@ Bridges the physical lobby kiosk and the visitor's smartphone by polling the act
 - **Outputs:** Scannable QR image `src` attributes (`#qr-code-img`, `#bp-qr-code-img`, `#qr-zoom-img`), human-readable tunnel badges, and automatic mobile route activation on phone load.
 
 ### Main Files and Functions
-- [`js/qr.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/js/qr.js) (368 lines): `fetchActiveTunnelUrl()`, `getMobileBaseUrl()`, `updateRouteQR()`, `updateBuildingQR()`, `openQRZoomModal()`, `closeQRZoomModal()`, `resetQRAutoExitCountdown()`, `clearQRAutoExitCountdown()`, `checkMobileURLDestination()`, `promptCustomTunnelUrl()`.
+- [`js/qr.js`](js/qr.js) (368 lines): `fetchActiveTunnelUrl()`, `getMobileBaseUrl()`, `updateRouteQR()`, `updateBuildingQR()`, `openQRZoomModal()`, `closeQRZoomModal()`, `resetQRAutoExitCountdown()`, `clearQRAutoExitCountdown()`, `checkMobileURLDestination()`, `promptCustomTunnelUrl()`.
 
 ### Dependencies on Other Modules
 Imports `js/data/buildings.js`, `js/data/state.js`, `js/walker.js`, and `js/mode.js`. Communicates with `GET /api/tunnel` and `POST /api/tunnel` in `server.js`.
@@ -321,9 +321,9 @@ Delivers a native-app-like mobile wayfinding and field reference interface with 
 - **Outputs:** Bottom sheet snap/view transitions, live blue GPS dot & compass cone (`state.userGPSMarker`), trimmed route geometry (`route` Mapbox source), top maneuver HUD updates, and haptic arrival alerts.
 
 ### Main Files and Functions
-- [`js/phone-ui.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/js/phone-ui.js) (1,341 lines): `initPhoneUI()`, `setPhoneSheetSnap()`, `setPhoneSheetView()`, `renderPhoneDirectory()`, `filterPhoneCategory()`, `showPhoneBuildingDetails()`, `showPhonePlotDetails()`, `showMobileToast()`, `openPhotoLightbox()`, `closePhotoLightbox()`, `getResponsiveMapPadding()`.
-- [`js/phone-nav.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/js/phone-nav.js) (297 lines): `updatePhoneRouteUI()`, `renderPhoneStepsList()`, `updatePhoneLiveNavUI()`, `triggerPhoneArrival()`, `dismissPhoneArrival()`, `exitPhoneRoute()`.
-- [`js/gps.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/js/gps.js) (586 lines): `promptPhoneGPSPermission()`, `dismissGPSPermissionCard()`, `startPhoneLiveGPS()`, `stopPhoneLiveGPS()`, `handlePhoneGPSUpdate()`, `handleDeviceOrientation()`, `rerouteFromLivePosition()`, `recenterPhoneCamera()`.
+- [`js/phone-ui.js`](js/phone-ui.js) (1,341 lines): `initPhoneUI()`, `setPhoneSheetSnap()`, `setPhoneSheetView()`, `renderPhoneDirectory()`, `filterPhoneCategory()`, `showPhoneBuildingDetails()`, `showPhonePlotDetails()`, `showMobileToast()`, `openPhotoLightbox()`, `closePhotoLightbox()`, `getResponsiveMapPadding()`.
+- [`js/phone-nav.js`](js/phone-nav.js) (297 lines): `updatePhoneRouteUI()`, `renderPhoneStepsList()`, `updatePhoneLiveNavUI()`, `triggerPhoneArrival()`, `dismissPhoneArrival()`, `exitPhoneRoute()`.
+- [`js/gps.js`](js/gps.js) (586 lines): `promptPhoneGPSPermission()`, `dismissGPSPermissionCard()`, `startPhoneLiveGPS()`, `stopPhoneLiveGPS()`, `handlePhoneGPSUpdate()`, `handleDeviceOrientation()`, `rerouteFromLivePosition()`, `recenterPhoneCamera()`.
 
 ### Dependencies on Other Modules
 Imports `js/data/config.js`, `js/data/stations.js`, `js/data/buildings.js`, `js/data/offices.js`, `js/data/descriptions.js`, `js/data/plots.js`, `js/data/state.js`, `js/map-setup.js`, `js/routing.js`, `js/steps.js`, `js/walker.js`, `js/idle.js`, and `js/mode.js`.
@@ -333,24 +333,29 @@ Imports `js/data/config.js`, `js/data/stations.js`, `js/data/buildings.js`, `js/
 
 ---
 
-## 8. Adaptive Hardware & Performance Controller
+## 8. 3-Tier Adaptive Hardware & Performance Controller
 
 ### Purpose
-Inspects the device's graphics chip (GPU), CPU core count, and memory on startup and dynamically adjusts rendering resolution, anti-aliasing, 3D tree visibility, and battery usage across Kiosk, Public Web, and Mobile modes.
+Inspects the device's graphics chip (GPU), CPU core count, and memory on startup and dynamically manages CSS compositing cost, WebGL rendering resolution, 3D tree visibility, and battery usage across Kiosk, Public Web, and Mobile modes so `Auto (Adaptive)` never lags.
 
 ### What It Does
-- Queries WebGL `WEBGL_debug_renderer_info` (`detectGpuHardware()`) to detect integrated Intel HD/UHD graphics, budget mobile GPUs (Mali, Adreno 3/4/505/506, PowerVR), software renderers, or ≤ 4 CPU cores / ≤ 4 GB RAM.
-- Provides three user-selectable profiles in the Map Settings popover (`setPerformanceProfile()`), tailored separately for **Kiosk/Desktop** (`da_kiosk_perf_profile`) and **Mobile Phone** (`da_mobile_perf_profile`):
-  - **`auto` (`⚡ Auto`):** Adapts pixel ratio (`1.0x` on low-end GPUs, up to `1.35x` on mobile or `1.5x` on desktop) and monitors live frame rate (`startFrameRateMonitor()`). If FPS drops below **26 FPS** for 3 consecutive checks, automatically engages `lowPerformanceMode` and resizes the WebGL canvas.
-  - **`eco` (`🌿 Kiosk Eco` / `🔋 Battery Saver`):** Locks pixel ratio strictly to `1.0x`, adds `body.low-perf-mode` (disabling heavy CSS backdrop blurs), and hides the 131 3D trees (`3d-trees-layer`) to reduce GPU heat and save smartphone battery.
-  - **`high` (`💎 High Quality`):** Renders at up to `1.5x` on desktop/kiosk or `2.0x` Retina HD on phones with all 3D trees visible.
+- **Integrated GPU Detection & Instant Eco-Tuning (`detectGpuHardware()`, `applyPerformanceProfileClass()`):** Queries WebGL `WEBGL_debug_renderer_info` to detect integrated GPUs (`AMD Radeon(TM) Graphics`, `Intel HD/UHD/Iris`), budget mobile GPUs (Mali, Adreno, PowerVR), software renderers, or ≤ 4 CPU cores / ≤ 4 GB RAM (`isIntegratedOrMobileGpu`). On integrated GPUs, **`Auto (Adaptive)` automatically enables `body.low-perf-mode` from startup**—turning off expensive full-screen CSS `backdrop-filter: blur(24px)` glassmorphism passes and infinite DOM marker pulse repaints while keeping crisp `1.00x` text and all 131 3D trees visible.
+- **3-Tier Live FPS Scaling with Sticky Hysteresis (`startFrameRateMonitor()`, `setDynamicResolutionScale()`):** Continuously samples active animation frame rates (`requestAnimationFrame`) during camera flights, 3D orbits, and walking previews:
+  - **Tier 0 (`≥ 45 FPS` — Native):** Full `1.00x` WebGL resolution and all 3D layers active.
+  - **Tier 1 (`< 45 FPS` — Eco-Tuned):** Engages `lowPerformanceMode` (`body.low-perf-mode`), eliminating CSS blur/shadow compositing overhead while keeping `1.00x` resolution.
+  - **Tier 2 (`< 34 FPS` — `0.85x` Scaled):** Scales the internal WebGL canvas pixel ratio to **`0.85x`** (`~28%` fewer GPU fragments per frame) and hides the 131 3D trees (`3d-trees-layer`).
+  - **Tier 3 (`< 25 FPS` — `0.75x` Max Smooth):** Scales the internal WebGL canvas to **`0.75x`** (`~44%` fewer GPU fragments) to maintain smooth frame delivery on heavy 3D scenes.
+- **Three User-Selectable Profiles (`setPerformanceProfile()`):** Stored separately for **Kiosk/Desktop** (`da_kiosk_perf_profile`) and **Mobile Phone** (`da_mobile_perf_profile`):
+  - **`auto` (`Auto — Adaptive`):** Automatic integrated-GPU Eco-Tuning + 3-tier dynamic FPS resolution scaling.
+  - **`eco` (`Kiosk Eco` / `Battery Saver`):** Locks pixel ratio strictly to `1.0x`, enables `body.low-perf-mode`, and hides the 131 3D trees (`3d-trees-layer`).
+  - **`high` (`High — Native DPI`):** Renders at up to `1.5x` on desktop/kiosk or `2.0x` Retina HD on phones with all 3D trees and full glassmorphism enabled.
 
 ### Inputs and Outputs
 - **Inputs:** WebGL renderer string, `navigator.hardwareConcurrency`, `navigator.deviceMemory`, `window.devicePixelRatio`, `requestAnimationFrame` timestamps, and user profile clicks (`#perf-btn-auto`, `#perf-btn-eco`, `#perf-btn-high`).
-- **Outputs:** Canvas pixel ratio (`map.setPixelRatio`), `body.low-perf-mode` class, `3d-trees-layer` visibility, and live hardware telemetry readout in the Map Settings panel (`updatePerformanceUI()`).
+- **Outputs:** Dynamic canvas pixel ratio (`map.setPixelRatio`), `body.low-perf-mode` class, `3d-trees-layer` visibility, and live hardware/tier telemetry readout in the Map Settings panel (`updatePerformanceUI()`).
 
 ### Main Files and Functions
-- [`js/performance.js`](file:///c:/Users/LGU-SanPedro/Downloads/map/js/performance.js) (350 lines): `detectGpuHardware()`, `getOptimalPixelRatio()`, `getActivePerformanceProfile()`, `setPerformanceProfile()`, `applyPerformanceProfileClass()`, `startFrameRateMonitor()`, `updatePerformanceUI()`, `initPerformanceController()`.
+- [`js/performance.js`](js/performance.js) (418 lines): `detectGpuHardware()`, `getOptimalPixelRatio()`, `setDynamicResolutionScale()`, `getActivePerformanceProfile()`, `setPerformanceProfile()`, `applyPerformanceProfileClass()`, `startFrameRateMonitor()`, `updatePerformanceUI()`, `initPerformanceController()`.
 
 ### Dependencies on Other Modules
 Imports `js/data/state.js` and interacts with `state.map` (`js/map-setup.js`).
@@ -360,73 +365,82 @@ Imports `js/data/state.js` and interacts with `state.map` (`js/map-setup.js`).
 
 ---
 
-## 9. Campus & Agricultural Plot Data Modules (`js/data/*`)
+## 9. Campus & Agricultural Plot Data Modules (`js/data/*`) & Live MySQL Hydration
 
 ### Purpose
-Serves as the single client-side source of truth for all 4 CALABARZON research stations, building footprints, 3D model placements, internal office listings, landmark descriptions, agricultural field plots, compound boundaries, and shared runtime state.
+Serves as the client-side data store for all 4 CALABARZON research stations, building footprints, 3D model placements, internal office listings, landmark descriptions, agricultural field plots, compound boundaries, and shared runtime state—dynamically hydrated at startup and in real time from the **11-table MySQL database (`kiosk`)** via `GET /api/db/bootstrap`.
 
 ### What It Does
+- **Live MySQL Hydration & Cross-Tab Sync (`syncDatabaseBootstrap()` in `js/app.js`):** Fetches `GET /api/db/bootstrap?station=<id>` on load and listens to `BroadcastChannel('da_spatial_hub_sync')` + `localStorage` events. Whenever an administrator updates a station, `"You Are Here"` pin, building, photo, internal office, or agricultural plot in `/admin`, `syncDatabaseBootstrap()` immediately updates `STATIONS`, `BUILDING_DIRECTORY`, `BUILDING_IMAGES`, `BUILDING_WAYFINDING_INFO`, `BUILDING_OFFICES`, and `FIELD_COMMODITY_ZONES` in memory and re-renders the active directory, search bar results, and map pins without reloading the page.
 - **`js/data/config.js` (70 lines):** Defines default camera views (`DEFAULT_MAP_VIEW`, `INTRO_START_VIEW`, `VIEWS`), default Argosino Hall kiosk coordinates (`SAVED_MAIN_KIOSK_COORDS = [121.1664336, 13.9581208]`), `IDLE_TIMEOUT = 45000`, and section color palettes.
 - **`js/data/state.js` (96 lines):** Exports the shared reactive `state` singleton holding `map`, `appMode`, `currentStationId`, `KIOSK_COORDS`, `ROAD_GRAPH`, `selectedBuildingId`, `activeRoute`, `walkAnimFrame`, `isMobileGPSActive`, `droneOffset`, `performanceProfile`, and layer visibility flags.
-- **`js/data/stations.js` (104 lines):** Defines the `STATIONS` registry for all **4 DA-CALABARZON Research Stations**:
-  1. `lares` — **DA-LARES** (Lipa City, Batangas)
-  2. `qares` — **DA-QARES** (Tiaong, Quezon)
-  3. `rares` — **DA-RARES** (Tanay, Rizal)
-  4. `cares` — **DA-CARES** (Naic, Cavite)
-- **`js/data/buildings.js` (6,340 lines):** Contains `LARES_DRAWINGS` (**50** GeoJSON polygon footprints), `CUSTOM_3D_BUILDINGS` (**49** 3D `.glb` model placements for LARES), `BUILDING_CATEGORIES`, `BUILDING_IMAGES` (all `.webp`), `BUILDING_EXTRA_VIEWS`, `STANDALONE_GATES` (**3** gates), and dynamically builds `BUILDING_DIRECTORY` (**39** numbered facilities + **9** sub-plots + **2** Plot 22 utility amenities) plus helper `getBuildingById()`.
-- **`js/data/offices.js` (266 lines):** Defines `BUILDING_OFFICES` (**47** ground-truth offices across **9** multi-office buildings, including floor groupings for `admin_building`) and exports `getFlattenedOffices()` and `renderBuildingOfficesHTML()`.
+- **`js/data/stations.js` (104 lines):** Defines the `STATIONS` registry for all **4 DA-CALABARZON Research Stations** (`lares`, `qares`, `rares`, `cares`), synchronized with the MySQL `stations` table (`status`: `'live'` vs. `'under_dev'`).
+- **`js/data/buildings.js` (6,340 lines):** Contains `LARES_DRAWINGS` (**50** GeoJSON polygon footprints), `CUSTOM_3D_BUILDINGS` (**49** 3D `.glb` model placements for LARES), `BUILDING_CATEGORIES`, `BUILDING_IMAGES` (all `.webp`), `BUILDING_EXTRA_VIEWS`, `STANDALONE_GATES` (**3** gates), and dynamically builds `BUILDING_DIRECTORY` (**39** numbered facilities + **9** sub-plots + **2** Plot 22 utility amenities).
+- **`js/data/offices.js` (295 lines):** Defines `BUILDING_OFFICES` (**47** ground-truth offices across **9** multi-office buildings) and exports `getFlattenedOffices()`, `renderBuildingOfficesHTML()` (with smart `0 / 1 / 2+` office card display), `isBuildingMatched()` (matching building names, office titles, landmarks, and services), and `isPlotZoneMatched()` (matching zone names, plot numbers, crops, and live MySQL `current_crop` values).
 - **`js/data/descriptions.js` (298 lines):** Defines `BUILDING_WAYFINDING_INFO` (**53** entries) with `compactTag`, `visualLandmark` (*"How to Spot It"*), and `keyServices` (*"What's Inside & Services"*), plus `getBuildingWayfindingInfo()`.
-- **`js/data/plots.js` (4,921 lines):** Defines `FIELD_COMMODITY_ZONES` (**23** official commodity zones), `ZONE_POLYGONS`, `ALL_PLOT_POLYGONS` (**45** numbered field plots), `INTERNAL_CUT_LINES`, and GeoJSON generators `getPlotsGeoJSON()` and `getSubPlotsGeoJSON()`. Serves as the foundation for worker-facing agronomic plot data (what is planted, tree count, and annual vs. monthly/seasonal plot cycles).
+- **`js/data/plots.js` (4,921 lines):** Defines `FIELD_COMMODITY_ZONES` (**23** official commodity zones), `ZONE_POLYGONS`, `ALL_PLOT_POLYGONS` (**45** numbered field plots), `INTERNAL_CUT_LINES`, and GeoJSON generators `getPlotsGeoJSON()` and `getSubPlotsGeoJSON()`, hydrated with live worker agronomic fields from MySQL (`currentCrop`, `treeCount`, `plantingCycle`, `plotStatus`, `workerNotes`).
 - **`js/data/geo.js` (55 lines):** Exports `DA_LARES_OUTER_PERIMETER`, `LARES_MASK`, `QARES_MASK`, `RARES_MASK`, `LARES_COMPOUND_OUTLINE`, `LARES_BOUNDARY`, `LARES_UNIFIED_BOUNDARY`, and `LARES_TREES` (**131** trees).
 
 ### Inputs and Outputs
-- **Inputs:** Static ground-truth coordinates, polygons, and metadata compiled from campus surveys and field photographs.
-- **Outputs:** Exported constants and helper functions consumed by all UI and rendering modules.
+- **Inputs:** Live MySQL records via `GET /api/db/bootstrap` + static ground-truth coordinates, polygons, and metadata compiled from campus surveys and field photographs.
+- **Outputs:** Exported constants and helper functions consumed by all UI, search, and rendering modules.
 
 ### Status
-- **`IMPLEMENTED`** for DA-LARES and the 4-station registry; **`PLANNED`** expansion for worker agronomic plot attributes (`currentCrop`, `treeCount`, `plantingCycle`).
+- **`IMPLEMENTED`** (Full 11-table MySQL hydration + live worker agronomic plot attributes `current_crop`, `tree_count`, `planting_cycle`, `plot_status` active in production).
 
 ---
 
-## 10. Server, Offline MBTiles Engine, Tunnel & Database
+## 10. Server, Offline MBTiles Engine, 11-Table MySQL Database & Security Firewall
 
 ### Purpose
-Runs the local HTTP web server on port `8080`, streams offline high-resolution drone orthomosaic tiles from 3 SQLite `.mbtiles` archives (`LARES`, `QARES`, `RARES`), persists configuration and GeoJSON edits across MySQL and local JSON files, and manages the public Cloudflare HTTPS tunnel for online search and mobile QR handoff.
+Runs the local HTTP web server on port `8080`, streams offline high-resolution drone orthomosaic tiles from 3 SQLite `.mbtiles` archives (`LARES`, `QARES`, `RARES`), serves the **11-table MySQL relational database (`kiosk`)** and CRUD API (`database/admin_api.js`), enforces a path/extension security firewall and smart tiered HTTP caching, and manages the public Cloudflare HTTPS tunnel.
 
 ### What It Does
-- **Static File Server (`server.js`):** Serves all HTML, JS, modular CSS, `.glb` models, and `.webp` images with strict `Cache-Control: no-store, no-cache, must-revalidate` headers so updates take effect immediately on reload.
-- **3-Tier Database Persistence (`server.js`):** Connects to local MySQL (`kiosk` database) and auto-creates 2 tables (`settings` and `building_colors`). Every read/write endpoint (`GET/POST /api/pin`, `/api/qares/pin`, `/api/rares/pin`, `/api/colors`, `/api/drone-offset`, `/api/tunnel`) reads/writes both MySQL and local JSON fallback files (`pin.json`, `qares_pin.json`, `rares_pin.json`, `colors.json`, `drone_offset.json`), falling back to in-memory campus defaults if MySQL is offline.
-- **Offline Drone Orthomosaic MBTiles Server (`server.js`):** Opens `LARES v1.mbtiles` (210.66 MB), `QARES v1.mbtiles` (223.44 MB), and `RARES v1.mbtiles` (206.54 MB) via `sqlite3` in read-only mode (`OPEN_READONLY`), converts standard XYZ web map coordinates to **TMS** (`y = (2^z - 1) - y`), caches the 300 most recent tiles in an in-memory `Map` (`TILE_CACHE`), auto-detects PNG/JPEG/WebP magic bytes, and serves transparent 1× 1 PNGs for out-of-bounds tiles.
+- **Smart Tiered HTTP Caching & Version Endpoint (`server.js`):** Serves heavy binary 3D models (`models/*.glb`) and WebP photographs (`images/*.webp`) with `Cache-Control: public, max-age=86400` (24-hour browser cache) for instant repeat loads, while serving `.html`, `.js`, `.css`, and `.json` files with `Cache-Control: no-cache, must-revalidate` + `ETag` validation (`304 Not Modified`), plus `GET /api/version` (`1.4.0-nov25-prod`).
+- **Hardened Path & Extension Security Firewall (`server.js`):** Blocks public HTTP access (`403 Forbidden`) to backend source code, secrets, and raw database files (`/server.js`, `/package.json`, `/.env`, `/database/*`, `/app/*`, `/tools/*`, `/docs/*`, `*.mbtiles`, `*.bat`, `*.ps1`, `*.vbs`, `*.py`, `*.sql`, `*.bak*`), sets security headers (`X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy: strict-origin-when-cross-origin`), and disables `x-powered-by`.
+- **11-Table MySQL Relational Database & Express/Laravel CRUD API (`database/admin_api.js`, `database/migrations/`, `app/Http/Controllers/`):** Connects to the local MySQL `kiosk` database (accessible via phpMyAdmin) with 11 core tables: `stations`, `buildings`, `building_images`, `building_offices`, `building_entrances`, `agricultural_plots`, `plot_subplots`, `campus_trees`, `road_features`, `admin_audit_logs`, and `admin_users` (storing SHA-256 hashed credentials; scrypt recommended for production passwords, plaintext usernames, and cookie `Secure` flag over HTTPS). Includes automatic fallback to local JSON files if MySQL is unreachable.
+- **Offline Drone Orthomosaic MBTiles Server (`server.js`):** Opens `LARES v1.mbtiles` (210.66 MB), `QARES v1.mbtiles` (223.44 MB), and `RARES v1.mbtiles` (206.54 MB) via `sqlite3` in read-only mode (`OPEN_READONLY`), converts XYZ web map coordinates to **TMS** (`y = (2^z - 1) - y`), caches the 300 most recent tiles in an in-memory `Map` (`TILE_CACHE`), and serves transparent 1×1 PNGs for out-of-bounds tiles.
 - **Cloudflare HTTPS Tunnel Manager (`server.js`):** Spawns `cloudflared tunnel --url http://localhost:8080`, parses stdout/stderr for the assigned `https://*.trycloudflare.com` URL, stores it in `activeTunnelUrl` and MySQL, and auto-restarts the process after 5 seconds if it exits.
 
-### Main Files and Endpoints (`server.js` — 1,310 lines, 36 HTTP routes)
-- **Pin & Settings APIs:** `GET/POST /api/pin`, `GET/POST /api/qares/pin`, `GET/POST /api/rares/pin`, `GET/POST /api/colors`, `GET/POST /api/drone-offset`, `GET/POST /api/tunnel`.
-- **Offline Drone Tile APIs:** `GET /api/tiles/:z/:x/:y`, `GET /api/tiles-meta`, `GET /api/qares/tiles/:z/:x/:y`, `GET /api/qares/tiles-meta`, `GET /api/rares/tiles/:z/:x/:y`, `GET /api/rares/tiles-meta`.
-- **GeoJSON Authoring & Sync APIs:** `GET/POST/DELETE /api/drawings`, `GET /api/next-number`, `POST /api/sync-drawing`, `GET/POST /api/roads`, `GET/POST /api/trees`, `GET/POST /api/buildings`, `POST /api/plots/sync`, `GET/POST /api/qares/buildings`, `GET/POST /api/qares/roads`, `GET/POST /api/qares/boundary`, `GET/POST /api/rares/buildings`, `GET/POST /api/rares/roads`, `GET/POST /api/rares/plots`, `GET/POST /api/rares/boundary`.
+### Main Files and Endpoints (`server.js` — 1,385 lines + `database/admin_api.js` — 505 lines; 65 HTTP route handlers)
+- **MySQL Bootstrap & Admin CRUD APIs (`database/admin_api.js` — 22 handlers):** `GET /api/db/bootstrap`, `POST /api/admin/login`, `POST /api/admin/logout`, `GET /api/admin/session`, `GET /api/admin/dashboard`, `PUT /api/admin/stations/:id`, `POST/PUT/DELETE /api/admin/buildings*`, `POST/DELETE /api/admin/buildings/:id/images`, `POST/PUT/DELETE /api/admin/offices*`, `PUT /api/admin/plots/:id`.
+- **Pin, Version & Settings APIs (`server.js`):** `GET /api/version`, `GET/POST /api/pin`, `GET/POST /api/qares/pin`, `GET/POST /api/rares/pin`, `GET/POST /api/colors`, `GET/POST /api/drone-offset`, `GET/POST /api/tunnel`.
+- **Offline Drone Tile APIs (`server.js`):** `GET /api/tiles/:z/:x/:y`, `GET /api/tiles-meta`, `GET /api/qares/tiles/:z/:x/:y`, `GET /api/qares/tiles-meta`, `GET /api/rares/tiles/:z/:x/:y`, `GET /api/rares/tiles-meta`.
+- **GeoJSON Authoring & Sync APIs (`server.js`):** `GET/POST/DELETE /api/drawings`, `GET /api/next-number`, `POST /api/sync-drawing`, `GET/POST /api/roads`, `GET/POST /api/trees`, `GET/POST /api/buildings`, `POST /api/plots/sync`, `GET/POST /api/qares/*`, `GET/POST /api/rares/*`.
+- **Laravel Migration, Seeder & Controllers:** [`database/migrations/2026_11_11_000001_create_da_spatial_hub_tables.php`](database/migrations/2026_11_11_000001_create_da_spatial_hub_tables.php), [`database/seeders/DatabaseSeeder.php`](database/seeders/DatabaseSeeder.php), [`app/Http/Controllers/AdminCrudController.php`](app/Http/Controllers/AdminCrudController.php), [`app/Http/Controllers/TileController.php`](app/Http/Controllers/TileController.php).
 
 ### Status
 - **`IMPLEMENTED`**
 
 ---
 
-## 11. Admin Tools, Drone Calibration & Standalone Geometry Editors
+## 11. Web Admin Command Center (`/admin`), Drone Calibration & Standalone Geometry Editors
 
 ### Purpose
-Provides interactive visual utilities for administrators and maintainers to reposition the kiosk pin, align vector layers with drone imagery, customize building colors, calibrate marker pill positions, and draw or edit building footprints, roads, field plots, and 3D trees across all research stations.
+Provides an authenticated Web Admin Dashboard (`/admin` — `admin.html`) protected by hashed credentials for managing the 11-table MySQL database, alongside interactive visual geometry editors for tracing footprints, roads, plots, 3D trees, and marker pills.
 
 ### What It Does
-- **In-App Admin Mode (`js/app.js`, `js/idle.js`, `js/building-panel.js`):** Activated via `?admin=1` or `Alt+Shift+A`. Unlocks the `"📍 You Are Here"` marker so it can be dragged and saved (`repositionActiveKioskPin()`), shows the **Drone Calibration** button in the top-right controls, enables custom tunnel URL overrides (`promptCustomTunnelUrl()`), and unlocks roof/badge color pickers in the building detail drawer.
-- **Interactive Drone Orthomosaic Calibration (`js/drone-calibration.js`):** Activated via the Admin toolbar button or `Alt+Shift+D`. Displays a floating HUD (`#drone-calibration-hud`) with X/Y sliders (±30 m), step size selectors (0.05 m to 2.0 m), and directional nudge buttons/arrow keys that shift all station-isolated 3D models, footprints, markers, trees, and boundaries in real time (`applyDroneOffset()`, `executeLayerShift()`) and persist the offset to `/api/drone-offset` (`saveDroneOffsetToServer()`).
+- **Web Admin Command Center (`/admin` — `admin.html`):**
+  - Styled with vector Lucide SVG icons (`1.5px` stroke, zero emojis), ultra-slim `6px` dark slate scrollbars, custom station combobox, `3px` emerald left active bar, KPI stat cards with monospace table pills, click-to-copy coordinate/filename pills, and pulsing dot-indicator status badges.
+  - **Hashed Credential Authentication (`admin_users` MySQL table):** Verifies username and password hashes via constant-time `crypto.timingSafeEqual` with brute-force rate limiting (5 attempts / 60s) and `HttpOnly; SameSite=Strict` session cookies (scrypt key derivation recommended for production passwords, plaintext usernames, and restricting `/admin` to loopback or Cloudflare Access). Public keyboard shortcuts (`Alt+Shift+A` and `Alt+Click`) have been retired from the public map so visitors cannot trigger admin controls.
+  - **5 Core MySQL CRUD Modules:**
+    1. **Dashboard & Status:** Live KPI counts across all MySQL tables, one-click station status toggle (`Live on Public Map` ↔ `Under Development`), and real-time `admin_audit_logs` table.
+    2. **"`You Are Here` Pin & Station":** Interactive satellite map to drag and save each station's `"You Are Here"` kiosk pin, station title, and `.mbtiles` file.
+    3. **Buildings & Multi-Photos:** Full CRUD for all 148 buildings plus a **Multi-Photo `.webp` Uploader** (base64/file upload directly into `images/` and `building_images`).
+    4. **Internal Offices:** Add, edit, or delete internal offices (`building_offices`), with smart `0 / 1 / 2+` office card rendering on the public map.
+    5. **Agricultural Plots & Crops:** Live worker agronomic CRUD for updating **Planted Crop / Variety (`current_crop`)**, **Tree / Plant Count (`tree_count`)**, **Planting Cycle** (`Perennial`, `Annual`, `Monthly / Seasonal`), **Status**, and **Worker Notes**.
+  - **Instant Cross-Tab Live Sync (`notifyLiveMapSync()`):** Broadcasts every save over `BroadcastChannel('da_spatial_hub_sync')` so open 3D Map tabs update immediately without refreshing.
+- **Interactive Drone Orthomosaic Calibration (`js/drone-calibration.js`):** Displays a floating HUD (`#drone-calibration-hud`) with X/Y sliders (±30 m), step size selectors (0.05 m to 2.0 m), and directional nudge buttons that shift all station-isolated 3D models, footprints, markers, trees, and boundaries in real time (`applyDroneOffset()`, `executeLayerShift()`) and persist the offset to `/api/drone-offset`.
 - **Standalone Browser Geometry Editors (8 HTML tools in project root):**
-  1. [`draw.html`](file:///c:/Users/LGU-SanPedro/Downloads/map/draw.html): Multi-station interactive polygon editor for DA-LARES, DA-QARES, and DA-RARES building footprints (`POST /api/buildings`, `POST /api/qares/buildings`, `POST /api/rares/buildings`).
-  2. [`road_draw.html`](file:///c:/Users/LGU-SanPedro/Downloads/map/road_draw.html): Multi-station editor for roads, pedestrian walkways, and building entrance nodes (`POST /api/roads`, `POST /api/rares/roads`).
-  3. [`plot_draw.html`](file:///c:/Users/LGU-SanPedro/Downloads/map/plot_draw.html): Multi-station calibration editor for agricultural field plots and commodity zones (`POST /api/plots/sync`, `POST /api/rares/plots`).
-  4. [`tree_draw.html`](file:///c:/Users/LGU-SanPedro/Downloads/map/tree_draw.html): 3D tree planter and scale adjuster (`POST /api/trees`).
-  5. [`pill_adjust.html`](file:///c:/Users/LGU-SanPedro/Downloads/map/pill_adjust.html): Interactive 3D marker pill calibrator for dragging numbered facility badges (`marker_coords`) so they never block 3D building facades.
-  6. [`qares_draw.html`](file:///c:/Users/LGU-SanPedro/Downloads/map/qares_draw.html), [`qares_road_draw.html`](file:///c:/Users/LGU-SanPedro/Downloads/map/qares_road_draw.html), [`qares_boundary_draw.html`](file:///c:/Users/LGU-SanPedro/Downloads/map/qares_boundary_draw.html): Dedicated authoring pages for DA-QARES.
+  1. [`draw.html`](draw.html): Multi-station interactive polygon editor for DA-LARES, DA-QARES, and DA-RARES building footprints.
+  2. [`road_draw.html`](road_draw.html): Multi-station editor for roads, pedestrian walkways, and building entrance nodes.
+  3. [`plot_draw.html`](plot_draw.html): Multi-station calibration editor for agricultural field plots and commodity zones.
+  4. [`tree_draw.html`](tree_draw.html): 3D tree planter and scale adjuster.
+  5. [`pill_adjust.html`](pill_adjust.html): Interactive 3D marker pill calibrator for dragging numbered facility badges (`marker_coords`) so they never block 3D building facades.
+  6. [`qares_draw.html`](qares_draw.html), [`qares_road_draw.html`](qares_road_draw.html), [`qares_boundary_draw.html`](qares_boundary_draw.html): Dedicated authoring pages for DA-QARES.
 
 ### Status
-- **`IMPLEMENTED`** (Local authoring suite complete; password middleware recommended before public exposure in `docs/03-limitations-and-roadmap.md`).
+- **`IMPLEMENTED`**
 
 ---
 
@@ -434,17 +448,17 @@ Provides interactive visual utilities for administrators and maintainers to repo
 
 | # | Module Group | Primary Files | Lines of Code | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **1** | Application Orchestrator, Multi-Station Manager & Mode Detection | `js/app.js`, `js/stations.js`, `js/mode.js` | 2,813 | `IMPLEMENTED` |
+| **1** | Application Orchestrator, Multi-Station Manager, Mode Detection & Live DB Sync | `js/app.js`, `js/stations.js`, `js/mode.js` | 2,945 | `IMPLEMENTED` |
 | **2** | Map & Station-Isolated 3D View Engine | `js/map-setup.js`, `js/markers.js`, `js/plot-layers.js`, `js/occlusion.js`, `js/orbit-control.js` | 4,560 | `IMPLEMENTED` |
-| **3** | Directory, Search, Detail Drawer & Modular CSS | `js/sidebar.js`, `js/building-panel.js`, `js/map-settings.js`, `css/*.css` (8 files) | 3,477 JS + 9,852 CSS | `IMPLEMENTED` |
+| **3** | Directory, Search, Detail Drawer & Modular CSS | `js/sidebar.js`, `js/building-panel.js`, `js/map-settings.js`, `css/*.css` (8 files) | 3,510 JS + 9,852 CSS | `IMPLEMENTED` |
 | **4** | Routing & Turn-by-Turn Engine | `js/routing.js`, `js/steps.js` | 3,041 | `IMPLEMENTED` |
 | **5** | Avatar, Animation & Idle Controller | `js/walker.js`, `js/idle.js` | 1,638 | `IMPLEMENTED` |
 | **6** | QR Code Handoff | `js/qr.js` | 368 | `IMPLEMENTED` |
 | **7** | Phone UI & Live GPS Navigation | `js/phone-ui.js`, `js/phone-nav.js`, `js/gps.js` | 2,224 | `IMPLEMENTED` |
-| **8** | Adaptive Hardware & Performance Controller | `js/performance.js` | 350 | `IMPLEMENTED` |
-| **9** | Campus & Agricultural Plot Data Modules | `js/data/config.js`, `state.js`, `stations.js`, `buildings.js`, `offices.js`, `descriptions.js`, `plots.js`, `geo.js` | 12,150 | `IMPLEMENTED` (+ Agronomic Plot Data `PLANNED`) |
-| **10** | Server, 3 MBTiles Engines, Tunnel & Database | `server.js` | 1,310 | `IMPLEMENTED` |
-| **11** | Admin, Calibration & 8 Standalone Editors | `js/drone-calibration.js`, `draw.html`, `road_draw.html`, `plot_draw.html`, `tree_draw.html`, `pill_adjust.html`, `qares_*.html` | 12,410 | `IMPLEMENTED` |
+| **8** | 3-Tier Adaptive Hardware & Performance Controller | `js/performance.js` | 418 | `IMPLEMENTED` |
+| **9** | Campus & Agricultural Plot Data Modules (Live MySQL Hydrated) | `js/data/config.js`, `state.js`, `stations.js`, `buildings.js`, `offices.js`, `descriptions.js`, `plots.js`, `geo.js` | 12,180 | `IMPLEMENTED` |
+| **10** | Server, 3 MBTiles Engines, 11-Table MySQL DB, Security Firewall & Laravel Controllers | `server.js`, `database/admin_api.js`, `database/migrations/`, `app/Http/Controllers/` | 2,490 | `IMPLEMENTED` |
+| **11** | Web `/admin` Portal, Calibration & 8 Standalone Editors | `admin.html`, `js/drone-calibration.js`, `draw.html`, `road_draw.html`, `plot_draw.html`, `tree_draw.html`, `pill_adjust.html`, `qares_*.html` | 13,465 | `IMPLEMENTED` |
 
 ---
 

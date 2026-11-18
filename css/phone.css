@@ -2089,13 +2089,14 @@ body.mode-phone .phone-top-bar {
     pointer-events: auto;
     width: 44px;
     height: 44px;
+    padding: 4px;
     border-radius: 12px;
     background: radial-gradient(circle at center, rgba(16, 185, 129, 0.22) 0%, rgba(6, 18, 12, 0.95) 100%);
-    border: 1.5px solid rgba(43, 220, 57, 0.5);
+    border: 1.5px solid rgba(16, 185, 129, 0.55);
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), 0 0 10px rgba(43, 220, 57, 0.25);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), 0 0 10px rgba(16, 185, 129, 0.25);
     cursor: pointer;
     flex-shrink: 0;
     transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -2106,8 +2107,8 @@ body.mode-phone .phone-top-bar {
 }
 
 .phone-top-logo {
-    width: 82%;
-    height: 82%;
+    width: 96%;
+    height: 92%;
     object-fit: contain;
 }
 

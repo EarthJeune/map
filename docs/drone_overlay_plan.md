@@ -57,7 +57,7 @@ All required code architecture has been implemented:
 
 ## 5. Next Steps when Drone Files Are Ready
 
-1. Drop the exported image file(s) into `c:\Users\LGU-SanPedro\Downloads\map\images\`.
+1. Drop the exported image file(s) into `images\`.
 2. Provide the 4 corner bounding coordinates from QGIS / drone metadata (or tileset ID).
 3. Set `CUSTOM_DRONE_OVERLAY.enabled = true` in `js/data/config.js`.
 4. Refresh the map (**Ctrl + Shift + R**) to display the high-res drone ground view!
