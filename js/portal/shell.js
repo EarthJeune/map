@@ -24,7 +24,7 @@ import { initRoleSwitcher, syncRoleSwitcherUi } from './role-switcher.js?v=372';
 import { runRoleTransition } from './role-transition.js';
 import { renderDashboardTab } from './dashboard.js?v=376';
 import { renderPinTab } from './pin-station.js?v=375';
-import { renderBuildingsTab } from './buildings-crud.js?v=378';
+import { renderBuildingsTab } from './buildings-crud.js?v=379';
 import { renderOfficesTab } from './offices-crud.js?v=375';
 import { renderPlotsTab } from './plots-crud.js?v=375';
 import { renderUserAccountsTab, renderLoginLogsTab } from './users-governance.js?v=375';

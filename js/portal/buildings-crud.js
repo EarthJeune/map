@@ -1057,30 +1057,47 @@ async function handleMultiPhotoFiles(fileList) {
             const makePrimary = workingPhotos.length === 0 ? 1 : 0;
             const nextOrder = workingPhotos.length;
 
-            // Upload cropped .webp to disk WITHOUT creating a separate Change Request.
-            // All photo changes are bundled together when the editor submits the building!
-            const up = await apiFetch('/api/admin/upload-webp', {
-                method: 'POST',
-                body: JSON.stringify({
-                    station_id: PortalState.currentStation,
-                    filename: file.name,
-                    base64_data: webpDataUrl
-                })
-            });
-
-            workingPhotos.push({
+            // Instant optimistic preview: render cropped photo immediately while uploading to disk
+            const entry = {
                 id: null,
                 clientKey: `ph_${Date.now()}_${i}`,
-                image_webp_url: up.image_webp_url || '',
+                image_webp_url: '',
                 caption: defaultCaption,
                 display_order: nextOrder,
                 is_primary: makePrimary,
                 pendingReview: false,
+                uploading: true,
                 localDataUrl: webpDataUrl,
                 localFilename: file.name,
                 isNewLocal: true
-            });
-            uploadedCount += 1;
+            };
+            workingPhotos.push(entry);
+            activeSlideIdx = workingPhotos.length - 1;
+            visitorPreviewIdx = activeSlideIdx;
+            renderHeroGallerySection();
+            updateResultButtonBadge();
+
+            try {
+                const up = await apiFetch('/api/admin/upload-webp', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        station_id: PortalState.currentStation,
+                        filename: file.name,
+                        base64_data: webpDataUrl
+                    })
+                });
+                entry.image_webp_url = up.image_webp_url || '';
+                entry.uploading = false;
+                uploadedCount += 1;
+                renderHeroGallerySection();
+                updateResultButtonBadge();
+            } catch (upErr) {
+                const rmIdx = workingPhotos.indexOf(entry);
+                if (rmIdx >= 0) workingPhotos.splice(rmIdx, 1);
+                renderHeroGallerySection();
+                updateResultButtonBadge();
+                throw upErr;
+            }
         } catch (err) {
             showToast(`Could not process ${file.name}: ${err.message}`);
         }
