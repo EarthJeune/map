@@ -141,4 +141,11 @@ test('Migration 0005 & Landscape Banner: RARES full WebP gallery (212 photos), b
     } finally {
         await conn.end();
     }
+
+    const phoneCss = fs.readFileSync(path.join(ROOT, 'css', 'phone.css'), 'utf8');
+    assert.ok(phoneCss.includes('align-items: flex-end;') && phoneCss.includes('.pam-close-btn'), 'Mobile arrival card must be bottom-docked and non-blocking with exit button');
+    const idxHtml = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+    assert.ok(idxHtml.includes('id="pam-exit-btn"'), 'Mobile arrival card must include explicit Exit button');
+    const phoneNav = fs.readFileSync(path.join(ROOT, 'js', 'phone-nav.js'), 'utf8');
+    assert.ok(phoneNav.includes("window.selectedBuildingId = null") && phoneNav.includes("el.classList.remove('active', 'selected')"), 'Exiting mobile arrival card must fully deselect the building');
 });

@@ -280,13 +280,14 @@ export function showPhoneArrival(buildingOrId, source = null) {
     setPhoneSheetView('dir');
     setPhoneSheetSnap('peek');
 
-    // Focus on destination building in 3D tilt
+    // Focus on destination building in 3D tilt, framed above the bottom-docked arrival card
     if (building && building.coords) {
         map.easeTo({
             center: building.coords,
-            zoom: 19.8,
+            zoom: 19.6,
             pitch: 52,
             bearing: -15,
+            padding: { top: 40, bottom: 210, left: 0, right: 0 },
             duration: 1200
         });
     }
@@ -304,15 +305,31 @@ export function closePhoneArrivalPopup() {
     }
     state.lastArrivalWasGps = false;
     state.selectedBuildingId = null;
+    state.selectedPlotZoneId = null;
+    state.activeSearchedOffice = '';
+    if (typeof window !== 'undefined') window.selectedBuildingId = null;
+    stopOrbit();
     clearRoute();
+    if (typeof window !== 'undefined') {
+        if (typeof window.closeBuildingPanel === 'function') window.closeBuildingPanel(true);
+        if (typeof window.deselectPlotZone === 'function') window.deselectPlotZone();
+        if (typeof window.clearSubPlotHighlight === 'function') window.clearSubPlotHighlight();
+    }
+    document.querySelectorAll('.phone-dir-item, .bldg-map-marker, .gate-callout-badge, .building-item').forEach(el => {
+        el.classList.remove('active', 'selected');
+    });
     setPhoneSheetView('dir');
     setPhoneSheetSnap('peek');
+    if (typeof renderPhoneDirectory === 'function') {
+        renderPhoneDirectory(document.getElementById('phone-search-input')?.value || '');
+    }
     const defaultView = getActiveStationDefaultView();
     map.flyTo({
         center: defaultView.center,
         zoom: defaultView.zoom,
         pitch: defaultView.pitch,
         bearing: defaultView.bearing,
+        padding: { top: 0, bottom: 0, left: 0, right: 0 },
         duration: 1500
     });
 }

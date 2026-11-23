@@ -28,7 +28,7 @@
     <link rel="stylesheet" href="css/kiosk.css?v=311">
     <link rel="stylesheet" href="css/building-panel.css?v=317">
     <link rel="stylesheet" href="css/navigation.css?v=308">
-    <link rel="stylesheet" href="css/phone.css?v=332">
+    <link rel="stylesheet" href="css/phone.css?v=333">
     <link rel="stylesheet" href="css/admin.css?v=308">
     <link rel="stylesheet" href="css/main.css?v=345">
     <script>
@@ -1160,9 +1160,10 @@
         <span id="mobile-gps-toast-text"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-map-pin" aria-hidden="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg> Tracking your location…</span>
     </div>
 
-    <!-- Centered Phone Arrival Pop-up Modal -->
+    <!-- Bottom-Docked Non-Blocking Phone Arrival Card -->
     <div class="phone-arrived-modal-backdrop" id="phone-arrived-modal" style="display: none;">
         <div class="phone-arrived-modal-card">
+            <button type="button" class="pam-close-btn" id="pam-exit-btn" aria-label="Exit arrival notification" title="Exit" onclick="closePhoneArrivalPopup()">✕</button>
             <div class="pam-confetti"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-party-popper" aria-hidden="true"><path d="M5.8 11.3 2 22l10.7-3.79"/><path d="M4 3h.01"/><path d="M22 8h.01"/><path d="M15 2h.01"/><path d="M22 20h.01"/><path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10"/><path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.7-.72 1.22-1.43 1.22H17"/><path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98C9.52 4.9 9 5.52 9 6.23V7"/><path d="M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z"/></svg></div>
             <div class="pam-title" id="pam-title">Arrived at Destination!</div>
             <div class="pam-desc" id="pam-desc">You have reached your destination.</div>
@@ -1442,7 +1443,7 @@
         setTimeout(function () {
             const s = document.createElement('script');
             s.type = 'module';
-            s.src = 'js/app.js?v=353';
+            s.src = 'js/app.js?v=354';
             document.body.appendChild(s);
         }, 4350);
     </script>
