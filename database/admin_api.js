@@ -2047,6 +2047,40 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
             }
             await query(`UPDATE change_requests SET status = 'withdrawn' WHERE id = ?`, [id]);
             await logAudit('WITHDRAW_CHANGE_REQUEST', 'change_requests', id, `Withdrew Request #${id}: ${cr.summary}`, req.adminUser);
+
+            // Notify specific concerned users only (never broadcast to Administrators or other stations)
+            if (cr.status === 'pending') {
+                const stUpper = String(cr.station_id || 'lares').toUpperCase();
+                const targetName = extractCrTargetName(cr.summary, cr.payload_json, id);
+                const actorLabel = formatRoleStationLabel(req.adminUser.role || 'gis_editor', cr.station_id, 'GIS Editor');
+                const reviewers = await rbac.findConcernedUsers({ roles: ['reviewer'], stationId: cr.station_id });
+                const notifiedIds = new Set();
+                for (const rev of reviewers) {
+                    if (Number(rev.id) === Number(req.adminUser.userId)) continue;
+                    notifiedIds.add(Number(rev.id));
+                    await rbac.notifyUser(rev.id, {
+                        type: 'request_withdrawn',
+                        title: `Withdrawn: ${targetName}`,
+                        message: `${actorLabel} withdrew "${targetName}" (DA-${stUpper}) from the review queue.`,
+                        station_id: cr.station_id,
+                        link_tab: 'review-queue',
+                        target_table: 'change_requests',
+                        target_id: id
+                    });
+                }
+                // If Super Admin withdrew another editor's request, notify that specific submitter only
+                if (cr.submitted_by_user_id && Number(cr.submitted_by_user_id) !== Number(req.adminUser.userId) && !notifiedIds.has(Number(cr.submitted_by_user_id))) {
+                    await rbac.notifyUser(cr.submitted_by_user_id, {
+                        type: 'request_withdrawn',
+                        title: `Withdrawn: ${targetName}`,
+                        message: `Your submission "${targetName}" (DA-${stUpper}) was withdrawn from the review queue.`,
+                        station_id: cr.station_id,
+                        link_tab: 'admin-reviews',
+                        target_table: 'change_requests',
+                        target_id: id
+                    });
+                }
+            }
             res.json({ success: true, id, status: 'withdrawn' });
         } catch (err) {
             res.status(500).json({ error: err.message });
@@ -2708,25 +2742,29 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
             }
             if (cr.submitted_by_email) {
                 const isApproved = decision === 'approved';
+                const isDeniedClosed = decision === 'denied';
+                const stUpper = String(cr.station_id || 'lares').toUpperCase();
+                const anonReviewer = formatRoleStationLabel(req.adminUser.role || 'reviewer', cr.station_id, 'Station Reviewer');
+                const subjTag = isApproved ? 'Approved' : (isDeniedClosed ? 'Denied (Closed)' : 'Changes Requested');
                 queueBackgroundMail({
                     to: cr.submitted_by_email,
-                    subject: `[iGUIDE ${isApproved ? 'Approved' : 'Changes Requested'}] DA-${cr.station_id.toUpperCase()} Request #${cr.id}`,
-                    text: `Hello,\n\nStation Reviewer ${req.adminUser.email || ''} marked your change request #${cr.id} as ${decision.toUpperCase()}.\n\nSummary: ${cr.summary}\nComment: ${cleanComment || '(None)'}\n\nOpen iGUIDE Portal: ${portalUrl}`,
+                    subject: `[iGUIDE ${subjTag}] DA-${stUpper} Request #${cr.id}`,
+                    text: `Hello,\n\n${anonReviewer} marked your change request #${cr.id} as ${isDeniedClosed ? 'DENIED (CLOSED WITHOUT REVISION)' : decision.toUpperCase()}.\n\nSummary: ${cr.summary}\nComment: ${cleanComment || '(None)'}\n\nOpen iGUIDE Portal: ${portalUrl}`,
                     html: buildWorkflowEmail({
                         role: isApproved ? 'gis_editor' : 'denied',
-                        headerTitle: isApproved ? '🌿 Change Request Approved' : 'Revision Requested',
-                        roleBadgeText: isApproved ? `GIS Editor • Request #${cr.id}` : `Needs Revision • Request #${cr.id}`,
+                        headerTitle: isApproved ? '🌿 Change Request Approved' : (isDeniedClosed ? 'Request Denied (Closed)' : 'Revision Requested'),
+                        roleBadgeText: isApproved ? `GIS Editor • Request #${cr.id}` : (isDeniedClosed ? `Denied • Closed • Request #${cr.id}` : `Needs Revision • Request #${cr.id}`),
                         greeting: 'Hello,',
                         introText: isApproved
-                            ? `Station Reviewer approved Change Request #${cr.id} and forwarded it for publishing:`
-                            : `Station Reviewer requested changes on Request #${cr.id}:`,
+                            ? `${anonReviewer} approved Change Request #${cr.id} and forwarded it for publishing:`
+                            : (isDeniedClosed ? `${anonReviewer} denied and closed Request #${cr.id} without revision:` : `${anonReviewer} requested changes on Request #${cr.id}:`),
                         details: [
-                            { label: 'Station', value: `DA-${cr.station_id.toUpperCase()}` },
+                            { label: 'Station', value: `DA-${stUpper}` },
                             { label: 'Summary', value: cr.summary },
-                            { label: 'Reviewer', value: req.adminUser.email || 'Reviewer' },
+                            { label: 'Reviewer', value: anonReviewer },
                             { label: 'Comment', value: cleanComment || '(Approved)' }
                         ],
-                        ctaLabel: isApproved ? 'View Status in Portal' : 'Revise & Resubmit',
+                        ctaLabel: isApproved ? 'View Status in Portal' : (isDeniedClosed ? 'View in Portal' : 'Revise & Resubmit'),
                         ctaUrl: portalUrl
                     })
                 });

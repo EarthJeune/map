@@ -35,7 +35,10 @@ test('Backend API: supports Deny (No Revision) and Withdraw Request', () => {
     assert.ok(api.includes("router.post('/admin/change-requests/:id/withdraw'"), 'Withdraw endpoint must exist');
     assert.ok(api.includes("['approved', 'rejected', 'denied'].includes(decision)"), 'Decide endpoint must accept denied');
     assert.ok(api.includes("WITHDRAW_CHANGE_REQUEST"), 'Withdraw action must be audited');
+    assert.ok(api.includes("type: 'request_withdrawn'"), 'Pending withdraw must notify station reviewer(s) only');
+    assert.ok(api.includes("roles: ['reviewer'], stationId: cr.station_id"), 'Withdraw notification must be scoped to assigned station reviewers');
     assert.ok(api.includes("review_denied"), 'Deny (No Revision) must emit distinct notification type');
+    assert.ok(api.includes("Denied (Closed)"), 'Deny (No Revision) email must use Denied (Closed) wording');
 });
 
 test('UI: Deny (No Revision), Withdraw, clean Facility Photos chip, and Aerial Campus Locator toggle button in modals', () => {
