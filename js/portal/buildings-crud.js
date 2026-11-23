@@ -1546,7 +1546,7 @@ window.openBuildingModal = async (bldgId) => {
                 <span id="bldg-diff-btn-badge" class="mono-id" style="padding:1px 7px; border-radius:999px; font-size:11px; background:rgba(148,163,184,0.18);">0</span>
             </button>
         `;
-        const historyBtn = editing && editing.id
+        const historyBtn = cur && cur.id
             ? `<button type="button" class="btn btn-secondary" id="btn-bldg-version-history" onclick="openBuildingVersionHistory()">${SVG_ICONS.history} <span>Version History</span></button>`
             : '';
         if (adminDirect) {
