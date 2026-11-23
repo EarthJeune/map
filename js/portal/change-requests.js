@@ -616,6 +616,45 @@ function renderCrStepper(cr) {
     }).join('')}</div>`;
 }
 
+function normalizePhotoListForDiff(arr) {
+    return (Array.isArray(arr) ? arr : [])
+        .filter(im => im && (im.image_webp_url || im.image_url))
+        .map((im, idx) => ({
+            index: idx + 1,
+            url: String(im.image_webp_url || im.image_url || '').split('?')[0].trim().toLowerCase(),
+            rawUrl: String(im.image_webp_url || im.image_url || '').trim(),
+            caption: String(im.caption || 'Facility View').trim()
+        }));
+}
+
+function extractImageCaptionChanges(prevImgs, nextImgs) {
+    const beforeList = normalizePhotoListForDiff(prevImgs);
+    const afterList = normalizePhotoListForDiff(nextImgs);
+    const changes = [];
+    const matchedBefore = new Set();
+
+    afterList.forEach((aImg, aIdx) => {
+        let bMatchIdx = beforeList.findIndex((b, bi) => !matchedBefore.has(bi) && b.url === aImg.url);
+        if (bMatchIdx < 0 && beforeList[aIdx] && !matchedBefore.has(aIdx) && beforeList.length === afterList.length) {
+            bMatchIdx = aIdx;
+        }
+        if (bMatchIdx >= 0) {
+            matchedBefore.add(bMatchIdx);
+            const bImg = beforeList[bMatchIdx];
+            if (bImg.caption !== aImg.caption) {
+                changes.push({
+                    index: aIdx + 1,
+                    beforeIndex: bMatchIdx + 1,
+                    url: aImg.rawUrl,
+                    beforeCaption: bImg.caption,
+                    afterCaption: aImg.caption
+                });
+            }
+        }
+    });
+    return changes;
+}
+
 function normalizeValueForDiff(key, rawVal) {
     if (rawVal === undefined || rawVal === null) return '';
     let s = typeof rawVal === 'object' ? JSON.stringify(rawVal) : String(rawVal).trim();
@@ -672,26 +711,24 @@ function buildDiffRows(cr) {
 
     // Compare bundled building gallery photos (images array) when present
     if (Array.isArray(prev.images) || Array.isArray(next.images)) {
-        const normImgs = (arr) => (Array.isArray(arr) ? arr : [])
-            .filter(im => im && (im.image_webp_url || im.image_url))
-            .map(im => ({
-                url: String(im.image_webp_url || im.image_url || '').split('?')[0].trim().toLowerCase(),
-                caption: String(im.caption || 'Facility View').trim()
-            }));
-        const bImgs = normImgs(prev.images);
-        const aImgs = normImgs(next.images);
-        const imgChanged = JSON.stringify(bImgs) !== JSON.stringify(aImgs);
+        const bImgs = normalizePhotoListForDiff(prev.images);
+        const aImgs = normalizePhotoListForDiff(next.images);
+        const imgChanged = JSON.stringify(bImgs.map(i => ({ u: i.url, c: i.caption }))) !== JSON.stringify(aImgs.map(i => ({ u: i.url, c: i.caption })));
         if (imgChanged) {
+            const captionChanges = extractImageCaptionChanges(prev.images, next.images);
             const fmtList = (list) => list.length
-                ? list.map((im, i) => `#${i + 1} ${im.caption} (${im.url})`).join(', ')
+                ? list.map((im, i) => `#${i + 1} "${im.caption}"`).join(', ')
                 : '(No photos)';
             rows.push({
                 key: 'images',
-                label: 'Facility Photos',
+                label: captionChanges.length > 0 && bImgs.length === aImgs.length && bImgs.every((b, i) => aImgs[i] && b.url === aImgs[i].url)
+                    ? 'Photo Caption'
+                    : 'Facility Photos',
                 beforeVal: fmtList(bImgs),
                 afterVal: fmtList(aImgs),
                 rawBefore: prev.images || [],
                 rawAfter: next.images || [],
+                captionChanges,
                 changed: true
             });
         }
@@ -743,6 +780,51 @@ function renderVisualDiffCardsHtml(rows, action) {
                         <span class="diff-line-tag">+ CHANGED</span>
                         ${action === 'DELETE' ? '<em>(Will Delete)</em>' : `<span style="width:18px; height:18px; border-radius:5px; background:${escapeHtml(nHex)}; border:1px solid rgba(255,255,255,0.3); display:inline-block;"></span><span class="mono-id">${escapeHtml(d.afterVal || '—')}</span>`}
                     </div>
+                </div>
+            `;
+        }
+
+        if (d.key === 'images') {
+            const bList = normalizePhotoListForDiff(d.rawBefore);
+            const aList = normalizePhotoListForDiff(d.rawAfter);
+            const capChanges = Array.isArray(d.captionChanges) ? d.captionChanges : extractImageCaptionChanges(d.rawBefore, d.rawAfter);
+            const urlsChanged = bList.length !== aList.length || bList.some((b, i) => !aList[i] || b.url !== aList[i].url);
+
+            const capDiffHtml = capChanges.map(cc => {
+                const { pastHtml, changedHtml } = computeWordDiff(cc.beforeCaption, cc.afterCaption);
+                const thumbSrc = normalizeImgSrc(cc.url);
+                return `
+                    <div style="display:flex; align-items:flex-start; gap:10px; margin-bottom:8px;">
+                        ${thumbSrc ? `<img src="${escapeHtml(thumbSrc)}" alt="Photo #${cc.index}" style="width:54px; height:40px; object-fit:cover; border-radius:6px; border:1px solid rgba(148,163,184,0.35); flex-shrink:0; margin-top:2px;">` : ''}
+                        <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:5px;">
+                            <div style="font-size:11px; font-weight:700; color:#94a3b8;">Photo #${cc.index} Caption</div>
+                            <div class="diff-box-past"><span class="diff-line-tag">− PAST</span>${pastHtml}</div>
+                            <div class="diff-box-changed"><span class="diff-line-tag">+ CHANGED</span>${changedHtml}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            const gallerySummaryHtml = urlsChanged ? `
+                <div class="diff-box-past" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:${capChanges.length ? '6px' : '0'};">
+                    <span class="diff-line-tag">− PAST (${bList.length})</span>
+                    ${bList.length
+                        ? bList.map(im => `<span style="display:inline-flex; align-items:center; gap:5px; padding:2px 6px 2px 3px; border-radius:6px; background:rgba(15,23,42,0.28); font-size:11px;"><img src="${escapeHtml(normalizeImgSrc(im.rawUrl))}" alt="" style="width:26px; height:20px; object-fit:cover; border-radius:4px;">#${im.index} ${escapeHtml(im.caption)}</span>`).join('')
+                        : '<span>(No previous photos)</span>'}
+                </div>
+                <div class="diff-box-changed" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <span class="diff-line-tag">+ CHANGED (${aList.length})</span>
+                    ${aList.length
+                        ? aList.map(im => `<span style="display:inline-flex; align-items:center; gap:5px; padding:2px 6px 2px 3px; border-radius:6px; background:rgba(15,23,42,0.28); font-size:11px;"><img src="${escapeHtml(normalizeImgSrc(im.rawUrl))}" alt="" style="width:26px; height:20px; object-fit:cover; border-radius:4px;">#${im.index} ${escapeHtml(im.caption)}</span>`).join('')
+                        : '<span>(All photos removed)</span>'}
+                </div>
+            ` : '';
+
+            return `
+                <div class="bldg-diff-item">
+                    <div class="bldg-diff-field-label"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg> ${escapeHtml(d.label)}</div>
+                    ${capDiffHtml}
+                    ${gallerySummaryHtml}
                 </div>
             `;
         }
@@ -1654,6 +1736,33 @@ function renderEntityVisitorCardHtml(cr, recordData, badgeText = '', opts = {}) 
     const imgSrc = normalizeImgSrc(m.image_webp_url || m.image_url || primaryImgFromArr || '');
     const primaryCaption = (galleryImgs[0] && galleryImgs[0].caption) || m.name || ctx.building?.name || 'Facility View';
     const photosChanged = hasChanged('images', 'image_webp_url', 'image_url');
+    const captionChanges = extractImageCaptionChanges(
+        Array.isArray(beforeData.images) ? beforeData.images : ctx.building?.images,
+        Array.isArray(afterData.images) ? afterData.images : []
+    );
+    const primaryCaptionChange = captionChanges.find(c => c.index === 1) || null;
+    const primaryCaptionHtml = primaryCaptionChange
+        ? (() => {
+            const wd = computeWordDiff(primaryCaptionChange.beforeCaption, primaryCaptionChange.afterCaption);
+            return isAfter ? (wd.changedHtml || escapeHtml(primaryCaption)) : (wd.pastHtml || escapeHtml(primaryCaption));
+        })()
+        : escapeHtml(primaryCaption);
+    const primaryCaptionStyle = primaryCaptionChange
+        ? (isAfter
+            ? 'padding:3px 9px; border-radius:6px; background:rgba(6,78,59,0.92); border:1px solid rgba(52,211,153,0.85); color:#ecfdf5; font-size:11px; font-weight:700; box-shadow:0 2px 8px rgba(0,0,0,0.35);'
+            : 'padding:3px 9px; border-radius:6px; background:rgba(136,19,55,0.92); border:1px solid rgba(251,113,133,0.85); color:#ffe4e6; font-size:11px; font-weight:700; box-shadow:0 2px 8px rgba(0,0,0,0.35);')
+        : 'padding:2px 8px; border-radius:6px; background:rgba(2,6,23,0.84); color:#f8fafc; font-size:10.5px; font-weight:700;';
+    const photoStatusBadgeHtml = (() => {
+        if (!photosChanged) return '';
+        if (primaryCaptionChange) {
+            return isAfter
+                ? '<span class="cr-inline-upd-pill">+ Caption Updated</span>'
+                : '<span class="cr-inline-rem-pill">− Previous Caption</span>';
+        }
+        return isAfter
+            ? '<span class="cr-inline-upd-pill">+ Updated Photo</span>'
+            : '<span class="cr-inline-rem-pill">− Previous Photo</span>';
+    })();
     const visualLandmark = m.visual_landmark || m.visual_guidance || ctx.building?.visual_landmark || 'Visual landmark guidance not yet entered.';
     const keyServices = m.key_services || m.services || ctx.building?.key_services || 'Key services not yet entered.';
     const shapeSvg = renderShapeSilhouetteSvg(m.footprint_geojson || ctx.building?.footprint_geojson, {
@@ -1679,15 +1788,29 @@ function renderEntityVisitorCardHtml(cr, recordData, badgeText = '', opts = {}) 
                 <div class="blp-hero-wrap${updCls(photosChanged)}" style="position:relative; padding:0;">
                     ${imgSrc
             ? `<img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(primaryCaption)}" onclick="openCrPhotoLightbox('${escapeHtml(imgSrc)}', '${escapeHtml(String((m.name || ctx.building?.name || 'Building') + ' — ' + primaryCaption).replace(/'/g, "\\'"))}', '${escapeHtml(String(badgeText || '').replace(/'/g, "\\'"))}')" title="Click to enlarge photo" style="cursor:zoom-in;">
-                           <div style="position:absolute; left:8px; right:8px; bottom:8px; display:flex; justify-content:space-between; align-items:center; gap:6px; pointer-events:none;">
-                               <span style="padding:2px 8px; border-radius:6px; background:rgba(2,6,23,0.84); color:#f8fafc; font-size:10.5px; font-weight:700;">${escapeHtml(primaryCaption)}</span>
+                           <div style="position:absolute; left:8px; right:8px; bottom:8px; display:flex; justify-content:space-between; align-items:center; gap:6px; pointer-events:none; flex-wrap:wrap;">
+                               <span style="${primaryCaptionStyle}">${primaryCaptionHtml}</span>
                                <span style="display:inline-flex; align-items:center; gap:5px;">
-                                   ${photosChanged ? (isAfter ? '<span class="cr-inline-upd-pill">+ Updated Photo</span>' : '<span class="cr-inline-rem-pill">− Previous Photo</span>') : ''}
+                                   ${photoStatusBadgeHtml}
                                    <span style="padding:2px 7px; border-radius:999px; background:rgba(15,23,42,0.88); color:#cbd5e1; font-size:10px; font-weight:700;">${galleryImgs.length || 1} Photo${(galleryImgs.length || 1) === 1 ? '' : 's'}</span>
                                </span>
                            </div>`
             : `<div class="ro-card-hero-empty">${SVG_ICONS.building}<span>${photosChanged ? (isAfter ? 'All photos removed' : 'No previous photo') : 'No facility photo attached'}</span></div>`}
                 </div>
+                ${captionChanges.length > 0 ? `
+                    <div style="padding:8px 16px 2px;">
+                        <div class="blp-wf-card ${isAfter ? 'cr-field-updated' : 'cr-field-removed'}" style="margin-bottom:4px; padding:8px 10px;">
+                            <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; margin-bottom:4px;">
+                                <span style="font-size:10.5px; font-weight:800; letter-spacing:0.06em; color:${isAfter ? '#34d399' : '#fb7185'};">PHOTO CAPTION${captionChanges.length > 1 ? 'S' : ''} ${isAfter ? 'UPDATED' : 'BEFORE'}</span>
+                                ${isAfter ? '<span class="cr-inline-upd-pill">+ Caption Updated</span>' : '<span class="cr-inline-rem-pill">− Previous Caption</span>'}
+                            </div>
+                            ${captionChanges.map(cc => {
+                const wd = computeWordDiff(cc.beforeCaption, cc.afterCaption);
+                return `<div style="font-size:12px; line-height:1.45; margin-top:2px;"><strong style="opacity:0.8;">Photo #${cc.index}:</strong> ${isAfter ? wd.changedHtml : wd.pastHtml}</div>`;
+            }).join('')}
+                        </div>
+                    </div>
+                ` : ''}
                 ${galleryImgs.length > 1 ? `
                     <div style="display:flex; gap:6px; padding:6px 14px 4px; overflow-x:auto;">
                         ${galleryImgs.map((im, idx) => {
@@ -1874,11 +1997,22 @@ function renderCrDiffSummaryChips(cr) {
             if (d.key === 'images') {
                 const bCount = Array.isArray(d.rawBefore) ? d.rawBefore.length : 0;
                 const aCount = Array.isArray(d.rawAfter) ? d.rawAfter.length : 0;
-                if (aCount > bCount) photoLabel = `Photos: +${aCount - bCount} added (${aCount} total)`;
-                else if (aCount < bCount) photoLabel = `Photos: ${bCount - aCount} removed (${aCount} total)`;
-                else photoLabel = `Photos updated (${aCount} total)`;
+                const capChanges = Array.isArray(d.captionChanges) ? d.captionChanges : extractImageCaptionChanges(d.rawBefore, d.rawAfter);
+                if (aCount > bCount) {
+                    photoLabel = `Photos: +${aCount - bCount} added (${aCount} total)` + (capChanges.length ? ` • ${capChanges.length} caption edited` : '');
+                } else if (aCount < bCount) {
+                    photoLabel = `Photos: ${bCount - aCount} removed (${aCount} total)` + (capChanges.length ? ` • ${capChanges.length} caption edited` : '');
+                } else if (capChanges.length === 1) {
+                    const c = capChanges[0];
+                    const trimCap = (s) => s.length > 26 ? s.slice(0, 24).trimEnd() + '…' : s;
+                    photoLabel = `Photo #${c.index} Caption: "${trimCap(c.beforeCaption)}" → "${trimCap(c.afterCaption)}"`;
+                } else if (capChanges.length > 1) {
+                    photoLabel = `Photo Captions: ${capChanges.length} updated`;
+                } else {
+                    photoLabel = `Photos updated (${aCount} total)`;
+                }
             }
-            return `<span class="cr-diff-chip photo"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg> ${escapeHtml(photoLabel)}</span>`;
+            return `<span class="cr-diff-chip photo" title="${escapeHtml(photoLabel)}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg> ${escapeHtml(photoLabel)}</span>`;
         }
         const rawAfter = String(d.afterVal || '(cleared)');
         const shortAfter = rawAfter.length > 64 ? rawAfter.slice(0, 62).trimEnd() + '…' : rawAfter;

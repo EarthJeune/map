@@ -56,6 +56,8 @@ test('UI: Deny (No Revision), Withdraw, clean Facility Photos chip, and Aerial C
     assert.ok(cr.includes('id="ro-plot-toggle-locator-btn"'), 'Plot inspector modal must have Aerial Campus Locator toggle button');
     assert.ok(cr.includes('id="ro-plot-locator-panel" hidden'), 'Plot inspector modal must collapse Aerial Campus Locator by default');
     assert.ok(cr.includes("d.key === 'images'"), 'Facility Photos diff chip must format image deltas cleanly');
+    assert.ok(cr.includes('function extractImageCaptionChanges('), 'Reviewer comparison must explicitly detect and highlight photo caption edits');
+    assert.ok(cr.includes('+ Caption Updated'), 'Reviewer Before/After preview must show an explicit Caption Updated badge');
     assert.ok(cr.includes('Denied (Closed)'), 'Stepper must render Denied (Closed) terminal state');
 
     const css = fs.readFileSync(path.join(ROOT, 'css', 'portal.css'), 'utf8');

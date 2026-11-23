@@ -1204,6 +1204,16 @@ function renderHeroGallerySection() {
         </div>
     `;
 
+    const capInput = document.getElementById('bldg-active-caption');
+    capInput?.addEventListener('input', (e) => {
+        const ph = workingPhotos[activeSlideIdx];
+        if (!ph) return;
+        ph.caption = e.target.value.trim() || 'Facility View';
+        const capOverlay = host.querySelector('.bldg-hero-caption-text');
+        if (capOverlay) capOverlay.textContent = ph.caption;
+        updateResultButtonBadge();
+    });
+
     const fileInput = document.getElementById('new-photo-file');
     document.getElementById('btn-trigger-multi-upload')?.addEventListener('click', (e) => {
         e.stopPropagation();
