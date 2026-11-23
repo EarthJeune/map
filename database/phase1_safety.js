@@ -345,7 +345,7 @@ async function attachConflictMetadata(queryFn, requests = []) {
                 id: other.id,
                 status: other.status,
                 summary: other.summary,
-                submitted_by_name: other.submitted_by_name || other.submitted_by_email || 'Editor'
+                submitted_by_name: `GIS Editor - DA ${String(other.station_id || 'lares').toUpperCase()}`
             }));
         const baseVersion = Number(r.base_version || 1);
         const liveVersion = liveVersionByKey.has(key) ? liveVersionByKey.get(key) : baseVersion;

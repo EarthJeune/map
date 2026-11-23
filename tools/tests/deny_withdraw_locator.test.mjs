@@ -58,3 +58,19 @@ test('UI: Deny (No Revision), Withdraw, clean Facility Photos chip, and Aerial C
     const css = fs.readFileSync(path.join(ROOT, 'css', 'portal.css'), 'utf8');
     assert.ok(css.includes('overflow-wrap: anywhere'), 'CSS must wrap diff chips without mid-word clipping');
 });
+
+test('Privacy: Role-Only Anonymous Review + Super Admin ****@domain masking & password-verified reveal', () => {
+    const api = fs.readFileSync(path.join(ROOT, 'database', 'admin_api.js'), 'utf8');
+    assert.ok(api.includes('function maskStrictEmail(email)'), 'Backend must define strict ****@domain email masking');
+    assert.ok(api.includes('async function sanitizeChangeRequestPrivacy(rows, adminUser)'), 'Backend must sanitize CR actor privacy');
+    assert.ok(api.includes('delete clean.submitted_by_email;'), 'Backend must strip raw submitted_by_email from CR JSON');
+    assert.ok(api.includes('delete clean.reviewed_by_email;'), 'Backend must strip raw reviewed_by_email from CR JSON');
+    assert.ok(api.includes("router.post('/admin/change-requests/:id/reveal-identity'"), 'Backend must expose Super Admin reveal-identity route');
+    assert.ok(api.includes('REVEAL_CR_IDENTITY'), 'Reveal-identity access must be audited');
+
+    const cr = fs.readFileSync(path.join(ROOT, 'js', 'portal', 'change-requests.js'), 'utf8');
+    assert.ok(cr.includes('function renderCrActorHtml('), 'UI must render actor identity via privacy-aware helper');
+    assert.ok(cr.includes('window.promptRevealCrIdentity'), 'UI must prompt Super Admin password to reveal identity');
+    assert.ok(!cr.includes('r.submitted_by_email'), 'UI must not read raw r.submitted_by_email');
+    assert.ok(!cr.includes('cr.reviewed_by_email'), 'UI must not read raw cr.reviewed_by_email');
+});

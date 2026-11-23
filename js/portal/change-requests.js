@@ -40,6 +40,112 @@ let crQueueViewMode = getSavedPortalPref('iguide_pref_cr_view', 'cards'); // 'ca
 let crQueuePage = 1;
 let crQueueLimit = Number(getSavedPortalPref('iguide_pref_cr_limit', 10)) || 10;
 let cachedRequests = [];
+const revealedCrIdentities = new Map();
+
+function renderCrActorHtml(cr, kind = 'submitted') {
+    const id = Number(cr?.id || 0);
+    const revealed = revealedCrIdentities.get(id);
+    const isRev = kind === 'reviewed';
+    const roleLabel = isRev
+        ? (cr?.reviewed_by_label || `Station Reviewer - DA ${String(cr?.station_id || PortalState.currentStation || 'lares').toUpperCase()}`)
+        : (cr?.submitted_by_label || `GIS Editor - DA ${String(cr?.station_id || PortalState.currentStation || 'lares').toUpperCase()}`);
+    const maskedEmail = isRev ? cr?.reviewed_by_masked_email : cr?.submitted_by_masked_email;
+    const canReveal = Boolean(cr?.can_reveal_identity && maskedEmail);
+
+    let inner = '';
+    if (revealed) {
+        const fullName = isRev ? revealed.reviewed_by_name : revealed.submitted_by_name;
+        const fullEmail = isRev ? revealed.reviewed_by_email : revealed.submitted_by_email;
+        const namePart = fullName ? `<strong style="color:#e2e8f0;">${escapeHtml(fullName)}</strong> ` : '';
+        const emailPart = fullEmail ? `<span class="mono-id" style="font-size:11px; color:#7dd3fc;">${escapeHtml(fullEmail)}</span>` : `<strong style="color:#e2e8f0;">${escapeHtml(roleLabel)}</strong>`;
+        inner = `${namePart}${emailPart}`;
+    } else if (canReveal) {
+        inner = `<strong style="color:#e2e8f0;">${escapeHtml(roleLabel)}</strong> <span class="mono-id" style="font-size:11px; opacity:0.85;">(${escapeHtml(maskedEmail)})</span> <button type="button" class="btn btn-secondary btn-xs" style="padding:1px 7px; font-size:10.5px; margin-left:4px; vertical-align:middle;" onclick="promptRevealCrIdentity(${id})">Reveal</button>`;
+    } else {
+        inner = `<strong style="color:#e2e8f0;">${escapeHtml(roleLabel)}</strong>`;
+    }
+    return `<span data-cr-actor="${id}:${kind}">${inner}</span>`;
+}
+
+window.promptRevealCrIdentity = (crId) => {
+    const id = Number(crId);
+    const existing = document.getElementById('cr-reveal-pw-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'cr-reveal-pw-overlay';
+    overlay.style.cssText = 'position:fixed; inset:0; z-index:99999; background:rgba(2,6,23,0.72); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; padding:16px;';
+    overlay.innerHTML = `
+        <div role="dialog" aria-modal="true" aria-labelledby="cr-reveal-pw-title" style="width:100%; max-width:420px; background:var(--surface-1, #0f172a); border:1px solid var(--border-subtle, rgba(148,163,184,0.22)); border-radius:14px; padding:20px; box-shadow:0 20px 50px rgba(0,0,0,0.5);">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px;">
+                <h3 id="cr-reveal-pw-title" style="margin:0; font-size:15px; font-weight:700; color:var(--text-primary, #f8fafc);">Verify Super Admin Password</h3>
+                <button type="button" class="btn btn-secondary btn-xs" id="cr-reveal-pw-close" aria-label="Close">✕</button>
+            </div>
+            <p style="margin:0 0 12px; font-size:12.5px; color:var(--text-secondary, #94a3b8); line-height:1.45;">
+                Enter your Super Admin login password to reveal the full name and email for Request #${id}. This access is recorded in the audit log.
+            </p>
+            <form id="cr-reveal-pw-form" autocomplete="off">
+                <input type="password" id="cr-reveal-pw-input" class="form-input" autocomplete="current-password" placeholder="Super Admin login password" required style="width:100%; margin-bottom:8px;">
+                <div id="cr-reveal-pw-err" style="display:none; font-size:12px; color:#f43f5e; margin-bottom:10px;"></div>
+                <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
+                    <button type="button" class="btn btn-secondary btn-sm" id="cr-reveal-pw-cancel">Cancel</button>
+                    <button type="submit" class="btn btn-emerald btn-sm" id="cr-reveal-pw-submit">Verify &amp; Reveal</button>
+                </div>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const close = () => {
+        document.removeEventListener('keydown', onKey);
+        overlay.remove();
+    };
+    const onKey = (ev) => { if (ev.key === 'Escape') close(); };
+    document.addEventListener('keydown', onKey);
+    overlay.addEventListener('click', (ev) => { if (ev.target === overlay) close(); });
+    overlay.querySelector('#cr-reveal-pw-close')?.addEventListener('click', close);
+    overlay.querySelector('#cr-reveal-pw-cancel')?.addEventListener('click', close);
+
+    const pwInput = overlay.querySelector('#cr-reveal-pw-input');
+    const errEl = overlay.querySelector('#cr-reveal-pw-err');
+    const submitBtn = overlay.querySelector('#cr-reveal-pw-submit');
+    setTimeout(() => pwInput?.focus(), 20);
+
+    overlay.querySelector('#cr-reveal-pw-form')?.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        const password = String(pwInput?.value || '');
+        if (!password) return;
+        if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Verifying...'; }
+        try {
+            const res = await apiFetch(`/api/admin/change-requests/${id}/reveal-identity`, {
+                method: 'POST',
+                body: JSON.stringify({ password })
+            });
+            revealedCrIdentities.set(id, res);
+            const crObj = cachedRequests.find(x => Number(x.id) === id) || { id };
+            document.querySelectorAll(`[data-cr-actor="${id}:submitted"]`).forEach(el => {
+                const wrapper = document.createElement('span');
+                wrapper.innerHTML = renderCrActorHtml(crObj, 'submitted');
+                el.replaceWith(wrapper.firstElementChild);
+            });
+            document.querySelectorAll(`[data-cr-actor="${id}:reviewed"]`).forEach(el => {
+                const wrapper = document.createElement('span');
+                wrapper.innerHTML = renderCrActorHtml(crObj, 'reviewed');
+                el.replaceWith(wrapper.firstElementChild);
+            });
+            close();
+            showToast(`Identity revealed for Request #${id} (logged in audit trail).`);
+        } catch (err) {
+            if (errEl) {
+                errEl.textContent = err.message || 'Incorrect password.';
+                errEl.style.display = 'block';
+            }
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Verify & Reveal'; }
+            pwInput?.select();
+        }
+    });
+};
 let currentCrContainer = null;
 let currentIsReviewerView = false;
 let lastOverviewData = null;
@@ -1880,7 +1986,7 @@ function renderCrListTable() {
                                 <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
                                     ${renderCrStepper(r)}
                                     <div style="font-size:11.5px; color:#94a3b8;">
-                                        Submitted by <strong style="color:#e2e8f0;">${escapeHtml(r.submitted_by_name || r.submitted_by_email || 'Editor')}</strong>
+                                        Submitted by ${renderCrActorHtml(r, 'submitted')}
                                     </div>
                                 </div>
                                 ${(Array.isArray(r.conflicts) && r.conflicts.length > 0) || r.is_stale_base ? `
@@ -1911,7 +2017,7 @@ function renderCrListTable() {
                                         Submit Draft for Review →
                                     </button>
                                 ` : ''}
-                                ${['draft', 'pending'].includes(r.status) && canRevise && (PortalState.baseRole === 'super_admin' || String(r.submitted_by_email || '').toLowerCase() === String(PortalState.email || '').toLowerCase()) ? `
+                                ${['draft', 'pending'].includes(r.status) && canRevise && (PortalState.baseRole === 'super_admin' || Boolean(r.is_own_submission)) ? `
                                     <button type="button" class="btn btn-secondary btn-sm" style="width:100%; justify-content:center;" onclick="withdrawChangeRequestNow(${r.id})">
                                         Withdraw Request
                                     </button>
@@ -1987,7 +2093,7 @@ function renderCrListTable() {
                             ${renderCrStepper(r)}
                         </td>
                         <td>
-                            <div style="font-size:12px; color:#94a3b8;">By: <strong style="color:#cbd5e1;">${escapeHtml(r.submitted_by_email || 'editor')}</strong></div>
+                            <div style="font-size:12px; color:#94a3b8;">By: ${renderCrActorHtml(r, 'submitted')}</div>
                             ${r.reviewer_comment ? `
                                 <div style="margin-top:5px; padding:5px 8px; border-radius:7px; font-size:11.5px; ${['rejected', 'denied'].includes(r.status) ? 'background:rgba(244,63,94,0.12); color:#fda4af; border:1px solid rgba(244,63,94,0.3);' : 'background:rgba(16,185,129,0.10); color:#6ee7b7;'}">
                                     <strong>${r.status === 'denied' ? 'Denied:' : 'Reviewer:'}</strong> "${escapeHtml(r.reviewer_comment)}"
@@ -1996,7 +2102,7 @@ function renderCrListTable() {
                         <td>
                             <div class="action-cell">
                                 <button type="button" class="btn btn-secondary btn-sm" onclick="openCrDiffModal(${r.id})">${SVG_ICONS.map} <span>Inspect Visual Diff</span></button>
-                                ${['draft', 'pending'].includes(r.status) && canRevise && (PortalState.baseRole === 'super_admin' || String(r.submitted_by_email || '').toLowerCase() === String(PortalState.email || '').toLowerCase()) ? `
+                                ${['draft', 'pending'].includes(r.status) && canRevise && (PortalState.baseRole === 'super_admin' || Boolean(r.is_own_submission)) ? `
                                     <button type="button" class="btn btn-secondary btn-sm" onclick="withdrawChangeRequestNow(${r.id})">Withdraw</button>
                                 ` : ''}
                                 ${r.status === 'pending' && canDecide ? `
@@ -2210,7 +2316,7 @@ window.publishChangeRequestNow = async (id, triggerEl = null) => {
     const cr = cachedRequests.find(r => r.id === Number(id));
     const stLabel = `DA-${String(cr?.station_id || PortalState.currentStation || 'lares').toUpperCase()}`;
     const summaryLabel = cr?.summary ? `"${cr.summary}"` : `Change Request #${id}`;
-    const isSelfSubmitted = cr && String(cr.submitted_by_email || '').toLowerCase() === String(PortalState.email || '').toLowerCase();
+    const isSelfSubmitted = Boolean(cr?.is_own_submission);
     const isSuper = PortalState.baseRole === 'super_admin';
 
     let overrideReason = '';
@@ -2371,7 +2477,7 @@ window.openCrDiffModal = async (crId, focusMode = '') => {
 
             ${cr.reviewer_comment ? `
                 <div class="alert-revision-card" style="${!['rejected', 'denied'].includes(cr.status) ? 'background:rgba(16,185,129,0.10); border-color:rgba(52,211,153,0.32);' : ''}">
-                    <strong style="color:${['rejected', 'denied'].includes(cr.status) ? '#fda4af' : '#34d399'}; font-size:12.5px;">${cr.status === 'denied' ? 'Denial Reason' : 'Reviewer Comment'} (${escapeHtml(cr.reviewed_by_email || 'Reviewer')}):</strong>
+                    <strong style="color:${['rejected', 'denied'].includes(cr.status) ? '#fda4af' : '#34d399'}; font-size:12.5px;">${cr.status === 'denied' ? 'Denial Reason' : 'Reviewer Comment'} (${renderCrActorHtml(cr, 'reviewed')}):</strong>
                     <div style="color:#f8fafc; font-size:13px; margin-top:4px;">"${escapeHtml(cr.reviewer_comment)}"</div>
                 </div>
             ` : ''}
@@ -2518,7 +2624,7 @@ window.openCrDiffModal = async (crId, focusMode = '') => {
         if (triggerBtn) triggerBtn.disabled = true;
         try {
             const payloadBody = { decision, comment };
-            if (decision === 'approved' && (cr.is_stale_base || (PortalState.baseRole === 'super_admin' && String(cr.submitted_by_email || '').toLowerCase() === String(PortalState.email || '').toLowerCase()))) {
+            if (decision === 'approved' && (cr.is_stale_base || (PortalState.baseRole === 'super_admin' && Boolean(cr.is_own_submission)))) {
                 const ov = await showPortalConfirm({
                     title: cr.is_stale_base ? 'Override Outdated Base Version?' : 'Super Admin Self-Approval Override',
                     message: cr.is_stale_base

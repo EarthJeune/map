@@ -101,6 +101,90 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
         return `${visible}${'*'.repeat(Math.max(2, u.length - 2))}@${d}`;
     }
 
+    function maskStrictEmail(email) {
+        if (!email || !email.includes('@')) return '****@hidden';
+        const [, d] = email.split('@');
+        return `****@${d}`;
+    }
+
+    function formatRoleStationLabel(role, stationId, fallbackRole = 'GIS Editor') {
+        const roleLabels = {
+            gis_editor: 'GIS Editor',
+            reviewer: 'Station Reviewer',
+            administrator: 'Administrator',
+            super_admin: fallbackRole
+        };
+        const rLabel = roleLabels[String(role || '').toLowerCase()] || fallbackRole;
+        const st = String(stationId || 'lares').toUpperCase();
+        return `${rLabel} - DA ${st}`;
+    }
+
+    async function sanitizeChangeRequestPrivacy(rows, adminUser) {
+        if (!Array.isArray(rows) || !rows.length) return [];
+        const isTrueSuperAdminView = adminUser?.baseRole === 'super_admin' && (!adminUser?.role || adminUser.role === 'super_admin');
+        const userIds = new Set();
+        const emails = new Set();
+        for (const r of rows) {
+            if (r.submitted_by_user_id) userIds.add(Number(r.submitted_by_user_id));
+            if (r.reviewed_by_user_id) userIds.add(Number(r.reviewed_by_user_id));
+            if (r.submitted_by_email) emails.add(String(r.submitted_by_email).toLowerCase());
+            if (r.reviewed_by_email) emails.add(String(r.reviewed_by_email).toLowerCase());
+        }
+        const byId = new Map();
+        const byEmail = new Map();
+        if (userIds.size || emails.size) {
+            const clauses = [];
+            const params = [];
+            if (userIds.size) {
+                clauses.push(`id IN (${Array.from(userIds).map(() => '?').join(',')})`);
+                params.push(...Array.from(userIds));
+            }
+            if (emails.size) {
+                clauses.push(`LOWER(email) IN (${Array.from(emails).map(() => '?').join(',')})`);
+                params.push(...Array.from(emails));
+            }
+            try {
+                const uRows = await query(`SELECT id, email, role FROM admin_users WHERE ${clauses.join(' OR ')}`, params);
+                for (const u of uRows) {
+                    byId.set(Number(u.id), u);
+                    if (u.email) byEmail.set(String(u.email).toLowerCase(), u);
+                }
+            } catch (_) { /* fallback to default labels */ }
+        }
+        return rows.map((r) => {
+            const subUser = (r.submitted_by_user_id && byId.get(Number(r.submitted_by_user_id)))
+                || (r.submitted_by_email && byEmail.get(String(r.submitted_by_email).toLowerCase()))
+                || null;
+            const revUser = (r.reviewed_by_user_id && byId.get(Number(r.reviewed_by_user_id)))
+                || (r.reviewed_by_email && byEmail.get(String(r.reviewed_by_email).toLowerCase()))
+                || null;
+            const isOwn = Boolean(
+                (r.submitted_by_user_id && adminUser?.userId && Number(r.submitted_by_user_id) === Number(adminUser.userId))
+                || (r.submitted_by_email && adminUser?.email && String(r.submitted_by_email).toLowerCase() === String(adminUser.email).toLowerCase())
+            );
+            const subRole = subUser?.role || 'gis_editor';
+            const revRole = revUser?.role || 'reviewer';
+            const submitted_by_label = formatRoleStationLabel(subRole, r.station_id, 'GIS Editor');
+            const reviewed_by_label = (r.reviewed_by_email || r.reviewed_by_user_id || r.reviewed_at)
+                ? formatRoleStationLabel(revRole, r.station_id, 'Station Reviewer')
+                : null;
+            const clean = { ...r };
+            delete clean.submitted_by_email;
+            delete clean.submitted_by_name;
+            delete clean.reviewed_by_email;
+            delete clean.reviewed_by_name;
+            return {
+                ...clean,
+                is_own_submission: isOwn,
+                submitted_by_label,
+                reviewed_by_label,
+                submitted_by_masked_email: isTrueSuperAdminView && r.submitted_by_email ? maskStrictEmail(r.submitted_by_email) : null,
+                reviewed_by_masked_email: isTrueSuperAdminView && r.reviewed_by_email ? maskStrictEmail(r.reviewed_by_email) : null,
+                can_reveal_identity: isTrueSuperAdminView
+            };
+        });
+    }
+
     function getPublicBaseUrl(req) {
         const envUrl = (process.env.PUBLIC_BASE_URL || '').trim().replace(/\/+$/, '');
         if (envUrl) return envUrl;
@@ -1912,7 +1996,8 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
             // Hide other users' private drafts; keep caller's own drafts (or all for Super Admin)
             const filtered = rows.filter(r => r.status !== 'draft' || req.adminUser.baseRole === 'super_admin' || Number(r.submitted_by_user_id) === Number(req.adminUser.userId));
             const enriched = await phase1.attachConflictMetadata(query, filtered);
-            res.json(enriched);
+            const sanitized = await sanitizeChangeRequestPrivacy(enriched, req.adminUser);
+            res.json(sanitized);
         } catch (err) {
             res.status(500).json({ error: err.message });
         }
@@ -1963,6 +2048,61 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
             await query(`UPDATE change_requests SET status = 'withdrawn', updated_at = NOW() WHERE id = ?`, [id]);
             await logAudit('WITHDRAW_CHANGE_REQUEST', 'change_requests', id, `Withdrew Request #${id}: ${cr.summary}`, req.adminUser);
             res.json({ success: true, id, status: 'withdrawn' });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    router.post('/admin/change-requests/:id/reveal-identity', authenticateSession, async (req, res) => {
+        if (req.adminUser.baseRole !== 'super_admin') {
+            return res.status(403).json({ error: 'Only Super Admin can reveal submitter or reviewer identities.' });
+        }
+        const password = String(req.body?.password || '');
+        if (!password) {
+            return res.status(400).json({ error: 'Please enter your Super Admin login password.' });
+        }
+        try {
+            const [adminRow] = await query(`SELECT id, email, password_sha256 FROM admin_users WHERE id = ? LIMIT 1`, [req.adminUser.userId]);
+            if (!adminRow) {
+                return res.status(403).json({ error: 'Super Admin account could not be verified.' });
+            }
+            const inputPassSha256 = sha256Hex(password);
+            const passMatches = String(adminRow.password_sha256 || '').startsWith('scrypt$')
+                ? verifyPasswordScrypt(password, adminRow.password_sha256)
+                : safeCompareHex(inputPassSha256, String(adminRow.password_sha256 || '').toLowerCase());
+            if (!passMatches) {
+                return res.status(403).json({ error: 'Incorrect password. Please enter your Super Admin login password.' });
+            }
+            const id = Number(req.params.id);
+            const [cr] = await query(
+                `SELECT id, summary, station_id, submitted_by_user_id, submitted_by_name, submitted_by_email, reviewed_by_user_id, reviewed_by_name, reviewed_by_email FROM change_requests WHERE id = ? LIMIT 1`,
+                [id]
+            );
+            if (!cr) return res.status(404).json({ error: 'Change request not found.' });
+
+            const lookupName = async (userId, email, fallbackName) => {
+                if (fallbackName && !String(fallbackName).includes('@')) return fallbackName;
+                if (!userId && !email) return null;
+                const [u] = await query(
+                    userId ? `SELECT first_name, last_name FROM admin_users WHERE id = ? LIMIT 1` : `SELECT first_name, last_name FROM admin_users WHERE LOWER(email) = ? LIMIT 1`,
+                    [userId || String(email).toLowerCase()]
+                );
+                const full = u ? `${u.first_name || ''} ${u.last_name || ''}`.trim() : '';
+                return full || fallbackName || null;
+            };
+
+            const subName = await lookupName(cr.submitted_by_user_id, cr.submitted_by_email, cr.submitted_by_name);
+            const revName = await lookupName(cr.reviewed_by_user_id, cr.reviewed_by_email, cr.reviewed_by_name);
+
+            await logAudit('REVEAL_CR_IDENTITY', 'change_requests', id, `Super Admin revealed submitter/reviewer identity for Request #${id}`, req.adminUser);
+            res.json({
+                success: true,
+                id,
+                submitted_by_name: subName,
+                submitted_by_email: cr.submitted_by_email || null,
+                reviewed_by_name: revName,
+                reviewed_by_email: cr.reviewed_by_email || null
+            });
         } catch (err) {
             res.status(500).json({ error: err.message });
         }
@@ -2456,7 +2596,8 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
                 [stationId]
             );
             const enriched = await phase1.attachConflictMetadata(query, rows);
-            res.json({ stationId, requests: enriched });
+            const sanitized = await sanitizeChangeRequestPrivacy(enriched, req.adminUser);
+            res.json({ stationId, requests: sanitized });
         } catch (err) {
             res.status(500).json({ error: err.message });
         }
@@ -2764,7 +2905,8 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
             const plots = await query(`SELECT * FROM agricultural_plots WHERE station_id = ? ORDER BY id ASC`, [stationId]);
             const subplots = await query(`SELECT * FROM plot_subplots WHERE station_id = ? ORDER BY display_order ASC, id ASC`, [stationId]);
             const roads = await query(`SELECT feature_code, road_type, name, building_code, geometry_geojson FROM road_features WHERE station_id = ? ORDER BY id ASC`, [stationId]);
-            const pendingRequests = await query(`SELECT id, target_table, target_id, action, summary, status, submitted_by_email, created_at FROM change_requests WHERE station_id = ? AND status = 'pending' ORDER BY id DESC`, [stationId]);
+            const pendingRequestsRaw = await query(`SELECT id, station_id, target_table, target_id, action, summary, status, submitted_by_user_id, submitted_by_email, created_at FROM change_requests WHERE station_id = ? AND status = 'pending' ORDER BY id DESC`, [stationId]);
+            const pendingRequests = await sanitizeChangeRequestPrivacy(pendingRequestsRaw, req.adminUser);
             const [treeCnt] = await query(`SELECT COUNT(*) AS cnt FROM campus_trees WHERE station_id = ?`, [stationId]);
 
             const imgByBldg = {};
@@ -2859,11 +3001,12 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
                 const cleanPath = String(b.model_glb_url || '').split('?')[0].trim().replace(/^\/+/, '');
                 return Boolean(cleanPath && fs.existsSync(path.join(rootDir, cleanPath)));
             }).length;
-            const needsRevisionItems = await query(
-                `SELECT id, station_id, target_table, target_id, summary, reviewer_comment, revision_count, submitted_by_email, reviewed_at
+            const needsRevisionRaw = await query(
+                `SELECT id, station_id, target_table, target_id, summary, reviewer_comment, revision_count, submitted_by_user_id, submitted_by_email, reviewed_at
                  FROM change_requests WHERE status = 'rejected' AND station_id = ? ORDER BY id DESC LIMIT 10`,
                 [stationId]
             );
+            const needsRevisionItems = await sanitizeChangeRequestPrivacy(needsRevisionRaw, req.adminUser);
             const isSuperAdmin = req.adminUser.role === 'super_admin';
             const canViewAudit = (req.adminUser.permissions || []).includes('audit:view');
             const canViewLogins = (req.adminUser.permissions || []).includes('logins:view');
