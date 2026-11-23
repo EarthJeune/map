@@ -566,14 +566,17 @@ function renderBuildingsCollection() {
     if (bldgViewMode === 'cards') {
         host.innerHTML = `
             <div class="bldg-cards-grid">
-                ${list.map(b => {
+                ${list.map((b, idx) => {
                     const primaryImg = b.images && b.images[0] ? b.images[0].image_webp_url : null;
                     const fStatus = b.facility_status || 'Existing';
+                    const imgAttrs = idx < 6
+                        ? 'loading="eager" fetchpriority="high" decoding="async"'
+                        : 'loading="lazy" decoding="async"';
                     return `
                     <div class="bldg-card">
                         <div class="bldg-card-thumb">
                             ${primaryImg
-                                ? `<img src="/${escapeHtml(primaryImg)}" alt="${escapeHtml(b.name)}" onerror="this.style.display='none'">`
+                                ? `<img src="/${escapeHtml(primaryImg)}" alt="${escapeHtml(b.name)}" ${imgAttrs} onerror="this.style.display='none'">`
                                 : `<div style="color:#64748b; font-size:12px;">No Primary Photo</div>`}
                             <div style="position:absolute; top:10px; left:10px; display:flex; gap:6px;">
                                 ${b.building_num ? `<span class="mono-code" style="background:rgba(2,6,23,0.85); color:#fff;">#${b.building_num}</span>` : ''}
