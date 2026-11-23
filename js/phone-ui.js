@@ -896,82 +896,47 @@ export function renderPhoneBuildingGallery(buildingId) {
 
 
 
+        if (typeof window !== 'undefined') {
+            window._lastPhoneGallery = { images: images.slice(), name };
+        }
         if (images.length === 1) {
-
             container.innerHTML = `
-
-                <div class="phone-bldg-gallery-grid single-photo" onclick="openPhotoLightbox('${images[0]}', '${name}')">
-
+                <div class="phone-bldg-gallery-grid single-photo" onclick="openPhotoLightbox('${images[0]}', '${name.replace(/'/g, "\\'")}', window._lastPhoneGallery?.images, 0, window._lastPhoneGallery?.name)">
                     <div class="pbg-single-slot">
-
                         <img src="${images[0]}" alt="${name}">
-
                         <div class="pbg-badge-pill">${lucideIcon('camera', 12)} 1 Photo</div>
-
                     </div>
-
                 </div>
-
             `;
-
         } else if (images.length === 2) {
-
             container.innerHTML = `
-
                 <div class="phone-bldg-gallery-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:4px;height:180px;">
-
-                    <div class="pbg-main-slot" onclick="openPhotoLightbox('${images[0]}', '${name} - View 1')">
-
+                    <div class="pbg-main-slot" onclick="openPhotoLightbox('${images[0]}', '${name.replace(/'/g, "\\'")}', window._lastPhoneGallery?.images, 0, window._lastPhoneGallery?.name)">
                         <img src="${images[0]}" alt="${name} 1">
-
                     </div>
-
-                    <div class="pbg-main-slot" onclick="openPhotoLightbox('${images[1]}', '${name} - View 2')">
-
+                    <div class="pbg-main-slot" onclick="openPhotoLightbox('${images[1]}', '${name.replace(/'/g, "\\'")}', window._lastPhoneGallery?.images, 1, window._lastPhoneGallery?.name)">
                         <img src="${images[1]}" alt="${name} 2">
-
                     </div>
-
                     <div class="pbg-badge-pill">${lucideIcon('camera', 12)} 2 Photos</div>
-
                 </div>
-
             `;
-
         } else {
-
             container.innerHTML = `
-
                 <div class="phone-bldg-gallery-grid mosaic">
-
-                    <div class="pbg-main-slot" onclick="openPhotoLightbox('${images[0]}', '${name} - Main View')">
-
+                    <div class="pbg-main-slot" onclick="openPhotoLightbox('${images[0]}', '${name.replace(/'/g, "\\'")}', window._lastPhoneGallery?.images, 0, window._lastPhoneGallery?.name)">
                         <img src="${images[0]}" alt="${name} 1">
-
                     </div>
-
                     <div class="pbg-side-slots">
-
-                        <div class="pbg-side-item" onclick="openPhotoLightbox('${images[1]}', '${name} - Side View')">
-
+                        <div class="pbg-side-item" onclick="openPhotoLightbox('${images[1]}', '${name.replace(/'/g, "\\'")}', window._lastPhoneGallery?.images, 1, window._lastPhoneGallery?.name)">
                             <img src="${images[1]}" alt="${name} 2">
-
                         </div>
-
-                        <div class="pbg-side-item" onclick="openPhotoLightbox('${images[2]}', '${name} - Interior / Detail')">
-
+                        <div class="pbg-side-item" onclick="openPhotoLightbox('${images[2]}', '${name.replace(/'/g, "\\'")}', window._lastPhoneGallery?.images, 2, window._lastPhoneGallery?.name)">
                             <img src="${images[2]}" alt="${name} 3">
-
                         </div>
-
                     </div>
-
                     <div class="pbg-badge-pill">${lucideIcon('camera', 12)} ${images.length} Photos</div>
-
                 </div>
-
             `;
-
         }
 
     }
@@ -980,34 +945,90 @@ export function renderPhoneBuildingGallery(buildingId) {
 
 
 
-export function openPhotoLightbox(src, caption) {
+let lightboxViews = [];
+let lightboxIdx = 0;
+let lightboxBaseTitle = '';
+let lightboxKeyBound = false;
+let lightboxTouchStartX = null;
 
-    const modal = document.getElementById('photo-lightbox-modal');
-
+function renderLightboxSlide() {
     const img = document.getElementById('lightbox-img');
-
     const cap = document.getElementById('lightbox-caption');
-
-    if (!modal || !img) return;
-
-    img.src = src;
-
-    if (cap) cap.textContent = caption || 'Facility Photo';
-
-    modal.style.display = 'flex';
-
+    const counter = document.getElementById('lightbox-counter');
+    const prevBtn = document.getElementById('lightbox-prev-btn');
+    const nextBtn = document.getElementById('lightbox-next-btn');
+    if (!img) return;
+    const hasMulti = lightboxViews.length > 1;
+    const item = lightboxViews[lightboxIdx] || { src: img.src, label: '' };
+    img.src = item.src;
+    if (cap) {
+        const lbl = item.label ? String(item.label).trim() : '';
+        cap.textContent = lbl
+            ? (lightboxBaseTitle ? `${lightboxBaseTitle} — ${lbl}` : lbl)
+            : (lightboxBaseTitle || 'Facility Photo');
+    }
+    if (counter) {
+        counter.style.display = hasMulti ? 'block' : 'none';
+        counter.textContent = `${lightboxIdx + 1} / ${lightboxViews.length}`;
+    }
+    if (prevBtn) prevBtn.style.display = hasMulti ? 'flex' : 'none';
+    if (nextBtn) nextBtn.style.display = hasMulti ? 'flex' : 'none';
 }
 
+export function stepPhotoLightbox(delta, e) {
+    if (e) e.stopPropagation();
+    if (lightboxViews.length <= 1) return;
+    lightboxIdx = (lightboxIdx + delta + lightboxViews.length) % lightboxViews.length;
+    renderLightboxSlide();
+}
 
+export function openPhotoLightbox(src, caption, views = null, activeIdx = 0, baseTitle = '') {
+    const modal = document.getElementById('photo-lightbox-modal');
+    const img = document.getElementById('lightbox-img');
+    if (!modal || !img) return;
+
+    if (Array.isArray(views) && views.length > 0) {
+        lightboxViews = views.map(v => (typeof v === 'string' ? { src: v, label: '' } : { src: v.src || v.image_webp_url || '', label: v.label || v.caption || '' })).filter(v => v.src);
+        lightboxIdx = Math.max(0, Math.min(Number(activeIdx) || 0, lightboxViews.length - 1));
+        lightboxBaseTitle = baseTitle || (caption ? String(caption).split(' — ')[0] : '');
+    } else {
+        lightboxViews = [{ src, label: '' }];
+        lightboxIdx = 0;
+        lightboxBaseTitle = caption || 'Facility Photo';
+    }
+
+    renderLightboxSlide();
+    modal.style.display = 'flex';
+
+    if (!lightboxKeyBound) {
+        lightboxKeyBound = true;
+        document.addEventListener('keydown', (ev) => {
+            const m = document.getElementById('photo-lightbox-modal');
+            if (!m || m.style.display === 'none') return;
+            if (ev.key === 'ArrowRight') stepPhotoLightbox(1);
+            else if (ev.key === 'ArrowLeft') stepPhotoLightbox(-1);
+            else if (ev.key === 'Escape') closePhotoLightbox();
+        });
+        modal.addEventListener('touchstart', (ev) => {
+            if (ev.touches && ev.touches.length === 1) lightboxTouchStartX = ev.touches[0].clientX;
+        }, { passive: true });
+        modal.addEventListener('touchend', (ev) => {
+            if (lightboxTouchStartX === null || !ev.changedTouches || !ev.changedTouches.length) return;
+            const dx = ev.changedTouches[0].clientX - lightboxTouchStartX;
+            lightboxTouchStartX = null;
+            if (Math.abs(dx) > 40) stepPhotoLightbox(dx < 0 ? 1 : -1);
+        }, { passive: true });
+    }
+}
 
 export function closePhotoLightbox(e) {
-
     if (e) e.stopPropagation();
-
     const modal = document.getElementById('photo-lightbox-modal');
-
     if (modal) modal.style.display = 'none';
+}
 
+if (typeof window !== 'undefined') {
+    window.stepPhotoLightbox = stepPhotoLightbox;
 }
 
 

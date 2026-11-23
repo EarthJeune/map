@@ -26,7 +26,7 @@
     <link rel="stylesheet" href="css/variables.css?v=308">
     <link rel="stylesheet" href="css/base.css?v=308">
     <link rel="stylesheet" href="css/kiosk.css?v=311">
-    <link rel="stylesheet" href="css/building-panel.css?v=317">
+    <link rel="stylesheet" href="css/building-panel.css?v=318">
     <link rel="stylesheet" href="css/navigation.css?v=308">
     <link rel="stylesheet" href="css/phone.css?v=333">
     <link rel="stylesheet" href="css/admin.css?v=308">
@@ -1363,10 +1363,13 @@
         </div>
     </div>
 
-    <!-- Fullscreen Photo Lightbox Modal -->
+    <!-- Fullscreen Photo Lightbox Modal (with Full Carousel Support) -->
     <div class="photo-lightbox-modal" id="photo-lightbox-modal" style="display: none;"
         onclick="closePhotoLightbox(event)">
+        <div class="lightbox-counter" id="lightbox-counter" style="display: none;">1 / 1</div>
         <button class="lightbox-close-btn" onclick="closePhotoLightbox(event)" title="Close photo"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-x" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+        <button type="button" class="lightbox-nav-btn lightbox-prev" id="lightbox-prev-btn" style="display: none;" onclick="stepPhotoLightbox(-1, event)" aria-label="Previous photo" title="Previous photo">‹</button>
+        <button type="button" class="lightbox-nav-btn lightbox-next" id="lightbox-next-btn" style="display: none;" onclick="stepPhotoLightbox(1, event)" aria-label="Next photo" title="Next photo">›</button>
         <div class="lightbox-content" onclick="event.stopPropagation()">
             <img id="lightbox-img" src="" alt="Building Photo">
             <div class="lightbox-caption" id="lightbox-caption">Building Photo</div>
@@ -1443,7 +1446,7 @@
         setTimeout(function () {
             const s = document.createElement('script');
             s.type = 'module';
-            s.src = 'js/app.js?v=356';
+            s.src = 'js/app.js?v=357';
             document.body.appendChild(s);
         }, 4350);
     </script>

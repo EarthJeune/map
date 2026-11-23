@@ -1544,7 +1544,7 @@ export function setDrawerHeroImage({ src, title = '', subtitle = '', badgeDotCol
                 if (typeof window.openPhotoLightbox === 'function') {
                     const activeView = currentHeroViews[currentHeroActiveIdx] || { src: imgEl.src, label: '' };
                     const lbTitle = activeView.label ? `${currentHeroTitle} — ${activeView.label}` : currentHeroTitle;
-                    window.openPhotoLightbox(activeView.src, lbTitle);
+                    window.openPhotoLightbox(activeView.src, lbTitle, currentHeroViews, currentHeroActiveIdx, currentHeroTitle);
                 }
             };
         }
@@ -1552,7 +1552,7 @@ export function setDrawerHeroImage({ src, title = '', subtitle = '', badgeDotCol
             if (typeof window.openPhotoLightbox === 'function') {
                 const activeView = currentHeroViews[currentHeroActiveIdx] || { src: imgEl.src, label: '' };
                 const lbTitle = activeView.label ? `${currentHeroTitle} — ${activeView.label}` : currentHeroTitle;
-                window.openPhotoLightbox(activeView.src, lbTitle);
+                window.openPhotoLightbox(activeView.src, lbTitle, currentHeroViews, currentHeroActiveIdx, currentHeroTitle);
             }
         };
 
