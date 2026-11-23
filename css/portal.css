@@ -5362,10 +5362,14 @@ body[data-theme="light"] .modal-title,
 body[data-theme="light"] .sidebar-user-name,
 body[data-theme="light"] .bldg-card-title,
 body[data-theme="light"] .cr-vc-title,
-body[data-theme="light"] h1,
-body[data-theme="light"] h2,
-body[data-theme="light"] h3,
-body[data-theme="light"] h4 {
+body[data-theme="light"] .admin-shell h1,
+body[data-theme="light"] .admin-shell h2,
+body[data-theme="light"] .admin-shell h3,
+body[data-theme="light"] .admin-shell h4,
+body[data-theme="light"] .modal-box h1,
+body[data-theme="light"] .modal-box h2,
+body[data-theme="light"] .modal-box h3,
+body[data-theme="light"] .modal-box h4 {
     color: #0f172a !important;
 }
 
@@ -5647,7 +5651,8 @@ body[data-theme="light"] .status-pill-rose { background: rgba(244, 63, 94, 0.14)
 body[data-theme="light"] .status-pill-violet { background: rgba(168, 85, 247, 0.14); border-color: rgba(168, 85, 247, 0.35); color: #6d28d9; }
 
 body[data-theme="light"] .notif-bell-btn,
-body[data-theme="light"] .btn-secondary,
+body[data-theme="light"] .admin-shell .btn-secondary,
+body[data-theme="light"] .modal-box .btn-secondary,
 body[data-theme="light"] .btn-ghost-logout,
 body[data-theme="light"] .log-page-btn {
     background: #f8fafc;
@@ -5655,15 +5660,19 @@ body[data-theme="light"] .log-page-btn {
     color: #1e293b;
 }
 body[data-theme="light"] .notif-bell-btn:hover,
-body[data-theme="light"] .btn-secondary:hover,
+body[data-theme="light"] .admin-shell .btn-secondary:hover,
+body[data-theme="light"] .modal-box .btn-secondary:hover,
 body[data-theme="light"] .log-page-btn:hover:not(:disabled) {
     background: #e2e8f0;
     color: #0f172a;
 }
 
-body[data-theme="light"] .form-control,
-body[data-theme="light"] select.form-control,
-body[data-theme="light"] textarea.form-control {
+body[data-theme="light"] .admin-shell .form-control,
+body[data-theme="light"] .admin-shell select.form-control,
+body[data-theme="light"] .admin-shell textarea.form-control,
+body[data-theme="light"] .modal-box .form-control,
+body[data-theme="light"] .modal-box select.form-control,
+body[data-theme="light"] .modal-box textarea.form-control {
     background: #ffffff;
     border-color: rgba(15, 23, 42, 0.18);
     color: #0f172a;
@@ -8030,4 +8039,24 @@ body.sidebar-collapsed .sidebar-footer-map-row {
     white-space: normal;
     overflow-wrap: anywhere;
     line-height: 1.35;
+}
+
+/* Isolate Login Gate (#login-overlay) from Dashboard Light Mode */
+body[data-theme="light"] #login-overlay {
+    color-scheme: dark;
+    --bg-canvas: #020617;
+    --bg-sidebar: #090d16;
+    --bg-surface: rgba(15, 23, 42, 0.72);
+    --bg-surface-solid: #0f172a;
+    --bg-elevated: rgba(30, 41, 59, 0.65);
+    --bg-input: #090d16;
+    --border-subtle: rgba(255, 255, 255, 0.07);
+    --border-default: rgba(255, 255, 255, 0.11);
+    --border-hover: rgba(16, 185, 129, 0.32);
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --text-secondary-aa: #cbd5e1;
+    --text-muted-aa: #94a3b8;
+    color: #f8fafc;
 }
