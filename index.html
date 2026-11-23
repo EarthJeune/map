@@ -9,7 +9,7 @@
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
     <link rel="icon" type="image/svg+xml" href="Main Icon/iGUIDE_Icon_iG_Monogram.svg?v=289">
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0a0f1c">
+    <meta name="theme-color" content="#07100e">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
@@ -23,14 +23,14 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/variables.css?v=289">
-    <link rel="stylesheet" href="css/base.css?v=289">
-    <link rel="stylesheet" href="css/kiosk.css?v=289">
-    <link rel="stylesheet" href="css/building-panel.css?v=289">
-    <link rel="stylesheet" href="css/navigation.css?v=289">
-    <link rel="stylesheet" href="css/phone.css?v=289">
-    <link rel="stylesheet" href="css/admin.css?v=289">
-    <link rel="stylesheet" href="css/main.css?v=293">
+    <link rel="stylesheet" href="css/variables.css?v=308">
+    <link rel="stylesheet" href="css/base.css?v=308">
+    <link rel="stylesheet" href="css/kiosk.css?v=311">
+    <link rel="stylesheet" href="css/building-panel.css?v=317">
+    <link rel="stylesheet" href="css/navigation.css?v=308">
+    <link rel="stylesheet" href="css/phone.css?v=332">
+    <link rel="stylesheet" href="css/admin.css?v=308">
+    <link rel="stylesheet" href="css/main.css?v=344">
     <script>
         try {
             localStorage.removeItem('da_admin_mode');
@@ -107,8 +107,8 @@
         .ctrl-orbit-btn.active, .ctrl-orbit-btn.active .lucide-rotate-3d { color: #ffffff !important; }
         .orbit-toast-icon { color: #a78bfa; }
 
-        /* Keep sidebar dark navy background consistent even when low-perf-mode disables backdrop blur */
-        body.low-perf-mode .sidebar { background: rgba(10, 15, 28, 0.98) !important; }
+        /* Keep sidebar Botanical Deep-Canopy background consistent even when low-perf-mode disables backdrop blur */
+        body.low-perf-mode .sidebar { background: linear-gradient(180deg, #0d1d19 0%, #07100e 100%) !important; }
 
         /* iGUIDE Map Intro Splash Screen & Unfolding Full Title Animation */
         #loading-overlay {
@@ -120,7 +120,7 @@
             align-items: center !important;
             justify-content: center !important;
             gap: 18px !important;
-            background: radial-gradient(circle at 50% 42%, #063017 0%, #020617 75%) !important;
+            background: radial-gradient(circle at 50% 42%, #0d1d19 0%, #07100e 75%) !important;
             transition: opacity 0.75s ease, visibility 0.75s ease !important;
         }
         #loading-overlay.hidden {
@@ -238,6 +238,19 @@
         })();
     </script>
     <div id="map"></div>
+    <!-- Station Under Development Warning Banner (Shown when viewing QARES or RARES) -->
+    <div class="station-dev-warning-banner" id="station-dev-warning-banner" style="display: none;">
+        <div class="sdwb-tag">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-alert-triangle"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <span>Under Development</span>
+        </div>
+        <div class="sdwb-desc" id="sdwb-desc">Campus under development • 3D models and surveying in progress</div>
+        <div class="sdwb-actions">
+            <button type="button" class="sdwb-btn details" onclick="showStationDevModal(state.currentStationId)" title="View development status">Details</button>
+            <button type="button" class="sdwb-btn return" onclick="switchResearchStation('lares')" title="Return to DA-LARES active map">Return to LARES</button>
+        </div>
+    </div>
+
 
     <!-- Phone Floating Top Bar: DASH Logo + Station Switcher Pill (Active in Mobile View) -->
     <header class="phone-top-bar" id="phone-top-bar">
@@ -376,7 +389,7 @@
                             <span class="msp-toggle-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-wheat" aria-hidden="true"><path d="M2 22 16 8"/><path d="M3.47 12.53 5 11l1.53 1.53a3.5 3.5 0 0 1 0 4.94L5 19l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M7.47 8.53 9 7l1.53 1.53a3.5 3.5 0 0 1 0 4.94L9 15l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M11.47 4.53 13 3l1.53 1.53a3.5 3.5 0 0 1 0 4.94L13 11l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M20 2h2v2a4 4 0 0 1-4 4h-2V6a4 4 0 0 1 4-4Z"/><path d="M11.47 17.47 13 19l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L5 19l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/><path d="M15.47 13.47 17 15l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L9 15l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/><path d="M19.47 9.47 21 11l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L13 11l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/></svg></span>
                             <div>
                                 <span class="msp-toggle-label">Agricultural Plots</span>
-                                <span class="msp-toggle-desc">Research zones & field crop boundaries</span>
+                                <span class="msp-toggle-desc">Agricultural plots & field crop boundaries</span>
                             </div>
                         </div>
                         <label class="msp-switch">
@@ -472,7 +485,7 @@
                         title="Low-power mode optimized for Intel Core i3 / i5 Integrated Graphics">
                         <span class="msp-perf-icon" id="perf-icon-eco"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-leaf" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg></span>
                         <span class="msp-perf-name" id="perf-name-eco">Kiosk Eco</span>
-                        <span class="msp-perf-sub" id="perf-sub-eco">i3 / i5 GPU</span>
+                        <span class="msp-perf-sub" id="perf-sub-eco">Low-Res 3D</span>
                     </button>
                     <button class="msp-perf-btn" id="perf-btn-high" onclick="setPerformanceProfile('high')"
                         type="button" title="Native retina resolution with full anti-aliasing">
@@ -567,27 +580,6 @@
             <button class="speed-pill" onclick="setRouteSpeed(6)" data-speed="6" title="6x Ultra speed">6x</button>
         </div>
     </div>
-            <button type="button" class="kaa-close-btn" onclick="window.clearArrivedCountdown()"
-                title="Dismiss notification"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-x" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
-        </div>
-        <div class="kaa-buttons">
-            <button type="button" class="kaa-btn kaa-btn-primary" id="kaa-btn-details"
-                onclick="window.viewArrivedBuildingDetails()" title="View offices and facility information">
-                <span class="kaa-btn-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-building-2" aria-hidden="true"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg></span>
-                <span>View Building Offices & Details</span>
-            </button>
-            <button type="button" class="kaa-btn kaa-btn-secondary" onclick="window.replayRoute()"
-                title="Replay walking route animation">
-                <span class="kaa-btn-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-rotate-ccw" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></span>
-                <span>Replay Walk</span>
-            </button>
-            <button type="button" class="kaa-btn kaa-btn-tertiary" onclick="window.exitRouteMode()"
-                title="Return to main directory and campus map">
-                <span class="kaa-btn-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-map" aria-hidden="true"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></svg></span>
-                <span>Campus Overview</span>
-            </button>
-        </div>
-    </div>
 
     <!-- Color Picker Modal -->
     <div id="color-picker-modal">
@@ -661,7 +653,7 @@
             <div class="search-row">
                 <div class="search-box">
                     <span class="search-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-search" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></span>
-                    <input type="text" id="search-input" placeholder="Search places, plots & offices..."
+                    <input type="text" id="search-input" placeholder="Search places &amp; offices..."
                         oninput="filterDirectory()">
                     <button type="button" class="search-clear-btn" id="search-clear-btn" onclick="clearSearchInput()"
                         title="Clear search" style="display:none;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-x" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
@@ -680,11 +672,20 @@
                     <div class="filter-dropdown-menu" id="filter-dropdown-menu" onmousedown="event.stopPropagation()"
                         ontouchstart="event.stopPropagation()">
                         <div class="fdm-header">
-                            <span class="fdm-title">FILTER BY TYPE</span>
+                            <span class="fdm-title">FILTER FACILITIES</span>
                             <button type="button" class="fdm-reset-btn" id="fdm-reset-btn" onclick="resetTypeFilters()"
                                 title="Reset all filters">Reset</button>
                         </div>
-                        <div class="fdm-options" id="fdm-options"></div>
+                        <div class="fdm-scroll-body fdm-split-grid">
+                            <div class="fdm-col fdm-col-type">
+                                <div class="fdm-col-header">FILTER BY TYPE</div>
+                                <div class="fdm-options" id="fdm-options"></div>
+                            </div>
+                            <div class="fdm-col fdm-col-status">
+                                <div class="fdm-col-header">FILTER BY STATUS</div>
+                                <div class="fdm-status-options" id="fdm-status-options"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -791,6 +792,7 @@
                 <div>
                     <div class="bp-title" id="bp-title">Building Name</div>
                     <div class="bp-subtitle" id="bp-subtitle">Research Facility</div>
+                    <div id="bp-status-pill" style="margin-top:4px;"></div>
                 </div>
             </div>
             <button class="bp-close" onclick="closeBuildingPanel()" title="Close"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-x" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
@@ -799,6 +801,9 @@
             <div class="bp-image-wrapper" id="bp-image-wrapper">
                 <img id="bp-real-image" src="" alt="Building"
                     style="display: none; width: 100%; height: 130px; object-fit: cover; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12); cursor: pointer; transition: opacity 0.25s ease;">
+                <button type="button" class="bp-slide-arrow prev" id="bp-slide-prev" aria-label="Previous photo" style="display: none;">‹</button>
+                <button type="button" class="bp-slide-arrow next" id="bp-slide-next" aria-label="Next photo" style="display: none;">›</button>
+                <div class="bp-slide-counter" id="bp-slide-counter" style="display: none;">1 / 1</div>
                 <div class="bp-image-overlay-vignette" id="bp-image-vignette" style="display: none;"></div>
                 <div class="bp-image-badge" id="bp-image-badge" style="display: none;">
                     <span class="bp-badge-dot"></span>
@@ -883,31 +888,30 @@
 
         <!-- 1. DIRECTORY / SEARCH VIEW -->
         <div class="sheet-view active" id="phone-view-dir">
-            <!-- Active Station Selector Banner -->
-            <div class="phone-station-banner" onclick="openPhoneStationModal()" title="Tap to switch research station">
-                <div class="phone-station-banner-left">
-                    <span class="phone-station-banner-tag">ACTIVE RESEARCH STATION</span>
-                    <div class="phone-station-banner-name" id="phone-station-banner-name">DA-LARES (Lipa)</div>
-                </div>
-                <button type="button" class="phone-station-change-btn" tabindex="-1">
-                    <span>Change</span>
-                    <span class="pscb-arrow">▾</span>
-                </button>
-            </div>
+            <!-- Slim Botanical Telemetry & Station Strip (replaces oversized duplicate banner) -->
+            <button type="button" class="phone-telemetry-strip" onclick="openPhoneStationModal()"
+                title="Switch active research station">
+                <span class="pts-left">
+                    <span class="pts-live-dot" aria-hidden="true"></span>
+                    <span class="pts-label">STATION:</span>
+                    <span class="phone-station-banner-name" id="phone-station-banner-name">DA-LARES (Lipa)</span>
+                </span>
+                <span class="pts-switch-chip">Switch ▾</span>
+            </button>
             <!-- Search & Filter Row for Mobile -->
             <div class="phone-search-row">
                 <div class="phone-search-wrap">
                     <span class="phone-search-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-search" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></span>
-                    <input type="text" id="phone-search-input" placeholder="Search places, plots & offices..."
+                    <input type="text" id="phone-search-input" placeholder="Search places &amp; offices..."
                         autocomplete="off" oninput="filterPhoneDirectory()">
                     <button class="phone-search-clear" id="phone-search-clear" onclick="clearPhoneSearch()"
                         title="Clear search" style="display:none;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-x" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
                 </div>
                 <div class="phone-filter-wrap" id="phone-filter-wrap">
                     <button type="button" class="phone-filter-btn" id="phone-filter-btn"
-                        onclick="togglePhoneFilterDropdown(event)" title="Filter facilities by type"
-                        aria-haspopup="true" aria-expanded="false">
-                        <svg class="phone-filter-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        onclick="togglePhoneFilterDropdown(event)" title="Filter facilities by type and status"
+                        aria-label="Filter facilities" aria-haspopup="true" aria-expanded="false">
+                        <svg class="phone-filter-icon" width="15" height="15" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
                         </svg>
@@ -916,11 +920,14 @@
                     </button>
                     <div class="phone-filter-dropdown" id="phone-filter-dropdown" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()">
                         <div class="fdm-header">
-                            <span class="fdm-title">FILTER BY TYPE</span>
+                            <span class="fdm-title">FILTER FACILITIES</span>
                             <button type="button" class="fdm-reset-btn" id="phone-fdm-reset-btn" onclick="resetTypeFilters()"
                                 title="Reset all filters">Reset</button>
                         </div>
-                        <div class="fdm-options" id="phone-fdm-options">
+                        <div class="fdm-scroll-body fdm-split-grid">
+                            <div class="fdm-col fdm-col-type">
+                                <div class="fdm-col-header">FILTER BY TYPE</div>
+                                <div class="fdm-options" id="phone-fdm-options">
                             <label class="fdm-item" data-type="infrastructure">
                                 <input type="checkbox" class="fdm-checkbox" value="infrastructure"
                                     onchange="toggleTypeFilter('infrastructure', this.checked)">
@@ -984,6 +991,12 @@
                                     <span class="fdm-item-desc">Automated Weather Station (AWS)</span>
                                 </div>
                             </label>
+                                </div>
+                            </div>
+                            <div class="fdm-col fdm-col-status">
+                                <div class="fdm-col-header">FILTER BY STATUS</div>
+                                <div class="fdm-status-options" id="phone-fdm-status-options"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1006,6 +1019,7 @@
                     <div style="min-width: 0;">
                         <div class="phone-bldg-title" id="phone-bldg-title">Building Name</div>
                         <div class="phone-bldg-desc" id="phone-bldg-desc">Research Facility</div>
+                        <div id="phone-bldg-status-pill" style="margin-top:4px;"></div>
                     </div>
                 </div>
                 <button class="phone-sheet-close-btn" onclick="showPhoneDirectoryView()"
@@ -1152,11 +1166,11 @@
             <div class="pam-confetti"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-party-popper" aria-hidden="true"><path d="M5.8 11.3 2 22l10.7-3.79"/><path d="M4 3h.01"/><path d="M22 8h.01"/><path d="M15 2h.01"/><path d="M22 20h.01"/><path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10"/><path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.7-.72 1.22-1.43 1.22H17"/><path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98C9.52 4.9 9 5.52 9 6.23V7"/><path d="M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z"/></svg></div>
             <div class="pam-title" id="pam-title">Arrived at Destination!</div>
             <div class="pam-desc" id="pam-desc">You have reached your destination.</div>
-            <div class="pam-actions">
-                <button class="pam-btn pam-btn-repeat" onclick="replayFromArrivalPopup()">
+            <div class="pam-actions" id="pam-actions">
+                <button class="pam-btn pam-btn-repeat" id="pam-repeat-btn" onclick="replayFromArrivalPopup()">
                     <span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-rotate-ccw" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></span> Repeat
                 </button>
-                <button class="pam-btn pam-btn-done" onclick="closePhoneArrivalPopup()">
+                <button class="pam-btn pam-btn-done" id="pam-done-btn" onclick="closePhoneArrivalPopup()">
                     <span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-check" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span> Done
                 </button>
             </div>
@@ -1191,8 +1205,7 @@
                         <div class="dash-card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-map" aria-hidden="true"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></svg></div>
                         <div class="dash-card-content">
                             <div class="dash-card-title">What is iGUIDE?</div>
-                            <div class="dash-card-desc">The official interactive 3D digital campus map and geospatial
-                                masterplan connecting Department of Agriculture CALABARZON research stations.</div>
+                            <div class="dash-card-desc">The official interactive 3D campus directory and wayfinding system connecting Department of Agriculture CALABARZON research stations — DA-LARES, DA-QARES, DA-RARES, and DA-CARES.</div>
                         </div>
                     </div>
 
@@ -1200,8 +1213,7 @@
                         <div class="dash-card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-compass" aria-hidden="true"><path d="m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z"/><circle cx="12" cy="12" r="10"/></svg></div>
                         <div class="dash-card-content">
                             <div class="dash-card-title">What does our map do?</div>
-                            <div class="dash-card-desc">Explore authentic 3D campus architecture and aerial drone views, search research
-                                divisions, offices, laboratories, warehouses, screenhouses, and agricultural plots, and get real-time turn-by-turn walking routes.
+                            <div class="dash-card-desc">Explore authentic 3D campus architecture and aerial drone views, search buildings, research divisions, offices, laboratories, warehouses, greenhouses, screenhouses, automated weather stations, and agricultural plots, and get real-time turn-by-turn walking routes.
                             </div>
                         </div>
                     </div>
@@ -1210,8 +1222,11 @@
                         <div class="dash-card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-smartphone" aria-hidden="true"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg></div>
                         <div class="dash-card-content">
                             <div class="dash-card-title">Touch Kiosk & Mobile QR Navigation</div>
-                            <div class="dash-card-desc">Touch the kiosk screen to explore facilities and preview routes on-site, or scan the on-screen QR code
-                                with your phone camera to take live GPS turn-by-turn walking guidance with you across campus.</div>
+                            <div class="dash-card-desc">Browse facilities and preview routes on the on-site touch kiosk, scan the QR code to open the interactive 3D map or hand off your route to your phone, or use live GPS turn-by-turn walking guidance directly on your mobile device.</div>
+                        </div>
+                        <div class="dash-welcome-qr-aside" id="welcome-qr-aside" onclick="openQRZoomModal('1')" title="Tap to enlarge QR code to open the 3D map on your phone">
+                            <div class="dash-welcome-qr-box" id="welcome-qr-box"></div>
+                            <span class="dash-welcome-qr-caption">Scan for Phone</span>
                         </div>
                     </div>
                 </div>
@@ -1394,12 +1409,40 @@
     </div>
 
     <script>
+        // Pre-populate the Welcome Menu QR Code immediately so it is ready even if the user skips the intro splash early
+        (function initWelcomeQrEarly() {
+            const box = document.getElementById('welcome-qr-box');
+            if (!box || typeof QRCode === 'undefined') return;
+            const draw = function (baseOrigin) {
+                const targetUrl = (baseOrigin || window.location.origin).replace(/\/$/, '') + '/index.html?mode=phone&view=google&v=73';
+                box.innerHTML = '';
+                try {
+                    new QRCode(box, {
+                        text: targetUrl,
+                        width: 64,
+                        height: 64,
+                        colorDark: '#07100e',
+                        colorLight: '#ffffff',
+                        correctLevel: QRCode.CorrectLevel ? QRCode.CorrectLevel.M : 0
+                    });
+                } catch (_) {}
+            };
+            draw(window.location.origin);
+            fetch('/api/tunnel').then(function (r) { return r.json(); }).then(function (d) {
+                if (!d) return;
+                const origin = (d.tunnelUrl && d.tunnelUrl.indexOf('https://') === 0)
+                    ? d.tunnelUrl
+                    : ((d.url && d.url.indexOf('https://') === 0) ? d.url : (d.localUrl || window.location.origin));
+                draw(origin);
+            }).catch(function () {});
+        })();
+
         // Defer heavy 3D Mapbox WebGL + 48 Three.js GLB model initialization until the 4.4s splash + heartbeat finishes,
         // so the entire splash animation and final-second heartbeat run at a locked 60 FPS (identical to Admin Portal).
         setTimeout(function () {
             const s = document.createElement('script');
             s.type = 'module';
-            s.src = 'js/app.js?v=295';
+            s.src = 'js/app.js?v=353';
             document.body.appendChild(s);
         }, 4350);
     </script>

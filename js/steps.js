@@ -11,7 +11,7 @@ import { lucideIcon } from './data/icons.js';
 
 
 
-import { BUILDING_DIRECTORY } from './data/buildings.js';
+import { BUILDING_DIRECTORY, getBuildingById } from './data/buildings.js';
 
 
 
@@ -87,7 +87,7 @@ export function buildSteps(coords, directory, destId) {
 
 
 
-    const destBuilding = directory ? directory.find(b => b.id === destId) : null;
+    const destBuilding = (typeof getBuildingById === 'function' ? getBuildingById(destId) : null) || (directory ? directory.find(b => b.id === destId) : null);
 
 
 
@@ -1287,7 +1287,8 @@ export function updateLiveNavigation(currentDist, totalDist) {
 
 
 
-    const destBldg = (typeof BUILDING_DIRECTORY !== 'undefined') ? BUILDING_DIRECTORY.find(b => b.id === (state.selectedBuildingId || state.activeRoute)) : null;
+    const liveDestId = state.selectedBuildingId || state.activeRoute;
+    const destBldg = (typeof getBuildingById === 'function' ? getBuildingById(liveDestId) : null) || ((typeof BUILDING_DIRECTORY !== 'undefined') ? BUILDING_DIRECTORY.find(b => b.id === liveDestId) : null);
 
 
 

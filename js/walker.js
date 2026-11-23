@@ -153,37 +153,6 @@ export function navigateTo(buildingId, targetOffice = '') {
 
     if (typeof window.clearSubPlotHighlight === 'function') window.clearSubPlotHighlight();
 
-    if (state.currentStationId === 'rares') {
-        const raresData = (typeof window !== 'undefined' && window.raresBuildingsBaseline) ? window.raresBuildingsBaseline : null;
-        if (raresData && raresData.features) {
-            const baseId = buildingId ? buildingId.split('.')[0] : '';
-            const grouped = (typeof window.getGroupedRARESFacilities === 'function')
-                ? window.getGroupedRARESFacilities(raresData)
-                : null;
-            const fac = grouped ? grouped.find(g => g.id === baseId || g.id === buildingId) : null;
-            if (fac) {
-                if (typeof window.flyToRARESFacility === 'function') {
-                    window.flyToRARESFacility(fac.coords[0], fac.coords[1], fac.id);
-                }
-                return;
-            }
-            const feat = raresData.features.find(f => (f.properties && f.properties.id === buildingId));
-            if (feat && feat.geometry && feat.geometry.coordinates) {
-                let centerCoords = [121.3393, 14.5750];
-                if (feat.geometry.type === 'Polygon' && feat.geometry.coordinates[0]) {
-                    const ring = feat.geometry.coordinates[0];
-                    let sumLng = 0, sumLat = 0;
-                    ring.forEach(c => { sumLng += c[0]; sumLat += c[1]; });
-                    centerCoords = [sumLng / ring.length, sumLat / ring.length];
-                }
-                if (typeof window.flyToRARESFacility === 'function') {
-                    window.flyToRARESFacility(centerCoords[0], centerCoords[1], buildingId);
-                }
-                return;
-            }
-        }
-    }
-
     const building = (typeof getBuildingById === 'function')
 
         ? getBuildingById(buildingId)
@@ -280,7 +249,7 @@ let isTransitioningToFollow = false;
 
 let transitionFollowTimer = null;
 
-let routeSpeedMultiplier = 2;
+let routeSpeedMultiplier = 1;
 
 
 
@@ -716,6 +685,10 @@ export function startArrivedCountdown() {
 
     if (card) card.style.display = 'flex';
 
+    if (safeIsPhoneMode() && !state.isMobileGPSActive && typeof window.showPhoneArrival === 'function') {
+        window.showPhoneArrival(state.selectedBuildingId, 'sim');
+    }
+
     const dName = state.currentRouteDestName || "your destination";
 
     if (arrivedDesc) arrivedDesc.textContent = `You have reached ${dName}.`;
@@ -796,21 +769,17 @@ export function viewArrivedBuildingDetails() {
         exitRouteMode();
 
         setTimeout(() => {
-
-            if (typeof window.showBuildingPanel === 'function') {
-
+            const b = (typeof getBuildingById === 'function' ? getBuildingById(destId) : null) || BUILDING_DIRECTORY.find(item => item.id === destId);
+            if (b && b.isPlotZone) {
+                if (typeof window.showPlotPanel === 'function') {
+                    window.showPlotPanel(destId);
+                }
+            } else if (typeof window.showBuildingPanel === 'function') {
                 window.showBuildingPanel(destId);
-
             }
-
-            const b = BUILDING_DIRECTORY.find(item => item.id === destId);
-
-            if (b && typeof window.orbitBuilding === 'function') {
-
+            if (b && b.coords && typeof window.orbitBuilding === 'function') {
                 window.orbitBuilding(b.coords);
-
             }
-
         }, 120);
 
     } else {
@@ -927,7 +896,7 @@ export function declutterLabelsForRoute(coords, destId) {
 
         // (e.g. RAFIS shares a wall with MIS, so their labels overlap almost exactly)
 
-        const destB = BUILDING_DIRECTORY.find(item => item.id === destId);
+        const destB = (typeof getBuildingById === 'function' ? getBuildingById(destId) : null) || BUILDING_DIRECTORY.find(item => item.id === destId);
 
         if (destB && turf.distance(turf.point(b.coords), turf.point(destB.coords), { units: 'meters' }) < 12) {
 

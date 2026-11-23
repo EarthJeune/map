@@ -136,6 +136,8 @@ function launchWalkerLoop(coords, walkerEl, totalDistance, routeLine) {
 
     let lastSliceDistance = 0;
 
+    let lastNavUiUpdate = 0;
+
 
 
     function animateWalking(timestamp) {
@@ -351,9 +353,11 @@ function launchWalkerLoop(coords, walkerEl, totalDistance, routeLine) {
 
 
         try {
-
-            updateLiveNavigation(currentDistance, totalDistance);
-
+            const nowMs = (typeof performance !== 'undefined') ? performance.now() : Date.now();
+            if (nowMs - lastNavUiUpdate >= 100) {
+                lastNavUiUpdate = nowMs;
+                updateLiveNavigation(currentDistance, totalDistance);
+            }
         } catch (navErr) {
 
             console.warn('[Nav update non-fatal]:', navErr);
@@ -706,11 +710,11 @@ export function drawRoute(coords, options = {}) {
 
             'line-color': '#22c55e',
 
-            'line-width': 20,
+            'line-width': 18,
 
-            'line-opacity': 0.35,
+            'line-opacity': 0.25,
 
-            'line-blur': 8
+            'line-blur': 0
 
         }
 
@@ -826,7 +830,7 @@ export function drawRoute(coords, options = {}) {
 
     const currentDestId = state.selectedBuildingId || window.selectedBuildingId || state.activeRoute;
 
-    const destBuilding = BUILDING_DIRECTORY.find(b => b.id === currentDestId);
+    const destBuilding = (typeof getBuildingById === 'function' ? getBuildingById(currentDestId) : null) || BUILDING_DIRECTORY.find(b => b.id === currentDestId);
 
     state.currentRouteDestName = destBuilding ? destBuilding.name : 'Destination';
 
@@ -1562,184 +1566,144 @@ export function closeRouteAndReset() {
 
 
 export function buildRoadGraph(geojson) {
-
     const graph = new Map();
-
-    // Spatial Hash Grid: ~5-meter cells (~0.00005 deg) for sub-millisecond vertex lookup
-
     const cellSize = 0.00005;
-
     const grid = new Map();
 
+    if (!geojson || !geojson.features) return graph;
 
+    // Collect lines and points (entrances) with deep clone to allow vertex snapping at T-junctions
+    const lines = geojson.features.filter(f => f.geometry && f.geometry.type === 'LineString').map(f => JSON.parse(JSON.stringify(f)));
+    const points = geojson.features.filter(f => f.geometry && f.geometry.type === 'Point');
+
+    // T-Junction Pre-pass: If an endpoint of any line or an entrance point lies within 0.35m of another line,
+    // project and insert that snapped vertex into the line segment so CAD/GIS branch roads seamlessly connect.
+    const splitPoints = [];
+    lines.forEach(l => {
+        if (l.geometry.coordinates.length > 0) {
+            splitPoints.push(l.geometry.coordinates[0]);
+            splitPoints.push(l.geometry.coordinates[l.geometry.coordinates.length - 1]);
+        }
+    });
+    points.forEach(p => splitPoints.push(p.geometry.coordinates));
+
+    lines.forEach(line => {
+        const coords = line.geometry.coordinates;
+        splitPoints.forEach(pt => {
+            const ptFeat = turf.point(pt);
+            const lineFeat = turf.lineString(coords);
+            const d = turf.pointToLineDistance(ptFeat, lineFeat, { units: 'meters' });
+            if (d < 0.35) {
+                let minVD = Infinity;
+                coords.forEach(c => {
+                    const vd = turf.distance(ptFeat, turf.point(c), { units: 'meters' });
+                    if (vd < minVD) minVD = vd;
+                });
+                if (minVD > 0.4) {
+                    const snapped = turf.nearestPointOnLine(lineFeat, ptFeat);
+                    const snapCoord = snapped.geometry.coordinates;
+                    for (let i = 0; i < coords.length - 1; i++) {
+                        const seg = turf.lineString([coords[i], coords[i + 1]]);
+                        const segD = turf.pointToLineDistance(snapped, seg, { units: 'meters' });
+                        if (segD < 0.05) {
+                            coords.splice(i + 1, 0, snapCoord);
+                            break;
+                        }
+                    }
+                }
+            }
+        });
+    });
 
     function getSnappedKey(coord) {
-
         const gx = Math.floor(coord[0] / cellSize);
-
         const gy = Math.floor(coord[1] / cellSize);
-
         let nearestDist = Infinity;
-
         let nearestKey = null;
 
-
-
-        // Check 3x3 surrounding cells
-
         for (let dx = -1; dx <= 1; dx++) {
-
             for (let dy = -1; dy <= 1; dy++) {
-
                 const cell = grid.get(`${gx + dx}:${gy + dy}`);
-
                 if (!cell) continue;
-
                 for (let i = 0; i < cell.length; i++) {
-
                     const n = cell[i];
-
                     const dist = turf.distance(coord, n.coord, { units: 'meters' });
-
-                    // Snap vertices that are within 0.5 meters of each other (prevents zigzags)
-
                     if (dist < 0.5 && dist < nearestDist) {
-
                         nearestDist = dist;
-
                         nearestKey = n.key;
-
                     }
-
                 }
-
             }
-
         }
-
         if (nearestKey) return nearestKey;
 
-
-
-        // Create new node and register into spatial grid
-
         const key = `${coord[0]},${coord[1]}`;
-
         if (!graph.has(key)) {
-
             graph.set(key, { coord, edges: [] });
-
         }
-
         const nodeItem = { key, coord };
-
         const gk = `${gx}:${gy}`;
-
         if (!grid.has(gk)) grid.set(gk, []);
-
         grid.get(gk).push(nodeItem);
-
         return key;
-
     }
 
-
-
-    // Pass 1: Pre-register all true road vertices & junction endpoints first so 1-meter
-
-    // turf.lineChunk subdivisions on side branches never pull straight main walkways into V-shaped pits.
-
-    geojson.features.forEach(feature => {
-
-        if (feature.geometry && feature.geometry.type === 'LineString') {
-
-            feature.geometry.coordinates.forEach(coord => {
-
-                getSnappedKey(coord);
-
-            });
-
-        }
-
+    // Pass 1: Pre-register vertices
+    lines.forEach(feature => {
+        feature.geometry.coordinates.forEach(coord => getSnappedKey(coord));
     });
-
-
+    points.forEach(feature => getSnappedKey(feature.geometry.coordinates));
 
     function addEdge(coord1, coord2) {
-
         const key1 = getSnappedKey(coord1);
-
         const key2 = getSnappedKey(coord2);
-
-
-
-        if (key1 === key2) return; // Prevent self-loop if segment is tiny
-
-
-
+        if (key1 === key2) return;
         const node1 = graph.get(key1);
-
         const node2 = graph.get(key2);
-
         const dist = turf.distance(node1.coord, node2.coord, { units: 'meters' });
-
-
-
         node1.edges.push({ to: key2, cost: dist });
-
         node2.edges.push({ to: key1, cost: dist });
-
     }
 
-
-
-    geojson.features.forEach(feature => {
-
-        if (feature.geometry.type === 'LineString') {
-
-            // Break long lines into 1-meter chunks so they precisely follow the drawn lines without zigzags
-
-            // and provide perfectly spaced nodes for building destinations to snap to without cutting corners
-
-            try {
-
-                const chunks = turf.lineChunk(feature, 1, { units: 'meters' });
-
-                chunks.features.forEach(chunk => {
-
-                    const coords = chunk.geometry.coordinates;
-
-                    for (let i = 0; i < coords.length - 1; i++) {
-
-                        addEdge(coords[i], coords[i + 1]);
-
-                    }
-
-                });
-
-            } catch (e) {
-
-                const coords = feature.geometry.coordinates;
-
+    // Pass 2: 1-meter chunks
+    lines.forEach(feature => {
+        try {
+            const chunks = turf.lineChunk(feature, 1, { units: 'meters' });
+            chunks.features.forEach(chunk => {
+                const coords = chunk.geometry.coordinates;
                 for (let i = 0; i < coords.length - 1; i++) {
-
                     addEdge(coords[i], coords[i + 1]);
-
                 }
-
+            });
+        } catch (e) {
+            const coords = feature.geometry.coordinates;
+            for (let i = 0; i < coords.length - 1; i++) {
+                addEdge(coords[i], coords[i + 1]);
             }
-
         }
-
     });
 
-
+    // Pass 3: Connect every entrance point to its nearest connected road graph node (within 15m)
+    points.forEach(p => {
+        const pCoord = p.geometry.coordinates;
+        const pKey = getSnappedKey(pCoord);
+        let bestNode = null;
+        let bestDist = 15;
+        for (const [key, node] of graph.entries()) {
+            if (key === pKey || !node.edges || node.edges.length === 0) continue;
+            const d = turf.distance(pCoord, node.coord, { units: 'meters' });
+            if (d < bestDist) {
+                bestDist = d;
+                bestNode = node;
+            }
+        }
+        if (bestNode) {
+            addEdge(pCoord, bestNode.coord);
+        }
+    });
 
     return graph;
-
 }
-
-
 
 export function findNearestNode(coord, graph) {
 
@@ -1884,6 +1848,7 @@ export function computeRouteFromKiosk(buildingId) {
     const stationId = state.currentStationId || 'lares';
 
     const isQares = (stationId === 'qares');
+    const isRares = (stationId === 'rares');
 
     const station = STATIONS[stationId] || STATIONS.lares;
 
@@ -1891,7 +1856,9 @@ export function computeRouteFromKiosk(buildingId) {
 
         ? (state.QARES_KIOSK_COORDS || (station && station.kioskCoords) || [121.3713315, 13.9432268])
 
-        : (state.KIOSK_COORDS || (station && station.kioskCoords) || SAVED_MAIN_KIOSK_COORDS);
+        : (isRares
+            ? (state.RARES_KIOSK_COORDS || (station && station.kioskCoords) || [121.34054, 14.57644])
+            : (state.KIOSK_COORDS || (station && station.kioskCoords) || SAVED_MAIN_KIOSK_COORDS));
 
     const building = (typeof getBuildingById === 'function') ? getBuildingById(buildingId) : BUILDING_DIRECTORY.find(b => b.id === buildingId);
 
@@ -1930,7 +1897,7 @@ export function computeRouteFromKiosk(buildingId) {
 
 
 
-    let targetBuildingId = building.id;
+    let targetBuildingId = (building && building.id) || (zone && zone.id) || buildingId;
 
     if (ENTRANCE_OVERRIDES[targetBuildingId]) {
 
@@ -1972,7 +1939,9 @@ export function computeRouteFromKiosk(buildingId) {
 
         ? (state.qaresRoadGraph || state.roadGraph || window.roadGraph)
 
-        : (state.laresRoadGraph || state.roadGraph || window.roadGraph);
+        : (isRares
+            ? (state.raresRoadGraph || null)
+            : (state.laresRoadGraph || state.roadGraph || window.roadGraph));
 
 
 
@@ -1984,13 +1953,13 @@ export function computeRouteFromKiosk(buildingId) {
 
 
 
-        const bEntrances = (typeof window !== 'undefined' && window.BUILDING_ENTRANCES && Object.keys(window.BUILDING_ENTRANCES).length > 0)
+        const bEntrances = (isRares && state.raresEntrances)
+            ? state.raresEntrances
+            : ((typeof window !== 'undefined' && window.BUILDING_ENTRANCES && Object.keys(window.BUILDING_ENTRANCES).length > 0)
+                ? window.BUILDING_ENTRANCES
+                : (BUILDING_ENTRANCES || {}));
 
-            ? window.BUILDING_ENTRANCES
-
-            : (BUILDING_ENTRANCES || {});
-
-        const entrances = bEntrances[targetBuildingId];
+        const entrances = bEntrances[targetBuildingId] || bEntrances[buildingId];
 
         if (entrances && entrances.length > 0) {
 
@@ -2042,18 +2011,21 @@ export function getDirections() {
     const targetId = state.selectedBuildingId || window.selectedBuildingId;
     if (!targetId) return;
 
-    // Plots are infographics only for now: navigation disabled
-    if (typeof FIELD_COMMODITY_ZONES !== 'undefined' && FIELD_COMMODITY_ZONES.some(z => z.id === targetId)) {
-        return;
-    }
-    if (targetId && (targetId.startsWith('zone_') || targetId.startsWith('plot_') || targetId.startsWith('plot17_') || targetId.startsWith('plot18_'))) {
-        return;
+    // Strictly enforce 1x model speed at the start of any new route
+    if (typeof setRouteSpeed === 'function') {
+        setRouteSpeed(1);
     }
 
     let targetName = '';
     const building = (typeof getBuildingById === 'function') ? getBuildingById(targetId) : BUILDING_DIRECTORY.find(b => b.id === targetId);
     if (building) {
         targetName = building.name;
+    } else if (typeof FIELD_COMMODITY_ZONES !== 'undefined') {
+        const zone = FIELD_COMMODITY_ZONES.find(z => z.id === targetId);
+        if (zone) targetName = zone.name;
+    }
+    if (!targetName && targetId) {
+        targetName = targetId.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
     }
     if (!targetName) return;
 
@@ -2143,6 +2115,11 @@ export function replayRoute() {
     if (!state.activeRoute) return;
 
     safeClearArrivedCountdown();
+
+    // Strictly enforce 1x model speed when replaying route
+    if (typeof setRouteSpeed === 'function') {
+        setRouteSpeed(1);
+    }
 
 
 
@@ -2424,7 +2401,7 @@ let phoneCurrentCategory = 'all';
 
 export function drawCampusRouteFromKiosk(buildingId) {
 
-    const building = BUILDING_DIRECTORY.find(b => b.id === buildingId);
+    const building = (typeof getBuildingById === 'function' ? getBuildingById(buildingId) : null) || BUILDING_DIRECTORY.find(b => b.id === buildingId);
 
     if (!building) return;
 

@@ -3,7 +3,8 @@
 
 import { BUILDING_DIRECTORY, DEFAULT_BUILDING_COLORS, STANDALONE_GATES } from './data/buildings.js';
 import { lucideIcon, renderIconOrText } from './data/icons.js';
-import { getFlatBuildingOffices, isOfficeMatched, findMatchedOffice, getOfficeSearchSubtitle, isBuildingMatched, getBuildingSearchSubtitle, isPlotZoneMatched, matchesSearchText, renderBuildingOfficesHTML } from './data/offices.js';
+import { getFlatBuildingOffices, isOfficeMatched, findMatchedOffice, getOfficeSearchSubtitle, isBuildingMatched, getBuildingSearchSubtitle, getBuildingSearchRelevanceScore, isPlotZoneMatched, getPlotSearchSubtitle, getPlotSearchRelevanceScore, highlightSearchTermsHtml, escapeSearchHtml, matchesSearchText, renderBuildingOfficesHTML } from './data/offices.js';
+import { refreshBuildingPanelSearchHighlights } from './building-panel.js';
 import { FIELD_COMMODITY_ZONES } from './data/plots.js';
 import { selectPlotZone } from './plot-layers.js';
 import { getBuildingWayfindingInfo } from './data/descriptions.js';
@@ -11,7 +12,17 @@ import { LARES_BOUNDARY } from './data/geo.js';
 import { state } from './data/state.js';
 import { toggleTrees, toggleBuildings, map } from './map-setup.js';
 import { resetIdle } from './idle.js';
-import { renderPhoneDirectory, isPhoneMode } from './phone-ui.js';
+import { renderPhoneDirectory, refreshPhoneDetailSearchHighlights, isPhoneMode } from './phone-ui.js';
+import {
+    activeStatusFilters,
+    getActiveStatusMode,
+    setStatusFilterMode,
+    isFacilityStatusVisible,
+    getNonDefaultStatusFilterCount,
+    resetStatusFiltersToDefault,
+    renderFacilityStatusBadgeHtml,
+    buildStatusFilterOptionsHtml
+} from './status-filter.js';
 
 function safeResetIdle() {
     if (typeof resetIdle === 'function') resetIdle();
@@ -254,8 +265,29 @@ export function toggleTypeFilter(typeKey, isChecked) {
     safeResetIdle();
 }
 
+export function renderStatusFiltersInDropdowns() {
+    const desk = document.getElementById('fdm-status-options');
+    const mob = document.getElementById('phone-fdm-status-options');
+    if (desk) desk.innerHTML = buildStatusFilterOptionsHtml('facility-status-desk');
+    if (mob) mob.innerHTML = buildStatusFilterOptionsHtml('facility-status-mob');
+    updateFilterDropdownUI();
+}
+
+export function toggleStatusFilter(modeOrKey) {
+    setStatusFilterMode(modeOrKey);
+    updateFilterDropdownUI();
+    filterDirectory();
+    const phoneInputVal = document.getElementById('phone-search-input')?.value || '';
+    safeRenderPhoneDirectory(phoneInputVal);
+    if (typeof window.applyFacilityStatusFilters === 'function') {
+        window.applyFacilityStatusFilters();
+    }
+    safeResetIdle();
+}
+
 export function resetTypeFilters() {
     activeTypeFilters.clear();
+    resetStatusFiltersToDefault();
     state.activeSearchedOffice = '';
     document.querySelectorAll('.fdm-checkbox').forEach(cb => {
         cb.checked = false;
@@ -264,11 +296,14 @@ export function resetTypeFilters() {
     filterDirectory();
     const phoneInputVal = document.getElementById('phone-search-input')?.value || '';
     safeRenderPhoneDirectory(phoneInputVal);
+    if (typeof window.applyFacilityStatusFilters === 'function') {
+        window.applyFacilityStatusFilters();
+    }
     safeResetIdle();
 }
 
 export function updateFilterDropdownUI() {
-    const count = activeTypeFilters.size;
+    const count = activeTypeFilters.size + getNonDefaultStatusFilterCount();
     // Desktop badge & button
     const badge = document.getElementById('filter-count-badge');
     const btn = document.getElementById('filter-dropdown-btn');
@@ -300,12 +335,20 @@ export function updateFilterDropdownUI() {
     }
 
     // Synchronize both desktop & mobile fdm-item active classes & checkboxes
-    document.querySelectorAll('.fdm-item').forEach(item => {
+    document.querySelectorAll('.fdm-item:not(.fdm-status-item)').forEach(item => {
         const type = item.dataset.type;
         item.classList.toggle('active', activeTypeFilters.has(type));
     });
     document.querySelectorAll('.fdm-checkbox').forEach(cb => {
         cb.checked = activeTypeFilters.has(cb.value);
+    });
+    const currentMode = getActiveStatusMode();
+    document.querySelectorAll('.fdm-status-item').forEach(item => {
+        const mode = item.dataset.statusMode;
+        item.classList.toggle('active', mode === currentMode);
+    });
+    document.querySelectorAll('.fdm-status-radio').forEach(rb => {
+        rb.checked = (rb.value === currentMode);
     });
 }
 
@@ -394,8 +437,11 @@ export function buildDirectory(filter = '', category = currentCategory) {
             if (b.isSubPlot || b.id.startsWith('plot17_') || b.id.startsWith('plot18_')) {
                 return false;
             }
-            // Utility amenities (Water Tank, CR) are omitted from the default unfiltered view (strictly 39 numbered facilities)
-            if (!hasTypeFilters && !lowerFilter && (b.hasMarker === false || b.num === null)) {
+            // Utility amenities (Water Tank, CR) are omitted from the default unfiltered view unless filtered or non-Existing status
+            if (!hasTypeFilters && !lowerFilter && (b.hasMarker === false || b.num === null) && (b.facility_status || 'Existing') === 'Existing') {
+                return false;
+            }
+            if (!isFacilityStatusVisible(b.facility_status || 'Existing')) {
                 return false;
             }
             if (hasTypeFilters && !activeTypeFilters.has(b.category)) {
@@ -406,6 +452,13 @@ export function buildDirectory(filter = '', category = currentCategory) {
             const matchedOffice = findMatchedOffice(b.id, lowerFilter);
             return isBuildingMatched(b, lowerFilter) || !!matchedOffice;
         });
+        const bldgScores = new Map();
+        filteredBuildings.forEach((b) => {
+            const matchedOffice = findMatchedOffice(b.id, lowerFilter);
+            const wfInfo = getBuildingWayfindingInfo(b.id, b.desc);
+            bldgScores.set(b.id, getBuildingSearchRelevanceScore(b, lowerFilter, matchedOffice, wfInfo));
+        });
+        filteredBuildings.sort((a, b) => (bldgScores.get(b.id) || 0) - (bldgScores.get(a.id) || 0));
     }
 
     // 2. Filter Embedded Conference Halls (ORED Conference, RSBSA Conference Room, R&D Conference Hall)
@@ -423,9 +476,16 @@ export function buildDirectory(filter = '', category = currentCategory) {
     const showOrchard = hasTypeFilters ? activeTypeFilters.has('orchard') : false;
     const showTrial = hasTypeFilters ? activeTypeFilters.has('trial_sites') : false;
     const showNursery = hasTypeFilters ? activeTypeFilters.has('infrastructure') : false;
+    const hasNonDefaultStatusPlots = getNonDefaultStatusFilterCount() > 0 && !hasTypeFilters && !lowerFilter;
 
-    if (showOrchard || showTrial || showNursery || lowerFilter) {
+    if (showOrchard || showTrial || showNursery || lowerFilter || hasNonDefaultStatusPlots) {
         matchedPlots = FIELD_COMMODITY_ZONES.filter(z => {
+            if (!isFacilityStatusVisible(z.facility_status || 'Existing')) {
+                return false;
+            }
+            if (hasNonDefaultStatusPlots) {
+                return (z.facility_status || 'Existing') !== 'Existing';
+            }
             const zCat = z.category; // 'orchard', 'crop', 'nursery'
             if (hasTypeFilters) {
                 let catMatches = false;
@@ -441,6 +501,11 @@ export function buildDirectory(filter = '', category = currentCategory) {
             // If user typed a search text:
             return isPlotZoneMatched(z, lowerFilter);
         });
+        if (lowerFilter) {
+            const plotScores = new Map();
+            matchedPlots.forEach((z) => plotScores.set(z.id, getPlotSearchRelevanceScore(z, lowerFilter)));
+            matchedPlots.sort((a, b) => (plotScores.get(b.id) || 0) - (plotScores.get(a.id) || 0));
+        }
     }
 
     // 4. Filter Standalone Compound Gates
@@ -491,17 +556,21 @@ export function buildDirectory(filter = '', category = currentCategory) {
             const isSelected = state.selectedBuildingId === b.id;
 
             const wfInfo = getBuildingWayfindingInfo(b.id, b.desc);
-            let subText = wfInfo.compactTag || b.desc || 'DA-LARES Facility';
+            const rawDefaultTag = wfInfo.compactTag || b.desc || 'DA-LARES Facility';
+            let subText = lowerFilter ? highlightSearchTermsHtml(rawDefaultTag, lowerFilter) : escapeSearchHtml(rawDefaultTag);
             if (b.id === 'plot22_water_tank' || b.id === 'plot22_comfort_room') {
-                subText = `<span class="dir-plot-tag">Plot 22</span> ${wfInfo.compactTag || b.desc || 'Facility'}`;
+                const rawPlotTag = wfInfo.compactTag || b.desc || 'Facility';
+                subText = `<span class="dir-plot-tag">Plot 22</span> ${lowerFilter ? highlightSearchTermsHtml(rawPlotTag, lowerFilter) : escapeSearchHtml(rawPlotTag)}`;
             }
             if (matchedOffice) {
                 const matchedLabel = getOfficeSearchSubtitle(matchedOffice, lowerFilter);
-                subText = `<span class="dir-office-tag" title="${matchedLabel.replace(/"/g, '&quot;')}"><span class="dot-office">${lucideIcon('building-2', 12)}</span><span class="office-name-text">${matchedLabel}</span></span>`;
+                const labelHtml = lowerFilter ? highlightSearchTermsHtml(matchedLabel, lowerFilter) : escapeSearchHtml(matchedLabel);
+                subText = `<span class="dir-office-tag" title="${escapeSearchHtml(matchedLabel)}"><span class="dot-office">${lucideIcon('building-2', 12)}</span><span class="office-name-text">${labelHtml}</span></span>`;
             } else if (lowerFilter) {
-                const bldgAliasSub = getBuildingSearchSubtitle(b, lowerFilter);
+                const bldgAliasSub = getBuildingSearchSubtitle(b, lowerFilter, wfInfo);
                 if (bldgAliasSub) {
-                    subText = `<span class="dir-office-tag" title="${bldgAliasSub.replace(/"/g, '&quot;')}"><span class="dot-office">${lucideIcon('landmark', 12)}</span><span class="office-name-text">${bldgAliasSub}</span></span>`;
+                    const aliasHtml = highlightSearchTermsHtml(bldgAliasSub, lowerFilter);
+                    subText = `<span class="dir-office-tag" title="${escapeSearchHtml(bldgAliasSub)}"><span class="dot-office">${lucideIcon('landmark', 12)}</span><span class="office-name-text">${aliasHtml}</span></span>`;
                 }
             }
 
@@ -510,12 +579,15 @@ export function buildDirectory(filter = '', category = currentCategory) {
                 : '';
 
             const officeArg = matchedOffice ? matchedOffice.replace(/'/g, "\\'") : '';
+            const statusBadge = renderFacilityStatusBadgeHtml(b.facility_status);
+            const bldgNameHtml = lowerFilter ? highlightSearchTermsHtml(b.name, lowerFilter) : escapeSearchHtml(b.name);
             html += `<div class="dir-item ${isSelected ? 'active' : ''}" data-id="${b.id}" onclick="navigateTo('${b.id}', '${officeArg}')">
                 <div class="dir-item-icon" style="background:${bColor}22;color:${bColor}">
                     <span class="${badgeClass}">${badgeContent}</span>
                 </div>
                 <div class="dir-item-info">
-                    <div class="dir-item-name">${b.name}</div>
+                    <div class="dir-item-name">${bldgNameHtml}</div>
+                    ${statusBadge ? `<div class="dir-status-wrap">${statusBadge}</div>` : ''}
                     <div class="dir-item-desc">${subText}</div>
                 </div>
                 ${adminBtn}
@@ -526,13 +598,15 @@ export function buildDirectory(filter = '', category = currentCategory) {
         // Render Embedded Conference Halls
         matchedConferenceHalls.forEach((item) => {
             const isConfSelected = (state.selectedBuildingId === item.buildingId && state.activeSearchedOffice === item.targetOffice);
+            const confNameHtml = lowerFilter ? highlightSearchTermsHtml(item.name, lowerFilter) : escapeSearchHtml(item.name);
+            const confDescHtml = lowerFilter ? highlightSearchTermsHtml(item.desc, lowerFilter) : escapeSearchHtml(item.desc);
             html += `<div class="dir-item ${isConfSelected ? 'active' : ''}" data-id="${item.buildingId}" onclick="navigateTo('${item.buildingId}', '${item.targetOffice.replace(/'/g, "\\'")}')">
                 <div class="dir-item-icon" style="background:rgba(139, 92, 246, 0.2); color:#a78bfa;">
                     <span class="dir-item-icon-emoji">${lucideIcon('landmark', 16)}</span>
                 </div>
                 <div class="dir-item-info">
-                    <div class="dir-item-name">${item.name}</div>
-                    <div class="dir-item-desc"><span class="dir-conf-tag">Conference Hall</span> ${item.desc}</div>
+                    <div class="dir-item-name">${confNameHtml}</div>
+                    <div class="dir-item-desc"><span class="dir-conf-tag">Conference Hall</span> ${confDescHtml}</div>
                 </div>
                 <div class="dir-item-arrow">→</div>
             </div>`;
@@ -541,13 +615,15 @@ export function buildDirectory(filter = '', category = currentCategory) {
         // Render Standalone Compound Gates
         matchedGates.forEach((gate) => {
             const isGateSelected = (state.selectedBuildingId === gate.id);
+            const gateNameHtml = lowerFilter ? highlightSearchTermsHtml(gate.name, lowerFilter) : escapeSearchHtml(gate.name);
+            const gateDescHtml = lowerFilter ? highlightSearchTermsHtml(gate.desc || '', lowerFilter) : escapeSearchHtml(gate.desc || '');
             html += `<div class="dir-item ${isGateSelected ? 'active' : ''}" data-id="${gate.id}" onclick="selectStandaloneGate('${gate.id}')">
                 <div class="dir-item-icon" style="background:${gate.color}22; color:${gate.color}; border: 1px solid ${gate.color}66;">
                     <span class="dir-item-icon-emoji">${renderIconOrText(gate.icon || 'door-open', 16)}</span>
                 </div>
                 <div class="dir-item-info">
-                    <div class="dir-item-name">${gate.name}</div>
-                    <div class="dir-item-desc"><span class="dir-plot-tag" style="background:${gate.color}22; color:${gate.color};">GATE</span> ${gate.desc}</div>
+                    <div class="dir-item-name">${gateNameHtml}</div>
+                    <div class="dir-item-desc"><span class="dir-plot-tag" style="background:${gate.color}22; color:${gate.color};">GATE</span> ${gateDescHtml}</div>
                 </div>
                 <div class="dir-item-arrow">→</div>
             </div>`;
@@ -558,13 +634,20 @@ export function buildDirectory(filter = '', category = currentCategory) {
             const isPlotSelected = (state.selectedPlotZoneId === zone.id || (typeof window !== 'undefined' && window.selectedPlotZoneId === zone.id));
             const zoneColor = zone.color || '#10b981';
             const tagLabel = zone.category === 'orchard' ? 'Orchard' : (zone.category === 'crop' ? 'Trial Site' : 'Facility');
+            const plotStatusBadge = renderFacilityStatusBadgeHtml(zone.facility_status);
+            const plotSubRaw = lowerFilter ? getPlotSearchSubtitle(zone, lowerFilter) : (zone.description || '');
+            const plotNameHtml = lowerFilter ? highlightSearchTermsHtml(zone.name, lowerFilter) : escapeSearchHtml(zone.name);
+            const plotSubHtml = lowerFilter ? highlightSearchTermsHtml(plotSubRaw, lowerFilter) : escapeSearchHtml(plotSubRaw);
+            const plotRangeRaw = zone.plotRange ? zone.plotRange : tagLabel;
+            const plotRangeHtml = lowerFilter ? highlightSearchTermsHtml(plotRangeRaw, lowerFilter) : escapeSearchHtml(plotRangeRaw);
             html += `<div class="dir-item ${isPlotSelected ? 'active' : ''}" data-plot-id="${zone.id}" onclick="selectPlotZone('${zone.id}')">
                 <div class="dir-item-icon" style="background:${zoneColor}22; color:${zoneColor};">
                     <span class="dir-item-icon-emoji">${zone.id === 'zone_mango_banana_jackfruit' ? lucideIcon('trees', 16) : renderIconOrText(zone.icon || 'sprout', 16)}</span>
                 </div>
                 <div class="dir-item-info">
-                    <div class="dir-item-name">${zone.name}</div>
-                    <div class="dir-item-desc"><span class="dir-plot-tag">${zone.plotRange ? zone.plotRange : tagLabel}</span> ${zone.description || ''}</div>
+                    <div class="dir-item-name">${plotNameHtml}</div>
+                    ${plotStatusBadge ? `<div class="dir-status-wrap">${plotStatusBadge}</div>` : ''}
+                    <div class="dir-item-desc"><span class="dir-plot-tag">${plotRangeHtml}</span> ${plotSubHtml}</div>
                 </div>
                 <div class="dir-item-arrow">→</div>
             </div>`;
@@ -599,32 +682,12 @@ export function filterDirectory() {
     buildDirectory(val, currentCategory);
     safeRenderPhoneDirectory(val);
 
-    // If building panel is open, dynamically update highlighted offices in real time
-    const panel = document.getElementById('building-panel');
-    const currentBldgId = state.selectedBuildingId || window.selectedBuildingId || (panel ? panel.dataset.buildingId : null);
-    if (panel && panel.classList.contains('active') && currentBldgId) {
-        const officesContainer = document.getElementById('bp-offices-container');
-        if (officesContainer) {
-            officesContainer.innerHTML = renderBuildingOfficesHTML(currentBldgId, val);
-            const highlightedPill = officesContainer.querySelector('.office-pill.highlighted');
-            if (highlightedPill) {
-                setTimeout(() => {
-                    highlightedPill.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }, 120);
-            }
-        }
+    // Dynamically update highlighted text & offices in any open desktop/mobile drawer
+    if (typeof refreshBuildingPanelSearchHighlights === 'function') {
+        refreshBuildingPanelSearchHighlights(val);
     }
-
-    // Support mobile phone building panel offices container
-    const phoneOfficesContainer = document.getElementById('phone-bldg-offices-container');
-    if (phoneOfficesContainer && currentBldgId) {
-        phoneOfficesContainer.innerHTML = renderBuildingOfficesHTML(currentBldgId, val);
-        const highlightedPill = phoneOfficesContainer.querySelector('.office-pill.highlighted');
-        if (highlightedPill) {
-            setTimeout(() => {
-                highlightedPill.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }, 120);
-        }
+    if (typeof refreshPhoneDetailSearchHighlights === 'function') {
+        refreshPhoneDetailSearchHighlights(val);
     }
 
     safeResetIdle();
@@ -735,7 +798,18 @@ window.openSidebarMenu = openSidebarMenu;
 window.updateSidebarToggleIcon = updateSidebarToggleIcon;
 window.isNavigationActive = isNavigationActive;
 window.toggleTypeFilter = toggleTypeFilter;
+window.activeTypeFilters = activeTypeFilters;
+window.toggleStatusFilter = toggleStatusFilter;
+window.renderStatusFiltersInDropdowns = renderStatusFiltersInDropdowns;
 window.resetTypeFilters = resetTypeFilters;
+
+if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', renderStatusFiltersInDropdowns);
+    } else {
+        renderStatusFiltersInDropdowns();
+    }
+}
 window.toggleFilterDropdown = toggleFilterDropdown;
 window.closeFilterDropdown = closeFilterDropdown;
 window.clearSearchInput = clearSearchInput;

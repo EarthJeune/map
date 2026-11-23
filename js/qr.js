@@ -40,8 +40,34 @@ export function fetchTunnelInfo() {
         });
 }
 
-// Initial fetch on page load
-fetchTunnelInfo();
+// Initial fetch on page load & populate Welcome Menu QR code
+fetchTunnelInfo().then(() => {
+    updateWelcomeQR();
+});
+
+export function updateWelcomeQR() {
+    const qrBox = document.getElementById('welcome-qr-box');
+    if (!qrBox) return;
+
+    fetchTunnelInfo().then(() => {
+        const url = getMobileNavigationUrl('1');
+        qrBox.innerHTML = '';
+        try {
+            if (typeof QRCode !== 'undefined') {
+                new QRCode(qrBox, {
+                    text: url,
+                    width: 128,
+                height: 128,
+                    colorDark: '#07100e',
+                    colorLight: '#ffffff',
+                    correctLevel: (typeof QRCode !== 'undefined' && QRCode.CorrectLevel) ? QRCode.CorrectLevel.M : 0
+                });
+            }
+        } catch (e) {
+            console.error('[QR] Welcome QR generation error:', e);
+        }
+    });
+}
 
 export function getMobileNavigationUrl(buildingId) {
     const host = window.location.hostname;
@@ -182,10 +208,17 @@ function handleQRAutoExitTimeout() {
 }
 
 export function openQRZoomModal(buildingId) {
-    const targetBuilding = buildingId || state.selectedBuildingId || '1';
+    const targetBuilding = (buildingId !== undefined && buildingId !== null) ? buildingId : (state.selectedBuildingId || '1');
     const modal = document.getElementById('qr-zoom-modal');
     const zoomBox = document.getElementById('qr-zoom-box');
     if (!modal || !zoomBox) return;
+
+    const subtitleEl = modal.querySelector('.qr-zoom-subtitle');
+    if (subtitleEl) {
+        subtitleEl.textContent = (targetBuilding === '1')
+            ? 'Point camera at QR code to open the 3D campus map on your phone'
+            : 'Point camera at QR code to open live route';
+    }
 
     modal.style.display = 'flex';
     startQRAutoExitCountdown();
@@ -227,6 +260,7 @@ if (typeof window !== 'undefined') {
 }
 
 window.getMobileNavigationUrl = getMobileNavigationUrl;
+window.updateWelcomeQR = updateWelcomeQR;
 window.updateBuildingQR = updateBuildingQR;
 window.updateRouteQR = updateRouteQR;
 window.openQRZoomModal = openQRZoomModal;

@@ -1,4 +1,5 @@
 // DA-LARES Building Drawings, Metadata & Directory
+import { FIELD_COMMODITY_ZONES } from './plots.js';
 
 
 
@@ -5210,7 +5211,10 @@ for (const f of LARES_DRAWINGS.features) {
 
     polyCoords.forEach(c => { lngSum += c[0]; latSum += c[1]; });
 
-    const centerCoords = CUSTOM_BUILDING_CENTERS[id] || [lngSum / polyCoords.length, latSum / polyCoords.length];
+    const customMarkerCoords = (f.properties && Array.isArray(f.properties.marker_coords) && f.properties.marker_coords.length === 2)
+        ? f.properties.marker_coords
+        : null;
+    const centerCoords = customMarkerCoords || CUSTOM_BUILDING_CENTERS[id] || [lngSum / polyCoords.length, latSum / polyCoords.length];
 
 
 
@@ -5462,13 +5466,17 @@ export const STANDALONE_GATES = {
 
         color: '#10b981',
 
-        coords: [121.165745, 13.958380],
+        coords: [121.165745, 13.958356],
 
         isGate: true,
 
         guardHouseId: 'guard_house',
 
-        guardHouseName: 'Guard House A'
+        guardHouseName: 'Guard House A',
+
+        image: 'images/gate_main_entrance.webp',
+
+        images: [{ src: 'images/gate_main_entrance.webp', label: 'Main Entrance Gate' }]
 
     },
 
@@ -5494,7 +5502,11 @@ export const STANDALONE_GATES = {
 
         guardHouseId: 'exit_guard_house_1',
 
-        guardHouseName: 'Guard House B'
+        guardHouseName: 'Guard House B',
+
+        image: 'images/gate_main_exit.webp',
+
+        images: [{ src: 'images/gate_main_exit.webp', label: 'Main Exit Gate' }]
 
     },
 
@@ -5520,7 +5532,11 @@ export const STANDALONE_GATES = {
 
         guardHouseId: 'exit_guard_house_2',
 
-        guardHouseName: 'Guard House C'
+        guardHouseName: 'Guard House C',
+
+        image: 'images/gate_back_gate.webp',
+
+        images: [{ src: 'images/gate_back_gate.webp', label: 'Back Gate Entrance / Exit' }]
 
     }
 
@@ -5573,80 +5589,69 @@ export function getBuildingById(buildingId) {
     const qaresData = (typeof window !== "undefined" && window.qaresBuildingsBaseline) ? window.qaresBuildingsBaseline : null;
 
     if (qaresData && qaresData.features) {
-
-        const bldgs = qaresData.features.filter(f => {
-
-            const cat = f.properties && (f.properties.filter_type || f.properties.category || 'Buildings');
-
-            return cat === 'Buildings';
-
-        });
-
-        const qIndex = bldgs.findIndex((f, idx) => {
-
+        // Universal QARES resolver: support all facility categories without restriction
+        const allQaresFeats = qaresData.features;
+        const qIndex = allQaresFeats.findIndex((f, idx) => {
             const pid = f.properties && f.properties.id;
-
-            return pid === buildingId || `qares_${idx + 1}` === buildingId;
-
+            return pid === buildingId || `qares_${idx + 1}` === buildingId || f.id === buildingId;
         });
 
         if (qIndex !== -1) {
-
-            const f = bldgs[qIndex];
-
+            const f = allQaresFeats[qIndex];
             const p = f.properties || {};
 
             let centerCoords = [121.37152, 13.94609];
-
-            if (f.geometry && f.geometry.type === 'Polygon' && f.geometry.coordinates && f.geometry.coordinates[0]) {
-
+            if (p.marker_coords && Array.isArray(p.marker_coords) && p.marker_coords.length === 2) {
+                centerCoords = p.marker_coords;
+            } else if (f.geometry && f.geometry.type === 'Polygon' && f.geometry.coordinates && f.geometry.coordinates[0]) {
                 const ring = f.geometry.coordinates[0];
-
                 let sumLng = 0, sumLat = 0;
-
                 ring.forEach(c => { sumLng += c[0]; sumLat += c[1]; });
-
                 centerCoords = [sumLng / ring.length, sumLat / ring.length];
-
             }
 
             return {
-
                 id: p.id || `qares_${qIndex + 1}`,
-
-                name: p.name || p.id,
-
-                desc: p.desc || 'QARES Research Facility',
-
+                name: p.name || p.id || `Facility ${qIndex + 1}`,
+                desc: '', // Strictly clean: no fabricated description
                 num: qIndex + 1,
-
                 color: p.color || p.roof_color || '#ef4444',
-
                 coords: centerCoords,
-
                 section: 'Tiaong Compound',
-
-                type: 'Research Facility',
-
+                type: p.type || 'Research Facility',
+                category: p.category || p.filter_type || 'Buildings',
+                facility_status: p.facility_status || 'Existing',
+                image: '', // Strictly clean: no images
+                images: [],
+                compactTag: '',
+                visualLandmark: '',
+                keyServices: '',
                 isQARES: true
-
             };
-
         }
-
     }
 
     const raresData = (typeof window !== "undefined" && window.raresBuildingsBaseline) ? window.raresBuildingsBaseline : null;
 
     if (raresData && raresData.features) {
 
-        const feat = raresData.features.find(f => {
+        const baseMatch = String(buildingId).match(/^rares_building_([0-9]+)$/);
+        const targetBaseNum = baseMatch ? parseInt(baseMatch[1], 10) : null;
+
+        let feat = raresData.features.find(f => {
 
             const pid = f.properties && f.properties.id;
 
             return pid === buildingId;
 
         });
+        if (!feat && targetBaseNum !== null) {
+            feat = raresData.features.find(f => {
+                const pid = (f.properties && f.properties.id) || '';
+                const m = pid.match(/_([0-9]+)/);
+                return m && parseInt(m[1], 10) === targetBaseNum;
+            });
+        }
 
         if (feat) {
 
@@ -5670,30 +5675,50 @@ export function getBuildingById(buildingId) {
 
             }
 
+            const numMatch = (p.id || buildingId).match(/_([0-9]+)/);
+            const resolvedNum = p.num || (numMatch ? parseInt(numMatch[1], 10) : null);
+
             return {
-
                 id: p.id || buildingId,
-
-                name: p.name || 'Admin Building',
-
-                desc: p.description || (typeof window !== 'undefined' && window.getRARESSubtitle ? window.getRARESSubtitle(p.name, '') : 'Administrative & Station Management'),
-
-                num: p.num || 2,
-
-                color: '#10b981',
-
+                name: p.name || `Facility ${resolvedNum || ''}`.trim(),
+                desc: '', // Strictly clean: no fabricated description
+                num: resolvedNum,
+                color: p.color || '#10b981',
                 coords: centerCoords,
-
                 section: 'Tanay Compound',
-
-                type: 'Facility',
-
+                type: p.type || 'Facility',
+                category: p.category || 'infrastructure',
+                facility_status: p.facility_status || 'Existing',
+                image: '', // Strictly clean: no images
+                images: [],
+                compactTag: '',
+                visualLandmark: '',
+                keyServices: '',
                 isRARES: true
-
             };
 
         }
 
+    }
+
+    const plotList = (typeof window !== "undefined" && Array.isArray(window.FIELD_COMMODITY_ZONES) && window.FIELD_COMMODITY_ZONES.length > 0)
+        ? window.FIELD_COMMODITY_ZONES
+        : FIELD_COMMODITY_ZONES;
+
+    if (Array.isArray(plotList)) {
+        const z = plotList.find(item => item && item.id === buildingId);
+        if (z) {
+            return {
+                ...z,
+                coords: z.centerCoords || z.coords || null,
+                desc: z.description || '',
+                section: 'Agricultural Plot',
+                type: 'Research Field Block',
+                num: null,
+                isPlotZone: true,
+                isQARES: false
+            };
+        }
     }
 
     return null;

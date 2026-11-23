@@ -1,6 +1,6 @@
 // DA-LARES Wayfinding — Phone Navigation & Arrival Controller
 
-import { BUILDING_DIRECTORY } from './data/buildings.js';
+import { BUILDING_DIRECTORY, getBuildingById } from './data/buildings.js';
 import { lucideIcon } from './data/icons.js';
 import { DEFAULT_MAP_VIEW } from './data/config.js';
 import { getActiveStationDefaultView } from './data/stations.js';
@@ -22,10 +22,11 @@ import {
     startPhoneLiveGPS 
 } from './gps.js';
 import { stopOrbit } from './idle.js';
+import { withCooldown } from './ui-guard.js';
 
 // --- Phone Active Route & Steps ---
 export function updatePhoneRouteUI(coords) {
-    const building = BUILDING_DIRECTORY.find(b => b.id === state.selectedBuildingId);
+    const building = getBuildingById(state.selectedBuildingId) || BUILDING_DIRECTORY.find(b => b.id === state.selectedBuildingId);
     const destName = building ? building.name : (state.currentRouteDestName || 'Destination');
     const totalDist = turf.length(turf.lineString(coords), { units: 'meters' });
     const roundedTotal = Math.round(totalDist);
@@ -136,12 +137,18 @@ export function updatePhoneLiveNavUI(currentDist, totalDist, nextStep, remaining
 }
 
 export function startPhoneAnimatedRoute() {
+    return withCooldown('phone:route-start', _startPhoneAnimatedRouteImpl, 320).result;
+}
+
+function _startPhoneAnimatedRouteImpl() {
+    state.lastNavType = 'sim';
+    state.lastArrivalWasGps = false;
     stopOrbit();
     stopPhoneLiveGPS(); // Stop any active live GPS
     dismissGPSPermissionCard(); // Never show permission card for animated route
 
     if (!state.selectedBuildingId) return;
-    const building = BUILDING_DIRECTORY.find(b => b.id === state.selectedBuildingId);
+    const building = getBuildingById(state.selectedBuildingId) || BUILDING_DIRECTORY.find(b => b.id === state.selectedBuildingId);
     if (!building) return;
 
     state.activeRoute = building.id;
@@ -176,6 +183,7 @@ export function startPhoneAnimatedRoute() {
     // Fit whole route in camera view
     const routeLine = turf.lineString(routeCoords);
     const bbox = turf.bbox(routeLine);
+    try { map.stop(); } catch (_) { }
     map.fitBounds(bbox, {
         padding: getResponsiveMapPadding(),
         maxZoom: 19.5,
@@ -189,18 +197,26 @@ export function startPhoneAnimatedRoute() {
 }
 
 export function replayPhoneRoute() {
+    return withCooldown('phone:route-replay', _replayPhoneRouteImpl, 350).result;
+}
+
+function _replayPhoneRouteImpl() {
     clearArrivedCountdown();
     clearRoute();
     if (state.selectedBuildingId) {
         if (state.isMobileGPSActive) {
             startPhoneLiveGPS(state.selectedBuildingId);
         } else {
-            startPhoneAnimatedRoute();
+            _startPhoneAnimatedRouteImpl();
         }
     }
 }
 
 export function cancelPhoneRoute() {
+    return withCooldown('phone:route-cancel', _cancelPhoneRouteImpl, 280).result;
+}
+
+function _cancelPhoneRouteImpl() {
     stopOrbit();
     stopPhoneLiveGPS();
     clearRoute();
@@ -214,7 +230,11 @@ export function cancelPhoneRoute() {
 }
 
 // --- Centered Arrival Pop-up Modal Controller ---
-export function showPhoneArrival(buildingOrId) {
+export function showPhoneArrival(buildingOrId, source = null) {
+    const isGps = (source === 'gps') || Boolean(state.isMobileGPSActive) || (state.lastNavType === 'gps');
+    state.lastNavType = null;
+    state.lastArrivalWasGps = isGps;
+
     stopPhoneLiveGPS();
     if (state.routeAnimFrame) cancelAnimationFrame(state.routeAnimFrame);
     if (state.walkAnimFrame) cancelAnimationFrame(state.walkAnimFrame);
@@ -227,7 +247,7 @@ export function showPhoneArrival(buildingOrId) {
 
     let building = buildingOrId;
     if (typeof buildingOrId === 'string') {
-        building = BUILDING_DIRECTORY.find(b => b.id === buildingOrId);
+        building = getBuildingById(buildingOrId) || BUILDING_DIRECTORY.find(b => b.id === buildingOrId);
     }
     const name = building ? building.name : 'Destination';
 
@@ -235,8 +255,23 @@ export function showPhoneArrival(buildingOrId) {
     const modal = document.getElementById('phone-arrived-modal');
     const titleEl = document.getElementById('pam-title');
     const descEl = document.getElementById('pam-desc');
+    const repeatBtn = modal ? (document.getElementById('pam-repeat-btn') || modal.querySelector('.pam-btn-repeat')) : null;
+    const actionsEl = modal ? (document.getElementById('pam-actions') || modal.querySelector('.pam-actions')) : null;
+
     if (titleEl) titleEl.textContent = `Arrived at ${name}!`;
-    if (descEl) descEl.textContent = 'You have reached your destination.';
+    if (descEl) {
+        descEl.textContent = isGps
+            ? 'You have reached your destination via live GPS guidance.'
+            : 'You have reached your destination.';
+    }
+
+    // Strictly suppress Repeat button during Live GPS navigation
+    if (repeatBtn) {
+        repeatBtn.style.display = isGps ? 'none' : 'inline-flex';
+    }
+    if (actionsEl) {
+        actionsEl.classList.toggle('is-gps-mode', isGps);
+    }
     if (modal) {
         modal.style.display = 'flex';
         modal.classList.add('active');
@@ -262,7 +297,12 @@ export function closePhoneArrivalPopup() {
     if (modal) {
         modal.style.display = 'none';
         modal.classList.remove('active');
+        const actionsEl = modal.querySelector('.pam-actions');
+        if (actionsEl) actionsEl.classList.remove('is-gps-mode');
+        const repeatBtn = document.getElementById('pam-repeat-btn') || modal.querySelector('.pam-btn-repeat');
+        if (repeatBtn) repeatBtn.style.display = '';
     }
+    state.lastArrivalWasGps = false;
     state.selectedBuildingId = null;
     clearRoute();
     setPhoneSheetView('dir');
@@ -278,15 +318,34 @@ export function closePhoneArrivalPopup() {
 }
 
 export function replayFromArrivalPopup() {
+    return withCooldown('phone:arrival-replay', _replayFromArrivalPopupImpl, 350).result;
+}
+
+function _replayFromArrivalPopupImpl() {
     const modal = document.getElementById('phone-arrived-modal');
-    if (modal) modal.classList.remove('active');
+    if (modal) {
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+        const actionsEl = modal.querySelector('.pam-actions');
+        if (actionsEl) actionsEl.classList.remove('is-gps-mode');
+        const repeatBtn = document.getElementById('pam-repeat-btn') || modal.querySelector('.pam-btn-repeat');
+        if (repeatBtn) repeatBtn.style.display = '';
+    }
     clearArrivedCountdown();
     clearRoute();
+
+    // Guard: strictly suppress repeat when arrival was from Live GPS
+    if (state.lastArrivalWasGps) {
+        console.warn('[Phone Arrival] Repeat route suppressed because last navigation was Live GPS.');
+        state.lastArrivalWasGps = false;
+        return;
+    }
+
     if (state.selectedBuildingId) {
         if (state.isMobileGPSActive) {
             startPhoneLiveGPS(state.selectedBuildingId);
         } else {
-            startPhoneAnimatedRoute();
+            _startPhoneAnimatedRouteImpl();
         }
     }
 }

@@ -12,6 +12,8 @@ import { state } from './data/state.js';
 
 import { showPlotPanel } from './building-panel.js';
 
+import { activeStatusFilters, isFacilityStatusVisible, normalizeFacilityStatus, renderFacilityStatusBadgeHtml } from './status-filter.js';
+
 
 
 let plotMarkers = [];
@@ -20,13 +22,48 @@ let selectedPlotZoneId = null;
 
 
 
+function syncZonePolygonStatuses() {
+    const statusById = new Map(
+        FIELD_COMMODITY_ZONES.map(z => [z.id, normalizeFacilityStatus(z.facility_status || 'Existing')])
+    );
+    ZONE_POLYGONS.forEach(f => {
+        if (!f || !f.properties) return;
+        const fid = f.properties.id || f.properties.zoneId || f.id;
+        const resolved = statusById.has(fid)
+            ? statusById.get(fid)
+            : normalizeFacilityStatus(f.properties.facility_status || 'Existing');
+        f.properties.facility_status = resolved;
+    });
+}
+
+export function updatePlotStatusFilters() {
+    const currentMap = state.map || (typeof window !== 'undefined' && window.map);
+    if (!currentMap) return;
+
+    syncZonePolygonStatuses();
+
+    // Proposed plots render on proposed-landuse-fill/line dashed polygon layers instead of solid group fills
+    const allowedStatuses = ['Existing', 'Under Construction'].filter(s => activeStatusFilters.has(s));
+    const statusExpr = ['coalesce', ['get', 'facility_status'], 'Existing'];
+    const layerFilter = allowedStatuses.length > 0
+        ? ['in', statusExpr, ['literal', allowedStatuses]]
+        : ['==', ['get', 'id'], '__none__'];
+
+    if (currentMap.getLayer('plots-group-fill')) {
+        currentMap.setFilter('plots-group-fill', layerFilter);
+    }
+    if (currentMap.getLayer('plots-group-casing')) {
+        currentMap.setFilter('plots-group-casing', layerFilter);
+    }
+}
+
 export function initPlotLayers() {
 
     const currentMap = state.map || (typeof window !== 'undefined' && window.map);
 
     if (!currentMap) return;
 
-
+    syncZonePolygonStatuses();
 
     const groupData = getPlotsGeoJSON();
 
@@ -45,6 +82,10 @@ export function initPlotLayers() {
             currentMap.getSource('plots-active-subplot-source').setData({ type: 'FeatureCollection', features: [] });
 
         }
+
+        updatePlotStatusFilters();
+
+        createPlotMarkers();
 
         return;
 
@@ -246,11 +287,11 @@ export function initPlotLayers() {
 
                 'line-color': ['coalesce', ['get', 'color'], '#38bdf8'],
 
-                'line-width': 7.0,
+                'line-width': 6.0,
 
-                'line-blur': 4.0,
+                'line-blur': 0,
 
-                'line-opacity': 0.85
+                'line-opacity': 0.45
 
             }
 
@@ -379,6 +420,8 @@ export function initPlotLayers() {
 
 
 
+    updatePlotStatusFilters();
+
     createPlotMarkers();
 
 }
@@ -501,7 +544,9 @@ export function createPlotMarkers() {
 
 
 
-    FIELD_COMMODITY_ZONES.forEach(zone => {
+    FIELD_COMMODITY_ZONES
+        .filter(zone => isFacilityStatusVisible(zone.facility_status || 'Existing'))
+        .forEach(zone => {
 
         const el = document.createElement('div');
 
@@ -523,7 +568,7 @@ export function createPlotMarkers() {
 
             : (rangeText || countText);
 
-
+        const statusBadgeHtml = renderFacilityStatusBadgeHtml(zone.facility_status, 'marker');
 
         el.innerHTML = `
 
@@ -538,6 +583,8 @@ export function createPlotMarkers() {
                 <span class="plot-marker-name">${zone.name}</span>
 
                 <span class="plot-marker-range">${subtitle}</span>
+
+                ${statusBadgeHtml ? `<div class="bldg-marker-status-wrap">${statusBadgeHtml}</div>` : ''}
 
             </div>
 
@@ -571,9 +618,12 @@ export function createPlotMarkers() {
 
 
 
+        const markerCoord = zone.centerCoords || zone.coords;
+        if (!markerCoord || markerCoord.length < 2) return;
+
         const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
 
-            .setLngLat(zone.centerCoords)
+            .setLngLat(markerCoord)
 
             .addTo(currentMap);
 
@@ -1271,6 +1321,10 @@ if (typeof window !== 'undefined') {
     window.clearSubPlotHighlight = clearSubPlotHighlight;
 
     window.initPlotLayers = initPlotLayers;
+
+    window.updatePlotStatusFilters = updatePlotStatusFilters;
+
+    window.createPlotMarkers = createPlotMarkers;
 
     window.updatePlotLayerStyles = updatePlotLayerStyles;
 

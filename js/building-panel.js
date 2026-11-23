@@ -22,7 +22,7 @@ import { BUILDING_DIRECTORY, getBuildingById } from './data/buildings.js';
 
 
 
-import { renderBuildingOfficesHTML } from './data/offices.js';
+import { renderBuildingOfficesHTML, highlightSearchTermsHtml, escapeSearchHtml, matchesSearchText } from './data/offices.js';
 
 
 
@@ -31,6 +31,7 @@ import { getBuildingWayfindingInfo } from './data/descriptions.js';
 
 
 import { state } from './data/state.js';
+import { renderFacilityStatusBadgeHtml } from './status-filter.js';
 
 
 
@@ -125,13 +126,11 @@ export function showBuildingPanel(buildingId, targetOffice = '') {
 
     const panel = document.getElementById('building-panel');
 
-
-
     if (!panel) return;
 
-
-
     panel.dataset.buildingId = buildingId;
+    panel.dataset.panelMode = 'building';
+    panel._activePlotContext = null;
 
 
 
@@ -208,31 +207,40 @@ export function showBuildingPanel(buildingId, targetOffice = '') {
 
 
 
-    if (subEl) subEl.textContent = wfInfo.compactTag || building.desc || 'Research Facility';
+    const isUnderDevStation = Boolean(building.isQARES || building.isRARES);
 
+    if (subEl) {
+        subEl.textContent = isUnderDevStation
+            ? (building.category || 'Facility')
+            : (wfInfo.compactTag || building.desc || 'Research Facility');
+    }
 
+    const statusPillEl = document.getElementById('bp-status-pill');
+    if (statusPillEl) statusPillEl.innerHTML = building.isGate ? '' : renderFacilityStatusBadgeHtml(building.facility_status);
 
-
-
-
-
-    // Populate Visual Landmark & Key Services wayfinding cards
-
-
-
+    // Populate Visual Landmark & Key Services wayfinding cards (suppressed cleanly for QARES/RARES)
+    const wfBlock = panel.querySelector('.bp-wayfinding-block');
     const visEl = document.getElementById('bp-visual-landmark');
-
-
-
     const srvEl = document.getElementById('bp-key-services');
+    const activeSearchQuery = (document.getElementById('search-input')?.value || document.getElementById('phone-search-input')?.value || '').trim();
 
-
-
-    if (visEl) visEl.textContent = wfInfo.visualLandmark;
-
-
-
-    if (srvEl) srvEl.textContent = wfInfo.keyServices;
+    if (isUnderDevStation) {
+        if (wfBlock) wfBlock.style.display = 'none';
+        if (visEl) { visEl.dataset.rawText = ''; visEl.textContent = ''; }
+        if (srvEl) { srvEl.dataset.rawText = ''; srvEl.textContent = ''; }
+    } else {
+        if (wfBlock) wfBlock.style.display = '';
+        if (visEl) {
+            const rawVis = wfInfo.visualLandmark || '';
+            visEl.dataset.rawText = rawVis;
+            visEl.innerHTML = highlightSearchTermsHtml(rawVis, activeSearchQuery);
+        }
+        if (srvEl) {
+            const rawSrv = wfInfo.keyServices || '';
+            srvEl.dataset.rawText = rawSrv;
+            srvEl.innerHTML = highlightSearchTermsHtml(rawSrv, activeSearchQuery);
+        }
+    }
 
 
 
@@ -358,22 +366,32 @@ export function showBuildingPanel(buildingId, targetOffice = '') {
 
 
 
-    // Load Image with unified Hero Controller
+    // Load Image with unified Hero Controller (suppressed for QARES/RARES clean menu)
     const imgArea = document.getElementById('bp-image-area');
-    if (imgArea) imgArea.style.display = 'block';
-
-    const safeId = buildingId.replace(/\//g, '_');
-    const imgPath = building.isGate && building.guardHouseId
-        ? `images/${building.guardHouseId}.webp`
-        : `images/${safeId}.webp`;
-    setDrawerHeroImage({
-        src: imgPath,
-        title: building.name,
-        badgeDotColor: building.color || (building.isGate ? '#10b981' : '#3b82f6'),
-        views: [{ src: imgPath, label: building.isGate ? 'Access Gate' : 'Facade' }],
-        activeIdx: 0,
-        fallbackIcon: building.isGate ? '🚪' : '🏛️'
-    });
+    if (isUnderDevStation) {
+        if (imgArea) imgArea.style.display = 'none';
+    } else {
+        if (imgArea) imgArea.style.display = 'block';
+        const safeId = buildingId.replace(/\//g, '_');
+        const fallbackSrc = building.image || `images/${safeId}.webp`;
+        const bldgViews = Array.isArray(building.images) && building.images.length > 0
+            ? building.images
+                .map((im, i) => ({
+                    src: im.src || im.image_webp_url || '',
+                    label: im.label || im.caption || `Photo ${i + 1}`
+                }))
+                .filter(v => Boolean(v.src))
+            : [{ src: fallbackSrc, label: building.isGate ? 'Access Gate' : 'Facade' }];
+        const imgPath = bldgViews[0]?.src || fallbackSrc;
+        setDrawerHeroImage({
+            src: imgPath,
+            title: building.name,
+            badgeDotColor: building.color || (building.isGate ? '#10b981' : '#3b82f6'),
+            views: bldgViews,
+            activeIdx: 0,
+            fallbackIcon: building.isGate ? '🚪' : '🏛️'
+        });
+    }
 
     // Show panel (Restore actions and QR for buildings)
     panel.classList.remove('is-plot-panel');
@@ -629,6 +647,115 @@ export function closeBuildingPanel(skipFly = false) {
 
 
 
+function renderDesktopPlotSections(zone, areaText, plotCountText, rangeText, searchQuery = '') {
+    const visEl = document.getElementById('bp-visual-landmark');
+    const srvEl = document.getElementById('bp-key-services');
+    const officesContainer = document.getElementById('bp-offices-container');
+    const overviewRaw = zone.description || `Research field block for ${zone.name} situated along the station farm drives.`;
+
+    if (visEl) {
+        visEl.dataset.rawText = overviewRaw;
+        visEl.innerHTML = highlightSearchTermsHtml(overviewRaw, searchQuery);
+    }
+
+    if (srvEl) {
+        const cropLine = zone.currentCrop
+            ? `<div><strong style="color:#4ade80;">Current Planted Crop:</strong> <span style="color:#f8fafc;">${highlightSearchTermsHtml(zone.currentCrop, searchQuery)}</span></div>`
+            : '';
+        const treeLine = (zone.treeCount !== null && zone.treeCount !== undefined && zone.treeCount !== '')
+            ? `<div><strong style="color:#4ade80;">Tree / Plant Count:</strong> <span style="color:#f8fafc;">${Number(zone.treeCount).toLocaleString()} trees/plants</span></div>`
+            : '';
+        const cycleLine = zone.cycleMonths
+            ? `<div><strong style="color:#38bdf8;">Cropping Cycle:</strong> <span style="color:#f8fafc;">${highlightSearchTermsHtml(zone.cycleMonths, searchQuery)}</span></div>`
+            : '';
+        const statusLine = zone.status
+            ? `<div><strong style="color:#38bdf8;">Plot Status:</strong> <span style="color:#86efac; font-weight:700;">${highlightSearchTermsHtml(zone.status, searchQuery)}</span></div>`
+            : '';
+
+        srvEl.innerHTML = `
+            <div class="bp-plot-metrics" style="display:flex; flex-direction:column; gap:6px; font-size:12px;">
+                ${cropLine}
+                ${treeLine}
+                ${cycleLine}
+                ${statusLine}
+                <div><strong style="color:#38bdf8;">Estimated Area:</strong> <span style="color:#f8fafc;">${escapeSearchHtml(areaText)}</span></div>
+                <div><strong style="color:#38bdf8;">Total Plots:</strong> <span style="color:#f8fafc;">${escapeSearchHtml(plotCountText)} (${highlightSearchTermsHtml(rangeText, searchQuery)})</span></div>
+                <div><strong style="color:#38bdf8;">Plot Category:</strong> <span style="color:#f8fafc;">${escapeSearchHtml((zone.category || 'Agricultural Plot').toUpperCase())}</span></div>
+            </div>
+        `;
+    }
+
+    if (officesContainer) {
+        if (zone.subPlots && zone.subPlots.length > 0) {
+            const normQuery = String(searchQuery || '').trim().toLowerCase();
+            let html = `
+                <div class="bp-sub-plots-section" style="margin-top:14px;">
+                    <div class="bldg-offices-header" style="margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                        <span class="bldg-offices-title" style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.8px; color:#38bdf8;">${lucideIcon('sprout', 14)} Sub-Plots (${zone.subPlots.length})</span>
+                        <span style="font-size:10px; color:#94a3b8;">Tap to zoom</span>
+                    </div>
+                    <div class="bldg-offices-pills" style="display:flex; flex-direction:column; gap:6px;">
+            `;
+            zone.subPlots.forEach(sp => {
+                const subTitle = sp.label || sp.name || `Screenhouse ${sp.plotNum}`;
+                const coordsJson = sp.centerCoords ? `[${sp.centerCoords[0]}, ${sp.centerCoords[1]}]` : 'null';
+                const bldgJson = sp.buildingId ? `'${sp.buildingId}'` : 'null';
+                const isSubMatched = Boolean(normQuery && (
+                    matchesSearchText(subTitle, normQuery) ||
+                    (sp.details && matchesSearchText(sp.details, normQuery)) ||
+                    (sp.crop && matchesSearchText(sp.crop, normQuery))
+                ));
+                html += `
+                    <div class="office-pill sub-plot-chip ${isSubMatched ? 'highlighted' : ''}" data-plot-num="${sp.plotNum}" data-id="${sp.buildingId || ''}" data-zone-id="${zone.id}" onclick="if(window.zoomToSubPlot) window.zoomToSubPlot('${sp.plotNum}', ${coordsJson}, ${bldgJson}, '${zone.id}')" title="Click to zoom directly into ${escapeSearchHtml(subTitle)}" style="cursor:pointer; display:flex; align-items:flex-start; gap:10px; padding:8px 12px; border-radius:8px; background:rgba(30,41,59,0.7); border:1px solid rgba(255,255,255,0.08); transition:all 0.15s ease;">
+                        <span class="op-dot" style="background:${zone.color}; width:8px; height:8px; border-radius:50%; margin-top:5px; flex-shrink:0;"></span>
+                        <div style="display:flex; flex-direction:column; line-height:1.25;">
+                            <span class="op-name" style="font-size:12px; font-weight:700; color:#f8fafc;">${highlightSearchTermsHtml(subTitle, searchQuery)}</span>
+                            ${sp.details ? `<span style="font-size:11px; color:#94a3b8; margin-top:2px;">${highlightSearchTermsHtml(sp.details, searchQuery)}</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            html += `</div></div>`;
+            officesContainer.innerHTML = html;
+        } else {
+            officesContainer.innerHTML = '';
+        }
+    }
+}
+
+export function refreshBuildingPanelSearchHighlights(query = '') {
+    const panel = document.getElementById('building-panel');
+    if (!panel || !panel.classList.contains('active')) return;
+    const trimmed = String(query || '').trim();
+
+    if (panel.dataset.panelMode === 'plot' && panel._activePlotContext) {
+        const { zone, areaText, plotCountText, rangeText } = panel._activePlotContext;
+        renderDesktopPlotSections(zone, areaText, plotCountText, rangeText, trimmed);
+        return;
+    }
+
+    const visEl = document.getElementById('bp-visual-landmark');
+    const srvEl = document.getElementById('bp-key-services');
+    if (visEl && typeof visEl.dataset.rawText === 'string') {
+        visEl.innerHTML = highlightSearchTermsHtml(visEl.dataset.rawText, trimmed);
+    }
+    if (srvEl && typeof srvEl.dataset.rawText === 'string') {
+        srvEl.innerHTML = highlightSearchTermsHtml(srvEl.dataset.rawText, trimmed);
+    }
+
+    const currentBldgId = state.selectedBuildingId || window.selectedBuildingId || panel.dataset.buildingId;
+    const officesContainer = document.getElementById('bp-offices-container');
+    if (officesContainer && currentBldgId) {
+        officesContainer.innerHTML = renderBuildingOfficesHTML(currentBldgId, trimmed);
+        const highlightedPill = officesContainer.querySelector('.office-pill.highlighted');
+        if (highlightedPill) {
+            setTimeout(() => {
+                highlightedPill.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 120);
+        }
+    }
+}
+
 export function showPlotPanel(zoneId) {
 
 
@@ -691,9 +818,10 @@ export function showPlotPanel(zoneId) {
 
     const panel = document.getElementById('building-panel');
 
-
-
     if (!panel) return;
+
+    panel.dataset.buildingId = zone.id;
+    panel.dataset.panelMode = 'plot';
 
 
 
@@ -750,6 +878,10 @@ export function showPlotPanel(zoneId) {
 
 
     if (titleEl) titleEl.textContent = zone.name;
+
+    const statusPillEl = document.getElementById('bp-status-pill');
+
+    if (statusPillEl) statusPillEl.innerHTML = renderFacilityStatusBadgeHtml(zone.facility_status);
 
 
 
@@ -833,234 +965,23 @@ export function showPlotPanel(zoneId) {
 
 
 
-    // 3. Visitor Wayfinding Cards (Visual Landmark & Key Details)
-
-
-
-    const visEl = document.getElementById('bp-visual-landmark');
-
-
-
-    const srvEl = document.getElementById('bp-key-services');
-
-
-
-    if (visEl) {
-
-
-
-        visEl.textContent = zone.description || `Research field block for ${zone.name} situated along the station farm drives.`;
-
-
-
-    }
-
-
-
-    if (srvEl) {
-        const cropLine = zone.currentCrop
-            ? `<div><strong style="color:#4ade80;">Current Planted Crop:</strong> <span style="color:#f8fafc;">${zone.currentCrop}</span></div>`
-            : '';
-        const treeLine = (zone.treeCount !== null && zone.treeCount !== undefined && zone.treeCount !== '')
-            ? `<div><strong style="color:#4ade80;">Tree / Plant Count:</strong> <span style="color:#f8fafc;">${Number(zone.treeCount).toLocaleString()} trees/plants</span></div>`
-            : '';
-        const cycleLine = zone.cycleMonths
-            ? `<div><strong style="color:#38bdf8;">Cropping Cycle:</strong> <span style="color:#f8fafc;">${zone.cycleMonths}</span></div>`
-            : '';
-        const statusLine = zone.status
-            ? `<div><strong style="color:#38bdf8;">Plot Status:</strong> <span style="color:#86efac; font-weight:700;">${zone.status}</span></div>`
-            : '';
-
-        srvEl.innerHTML = `
-            <div class="bp-plot-metrics" style="display:flex; flex-direction:column; gap:6px; font-size:12px;">
-                ${cropLine}
-                ${treeLine}
-                ${cycleLine}
-                ${statusLine}
-                <div><strong style="color:#38bdf8;">Estimated Area:</strong> <span style="color:#f8fafc;">${areaText}</span></div>
-                <div><strong style="color:#38bdf8;">Total Plots:</strong> <span style="color:#f8fafc;">${plotCountText} (${rangeText})</span></div>
-                <div><strong style="color:#38bdf8;">Commodity Category:</strong> <span style="color:#f8fafc;">${(zone.category || 'Agricultural Field').toUpperCase()}</span></div>
-            </div>
-        `;
-    }
-
-
-
-
-
-
+    // 3. Visitor Wayfinding Cards (Visual Landmark & Key Details) & Sub-Plots
+    panel._activePlotContext = { zone, areaText, plotCountText, rangeText };
+    const activeSearchQuery = (document.getElementById('search-input')?.value || document.getElementById('phone-search-input')?.value || '').trim();
 
     // 4. Meta rows (if in DOM)
-
-
-
     const secEl = document.getElementById('bp-section');
-
-
-
     const typeEl = document.getElementById('bp-type');
-
-
-
     const coordsEl = document.getElementById('bp-coords');
 
-
-
-    if (secEl) secEl.textContent = 'Agricultural Zone';
-
-
-
+    if (secEl) secEl.textContent = 'Agricultural Plot';
     if (typeEl) typeEl.textContent = 'Research Field Block';
-
-
-
     if (coordsEl && zone.centerCoords) {
-
-
-
         coordsEl.textContent = zone.centerCoords[1].toFixed(5) + '°N, ' + zone.centerCoords[0].toFixed(5) + '°E';
-
-
-
     }
 
-
-
-
-
-
-
-    // 5. Render Sub-Plots list in #bp-offices-container
-
-
-
-    const officesContainer = document.getElementById('bp-offices-container');
-
-
-
-    if (officesContainer) {
-
-
-
-        if (zone.subPlots && zone.subPlots.length > 0) {
-
-
-
-            let html = `
-
-
-
-                <div class="bp-sub-plots-section" style="margin-top:14px;">
-
-
-
-                    <div class="bldg-offices-header" style="margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
-
-
-
-                        <span class="bldg-offices-title" style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.8px; color:#38bdf8;">${lucideIcon('sprout', 14)} Sub-Plots in this Zone (${zone.subPlots.length})</span>
-
-
-
-                        <span style="font-size:10px; color:#94a3b8;">Tap to zoom</span>
-
-
-
-                    </div>
-
-
-
-                    <div class="bldg-offices-pills" style="display:flex; flex-direction:column; gap:6px;">
-
-
-
-            `;
-
-
-
-            zone.subPlots.forEach(sp => {
-
-
-
-                const subTitle = sp.label || sp.name || `Screenhouse ${sp.plotNum}`;
-
-
-
-                const coordsJson = sp.centerCoords ? `[${sp.centerCoords[0]}, ${sp.centerCoords[1]}]` : 'null';
-
-
-
-                const bldgJson = sp.buildingId ? `'${sp.buildingId}'` : 'null';
-
-
-
-                html += `
-
-
-
-                    <div class="office-pill sub-plot-chip" data-plot-num="${sp.plotNum}" data-id="${sp.buildingId || ''}" data-zone-id="${zone.id}" onclick="if(window.zoomToSubPlot) window.zoomToSubPlot('${sp.plotNum}', ${coordsJson}, ${bldgJson}, '${zone.id}')" title="Click to zoom directly into ${subTitle}" style="cursor:pointer; display:flex; align-items:flex-start; gap:10px; padding:8px 12px; border-radius:8px; background:rgba(30,41,59,0.7); border:1px solid rgba(255,255,255,0.08); transition:all 0.15s ease;">
-
-
-
-                        <span class="op-dot" style="background:${zone.color}; width:8px; height:8px; border-radius:50%; margin-top:5px; flex-shrink:0;"></span>
-
-
-
-                        <div style="display:flex; flex-direction:column; line-height:1.25;">
-
-
-
-                            <span class="op-name" style="font-size:12px; font-weight:700; color:#f8fafc;">${subTitle}</span>
-
-
-
-                            ${sp.details ? `<span style="font-size:11px; color:#94a3b8; margin-top:2px;">${sp.details}</span>` : ''}
-
-
-
-                        </div>
-
-
-
-                    </div>
-
-
-
-                `;
-
-
-
-            });
-
-
-
-            html += `</div></div>`;
-
-
-
-            officesContainer.innerHTML = html;
-
-
-
-        } else {
-
-
-
-            officesContainer.innerHTML = '';
-
-
-
-        }
-
-
-
-    }
-
-
-
-
-
-
+    // 5. Populate Overview, Metrics & Sub-Plots list with active search highlights
+    renderDesktopPlotSections(zone, areaText, plotCountText, rangeText, activeSearchQuery);
 
     // 6. Image area setup: support Master Zone image or cleanly hide if no photo
     const imgArea = document.getElementById('bp-image-area');
@@ -1073,10 +994,11 @@ export function showPlotPanel(zoneId) {
         if (placeholderEl) placeholderEl.style.display = 'none';
     }
 
-    // 7. Plots are infographics only: suppress Get Directions, GPS navigation, and QR code handoff
+    // 7. Enable Get Directions, GPS navigation, and QR code handoff for agricultural plots
     panel.classList.add('is-plot-panel');
     const actionsEl = panel.querySelector('.bp-actions');
-    if (actionsEl) actionsEl.style.display = 'none';
+    if (actionsEl) actionsEl.style.display = '';
+    updateBuildingQR(zone.id);
 
     // 8. Open drawer
     panel.classList.add('active');
@@ -1522,6 +1444,7 @@ window.showBuildingPanel = showBuildingPanel;
 
 
 window.showPlotPanel = showPlotPanel;
+window.refreshBuildingPanelSearchHighlights = refreshBuildingPanelSearchHighlights;
 
 
 
@@ -1568,6 +1491,9 @@ export function setDrawerHeroImage({ src, title = '', subtitle = '', badgeDotCol
     const badgeDotEl = badgeEl ? badgeEl.querySelector('.bp-badge-dot') : null;
     const expandHintEl = document.getElementById('bp-image-expand-hint');
     const viewsBarEl = document.getElementById('bp-image-views-bar');
+    const prevBtn = document.getElementById('bp-slide-prev');
+    const nextBtn = document.getElementById('bp-slide-next');
+    const counterEl = document.getElementById('bp-slide-counter');
 
     currentHeroViews = views && views.length > 0 ? views : (src ? [{ src, label: 'Main View' }] : []);
     currentHeroActiveIdx = activeIdx;
@@ -1581,6 +1507,9 @@ export function setDrawerHeroImage({ src, title = '', subtitle = '', badgeDotCol
         if (vignetteEl) vignetteEl.style.display = 'none';
         if (badgeEl) badgeEl.style.display = 'none';
         if (expandHintEl) expandHintEl.style.display = 'none';
+        if (prevBtn) prevBtn.style.display = 'none';
+        if (nextBtn) nextBtn.style.display = 'none';
+        if (counterEl) counterEl.style.display = 'none';
         if (viewsBarEl) { viewsBarEl.innerHTML = ''; viewsBarEl.style.display = 'none'; }
         if (isPlot) {
             if (areaEl) areaEl.style.display = 'none';
@@ -1634,9 +1563,35 @@ export function setDrawerHeroImage({ src, title = '', subtitle = '', badgeDotCol
             }
         }
 
-        // Render views switcher if multiple photos exist
+        // Render views switcher & prev/next slideshow arrows if multiple photos exist
+        const hasMulti = currentHeroViews.length > 1;
+        if (prevBtn) {
+            prevBtn.style.display = hasMulti ? 'flex' : 'none';
+            prevBtn.onclick = (e) => {
+                e.stopPropagation();
+                if (currentHeroViews.length > 1) {
+                    const nextIdx = (currentHeroActiveIdx - 1 + currentHeroViews.length) % currentHeroViews.length;
+                    switchHeroView(nextIdx);
+                }
+            };
+        }
+        if (nextBtn) {
+            nextBtn.style.display = hasMulti ? 'flex' : 'none';
+            nextBtn.onclick = (e) => {
+                e.stopPropagation();
+                if (currentHeroViews.length > 1) {
+                    const nextIdx = (currentHeroActiveIdx + 1) % currentHeroViews.length;
+                    switchHeroView(nextIdx);
+                }
+            };
+        }
+        if (counterEl) {
+            counterEl.style.display = hasMulti ? 'block' : 'none';
+            counterEl.textContent = `${currentHeroActiveIdx + 1} / ${currentHeroViews.length}`;
+        }
+
         if (viewsBarEl) {
-            if (currentHeroViews.length > 1) {
+            if (hasMulti) {
                 let chipsHtml = '';
                 currentHeroViews.forEach((v, idx) => {
                     const isActive = idx === currentHeroActiveIdx;
@@ -1670,6 +1625,9 @@ export function setDrawerHeroImage({ src, title = '', subtitle = '', badgeDotCol
         if (vignetteEl) vignetteEl.style.display = 'none';
         if (badgeEl) badgeEl.style.display = 'none';
         if (expandHintEl) expandHintEl.style.display = 'none';
+        if (prevBtn) prevBtn.style.display = 'none';
+        if (nextBtn) nextBtn.style.display = 'none';
+        if (counterEl) counterEl.style.display = 'none';
         if (viewsBarEl) { viewsBarEl.innerHTML = ''; viewsBarEl.style.display = 'none'; }
         if (isPlot) {
             if (areaEl) areaEl.style.display = 'none';
@@ -1696,6 +1654,7 @@ export function switchHeroView(idx) {
     const imgEl = document.getElementById('bp-real-image');
     const badgeTextEl = document.getElementById('bp-image-badge-text');
     const viewsBarEl = document.getElementById('bp-image-views-bar');
+    const counterEl = document.getElementById('bp-slide-counter');
 
     if (imgEl) {
         imgEl.style.opacity = '0.35';
@@ -1706,6 +1665,9 @@ export function switchHeroView(idx) {
     }
     if (badgeTextEl && view.label) {
         badgeTextEl.textContent = `${currentHeroTitle} — ${view.label}`;
+    }
+    if (counterEl && currentHeroViews.length > 1) {
+        counterEl.textContent = `${idx + 1} / ${currentHeroViews.length}`;
     }
     if (viewsBarEl) {
         viewsBarEl.querySelectorAll('.bp-view-chip').forEach(btn => {

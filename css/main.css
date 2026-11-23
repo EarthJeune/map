@@ -481,8 +481,8 @@ body.map-zoomed-out .bldg-map-marker {
 
 .mapboxgl-marker:has(.kiosk-marker),
 .kiosk-marker {
-    width: 24px;
-    height: 24px;
+    width: 30px;
+    height: 30px;
     position: absolute;
     top: 0;
     left: 0;
@@ -502,29 +502,39 @@ body.map-zoomed-out .bldg-map-marker {
     }
 
     100% {
-        transform: translate(-50%, -50%) scale(3.4);
+        transform: translate(-50%, -50%) scale(3.2);
         opacity: 0;
         box-shadow: 0 0 24px 12px rgba(34, 197, 94, 0);
     }
 }
 
 .kiosk-marker-dot {
-    width: 24px;
-    height: 24px;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #22c55e, #10b981);
-    border: 3.5px solid #ffffff;
-    box-shadow: 0 0 16px rgba(34, 197, 94, 0.95), 0 2px 8px rgba(0, 0, 0, 0.6);
+    background: linear-gradient(135deg, #22c55e 0%, #059669 100%);
+    border: 3px solid #ffffff;
+    box-shadow: 0 0 16px rgba(34, 197, 94, 0.95), 0 3px 10px rgba(0, 0, 0, 0.65);
     position: relative;
     z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    cursor: pointer;
+    transition: transform 0.16s ease;
+}
+
+.kiosk-marker-dot:hover {
+    transform: scale(1.08);
 }
 
 .kiosk-marker-pulse {
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 26px;
-    height: 26px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     background: radial-gradient(circle, rgba(34, 197, 94, 0.5) 0%, rgba(34, 197, 94, 0.15) 70%, transparent 100%);
     border: 1.5px solid rgba(34, 197, 94, 0.8);
@@ -551,24 +561,56 @@ body.map-zoomed-out .bldg-map-marker {
 
 .kiosk-marker-label {
     position: absolute;
-    top: 30px;
+    top: 35px;
     left: 50%;
     transform: translateX(-50%);
-    background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.96));
+    background: linear-gradient(135deg, rgba(11, 29, 23, 0.97), rgba(7, 17, 14, 0.98));
     color: #4ade80;
+    padding: 5px 13px 6px;
+    border-radius: 13px;
+    white-space: nowrap;
+    border: 1.5px solid rgba(74, 222, 128, 0.78);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.72), 0 0 16px rgba(34, 197, 94, 0.35);
+    z-index: 100000 !important;
+    pointer-events: auto;
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.kiosk-marker-label:hover {
+    transform: translateX(-50%) translateY(-1px);
+    border-color: #86efac;
+}
+
+.kiosk-marker-label-main {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     font-size: 11px;
     font-weight: 800;
-    letter-spacing: .6px;
+    letter-spacing: 0.6px;
     text-transform: uppercase;
-    padding: 5px 12px;
-    border-radius: 9999px;
-    white-space: nowrap;
-    border: 1.5px solid rgba(74, 222, 128, 0.75);
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.65), 0 0 16px rgba(34, 197, 94, 0.35);
-    z-index: 100000 !important;
-    pointer-events: none;
-    cursor: default;
-    user-select: none;
+    color: #4ade80;
+    line-height: 1.15;
+}
+
+.kiosk-marker-label-sub {
+    font-size: 8.5px;
+    font-weight: 700;
+    letter-spacing: 0.75px;
+    text-transform: uppercase;
+    color: #d1fae5;
+    opacity: 0.92;
+    line-height: 1.1;
+}
+
+.kml-phone-only {
+    display: none;
 }
 
 .kiosk-marker-label::before {
@@ -677,15 +719,15 @@ body.map-zoomed-out .bldg-map-marker {
     display: flex;
     align-items: center;
     gap: 12px;
-    background: rgba(15, 23, 42, .78);
-    backdrop-filter: blur(14px);
-    border: 1px solid rgba(255, 255, 255, .08);
+    background: rgba(7, 16, 14, .88);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(52, 211, 153, .24);
     border-radius: 40px;
     padding: 8px 20px;
     color: #94a3b8;
     font-size: 11px;
     font-weight: 500;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, .25);
+    box-shadow: inset 0 1px 0 rgba(167, 243, 208, 0.1), 0 4px 20px rgba(0, 0, 0, .35);
     opacity: 0;
     transition: opacity .4s ease, left 0.45s cubic-bezier(.22, 1, .36, 1);
 }
@@ -783,17 +825,17 @@ body.map-zoomed-out .bldg-map-marker {
 }
 
 .mapboxgl-ctrl-group {
-    background: rgba(15, 23, 42, .82) !important;
-    backdrop-filter: blur(14px) !important;
-    border: 1px solid rgba(255, 255, 255, .08) !important;
+    background: rgba(7, 16, 14, .9) !important;
+    backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(52, 211, 153, .26) !important;
     border-radius: 12px !important;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, .25) !important;
+    box-shadow: inset 0 1px 0 rgba(167, 243, 208, 0.12), 0 4px 16px rgba(0, 0, 0, .38) !important;
     overflow: hidden
 }
 
 .mapboxgl-ctrl-group button {
     background: transparent !important;
-    border-color: rgba(255, 255, 255, .06) !important;
+    border-color: rgba(52, 211, 153, .12) !important;
     width: 36px !important;
     height: 36px !important
 }
@@ -1126,14 +1168,14 @@ body.kiosk-portrait .sidebar {
     right: 24px;
     width: auto;
     height: var(--portrait-panel-height);
-    background: rgba(10, 15, 28, 0.96);
-    backdrop-filter: blur(28px) saturate(1.8);
-    -webkit-backdrop-filter: blur(28px) saturate(1.8);
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: linear-gradient(180deg, #0d1d19 0%, #07100e 100%);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: 1px solid rgba(52, 211, 153, 0.28);
     border-radius: 36px;
     transform: none;
     opacity: 1;
-    box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 1px 0 rgba(167, 243, 208, 0.14), 0 -14px 48px rgba(0, 0, 0, 0.72);
     z-index: 200;
     overflow: visible;
     transition: transform .45s cubic-bezier(.22, 1, .36, 1), box-shadow .3s;
@@ -1154,17 +1196,17 @@ body.kiosk-portrait .sidebar-toggle-btn {
     transform: translateX(-50%);
     width: 88px;
     height: 36px;
-    background: #0a0f1c;
-    backdrop-filter: blur(24px) saturate(1.6);
-    -webkit-backdrop-filter: blur(24px) saturate(1.6);
-    border: 1px solid rgba(255, 255, 255, .14);
+    background: #0d1d19;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: 1px solid rgba(52, 211, 153, .3);
     border-bottom: none;
     border-radius: 18px 18px 0 0;
-    color: #94a3b8;
+    color: #a7f3d0;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    box-shadow: 0 -6px 20px rgba(0, 0, 0, .4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    box-shadow: 0 -6px 20px rgba(0, 0, 0, .48), inset 0 1px 0 rgba(167, 243, 208, 0.14);
     transition: background .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, transform .15s ease;
     z-index: 250;
     user-select: none;
@@ -1175,11 +1217,11 @@ body.kiosk-portrait .sidebar-toggle-btn {
 }
 
 body.kiosk-portrait .sidebar-toggle-btn:hover {
-    background: rgba(16, 26, 44, .98);
-    border-color: rgba(34, 197, 94, .5);
+    background: rgba(16, 35, 30, .98);
+    border-color: rgba(52, 211, 153, .65);
     border-bottom: none;
-    color: #22c55e;
-    box-shadow: 0 -8px 24px rgba(34, 197, 94, .25);
+    color: #34d399;
+    box-shadow: 0 -8px 24px rgba(16, 185, 129, .28);
 }
 
 body.kiosk-portrait .sidebar-toggle-btn:active {
@@ -1293,11 +1335,19 @@ body.kiosk-portrait .filter-dropdown-btn {
 }
 
 body.kiosk-portrait .filter-dropdown-menu {
-    width: 360px;
+    left: auto;
+    right: 0;
+    width: min(820px, 100%);
+    max-width: 100%;
+}
+
+body.kiosk-portrait .fdm-scroll-body.fdm-split-grid {
+    grid-template-columns: minmax(0, 1.38fr) minmax(0, 0.96fr);
+    max-height: min(46vh, 560px);
 }
 
 body.kiosk-portrait .fdm-item {
-    padding: 12px 14px;
+    padding: 10px 12px;
 }
 
 body.kiosk-portrait .fdm-checkbox {
@@ -1310,6 +1360,20 @@ body.kiosk-portrait .fdm-checkbox:checked::after {
     width: 5px;
     height: 10px;
     border-width: 0 2.5px 2.5px 0;
+}
+
+body.kiosk-portrait .fdm-status-radio,
+body.kiosk-portrait .fdm-status-checkbox {
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+}
+
+body.kiosk-portrait .fdm-status-radio:checked::after,
+body.kiosk-portrait .fdm-status-checkbox:checked::after {
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
 }
 
 body.kiosk-portrait .fdm-item-name {
@@ -1496,11 +1560,11 @@ body.kiosk-portrait .building-panel {
     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
     opacity: 0;
     pointer-events: none;
-    box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.12);
-    background: rgba(10, 15, 28, 0.96);
-    backdrop-filter: blur(28px) saturate(1.8);
-    -webkit-backdrop-filter: blur(28px) saturate(1.8);
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: inset 0 1px 0 rgba(167, 243, 208, 0.14), 0 -14px 48px rgba(0, 0, 0, 0.72);
+    background: linear-gradient(180deg, #0d1d19 0%, #07100e 100%);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: 1px solid rgba(52, 211, 153, 0.28);
     display: flex;
     flex-direction: column;
     overflow-y: auto;
@@ -1831,13 +1895,13 @@ body.kiosk-portrait .bp-qr-box {
     left: calc(var(--sidebar-offset, 380px) + (100vw - var(--sidebar-offset, 380px)) / 2);
     transform: translateX(-50%);
     width: min(540px, calc(100vw - var(--sidebar-offset, 380px) - 48px));
-    background: rgba(10, 15, 28, 0.96);
-    backdrop-filter: blur(28px) saturate(1.8);
-    -webkit-backdrop-filter: blur(28px) saturate(1.8);
-    border: 1px solid rgba(34, 197, 94, 0.45);
+    background: linear-gradient(180deg, #0d1d19 0%, #07100e 100%);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(52, 211, 153, 0.42);
     border-radius: 26px;
     padding: 20px 24px;
-    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.65), 0 0 35px rgba(34, 197, 94, 0.25);
+    box-shadow: inset 0 1px 0 rgba(167, 243, 208, 0.14), 0 18px 50px rgba(0, 0, 0, 0.68), 0 0 32px rgba(16, 185, 129, 0.22);
     z-index: 240;
     flex-direction: column;
     gap: 14px;
@@ -1948,33 +2012,33 @@ body.kiosk-portrait #color-picker-modal {
     width: 38px;
     height: 38px;
     border-radius: 50%;
-    background: rgba(15, 23, 42, 0.88);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(7, 16, 14, 0.90);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(52, 211, 153, 0.28);
     color: #f8fafc;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 18px;
     cursor: pointer;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    box-shadow: inset 0 1px 0 rgba(167, 243, 208, 0.12), 0 4px 16px rgba(0, 0, 0, 0.4);
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     user-select: none;
     -webkit-tap-highlight-color: transparent;
 }
 
 .map-settings-trigger-btn:hover {
-    background: rgba(15, 23, 42, 0.98);
-    border-color: rgba(56, 189, 248, 0.6);
+    background: rgba(16, 35, 30, 0.98);
+    border-color: rgba(52, 211, 153, 0.65);
     transform: scale(1.06);
-    box-shadow: 0 8px 24px rgba(56, 189, 248, 0.25);
+    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.25);
 }
 
 .map-settings-trigger-btn.active {
-    border-color: #38bdf8;
-    background: rgba(14, 116, 144, 0.4);
-    box-shadow: 0 0 16px rgba(56, 189, 248, 0.4);
+    border-color: #34d399;
+    background: rgba(16, 185, 129, 0.28);
+    box-shadow: 0 0 16px rgba(52, 211, 153, 0.38);
     transform: rotate(30deg);
 }
 
@@ -1983,9 +2047,9 @@ body.kiosk-portrait #color-picker-modal {
 .map-settings-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(2, 6, 23, 0.4);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    background: rgba(2, 6, 23, 0.14);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     z-index: 99998;
     display: none;
     opacity: 0;
@@ -2007,12 +2071,12 @@ body.kiosk-portrait #color-picker-modal {
     max-width: calc(100vw - 28px);
     max-height: calc(100vh - 84px);
     overflow: hidden !important; /* Lock outer container: strictly zero scrollbars cutting into the rounded 24px border! */
-    background: rgba(15, 23, 42, 0.96);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1.5px solid rgba(56, 189, 248, 0.28);
+    background: linear-gradient(180deg, #0d1d19 0%, #07100e 100%);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1.5px solid rgba(52, 211, 153, 0.32);
     border-radius: 24px;
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65), 0 0 32px rgba(56, 189, 248, 0.15);
+    box-shadow: inset 0 1px 0 rgba(167, 243, 208, 0.14), 0 24px 60px rgba(0, 0, 0, 0.72), 0 0 32px rgba(16, 185, 129, 0.14);
     z-index: 99999;
     display: none;
     flex-direction: column;
@@ -2396,7 +2460,9 @@ body.kiosk-portrait #color-picker-modal {
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: 10px 4px 9px;
+    padding: 10px 6px 9px;
+    min-height: 64px;
+    gap: 2px;
     min-width: 0;
     width: 100%;
     border-radius: 12px;
@@ -2435,24 +2501,22 @@ body.kiosk-portrait #color-picker-modal {
 }
 
 .msp-perf-name {
-    font-size: 11.5px;
+    font-size: clamp(10.5px, 2.7vw, 12px);
     font-weight: 700;
-    line-height: 1.2;
+    line-height: 1.15;
     letter-spacing: -0.01em;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    overflow-wrap: anywhere;
     max-width: 100%;
 }
 
 .msp-perf-sub {
-    font-size: 9.5px;
+    font-size: clamp(9px, 2.3vw, 10px);
     color: #64748b;
     margin-top: 3px;
-    line-height: 1.2;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    line-height: 1.15;
+    white-space: normal;
+    overflow-wrap: anywhere;
     max-width: 100%;
     font-weight: 500;
 }
@@ -2478,6 +2542,9 @@ body.kiosk-portrait #color-picker-modal {
     border-radius: 12px;
     border: 1px solid rgba(255, 255, 255, 0.07);
     display: flex;
+    flex-wrap: wrap;
+    white-space: normal;
+    word-break: break-word;
     align-items: center;
     gap: 6px;
 }
@@ -2678,8 +2745,85 @@ body.kiosk-portrait .map-settings-panel {
     left: 18px;
     width: auto;
     max-width: 480px;
+    max-height: calc(100dvh - var(--portrait-panel-height, 460px) - 88px);
     margin: 0 auto;
     border-radius: 26px;
+}
+
+body.kiosk-portrait .msp-perf-btn {
+    min-height: 70px;
+}
+
+body.mode-phone .map-settings-panel {
+    top: calc(var(--safe-top, 0px) + 64px);
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: 420px;
+    margin: 0 auto;
+    max-height: calc(100dvh - var(--safe-top, 0px) - var(--safe-bottom, 0px) - 84px);
+    border-radius: 20px;
+}
+
+@media (max-width: 768px) {
+    .map-settings-panel {
+        top: calc(var(--safe-top, 0px) + 64px);
+        left: 12px;
+        right: 12px;
+        width: auto;
+        max-width: 420px;
+        margin: 0 auto;
+        max-height: calc(100dvh - var(--safe-top, 0px) - var(--safe-bottom, 0px) - 84px);
+        border-radius: 20px;
+    }
+
+    .msp-header {
+        padding: 14px 16px 12px;
+    }
+
+    .msp-body {
+        padding: 14px 16px 16px;
+        gap: 14px;
+    }
+}
+
+@media (max-width: 400px) {
+    .msp-perf-grid {
+        gap: 4px;
+        padding: 4px;
+    }
+
+    .msp-perf-btn {
+        padding: 8px 3px 7px;
+        min-height: 60px;
+    }
+
+    .msp-light-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+    body.mode-phone .map-settings-panel,
+    .map-settings-panel {
+        top: calc(var(--safe-top, 0px) + 10px);
+        bottom: calc(var(--safe-bottom, 0px) + 10px);
+        left: auto;
+        right: calc(var(--safe-right, 0px) + 64px);
+        width: min(370px, calc(100vw - 84px));
+        max-height: calc(100dvh - 20px);
+        margin: 0;
+        border-radius: 18px;
+    }
+
+    .msp-header {
+        padding: 10px 14px;
+    }
+
+    .msp-body {
+        padding: 10px 14px 12px;
+        gap: 10px;
+    }
 }
 
 /* ==========================================================================
@@ -2706,17 +2850,17 @@ body.kiosk-portrait .map-settings-panel {
     width: 38px;
     height: 38px;
     border-radius: 50%;
-    background: rgba(15, 23, 42, 0.88);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(7, 16, 14, 0.90);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(52, 211, 153, 0.28);
     color: #f8fafc;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 18px;
     cursor: pointer;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    box-shadow: inset 0 1px 0 rgba(167, 243, 208, 0.12), 0 4px 16px rgba(0, 0, 0, 0.4);
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     user-select: none;
     flex-shrink: 0;
@@ -2861,14 +3005,14 @@ body.kiosk-portrait .map-settings-panel {
     transform: translate(-50%, 40px) scale(0.96);
     width: calc(100% - 32px);
     max-width: 380px;
-    background: rgba(14, 20, 18, 0.95);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: linear-gradient(180deg, #0d1d19 0%, #07100e 100%);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(52, 211, 153, 0.3);
     border-radius: 20px;
     padding: 18px;
     z-index: 1001;
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.7);
+    box-shadow: inset 0 1px 0 rgba(167, 243, 208, 0.14), 0 16px 48px rgba(0, 0, 0, 0.72);
     opacity: 0;
     pointer-events: none;
     transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
@@ -3659,7 +3803,7 @@ body.map-mode-mapbox .bldg-map-marker.active .bldg-map-name {
     color: #38bdf8 !important;
     font-size: 11px;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 5px;
     line-height: 1.35;
     margin-top: 2px;
@@ -3671,15 +3815,17 @@ body.map-mode-mapbox .bldg-map-marker.active .bldg-map-name {
 .phone-dir-office-tag .dot-office {
     flex-shrink: 0;
     font-size: 11px;
+    margin-top: 2px;
 }
 
 .dir-office-tag .office-name-text,
 .phone-dir-office-tag .office-name-text {
     flex: 1;
     min-width: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    word-break: break-word;
     font-weight: 500;
 }
 
@@ -3687,6 +3833,21 @@ body.map-mode-mapbox .bldg-map-marker.active .bldg-map-name {
 .phone-dir-offices-count {
     color: #64748b;
     font-size: 11px;
+}
+
+.search-match-mark {
+    background: rgba(250, 204, 21, 0.24);
+    color: #fef08a;
+    border-radius: 3px;
+    padding: 0 2px;
+    font-weight: 700;
+    box-shadow: inset 0 0 0 1px rgba(250, 204, 21, 0.38);
+}
+
+[data-theme="light"] .search-match-mark {
+    background: rgba(234, 179, 8, 0.28);
+    color: #713f12;
+    box-shadow: inset 0 0 0 1px rgba(202, 138, 4, 0.45);
 }
 
 /* --- QR CODE ZOOM MODAL & ENLARGE STYLES --- */
@@ -3730,7 +3891,7 @@ body.map-mode-mapbox .bldg-map-marker.active .bldg-map-name {
     position: fixed;
     inset: 0;
     z-index: 2500;
-    background: rgba(2, 6, 23, 0.82);
+    background: rgba(4, 12, 10, 0.80);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     display: flex;
@@ -3744,9 +3905,9 @@ body.map-mode-mapbox .bldg-map-marker.active .bldg-map-name {
     position: relative;
     width: 100%;
     max-width: 440px;
-    background: linear-gradient(180deg, rgba(26, 34, 52, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
-    border: 1px solid rgba(245, 158, 11, 0.4);
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75), 0 0 36px rgba(245, 158, 11, 0.18);
+    background: linear-gradient(180deg, rgba(14, 33, 27, 0.98) 0%, rgba(7, 16, 14, 0.99) 100%);
+    border: 1px solid rgba(52, 211, 153, 0.35);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.78), 0 0 36px rgba(16, 185, 129, 0.16);
     border-radius: 24px;
     padding: 28px 24px 22px;
     text-align: center;
@@ -3930,9 +4091,9 @@ body.map-mode-mapbox .bldg-map-marker.active .bldg-map-name {
 
 .qr-zoom-card {
     position: relative;
-    background: #0f172a;
-    border: 1px solid rgba(56, 189, 248, 0.3);
-    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6), 0 0 32px rgba(56, 189, 248, 0.15);
+    background: linear-gradient(180deg, #0d1d19 0%, #07100e 100%);
+    border: 1px solid rgba(52, 211, 153, 0.35);
+    box-shadow: inset 0 1px 0 rgba(167, 243, 208, 0.14), 0 24px 48px rgba(0, 0, 0, 0.72), 0 0 32px rgba(16, 185, 129, 0.18);
     border-radius: 24px;
     padding: 28px 24px;
     width: 320px;
@@ -4608,11 +4769,11 @@ body.kiosk-portrait .orbit-toast-badge {
     max-width: 860px;
     max-height: 90vh;
     overflow-y: auto;
-    background: linear-gradient(165deg, rgba(14, 23, 42, 0.94), rgba(8, 14, 26, 0.97));
-    border: 1.5px solid rgba(43, 220, 57, 0.45);
+    background: linear-gradient(165deg, rgba(13, 29, 25, 0.96), rgba(7, 16, 14, 0.99));
+    border: 1.5px solid rgba(52, 211, 153, 0.42);
     border-radius: 26px;
     padding: 24px 28px 22px;
-    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 40px rgba(0, 102, 20, 0.35);
+    box-shadow: inset 0 1px 0 rgba(167, 243, 208, 0.14), 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 40px rgba(16, 185, 129, 0.25);
     color: #f8fafc;
     display: flex;
     flex-direction: column;
@@ -4755,9 +4916,9 @@ body.kiosk-portrait .orbit-toast-badge {
 }
 
 .dash-welcome-station-card.active {
-    background: linear-gradient(145deg, rgba(0, 102, 20, 0.32), rgba(15, 23, 42, 0.65));
-    border: 1.5px solid #2bdc39;
-    box-shadow: 0 0 24px rgba(43, 220, 57, 0.25), 0 8px 20px rgba(0, 0, 0, 0.5);
+    background: linear-gradient(145deg, rgba(16, 185, 129, 0.24), rgba(7, 16, 14, 0.9));
+    border: 1.5px solid #34d399;
+    box-shadow: 0 0 24px rgba(16, 185, 129, 0.28), 0 8px 20px rgba(0, 0, 0, 0.5);
 }
 
 .dash-wsc-top {
@@ -4954,6 +5115,77 @@ body.kiosk-portrait .orbit-toast-badge {
 .dash-welcome-card.highlighted {
     background: rgba(0, 102, 20, 0.18);
     border-color: rgba(43, 220, 57, 0.35);
+    align-items: center;
+}
+
+.dash-card-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.dash-welcome-qr-aside {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    cursor: pointer;
+    padding: 9px 10px 8px;
+    border-radius: 13px;
+    background: rgba(7, 16, 14, 0.72);
+    border: 1px solid rgba(52, 211, 153, 0.38);
+    transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.dash-welcome-qr-aside:hover {
+    transform: scale(1.04);
+    border-color: rgba(74, 222, 128, 0.78);
+    box-shadow: 0 4px 18px rgba(16, 185, 129, 0.3);
+}
+
+.dash-welcome-qr-box {
+    width: 84px;
+    height: 84px;
+    padding: 6px;
+    box-sizing: border-box;
+    border-radius: 9px;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+}
+
+.dash-welcome-qr-box img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    display: block;
+}
+
+.dash-welcome-qr-box canvas {
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: contain !important;
+}
+
+.dash-welcome-qr-caption {
+    font-size: 9.5px;
+    font-weight: 700;
+    color: #86efac;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+body.mode-phone .dash-welcome-qr-aside {
+    display: none !important;
+}
+
+@media screen and (max-width: 640px) {
+    .dash-welcome-qr-aside {
+        display: none !important;
+    }
 }
 
 .dash-card-icon {
@@ -5489,6 +5721,18 @@ body.kiosk-portrait .orbit-toast-badge {
    ============================================================ */
 
 
+/* Isolate scrollable sidebars & drawers from triggering root WebGL layer repaints */
+#sidebar,
+#building-panel,
+.phone-sheet {
+    contain: layout style;
+}
+
+#loading-overlay.hidden .map-splash-logo,
+#loading-overlay[style*="display: none"] .map-splash-logo {
+    animation: none !important;
+}
+
 /* ==============================================================================
 
    LOW-END HARDWARE & LEGACY PC OPTIMIZATION SUITE (body.low-perf-mode)
@@ -5509,7 +5753,7 @@ body.low-perf-mode *::after {
     -webkit-backdrop-filter: none !important;
 }
 
-/* Opaque sleek fallbacks for glassmorphism panels (eliminates GPU framebuffer copy & blurs) */
+/* Opaque Botanical Aero-Telemetry fallbacks for glassmorphism panels (eliminates GPU framebuffer copy & blurs) */
 
 body.low-perf-mode .sidebar,
 body.low-perf-mode .sidebar-header,
@@ -5525,7 +5769,7 @@ body.low-perf-mode .phone-header-glass,
 body.low-perf-mode .photo-lightbox-modal,
 body.low-perf-mode .station-transition-curtain,
 body.low-perf-mode .qr-zoom-modal-card {
-    background-color: #0a0f1c !important;
+    background-color: #0d1d19 !important;
     box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45) !important;
 }
 
@@ -5535,7 +5779,7 @@ body.low-perf-mode .kiosk-ctrl-btn,
 body.low-perf-mode .layer-toggle-btn,
 body.low-perf-mode .station-dropdown-btn,
 body.low-perf-mode .orbit-toast {
-    background-color: #111827 !important;
+    background-color: #122621 !important;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35) !important;
 }
 
@@ -5550,9 +5794,17 @@ body.low-perf-mode .stc-shimmer-bar {
 }
 
 body.low-perf-mode .kiosk-marker-dot,
+body.low-perf-mode .dest-pin-pulse,
+body.low-perf-mode .phone-station-pill-dot,
+body.low-perf-mode .dash-pulse-dot,
+body.low-perf-mode .stc-icon-badge,
+body.low-perf-mode .dot {
+    animation: none !important;
+}
+
+body.low-perf-mode .kiosk-marker-dot,
 body.low-perf-mode .dest-pin-pulse {
     box-shadow: 0 0 0 2px #ffffff, 0 2px 8px rgba(0, 0, 0, 0.5) !important;
-    animation: none !important;
 }
 
 /* Faster UI transitions to prevent thread hitching on legacy single/dual-core CPUs */
@@ -5561,6 +5813,19 @@ body.low-perf-mode .sidebar,
 body.low-perf-mode #building-panel,
 body.low-perf-mode .station-dropdown-flyout {
     transition-duration: 0.15s !important;
+}
+
+/* Crisp flat compositing for floating building pills on low-end GPUs (HD 5500 / 4GB RAM kiosks) */
+body.low-perf-mode .bldg-map-marker,
+body.low-perf-mode .mapbox-gate-marker,
+body.low-perf-mode .kiosk-marker-label {
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45) !important;
+    transition: none !important;
+    will-change: auto !important;
+}
+
+body.low-perf-mode .bldg-map-marker.active {
+    box-shadow: 0 0 0 2px #4ade80, 0 2px 6px rgba(0, 0, 0, 0.5) !important;
 }
 
 /* ==============================================================================
@@ -5786,4 +6051,134 @@ body.label-mode-compact .mapbox-gate-label {
 .bp-number.bp-number-gate svg {
     width: 34px;
     height: 24px;
+}
+
+/* ==========================================================================
+   Station Under Development Warning Banner (QARES / RARES Visual Preview)
+   ========================================================================== */
+.station-dev-warning-banner {
+    position: fixed;
+    top: 18px;
+    left: calc(var(--sidebar-offset, 400px) + (100vw - var(--sidebar-offset, 400px)) / 2);
+    transform: translateX(-50%);
+    z-index: 800;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(13, 29, 25, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(245, 158, 11, 0.45);
+    box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.65), 0 0 20px rgba(245, 158, 11, 0.18);
+    border-radius: 40px;
+    padding: 6px 14px 6px 8px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #f1f5f9;
+    user-select: none;
+    transition: left 0.45s cubic-bezier(.22, 1, .36, 1), transform 0.2s, opacity 0.3s;
+    pointer-events: auto;
+    max-width: 90vw;
+}
+
+.station-dev-warning-banner:hover {
+    box-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.75), 0 0 25px rgba(245, 158, 11, 0.28);
+}
+
+.sdwb-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #07100e;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 20px;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35);
+    white-space: nowrap;
+}
+
+.sdwb-desc {
+    color: #e2e8f0;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sdwb-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.sdwb-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 11px;
+    border-radius: 20px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: none;
+    white-space: nowrap;
+}
+
+.sdwb-btn.details {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: #fbbf24;
+}
+
+.sdwb-btn.details:hover {
+    background: rgba(251, 191, 36, 0.18);
+    border-color: rgba(251, 191, 36, 0.4);
+}
+
+.sdwb-btn.return {
+    background: rgba(52, 211, 153, 0.16);
+    border: 1px solid rgba(52, 211, 153, 0.35);
+    color: #86efac;
+}
+
+.sdwb-btn.return:hover {
+    background: rgba(52, 211, 153, 0.28);
+    border-color: rgba(52, 211, 153, 0.55);
+}
+
+@media (max-width: 768px) {
+    .station-dev-warning-banner {
+        left: 50% !important;
+        top: 56px;
+        max-width: 95vw;
+        padding: 5px 8px;
+        gap: 6px;
+    }
+    .sdwb-tag span {
+        display: none;
+    }
+    .sdwb-desc {
+        font-size: 11px;
+        max-width: 170px;
+    }
+    .sdwb-btn {
+        padding: 4px 8px;
+        font-size: 10.5px;
+    }
+}
+
+
+/* Hide Under Development warning banner cleanly while active directions or arrival banner is visible */
+body.has-active-route .station-dev-warning-banner,
+body.route-active .station-dev-warning-banner {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transform: translateX(-50%) translateY(-18px) !important;
 }

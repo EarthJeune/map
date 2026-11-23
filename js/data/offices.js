@@ -1,6 +1,9 @@
 // DA-LARES Building Offices & Operational Units Directory
 import { lucideIcon } from './icons.js';
 
+// Separate optional Room Number tags indexed by `${buildingId}::${officeName}`
+export const OFFICE_ROOM_NUMBERS = {};
+
 export const BUILDING_OFFICES = {
     'tanco_hall_building': [
         'PMED Office of the Chief',
@@ -227,8 +230,7 @@ export const OFFICE_SEARCH_ALIASES = {
         'Registry System for Basic Sectors in Agriculture (RSBSA) Operations Office'
     ],
     'DRRM': [
-        'Disaster Risk Reduction and Management (DRRM)',
-        'Disaster Risk Reduction and Management Information System (DRRMIS)'
+        'Disaster Risk Reduction and Management (DRRM)'
     ],
 
     // R&D Multipurpose Building
@@ -468,11 +470,14 @@ export function matchesSearchText(text, rawQuery) {
             if (strippedParens.includes(cleanQuery)) return true;
 
             // Single-word stem match (e.g. "laboratories" <-> "laboratory", "agricultural" <-> "agriculture", "soils" <-> "soil")
+            // Guard: target stem `sw` must be >= 4 chars (and not a stopword) so short words like "in"/"of"/"for" NEVER match "information"/"office"/"forest"!
             const rawTokens = cleanQuery.split(' ').filter(Boolean);
             const stemmedWords = words.map(stemSearchWord);
             if (rawTokens.length === 1) {
                 const sq = stemSearchWord(rawTokens[0]);
-                if (sq.length >= 4 && stemmedWords.some(sw => sw.startsWith(sq) || sq.startsWith(sw))) {
+                if (sq.length >= 4 && stemmedWords.some(sw =>
+                    sw.length >= 4 && !SEARCH_STOPWORDS.has(sw) && (sw.startsWith(sq) || (sq.startsWith(sw) && (sq.length - sw.length) <= 3))
+                )) {
                     return true;
                 }
             }
@@ -485,7 +490,9 @@ export function matchesSearchText(text, rawQuery) {
                     if (words.some(w => w.startsWith(tok))) return true;
                     if (tok.length >= 4 && cleanText.includes(tok)) return true;
                     const st = stemSearchWord(tok);
-                    if (st.length >= 4 && stemmedWords.some(sw => sw.startsWith(st) || st.startsWith(sw))) return true;
+                    if (st.length >= 4 && stemmedWords.some(sw =>
+                        sw.length >= 4 && !SEARCH_STOPWORDS.has(sw) && (sw.startsWith(st) || (st.startsWith(sw) && (st.length - sw.length) <= 3))
+                    )) return true;
                     return false;
                 });
                 if (allTokensMatch) return true;
@@ -605,9 +612,141 @@ export function isBuildingMatched(building, query) {
 }
 
 /**
- * Returns full-name / acronym subtitle when a building matches via its official full meaning or acronym rather than its display title
+ * Escapes HTML special characters for safe template rendering
  */
-export function getBuildingSearchSubtitle(building, query) {
+export function escapeSearchHtml(str) {
+    return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function escapeRegexChars(str) {
+    return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Highlights matching search query terms inside plain text with <mark class="search-match-mark">.
+ * Applies safe HTML escaping before/around matches and uses whole-word guards for 1-2 char alphanumeric queries.
+ */
+export function highlightSearchTermsHtml(text, rawQuery = '') {
+    const str = String(text ?? '');
+    if (!str) return '';
+    const trimmed = String(rawQuery || '').trim();
+    if (!trimmed) return escapeSearchHtml(str);
+
+    const candidateTerms = [trimmed];
+    const tokens = trimmed
+        .toLowerCase()
+        .split(/[\s/&()\-+,.:;]+/)
+        .map(t => t.trim())
+        .filter(Boolean);
+    for (const tok of tokens) {
+        if (!candidateTerms.some(c => c.toLowerCase() === tok)) {
+            candidateTerms.push(tok);
+        }
+    }
+
+    // Sort longest first so full-phrase match takes priority over individual words
+    candidateTerms.sort((a, b) => b.length - a.length);
+
+    const patterns = candidateTerms
+        .map(term => {
+            const esc = escapeRegexChars(term);
+            if (!esc) return '';
+            // Guard 1-2 character alphanumeric terms with word boundaries to avoid noisy mid-word highlights
+            if (term.length <= 2 && /^[a-z0-9]+$/i.test(term)) {
+                return `\\b${esc}\\b`;
+            }
+            return esc;
+        })
+        .filter(Boolean);
+
+    if (patterns.length === 0) return escapeSearchHtml(str);
+
+    const regex = new RegExp(`(${patterns.join('|')})`, 'gi');
+    let out = '';
+    let lastIndex = 0;
+    let match;
+    while ((match = regex.exec(str)) !== null) {
+        if (match[0].length === 0) {
+            regex.lastIndex++;
+            continue;
+        }
+        if (match.index > lastIndex) {
+            out += escapeSearchHtml(str.slice(lastIndex, match.index));
+        }
+        out += `<mark class="search-match-mark">${escapeSearchHtml(match[0])}</mark>`;
+        lastIndex = regex.lastIndex;
+    }
+    if (lastIndex < str.length) {
+        out += escapeSearchHtml(str.slice(lastIndex));
+    }
+    return out;
+}
+
+/**
+ * Extracts a concise window centered around the first matching search phrase/token.
+ */
+function extractMatchedSnippet(rawText, query, maxLen = 92) {
+    const clean = String(rawText || '').replace(/\s+/g, ' ').trim();
+    if (!clean) return '';
+    if (clean.length <= maxLen) return clean;
+
+    const lowerClean = clean.toLowerCase();
+    const normQuery = String(query || '').trim().toLowerCase();
+    let matchIdx = normQuery ? lowerClean.indexOf(normQuery) : -1;
+    let matchLen = normQuery.length;
+
+    if (matchIdx === -1 && normQuery) {
+        const tokens = normQuery.split(/[\s/&()\-+,.:;]+/).filter(Boolean);
+        for (const tok of tokens) {
+            const idx = lowerClean.indexOf(tok);
+            if (idx !== -1) {
+                matchIdx = idx;
+                matchLen = tok.length;
+                break;
+            }
+        }
+    }
+
+    if (matchIdx === -1) {
+        return clean.slice(0, maxLen - 1).trimEnd() + '…';
+    }
+
+    const halfPad = Math.max(20, Math.floor((maxLen - matchLen) / 2));
+    let start = Math.max(0, matchIdx - halfPad);
+    let end = Math.min(clean.length, start + maxLen);
+    if (end - start < maxLen) {
+        start = Math.max(0, end - maxLen);
+    }
+
+    // Snap outward/inward to clean word boundaries when truncating
+    if (start > 0) {
+        const nextSpace = clean.indexOf(' ', start);
+        if (nextSpace !== -1 && nextSpace < matchIdx) {
+            start = nextSpace + 1;
+        }
+    }
+    if (end < clean.length) {
+        const prevSpace = clean.lastIndexOf(' ', end);
+        if (prevSpace > matchIdx + matchLen) {
+            end = prevSpace;
+        }
+    }
+
+    let snippet = clean.slice(start, end).trim();
+    if (start > 0) snippet = '…' + snippet;
+    if (end < clean.length) snippet += '…';
+    return snippet;
+}
+
+/**
+ * Returns full-name, alias, or matched context snippet (Description / Services / Landmark) when a building matches via metadata rather than its display title
+ */
+export function getBuildingSearchSubtitle(building, query, wayfindingInfo = null) {
     if (!building || !query) return '';
     const normQuery = String(query).trim().toLowerCase();
     if (!normQuery || matchesSearchText(building.name, normQuery)) return '';
@@ -622,10 +761,140 @@ export function getBuildingSearchSubtitle(building, query) {
             return matchedAlias.length <= 8 ? aliases[0] : matchedAlias;
         }
     }
-    if (building.desc && matchesSearchText(building.desc, normQuery)) {
-        return building.desc.split('|')[0].trim();
+
+    const compactTag = building.compactTag || (wayfindingInfo && wayfindingInfo.compactTag) || '';
+    if (compactTag && matchesSearchText(compactTag, normQuery)) {
+        return compactTag;
     }
+
+    if (building.type && matchesSearchText(building.type, normQuery)) {
+        return building.type;
+    }
+
+    if (building.desc && matchesSearchText(building.desc, normQuery)) {
+        const descParts = building.desc.split('|').map(p => p.trim()).filter(Boolean);
+        const matchedPart = descParts.find(p => matchesSearchText(p, normQuery));
+        return extractMatchedSnippet(matchedPart || building.desc, normQuery, 92);
+    }
+
+    const keyServices = building.keyServices || (wayfindingInfo && wayfindingInfo.keyServices) || '';
+    if (keyServices && matchesSearchText(keyServices, normQuery)) {
+        return 'Services: ' + extractMatchedSnippet(keyServices, normQuery, 88);
+    }
+
+    const visualLandmark = building.visualLandmark || (wayfindingInfo && wayfindingInfo.visualLandmark) || '';
+    if (visualLandmark && matchesSearchText(visualLandmark, normQuery)) {
+        return 'Landmark: ' + extractMatchedSnippet(visualLandmark, normQuery, 88);
+    }
+
     return '';
+}
+
+/**
+ * Scores a building match for search ranking (Title/Number > Office > Alias > Type/Tag > Description > Services > Landmark)
+ */
+export function getBuildingSearchRelevanceScore(building, query, matchedOffice = null, wayfindingInfo = null) {
+    if (!building || !query) return 0;
+    const normQuery = String(query).trim().toLowerCase();
+    if (!normQuery) return 0;
+
+    const normName = String(building.name || '').trim().toLowerCase();
+    const numStr = building.num !== null && building.num !== undefined ? String(building.num).toLowerCase() : '';
+
+    if (normName === normQuery || (numStr && (numStr === normQuery || `#${numStr}` === normQuery))) {
+        return 1000;
+    }
+    if (normName.startsWith(normQuery)) {
+        return 920;
+    }
+    if (matchesSearchText(building.name, normQuery)) {
+        return 860;
+    }
+    if (matchedOffice) {
+        return matchesSearchText(matchedOffice, normQuery) ? 760 : 720;
+    }
+    const aliases = BUILDING_SEARCH_ALIASES[building.id];
+    if (Array.isArray(aliases) && aliases.some(alias => matchesSearchText(alias, normQuery))) {
+        return 640;
+    }
+    const compactTag = building.compactTag || (wayfindingInfo && wayfindingInfo.compactTag) || '';
+    if ((compactTag && matchesSearchText(compactTag, normQuery)) || (building.type && matchesSearchText(building.type, normQuery))) {
+        return 520;
+    }
+    if (building.desc && matchesSearchText(building.desc, normQuery)) {
+        return 420;
+    }
+    const keyServices = building.keyServices || (wayfindingInfo && wayfindingInfo.keyServices) || '';
+    if (keyServices && matchesSearchText(keyServices, normQuery)) {
+        return 320;
+    }
+    const visualLandmark = building.visualLandmark || (wayfindingInfo && wayfindingInfo.visualLandmark) || '';
+    if (visualLandmark && matchesSearchText(visualLandmark, normQuery)) {
+        return 220;
+    }
+    return 100;
+}
+
+/**
+ * Scores a commodity plot zone match for search ranking (Name > Sub-plot/Range > Alias/Crop > Description)
+ */
+export function getPlotSearchRelevanceScore(zone, query) {
+    if (!zone || !query) return 0;
+    const normQuery = String(query).trim().toLowerCase();
+    if (!normQuery) return 0;
+
+    const normName = String(zone.name || '').trim().toLowerCase();
+    if (normName === normQuery) return 1000;
+    if (normName.startsWith(normQuery)) return 920;
+    if (matchesSearchText(zone.name, normQuery)) return 860;
+    if (zone.plotRange && matchesSearchText(zone.plotRange, normQuery)) return 760;
+    if (Array.isArray(zone.subPlots) && zone.subPlots.some(sp =>
+        (sp.label && matchesSearchText(sp.label, normQuery)) ||
+        (sp.name && matchesSearchText(sp.name, normQuery)) ||
+        (sp.crop && matchesSearchText(sp.crop, normQuery))
+    )) {
+        return 720;
+    }
+    const aliases = PLOT_ZONE_SEARCH_ALIASES[zone.id];
+    if (Array.isArray(aliases) && aliases.some(alias => matchesSearchText(alias, normQuery))) {
+        return 640;
+    }
+    if (zone.currentCrop && matchesSearchText(zone.currentCrop, normQuery)) return 560;
+    if (zone.description && matchesSearchText(zone.description, normQuery)) return 420;
+    return 100;
+}
+
+/**
+ * Returns the best explanatory subtitle snippet for a matched plot zone in search cards
+ */
+export function getPlotSearchSubtitle(zone, query) {
+    if (!zone) return '';
+    const normQuery = String(query || '').trim().toLowerCase();
+    if (!normQuery) return zone.description || '';
+
+    if (zone.description && matchesSearchText(zone.description, normQuery)) {
+        return extractMatchedSnippet(zone.description, normQuery, 96);
+    }
+    if (Array.isArray(zone.subPlots)) {
+        const matchedSp = zone.subPlots.find(sp =>
+            (sp.label && matchesSearchText(sp.label, normQuery)) ||
+            (sp.name && matchesSearchText(sp.name, normQuery)) ||
+            (sp.crop && matchesSearchText(sp.crop, normQuery))
+        );
+        if (matchedSp) {
+            const label = matchedSp.label || matchedSp.name || `Plot ${matchedSp.plotNum}`;
+            return `Sub-Plot: ${label}`;
+        }
+    }
+    if (zone.currentCrop && matchesSearchText(zone.currentCrop, normQuery)) {
+        return `Crop: ${zone.currentCrop}`;
+    }
+    const aliases = PLOT_ZONE_SEARCH_ALIASES[zone.id];
+    if (Array.isArray(aliases)) {
+        const matchedAlias = aliases.find(alias => matchesSearchText(alias, normQuery));
+        if (matchedAlias) return matchedAlias;
+    }
+    return zone.description || '';
 }
 
 /**
@@ -718,7 +987,7 @@ export function renderBuildingOfficesHTML(buildingId, highlightQuery = '') {
                 </div>
                 <div class="bldg-offices-pending">
                     <span class="pending-icon">${lucideIcon('building-2', 14)}</span>
-                    <span>${data.message || 'Offices information pending update'}</span>
+                    <span>${highlightSearchTermsHtml(data.message || 'Offices information pending update', highlightQuery)}</span>
                 </div>
             </div>
         `;
@@ -744,6 +1013,23 @@ export function renderBuildingOfficesHTML(buildingId, highlightQuery = '') {
 
     let contentHTML = '';
 
+    const escapePillHtml = escapeSearchHtml;
+
+    const renderOfficePill = (off) => {
+        const isMatchedByQuery = Boolean(activeQuery && isOfficeMatched(off, activeQuery));
+        const isMatchedByFilter = Boolean(hasTypeFilters && isOfficeMatchedByFilter(off, activeFilters));
+        const isMatched = isMatchedByQuery || isMatchedByFilter;
+        const isConf = isConferenceRoom(off);
+        const pillIcon = isConf ? lucideIcon('landmark', 13) : '';
+        const fullTitle = (OFFICE_SEARCH_ALIASES[off] && OFFICE_SEARCH_ALIASES[off][0])
+            ? ` title="${escapePillHtml(OFFICE_SEARCH_ALIASES[off][0])}"`
+            : '';
+        const roomTag = OFFICE_ROOM_NUMBERS[`${buildingId}::${off}`];
+        const roomBadge = roomTag ? `<span class="office-room-tag">${escapePillHtml(roomTag)}</span>` : '';
+        const nameHtml = isMatchedByQuery ? highlightSearchTermsHtml(off, activeQuery) : escapePillHtml(off);
+        return `<div class="office-pill ${isMatched ? 'highlighted' : ''} ${isConf ? 'is-conference' : ''}"${fullTitle}><span class="op-dot"></span>${pillIcon ? `<span class="op-pill-icon">${pillIcon}</span>` : ''}<span class="op-name">${nameHtml}</span>${roomBadge}</div>`;
+    };
+
     // Check if offices are partitioned by floors
     const hasFloors = data.some(item => typeof item === 'object' && item.floor && Array.isArray(item.offices));
 
@@ -753,19 +1039,11 @@ export function renderBuildingOfficesHTML(buildingId, highlightQuery = '') {
                 contentHTML += `
                     <div class="bldg-floor-group">
                         <div class="bldg-floor-header">
-                            <span class="bldg-floor-badge">${group.floor}</span>
+                            <span class="bldg-floor-badge">${escapePillHtml(group.floor)}</span>
                             <span class="bldg-floor-count">${group.offices.length} offices</span>
                         </div>
                         <div class="bldg-offices-pills">
-                            ${group.offices.map(off => {
-                                const isMatchedByQuery = Boolean(activeQuery && isOfficeMatched(off, activeQuery));
-                                const isMatchedByFilter = Boolean(hasTypeFilters && isOfficeMatchedByFilter(off, activeFilters));
-                                const isMatched = isMatchedByQuery || isMatchedByFilter;
-                                const isConf = isConferenceRoom(off);
-                                const pillIcon = isConf ? lucideIcon('landmark', 13) : '';
-                                const fullTitle = (OFFICE_SEARCH_ALIASES[off] && OFFICE_SEARCH_ALIASES[off][0]) ? ` title="${OFFICE_SEARCH_ALIASES[off][0].replace(/"/g, '&quot;')}"` : '';
-                                return `<div class="office-pill ${isMatched ? 'highlighted' : ''} ${isConf ? 'is-conference' : ''}"${fullTitle}><span class="op-dot"></span>${pillIcon ? `<span class="op-pill-icon">${pillIcon}</span>` : ''}<span class="op-name">${off}</span></div>`;
-                            }).join('')}
+                            ${group.offices.map(renderOfficePill).join('')}
                         </div>
                     </div>
                 `;
@@ -774,15 +1052,7 @@ export function renderBuildingOfficesHTML(buildingId, highlightQuery = '') {
     } else {
         contentHTML = `
             <div class="bldg-offices-pills">
-                ${data.map(off => {
-                    const isMatchedByQuery = Boolean(activeQuery && isOfficeMatched(off, activeQuery));
-                    const isMatchedByFilter = Boolean(hasTypeFilters && isOfficeMatchedByFilter(off, activeFilters));
-                    const isMatched = isMatchedByQuery || isMatchedByFilter;
-                    const isConf = isConferenceRoom(off);
-                    const pillIcon = isConf ? lucideIcon('landmark', 13) : '';
-                    const fullTitle = (OFFICE_SEARCH_ALIASES[off] && OFFICE_SEARCH_ALIASES[off][0]) ? ` title="${OFFICE_SEARCH_ALIASES[off][0].replace(/"/g, '&quot;')}"` : '';
-                    return `<div class="office-pill ${isMatched ? 'highlighted' : ''} ${isConf ? 'is-conference' : ''}"${fullTitle}><span class="op-dot"></span>${pillIcon ? `<span class="op-pill-icon">${pillIcon}</span>` : ''}<span class="op-name">${off}</span></div>`;
-                }).join('')}
+                ${data.map(renderOfficePill).join('')}
             </div>
         `;
     }

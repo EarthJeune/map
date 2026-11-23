@@ -7,19 +7,50 @@ const path = require('path');
 const { spawn, execSync } = require('child_process');
 const fs = require('fs');
 const os = require('os');
+const zlib = require('zlib');
 
 const app = express();
 const port = process.env.PORT || 8080;
 const SERVER_BOOT_ID = Date.now().toString(36);
-const APP_VERSION = '2.6.6';
+const APP_VERSION = '2.6.7';
 
 app.disable('x-powered-by');
 app.use((req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), payment=(), usb=(), geolocation=(self)');
     next();
 });
+
+// Lightweight native gzip compression for JSON API payloads > 1KB (faster mobile loads, zero extra npm deps)
+app.use((req, res, next) => {
+    const acceptEnc = String(req.headers['accept-encoding'] || '').toLowerCase();
+    if (!acceptEnc.includes('gzip')) return next();
+    const origJson = res.json.bind(res);
+    res.json = (body) => {
+        try {
+            const raw = JSON.stringify(body);
+            if (!raw || raw.length < 1024 || res.headersSent) {
+                return origJson(body);
+            }
+            zlib.gzip(Buffer.from(raw, 'utf8'), { level: 6 }, (err, zipped) => {
+                if (err || res.headersSent) return origJson(body);
+                res.setHeader('Content-Type', 'application/json; charset=utf-8');
+                res.setHeader('Content-Encoding', 'gzip');
+                res.setHeader('Vary', 'Accept-Encoding');
+                res.setHeader('Content-Length', String(zipped.length));
+                res.end(zipped);
+            });
+            return res;
+        } catch (e) {
+            return origJson(body);
+        }
+    };
+    next();
+});
+
 app.use(cors());
 app.use(express.json({ limit: '25mb' }));
 
@@ -37,16 +68,20 @@ function getLocalIpAddress() {
     return '127.0.0.1';
 }
 
-// Initialize MySQL Database
+// Initialize MySQL Database with bounded queue limit to prevent crash/memory exhaustion under burst traffic
+const DB_POOL_LIMIT = Math.max(10, Number(process.env.DB_POOL_LIMIT || 25));
+const DB_QUEUE_LIMIT = Math.max(50, Number(process.env.DB_QUEUE_LIMIT || 250));
 const pool = mysql.createPool({
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME || 'kiosk',
     waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
+    connectionLimit: DB_POOL_LIMIT,
+    queueLimit: DB_QUEUE_LIMIT,
+    connectTimeout: 10000
 });
+app.locals.getDbPoolConfig = () => ({ connectionLimit: DB_POOL_LIMIT, queueLimit: DB_QUEUE_LIMIT });
 
 // Test connection and initialize table
 pool.getConnection((err, connection) => {
@@ -99,6 +134,205 @@ function query(sql, params) {
         });
     });
 }
+
+// 10-Table MySQL RBAC, Onboarding & CRUD Router (instantiated early so geometry routes reuse RBAC)
+const createAdminApiRouter = require('./database/admin_api');
+const {
+    bumpDataVersion,
+    hasValidGeoGeometry,
+    hasFiniteLngLat,
+    computeGeoCentroid
+} = require('./database/publish_engine');
+const adminApiRouter = createAdminApiRouter(pool, __dirname);
+
+function computeGeometryCentroidLngLat(geometry) {
+    return computeGeoCentroid(geometry);
+}
+
+async function syncDrawnBuildingsToDb(stationId, features, actorEmail = 'draw.html') {
+    const summary = { createdCodes: [], updatedCount: 0, promotedVisibleCount: 0 };
+    if (!Array.isArray(features) || features.length === 0) return summary;
+    const validStatuses = new Set(['Existing', 'Under Construction', 'Proposed']);
+    try {
+        for (const f of features) {
+            const p = (f && f.properties) || {};
+            const code = String(p.building_code || p.id || '').trim();
+            if (!code || !hasValidGeoGeometry(f.geometry)) continue;
+            const hasExplicitMc = Array.isArray(p.marker_coords) && p.marker_coords.length >= 2 && hasFiniteLngLat(p.marker_coords[0], p.marker_coords[1]);
+            const mc = hasExplicitMc
+                ? [Number(Number(p.marker_coords[0]).toFixed(8)), Number(Number(p.marker_coords[1]).toFixed(8))]
+                : computeGeoCentroid(f.geometry);
+            if (!mc) continue;
+
+            const fpJson = JSON.stringify(f.geometry);
+            const heightVal = (Number.isFinite(Number(p.height)) && Number(p.height) > 0) ? Number(p.height) : 5.0;
+            const bName = String(p.name || code).trim() || code;
+
+            const [existing] = await query(
+                `SELECT id, name, category, pin_color, roof_color, is_visible, footprint_geojson, marker_lng, marker_lat
+                 FROM buildings WHERE station_id = ? AND building_code = ? LIMIT 1`,
+                [stationId, code]
+            );
+
+            if (existing) {
+                const wasUnmappedDraft = Number(existing.is_visible) === 0
+                    && (!existing.footprint_geojson || !String(existing.footprint_geojson).trim())
+                    && !hasFiniteLngLat(existing.marker_lng, existing.marker_lat);
+                const nextVisible = wasUnmappedDraft ? 1 : Number(existing.is_visible ?? 1);
+                if (wasUnmappedDraft) summary.promotedVisibleCount++;
+
+                const nextName = (existing.name === code && bName !== code) ? bName : existing.name;
+                if (stationId === 'qares') {
+                    const nextCat = p.category || p.filter_type || existing.category || 'Buildings';
+                    const nextPin = p.color || p.user_color || existing.pin_color || '#ef4444';
+                    const nextRoof = p.roof_color || p.user_roof_color || existing.roof_color || '#334155';
+                    await query(
+                        `UPDATE buildings SET name = ?, category = ?, pin_color = ?, roof_color = ?, marker_lng = ?, marker_lat = ?, footprint_geojson = ?, height = ?, is_visible = ? WHERE id = ?`,
+                        [nextName, nextCat, nextPin, nextRoof, mc[0], mc[1], fpJson, heightVal, nextVisible, existing.id]
+                    );
+                } else {
+                    await query(
+                        `UPDATE buildings SET name = ?, marker_lng = ?, marker_lat = ?, footprint_geojson = ?, height = ?, is_visible = ? WHERE id = ?`,
+                        [nextName, mc[0], mc[1], fpJson, heightVal, nextVisible, existing.id]
+                    );
+                }
+                summary.updatedCount++;
+            } else {
+                const defaultSection = stationId === 'qares' ? 'Tiaong Compound' : (stationId === 'rares' ? 'Tanay Compound' : 'Compound');
+                const defaultPin = stationId === 'qares' ? '#ef4444' : (stationId === 'rares' ? '#22c55e' : '#10b981');
+                const bCat = String(p.category || p.filter_type || (stationId === 'qares' ? 'Buildings' : 'infrastructure')).trim();
+                const bType = String(p.type || p.type_label || (stationId === 'lares' ? 'Infrastructure Facility' : 'Station Facility')).trim();
+                const bPin = p.color || p.pin_color || defaultPin;
+                const bRoof = p.roof_color || p.roofColor || '#334155';
+                const bDesc = String(p.description || '').trim();
+                const isSub = (p.isSubPlot || /^plot1[78]_|^plot22_/.test(code)) ? 1 : 0;
+                const hasMkr = (p.hasMarker === false || isSub) ? 0 : 1;
+                const fStatus = validStatuses.has(p.facility_status) ? p.facility_status : 'Existing';
+
+                await query(
+                    `INSERT INTO buildings (
+                        station_id, building_code, building_num, name, category, type_label, section,
+                        icon, pin_color, roof_color, description, marker_lng, marker_lat,
+                        footprint_geojson, height, is_subplot, has_marker, is_visible, facility_status
+                    ) VALUES (?, ?, NULL, ?, ?, ?, ?, '🏢', ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`,
+                    [stationId, code, bName, bCat, bType, defaultSection, bPin, bRoof, bDesc, mc[0], mc[1], fpJson, heightVal, isSub, hasMkr, fStatus]
+                );
+                summary.createdCodes.push(code);
+            }
+        }
+
+        if (summary.createdCodes.length > 0 || summary.promotedVisibleCount > 0) {
+            try {
+                await query(
+                    `INSERT INTO admin_audit_logs (admin_username, action, target_table, target_id, summary) VALUES (?, 'SYNC_DRAWINGS_TO_DB', 'buildings', ?, ?)`,
+                    [
+                        actorEmail || 'draw.html',
+                        stationId,
+                        `Synced draw.html -> MySQL (${stationId.toUpperCase()}): ${summary.createdCodes.length} created [${summary.createdCodes.slice(0, 6).join(', ')}], ${summary.updatedCount} updated`
+                    ]
+                );
+            } catch (_) {}
+        }
+
+        await bumpDataVersion(query);
+        if (typeof adminApiRouter.invalidatePublicCache === 'function') {
+            adminApiRouter.invalidatePublicCache(`draw-sync-${stationId}`);
+        }
+    } catch (err) {
+        console.warn(`[${stationId.toUpperCase()}] Non-fatal DB building sync warning:`, err.message);
+    }
+    return summary;
+}
+const requireVisualEditor = (stationParam = null, defaultStation = null) => [
+    adminApiRouter.authenticateSession,
+    adminApiRouter.authorize('editors:use_visual', { checkStation: true, stationParam, defaultStation }),
+    (req, res, next) => {
+        res.on('finish', () => {
+            if (res.statusCode < 200 || res.statusCode >= 300) return;
+            if (typeof adminApiRouter.notifyVisualEditorSaved !== 'function') return;
+
+            const p = String(req.path || '').toLowerCase();
+            const body = req.body || {};
+            const feats = Array.isArray(body.features) ? body.features : null;
+            const st = String(
+                stationParam ||
+                (req.query && req.query.station) ||
+                body.station ||
+                body.station_id ||
+                (req.adminUser && req.adminUser.stationId) ||
+                defaultStation ||
+                'lares'
+            ).toLowerCase();
+            const actorEmail = (req.adminUser && req.adminUser.email) || 'GIS Editor';
+            const actorUserId = (req.adminUser && req.adminUser.userId) || null;
+
+            let editorLabel = 'Visual Geometry Editor';
+            let targetTable = 'geometry';
+            let summaryText = '';
+
+            if (p.includes('/roads')) {
+                editorLabel = 'Roads & Entrances';
+                targetTable = 'roads';
+                const roadCnt = feats ? feats.filter(f => f && f.geometry && f.geometry.type === 'LineString').length : 0;
+                const entCnt = feats ? feats.filter(f => f && f.geometry && f.geometry.type === 'Point').length : 0;
+                summaryText = `${actorEmail} saved ${roadCnt} road path${roadCnt === 1 ? '' : 's'} & ${entCnt} entrance${entCnt === 1 ? '' : 's'} in Road Drawer.`;
+            } else if (p.includes('/buildings')) {
+                const ref = String(req.headers.referer || '').toLowerCase();
+                const isPill = ref.includes('pill_adjust');
+                editorLabel = isPill ? 'Map Pills & Labels' : 'Building Footprints';
+                targetTable = 'buildings';
+                summaryText = `${actorEmail} saved ${feats ? feats.length : 0} ${isPill ? 'building label/pill positions' : 'building footprints'} for DA-${st.toUpperCase()}.`;
+            } else if (p.includes('/plots')) {
+                editorLabel = 'Agricultural Plot Boundaries';
+                targetTable = 'agricultural_plots';
+                summaryText = `${actorEmail} saved ${feats ? feats.length : 0} agricultural plot polygons for DA-${st.toUpperCase()}.`;
+            } else if (p.includes('/trees')) {
+                editorLabel = '3D Trees & Vegetation';
+                targetTable = 'trees';
+                summaryText = `${actorEmail} saved ${feats ? feats.length : 0} tree placements for DA-${st.toUpperCase()}.`;
+            } else if (p.includes('/boundary')) {
+                editorLabel = 'Station Campus Boundary';
+                targetTable = 'stations';
+                summaryText = `${actorEmail} updated the campus perimeter boundary for DA-${st.toUpperCase()}.`;
+            } else if (p.includes('/pin')) {
+                editorLabel = 'Kiosk "You Are Here" Pin';
+                targetTable = 'stations';
+                summaryText = `${actorEmail} updated the Kiosk "You Are Here" pin location for DA-${st.toUpperCase()}.`;
+            } else if (p.includes('/drone-offset')) {
+                editorLabel = 'Aerial Orthophoto Calibration';
+                targetTable = 'stations';
+                summaryText = `${actorEmail} updated the aerial drone overlay alignment for DA-${st.toUpperCase()}.`;
+            } else if (p.includes('/colors')) {
+                editorLabel = 'Building Color Palette';
+                targetTable = 'buildings';
+                summaryText = `${actorEmail} updated building pin/roof colors for DA-${st.toUpperCase()}.`;
+            }
+
+            adminApiRouter.notifyVisualEditorSaved({
+                stationId: st,
+                editorLabel,
+                targetTable,
+                actorEmail,
+                actorUserId,
+                summaryText,
+                req
+            });
+        });
+        next();
+    }
+];
+
+const requireDiskGeometryWrite = (stationParam = null, defaultStation = null) => [
+    ...requireVisualEditor(stationParam, defaultStation),
+    (req, res, next) => {
+        if (process.env.LOCK_STATIC_DISK_EDITORS === '1') {
+            return res.status(403).json({
+                error: 'Static disk geometry editing is locked in live production (LOCK_STATIC_DISK_EDITORS=1). Edit geometry locally and deploy via Git.'
+            });
+        }
+        next();
+    }
+];
 
 // API endpoint to get the "You Are Here" pin (supports ?station=lares or ?station=qares)
 app.get('/api/pin', async (req, res) => {
@@ -167,7 +401,7 @@ app.get('/api/rares/pin', async (req, res) => {
 });
 
 // API endpoint to update the "You Are Here" pin (supports station in body or query)
-app.post('/api/pin', async (req, res) => {
+app.post('/api/pin', ...requireVisualEditor(null, 'lares'), async (req, res) => {
     const coords = req.body.coordinates;
     const station = req.body.station || req.query.station;
     const isQares = (station === 'qares');
@@ -196,7 +430,7 @@ app.post('/api/pin', async (req, res) => {
 });
 
 // Dedicated endpoint to update QARES kiosk pin
-app.post('/api/qares/pin', async (req, res) => {
+app.post('/api/qares/pin', ...requireVisualEditor('qares'), async (req, res) => {
     const coords = req.body.coordinates;
     if (!coords || !Array.isArray(coords) || coords.length !== 2) {
         return res.status(400).json({ error: 'Invalid coordinates format. Expected [lng, lat]' });
@@ -220,7 +454,7 @@ app.post('/api/qares/pin', async (req, res) => {
 });
 
 // Dedicated endpoint to update RARES kiosk pin
-app.post('/api/rares/pin', async (req, res) => {
+app.post('/api/rares/pin', ...requireVisualEditor('rares'), async (req, res) => {
     const coords = req.body.coordinates;
     if (!coords || !Array.isArray(coords) || coords.length !== 2) {
         return res.status(400).json({ error: 'Invalid coordinates format. Expected [lng, lat]' });
@@ -265,7 +499,7 @@ app.get('/api/drone-offset', async (req, res) => {
 });
 
 // API endpoint to save drone orthomosaic calibration offset
-app.post('/api/drone-offset', async (req, res) => {
+app.post('/api/drone-offset', ...requireVisualEditor(null, 'lares'), async (req, res) => {
     const { dx, dy, autoApply } = req.body;
     const payload = {
         dx: (typeof dx === 'number' && !isNaN(dx)) ? dx : 0,
@@ -342,7 +576,7 @@ app.get('/api/colors', async (req, res) => {
 });
 
 // API endpoint to update building colors
-app.post('/api/colors', async (req, res) => {
+app.post('/api/colors', ...requireVisualEditor(), async (req, res) => {
     const colors = req.body;
     const fallbackPath = path.join(__dirname, 'colors.json');
     try {
@@ -366,7 +600,7 @@ app.post('/api/colors', async (req, res) => {
 });
 
 // API endpoint to save updated roads.json directly from road drawer tool
-app.post('/api/roads', (req, res) => {
+app.post('/api/roads', ...requireDiskGeometryWrite('lares'), (req, res) => {
     try {
         const data = req.body;
         if (!data || !data.features) {
@@ -407,7 +641,7 @@ app.get('/api/qares/roads', (req, res) => {
     }
 });
 
-app.post('/api/qares/roads', (req, res) => {
+app.post('/api/qares/roads', ...requireDiskGeometryWrite('qares'), (req, res) => {
     try {
         const data = req.body;
         if (!data || !data.features) {
@@ -445,7 +679,7 @@ app.get('/api/qares/buildings', (req, res) => {
     }
 });
 
-app.post('/api/qares/buildings', (req, res) => {
+app.post('/api/qares/buildings', ...requireDiskGeometryWrite('qares'), async (req, res) => {
     try {
         const data = req.body;
         if (!data || !data.features) {
@@ -461,8 +695,9 @@ app.post('/api/qares/buildings', (req, res) => {
             } catch (e) {}
         }
         fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
-        console.log(`[QARES] Saved qares_buildings.json with ${data.features.length} buildings.`);
-        res.json({ success: true, count: data.features.length });
+        const syncRes = await syncDrawnBuildingsToDb('qares', data.features, req.adminUser?.email);
+        console.log(`[QARES] Saved qares_buildings.json with ${data.features.length} buildings (+${syncRes.createdCodes.length} created in MySQL).`);
+        res.json({ success: true, count: data.features.length, createdCodes: syncRes.createdCodes, updatedCount: syncRes.updatedCount });
     } catch (err) {
         console.error('Error saving qares_buildings.json:', err);
         res.status(500).json({ error: err.message });
@@ -483,7 +718,7 @@ app.get('/api/qares/boundary', (req, res) => {
     }
 });
 
-app.post('/api/qares/boundary', (req, res) => {
+app.post('/api/qares/boundary', ...requireDiskGeometryWrite('qares'), (req, res) => {
     try {
         const data = req.body;
         if (!data || !data.features) {
@@ -615,7 +850,7 @@ app.get('/api/rares/buildings', (req, res) => {
     }
 });
 
-app.post('/api/rares/buildings', (req, res) => {
+app.post('/api/rares/buildings', ...requireDiskGeometryWrite('rares'), async (req, res) => {
     try {
         const data = req.body;
         if (!data || !data.features) {
@@ -631,8 +866,9 @@ app.post('/api/rares/buildings', (req, res) => {
             } catch (e) {}
         }
         fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
-        console.log(`[RARES] Saved rares_buildings.json with ${data.features.length} buildings.`);
-        res.json({ success: true, count: data.features.length });
+        const syncRes = await syncDrawnBuildingsToDb('rares', data.features, req.adminUser?.email);
+        console.log(`[RARES] Saved rares_buildings.json with ${data.features.length} buildings (+${syncRes.createdCodes.length} created in MySQL).`);
+        res.json({ success: true, count: data.features.length, createdCodes: syncRes.createdCodes, updatedCount: syncRes.updatedCount });
     } catch (err) {
         console.error('Error saving rares_buildings.json:', err);
         res.status(500).json({ error: err.message });
@@ -653,7 +889,7 @@ app.get('/api/rares/boundary', (req, res) => {
     }
 });
 
-app.post('/api/rares/boundary', (req, res) => {
+app.post('/api/rares/boundary', ...requireDiskGeometryWrite('rares'), (req, res) => {
     try {
         const data = req.body;
         if (!data || !data.features) {
@@ -695,7 +931,7 @@ app.get('/api/rares/roads', (req, res) => {
     }
 });
 
-app.post('/api/rares/roads', (req, res) => {
+app.post('/api/rares/roads', ...requireDiskGeometryWrite('rares'), (req, res) => {
     try {
         const data = req.body;
         if (!data || !data.features) {
@@ -733,7 +969,7 @@ app.get('/api/rares/plots', (req, res) => {
     }
 });
 
-app.post('/api/rares/plots', (req, res) => {
+app.post('/api/rares/plots', ...requireDiskGeometryWrite('rares'), (req, res) => {
     try {
         const data = req.body;
         if (!data || !data.features) {
@@ -798,38 +1034,55 @@ function updateRaresMaskInGeoJs(boundaryGeoJson) {
     }
 }
 
-// API endpoint to get trees.json
+function getTreesPathForStation(stationRaw) {
+    const clean = String(stationRaw || 'lares').trim().toLowerCase();
+    if (clean === 'qares') return { station: 'qares', file: path.join(__dirname, 'qares_trees.json'), backup: path.join(__dirname, 'qares_trees.backup.json') };
+    if (clean === 'rares') return { station: 'rares', file: path.join(__dirname, 'rares_trees.json'), backup: path.join(__dirname, 'rares_trees.backup.json') };
+    if (clean === 'cares') return { station: 'cares', file: path.join(__dirname, 'cares_trees.json'), backup: path.join(__dirname, 'cares_trees.backup.json') };
+    return { station: 'lares', file: path.join(__dirname, 'trees.json'), backup: path.join(__dirname, 'trees.backup.json') };
+}
+
+// API endpoint to get station-scoped trees GeoJSON (defaults to DA-LARES trees.json)
 app.get('/api/trees', (req, res) => {
     try {
-        const treesPath = path.join(__dirname, 'trees.json');
-        if (fs.existsSync(treesPath)) {
-            const data = fs.readFileSync(treesPath, 'utf8');
-            res.json(JSON.parse(data));
-        } else {
-            res.json({ type: 'FeatureCollection', features: [] });
+        const rawStation = String(req.query.station || 'lares').trim().toLowerCase();
+        if (!['lares', 'qares', 'rares', 'cares'].includes(rawStation)) {
+            return res.status(400).json({ error: 'Invalid station parameter' });
         }
+        const { station, file } = getTreesPathForStation(rawStation);
+        if (fs.existsSync(file)) {
+            const data = fs.readFileSync(file, 'utf8');
+            const parsed = JSON.parse(data);
+            return res.json(parsed);
+        }
+        return res.json({ type: 'FeatureCollection', station, features: [] });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        return res.status(500).json({ error: err.message });
     }
 });
 
-// API endpoint to save trees.json
-app.post('/api/trees', (req, res) => {
+// API endpoint to save station-scoped trees GeoJSON (RBAC + station-locked)
+app.post('/api/trees', ...requireDiskGeometryWrite(null, 'lares'), (req, res) => {
     try {
+        const rawStation = String(req.body?.station_id || req.body?.station || req.query?.station || 'lares').trim().toLowerCase();
+        if (!['lares', 'qares', 'rares', 'cares'].includes(rawStation)) {
+            return res.status(400).json({ error: 'Invalid station identifier' });
+        }
         const data = req.body;
-        if (!data || !data.features) {
+        if (!data || !Array.isArray(data.features)) {
             return res.status(400).json({ error: 'Invalid GeoJSON: features array expected' });
         }
-        const treesPath = path.join(__dirname, 'trees.json');
-        if (fs.existsSync(treesPath)) {
-            fs.copyFileSync(treesPath, path.join(__dirname, 'trees.backup.json'));
+        const { station, file, backup } = getTreesPathForStation(rawStation);
+        if (fs.existsSync(file)) {
+            fs.copyFileSync(file, backup);
         }
-        fs.writeFileSync(treesPath, JSON.stringify(data, null, 2), 'utf8');
-        console.log(`Saved trees.json with ${data.features.length} trees.`);
-        res.json({ success: true, count: data.features.length });
+        const outPayload = { type: 'FeatureCollection', station, features: data.features };
+        fs.writeFileSync(file, JSON.stringify(outPayload, null, 2), 'utf8');
+        console.log(`Saved ${path.basename(file)} (${station}) with ${data.features.length} trees.`);
+        return res.json({ success: true, station, count: data.features.length });
     } catch (err) {
-        console.error('Error saving trees.json:', err);
-        res.status(500).json({ error: err.message });
+        console.error('Error saving trees GeoJSON:', err);
+        return res.status(500).json({ error: err.message });
     }
 });
 
@@ -855,7 +1108,7 @@ app.get('/api/buildings', (req, res) => {
 });
 
 // API endpoint to save buildings GeoJSON directly to js/data/buildings.js and buildings.json
-app.post('/api/buildings', (req, res) => {
+app.post('/api/buildings', ...requireDiskGeometryWrite('lares'), async (req, res) => {
     try {
         const data = req.body;
         if (!data || !data.features) {
@@ -965,61 +1218,14 @@ app.post('/api/buildings', (req, res) => {
         const newContent = `${before}${formattedData};\n\n${after}`;
         
         fs.writeFileSync(filePath, newContent, 'utf8');
-        console.log(`Saved buildings to js/data/buildings.js with ${data.features.length} features.`);
-        res.json({ success: true, count: data.features.length });
+        const syncRes = await syncDrawnBuildingsToDb('lares', data.features, req.adminUser?.email);
+        console.log(`Saved buildings to js/data/buildings.js with ${data.features.length} features (+${syncRes.createdCodes.length} created in MySQL).`);
+        res.json({ success: true, count: data.features.length, createdCodes: syncRes.createdCodes, updatedCount: syncRes.updatedCount });
     } catch (err) {
         console.error('Error saving buildings:', err);
         res.status(500).json({ error: err.message });
     }
 });
-
-// API endpoint to get drone imagery calibration offset
-app.get('/api/drone-offset', async (req, res) => {
-    try {
-        const rows = await query("SELECT `value` FROM settings WHERE `key` = 'drone_offset'");
-        if (rows && rows.length > 0) {
-            return res.json(JSON.parse(rows[0].value));
-        }
-    } catch (err) {
-        // Fallback to local JSON file
-    }
-    try {
-        const offsetFile = path.join(__dirname, 'drone_offset.json');
-        if (fs.existsSync(offsetFile)) {
-            return res.json(JSON.parse(fs.readFileSync(offsetFile, 'utf8')));
-        }
-    } catch (e) {}
-    res.json({ dx: 0, dy: 0, autoApply: true });
-});
-
-// API endpoint to save drone imagery calibration offset
-app.post('/api/drone-offset', async (req, res) => {
-    const { dx, dy, autoApply } = req.body || {};
-    const payload = {
-        dx: typeof dx === 'number' ? dx : (parseFloat(dx) || 0),
-        dy: typeof dy === 'number' ? dy : (parseFloat(dy) || 0),
-        autoApply: autoApply !== false
-    };
-
-    try {
-        await query(
-            "INSERT INTO settings (`key`, `value`) VALUES ('drone_offset', ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)",
-            [JSON.stringify(payload)]
-        );
-    } catch (err) {
-        // MySQL fallback ignored
-    }
-
-    try {
-        const offsetFile = path.join(__dirname, 'drone_offset.json');
-        fs.writeFileSync(offsetFile, JSON.stringify(payload, null, 2), 'utf8');
-    } catch (err) {
-        console.error('Error writing drone_offset.json:', err);
-    }
-
-    res.json({ success: true, ...payload });
-});
-
 
 // ============================================================================
 // OFFLINE DRONE ORTHOMOSAIC MBTILES TILE SERVER
@@ -1063,6 +1269,7 @@ function initStationMbtiles(stationKey, candidates, label) {
                     console.error(`[MBTiles] Error opening ${label} MBTiles database:`, err.message);
                 } else {
                     console.log(`[MBTiles] ${label} database opened successfully in read-only mode.`);
+                    try { db.configure('busyTimeout', 3000); } catch (e) {}
                     db.run('PRAGMA query_only = 1;');
                     db.run('PRAGMA cache_size = -64000;');
                     db.run('PRAGMA mmap_size = 536870912;');
@@ -1201,78 +1408,143 @@ app.get('/api/tiles-metadata', (req, res) => {
     });
 });
 
-// Admin & Editor Local-Only Security Guard:
-// - Set ENABLE_ADMIN=false in .env on the 24/7 production Server PC to disable all admin/editor routes.
-// - Even when enabled (e.g. on dev laptop), block requests arriving via internet tunnels/proxies or non-localhost IPs.
-const ADMIN_ENABLED = String(process.env.ENABLE_ADMIN ?? 'true').toLowerCase() !== 'false';
-const REVIEWER_PORTAL_ENABLED = String(process.env.ENABLE_REVIEWER_PORTAL ?? 'true').toLowerCase() !== 'false';
-const ADMIN_ONLY_EXACT_PATHS = new Set([
-    '/admin', '/admin/', '/admin.html',
-    '/draw.html', '/road_draw.html', '/plot_draw.html', '/tree_draw.html', '/pill_adjust.html',
-    '/qares_draw.html', '/qares_road_draw.html', '/qares_boundary_draw.html'
-]);
-const REVIEWER_AUTH_PATHS = new Set([
-    '/api/admin/login', '/api/admin/verify-otp', '/api/admin/resend-otp', '/api/admin/verify', '/api/admin/logout'
-]);
-function isLoopbackRequest(req) {
-    if (req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for'] || req.headers['x-real-ip']) {
-        return false;
-    }
-    const addr = (req.socket && req.socket.remoteAddress) || req.ip || '';
-    return addr === '127.0.0.1' || addr === '::1' || addr === '::ffff:127.0.0.1';
-}
+// Optional Server-Level Kill Switch (ENABLE_PORTAL=false disables all /login and /api/admin/* endpoints)
+// Remote HTTPS access is permitted and secured via Token Auth + 2-Step Gmail OTP + Normalized RBAC.
+const PORTAL_ENABLED = String(process.env.ENABLE_PORTAL ?? process.env.ENABLE_ADMIN ?? 'true').toLowerCase() !== 'false';
 app.use((req, res, next) => {
     const lowerPath = decodeURIComponent(req.path || '').toLowerCase();
-    const isReviewerRoute =
-        lowerPath === '/review' ||
-        lowerPath === '/review/' ||
-        lowerPath.startsWith('/api/review/') ||
-        REVIEWER_AUTH_PATHS.has(lowerPath);
-    if (isReviewerRoute) {
-        if (!REVIEWER_PORTAL_ENABLED) {
-            return res.status(403).json({ error: 'Reviewer portal is disabled on this server' });
-        }
-        return next();
-    }
-    const isAdminRoute =
-        ADMIN_ONLY_EXACT_PATHS.has(lowerPath) ||
-        lowerPath === '/api/admin' ||
-        lowerPath.startsWith('/api/admin/');
-    if (isAdminRoute) {
-        if (!ADMIN_ENABLED) {
-            return res.status(403).json({ error: 'Admin interface is disabled on this server' });
-        }
-        if (!isLoopbackRequest(req)) {
-            return res.status(403).json({ error: 'Admin interface is restricted to localhost only' });
-        }
+    const isPortalRoute =
+        lowerPath === '/login' || lowerPath === '/login/' ||
+        lowerPath === '/admin' || lowerPath === '/admin/' || lowerPath === '/admin.html' ||
+        lowerPath === '/review' || lowerPath === '/review/' ||
+        lowerPath.startsWith('/api/admin') ||
+        lowerPath.startsWith('/api/review') ||
+        lowerPath.startsWith('/api/auth');
+    if (isPortalRoute && !PORTAL_ENABLED) {
+        return res.status(403).json({ error: 'iGUIDE Portal is disabled on this server' });
     }
     next();
 });
 
-// 10-Table MySQL Admin CRUD API & Public Bootstrap Router
-const createAdminApiRouter = require('./database/admin_api');
-const adminApiRouter = createAdminApiRouter(pool, __dirname);
-app.use('/api', adminApiRouter);
-
-// Live Application & Database Version Endpoint (for automatic Kiosk & Mobile cache/version management)
-app.get('/api/version', async (req, res) => {
-    let dbUpdatedAt = null;
-    try {
-        const rows = await query(`SELECT MAX(created_at) AS latest FROM admin_audit_logs`);
-        if (rows && rows[0] && rows[0].latest) {
-            dbUpdatedAt = rows[0].latest;
+// Tiered sliding-window IP rate limiters for auth & burst protection
+function createRateLimiter({ windowMs, max, label }) {
+    const hits = new Map();
+    const timer = setInterval(() => {
+        const now = Date.now();
+        for (const [k, rec] of hits.entries()) {
+            if (now > rec.resetAt) hits.delete(k);
         }
-    } catch (e) {}
-    res.json({
-        version: APP_VERSION,
-        bootId: SERVER_BOOT_ID,
-        dbUpdatedAt
-    });
+    }, Math.max(15000, windowMs));
+    if (typeof timer.unref === 'function') timer.unref();
+
+    return (req, res, next) => {
+        const ip = String(req.headers['cf-connecting-ip'] || req.ip || req.connection?.remoteAddress || 'unknown');
+        const now = Date.now();
+        let rec = hits.get(ip);
+        if (!rec || now > rec.resetAt) {
+            rec = { count: 0, resetAt: now + windowMs };
+            hits.set(ip, rec);
+        }
+        rec.count += 1;
+        res.setHeader('X-RateLimit-Limit', String(max));
+        res.setHeader('X-RateLimit-Remaining', String(Math.max(0, max - rec.count)));
+        if (rec.count > max) {
+            const retrySec = Math.max(1, Math.ceil((rec.resetAt - now) / 1000));
+            res.setHeader('Retry-After', String(retrySec));
+            return res.status(429).json({
+                error: `Too many requests on ${label}. Please wait ${retrySec}s before retrying.`,
+                retryAfterSeconds: retrySec
+            });
+        }
+        next();
+    };
+}
+
+const authBurstLimiter = createRateLimiter({ windowMs: 15000, max: 35, label: 'authentication' });
+const adminWriteBurstLimiter = createRateLimiter({ windowMs: 10000, max: 250, label: 'admin writes' });
+
+app.use(['/api/admin/login', '/api/admin/resend-otp', '/api/admin/verify-otp', '/api/auth/signup', '/api/auth/check-email', '/api/auth/forgot-password', '/api/auth/reset-password'], authBurstLimiter);
+app.use(['/api/admin', '/api/review'], (req, res, next) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+        return adminWriteBurstLimiter(req, res, next);
+    }
+    next();
 });
 
-// Dedicated Admin & Station Reviewer Command Center Routes (/admin, /review)
-app.get(['/admin', '/admin/', '/review', '/review/'], (req, res) => {
+// Mount 10-Table MySQL RBAC, Onboarding & CRUD API Router
+app.use('/api', adminApiRouter);
+
+// Graceful 503 handler if MySQL queue saturates under extreme flood
+app.use('/api', (err, req, res, next) => {
+    if (err && (err.code === 'POOL_ENQUEUELIMIT' || String(err.message || '').includes('Queue limit reached'))) {
+        res.setHeader('Retry-After', '2');
+        return res.status(503).json({ error: 'Database queue saturated by burst load. Please retry shortly.' });
+    }
+    next(err);
+});
+
+// Live Application & Database Version Endpoint (short 3s RAM cache + invalidated on publish)
+let versionCachePayload = null;
+let versionCacheExpiresAt = 0;
+let versionInFlightPromise = null;
+if (typeof adminApiRouter.onCacheInvalidated === 'function') {
+    adminApiRouter.onCacheInvalidated(() => {
+        versionCachePayload = null;
+        versionCacheExpiresAt = 0;
+    });
+}
+
+app.get('/api/version', async (req, res) => {
+    const now = Date.now();
+    if (versionCachePayload && now < versionCacheExpiresAt) {
+        return res.json(versionCachePayload);
+    }
+    try {
+        if (!versionInFlightPromise) {
+            versionInFlightPromise = (async () => {
+                let dbUpdatedAt = null;
+                try {
+                    const vRows = await query("SELECT `value` FROM settings WHERE `key` = 'data_version' LIMIT 1");
+                    if (vRows && vRows[0] && vRows[0].value) {
+                        dbUpdatedAt = vRows[0].value;
+                    } else {
+                        const rows = await query(`SELECT MAX(created_at) AS latest FROM admin_audit_logs`);
+                        if (rows && rows[0] && rows[0].latest) {
+                            dbUpdatedAt = rows[0].latest;
+                        }
+                    }
+                } catch (e) {}
+                const payload = {
+                    version: APP_VERSION,
+                    bootId: SERVER_BOOT_ID,
+                    dbUpdatedAt,
+                    diskEditorsLocked: process.env.LOCK_STATIC_DISK_EDITORS === '1'
+                };
+                versionCachePayload = payload;
+                versionCacheExpiresAt = Date.now() + 3000;
+                return payload;
+            })().finally(() => {
+                versionInFlightPromise = null;
+            });
+        }
+        const payload = await versionInFlightPromise;
+        res.json(payload);
+    } catch (err) {
+        if (err && (err.code === 'POOL_ENQUEUELIMIT' || String(err.message || '').includes('Queue limit reached'))) {
+            res.setHeader('Retry-After', '2');
+            return res.status(503).json({ error: 'Server busy, please retry.' });
+        }
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Canonical iGUIDE Login & Portal Route (/login); redirect legacy /admin & /review cleanly
+app.get(['/login', '/login/'], (req, res) => {
     res.sendFile(path.join(__dirname, 'admin.html'));
+});
+app.get(['/admin', '/admin/', '/review', '/review/'], (req, res) => {
+    const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
+    res.redirect(302, '/login' + qs);
 });
 
 // Permanently redirect legacy URLs to upgraded modern 3D map
@@ -1284,13 +1556,14 @@ app.get(['/legacy.html', '/legacy'], (req, res) => {
 // Security Guard: Block Inspect-Element / Direct URL access to backend source code, credentials, and raw MBTiles
 const BLOCKED_PATH_PREFIXES = [
     '/database', '/app', '/config', '/routes', '/tools', '/docs', '/archive', '/renders',
+    '/scratch', '/scripts', '/building images', '/building images rares',
     '/.env', '/.git', '/.vscode', '/.agents', '/node_modules'
 ];
 const BLOCKED_EXACT_FILES = new Set([
     '/server.js', '/artisan', '/package.json', '/package-lock.json', '/composer.json',
-    '/AGENTS.md', '/README.md'
+    '/AGENTS.md', '/README.md', '/dash_preview.html', '/.gitignore', '/.env.example'
 ]);
-const BLOCKED_EXTENSIONS = /\.(env|mbtiles|php|py|mjs|sh|bat|exe|sql|log|blend|blend1)$/i;
+const BLOCKED_EXTENSIONS = /\.(env|mbtiles|php|py|mjs|sh|bat|ps1|vbs|cmd|exe|sql|log|bak|blend|blend1)$/i;
 
 app.use((req, res, next) => {
     const reqPath = decodeURIComponent(req.path || '');

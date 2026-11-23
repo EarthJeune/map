@@ -19,7 +19,7 @@
 
 /* --- MOBILE PHONES & COMPACT VIEWPORTS (< 768px) --- */
 
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 768px), screen and (orientation: landscape) and (max-height: 540px) {
     :root {
         --sidebar-offset: 0px !important;
     }
@@ -34,8 +34,20 @@
     body:not(.mode-kiosk) .sidebar-backdrop,
     body:not(.mode-kiosk) .building-panel,
     body:not(.mode-kiosk) .turn-by-turn-banner,
+    .kiosk-arrival-action-bar,
+    #kiosk-arrived-alert,
     .coords-badge {
         display: none !important;
+    }
+
+    .map-layer-modal:not(.active) {
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
+
+    .mlm-close-btn {
+        width: 44px !important;
+        height: 44px !important;
     }
 
     /* Map takes 100% of viewport */
@@ -59,18 +71,29 @@
         display: none !important;
     }
 
-    /* Kiosk Marker on Phone: subtle pin without pulsing label */
+    /* Kiosk Marker on Phone: compact iGUIDE Kiosk Totem badge */
 
-    .kiosk-marker-label,
-    .kiosk-marker-pulse {
+    .kiosk-marker-pulse,
+    .kiosk-marker-label-sub,
+    .kml-you-are-here {
         display: none !important;
     }
 
+    .kml-phone-only {
+        display: inline !important;
+    }
+
     .kiosk-marker-dot {
-        width: 12px !important;
-        height: 12px !important;
-        background: #64748b !important;
-        border: 2px solid #cbd5e1 !important;
+        width: 24px !important;
+        height: 24px !important;
+        background: linear-gradient(135deg, #22c55e 0%, #059669 100%) !important;
+        border: 2px solid #ffffff !important;
+    }
+
+    .kiosk-marker-label {
+        top: 28px !important;
+        padding: 3px 9px !important;
+        border-radius: 999px !important;
     }
 
     /* Mobile Phone: Floating Camera Controls sit cleanly right above the dropped-down sheet and stay anchored when sheet slides up */
@@ -83,36 +106,38 @@
         position: fixed !important;
         left: 50% !important;
         transform: translateX(-50%) !important;
-        bottom: calc(var(--safe-bottom, 0px) + 138px) !important;
+        bottom: calc(var(--safe-bottom, 0px) + 170px) !important;
         top: auto !important;
         z-index: 90 !important;
-        padding: 4px 8px !important;
-        gap: 5px !important;
-        border-radius: 20px !important;
-        background: rgba(15, 23, 42, 0.92) !important;
-        backdrop-filter: blur(16px) !important;
-        -webkit-backdrop-filter: blur(16px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.14) !important;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+        padding: 4px 6px !important;
+        gap: 4px !important;
+        border-radius: 999px !important;
+        background: var(--botanical-glass, rgba(7, 16, 14, 0.92)) !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border: 1px solid rgba(52, 211, 153, 0.26) !important;
+        box-shadow: inset 0 1px 0 rgba(167, 243, 208, 0.12), 0 8px 24px rgba(0, 0, 0, 0.55) !important;
         transition: opacity 0.25s ease, transform 0.25s ease !important;
     }
 
     .floating-camera-controls .fcc-label {
-        font-size: 10px !important;
+        font-size: 9.5px !important;
         font-weight: 800 !important;
-        letter-spacing: 0.5px !important;
-        color: #64748b !important;
+        letter-spacing: 0.6px !important;
+        color: #6ee7b7 !important;
+        opacity: 0.8;
         margin-right: 2px !important;
-        margin-left: 2px !important;
+        margin-left: 6px !important;
     }
 
     .floating-camera-controls .fcc-btn {
-        height: 32px !important;
-        padding: 0 10px !important;
+        height: 44px !important;
+        min-height: 44px !important;
+        padding: 0 11px !important;
         font-size: 11.5px !important;
         font-weight: 600 !important;
         gap: 5px !important;
-        border-radius: 16px !important;
+        border-radius: 999px !important;
     }
 
     .floating-camera-controls .fcc-btn svg {
@@ -136,7 +161,7 @@
     .phone-arrived-modal-backdrop {
         position: fixed;
         inset: 0;
-        background: rgba(2, 6, 23, 0.78);
+        background: rgba(4, 12, 10, 0.78);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         z-index: 10000;
@@ -156,10 +181,10 @@
     .phone-arrived-modal-card {
         width: 100%;
         max-width: 340px;
-        background: rgba(15, 23, 42, 0.98);
-        border: 1px solid rgba(255, 255, 255, 0.16);
+        background: linear-gradient(180deg, #0d1d19 0%, #07100e 100%);
+        border: 1px solid rgba(52, 211, 153, 0.34);
         border-radius: 26px;
-        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.06);
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(52, 211, 153, 0.12);
         padding: 30px 22px 24px;
         text-align: center;
         transform: scale(0.9);
@@ -205,6 +230,19 @@
         gap: 12px;
     }
 
+    /* Single-button full-width layout for Live GPS arrival (Repeat button hidden) */
+    .pam-actions.is-gps-mode {
+        grid-template-columns: 1fr !important;
+    }
+
+    .pam-actions.is-gps-mode .pam-btn-repeat {
+        display: none !important;
+    }
+
+    .pam-actions.is-gps-mode .pam-btn-done {
+        width: 100% !important;
+    }
+
     .pam-btn {
         height: 48px;
         border-radius: 14px;
@@ -239,18 +277,19 @@
 
     .mobile-recenter-btn {
         position: fixed !important;
-        bottom: calc(134px + env(safe-area-inset-bottom, 0px)) !important;
-        right: 14px !important;
+        bottom: calc(170px + env(safe-area-inset-bottom, 0px)) !important;
+        right: 12px !important;
         left: auto !important;
         width: 46px !important;
         height: 46px !important;
         border-radius: 50% !important;
-        background: rgba(15, 23, 42, 0.94) !important;
-        backdrop-filter: blur(14px) !important;
-        border: 1px solid rgba(56, 189, 248, 0.4) !important;
-        color: #38bdf8 !important;
+        background: rgba(7, 16, 14, 0.94) !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border: 1.5px solid rgba(52, 211, 153, 0.45) !important;
+        color: #34d399 !important;
         font-size: 20px !important;
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5) !important;
+        box-shadow: inset 0 1px 0 rgba(167, 243, 208, 0.14), 0 6px 20px rgba(0, 0, 0, 0.55) !important;
         z-index: 95 !important;
         display: none;
         align-items: center;
@@ -278,12 +317,12 @@
         height: calc(92dvh - env(safe-area-inset-top, 0px) + 40px);
         padding-bottom: 40px;
         box-sizing: border-box;
-        background: rgba(15, 23, 42, 0.96);
-        backdrop-filter: blur(24px);
-        -webkit-backdrop-filter: blur(24px);
-        border-top: 1px solid rgba(255, 255, 255, 0.14);
+        background: linear-gradient(180deg, #0d1d19 0%, #07100e 100%);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        border-top: 1px solid rgba(52, 211, 153, 0.28);
         border-radius: 24px 24px 0 0;
-        box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.72);
+        box-shadow: inset 0 1px 0 rgba(167, 243, 208, 0.14), 0 -14px 40px rgba(0, 0, 0, 0.78);
         z-index: 100;
         display: flex !important;
         flex-direction: column;
@@ -310,7 +349,7 @@
     }
 
     .phone-bottom-sheet.snap-peek.route-active {
-        transform: translate3d(0, calc(100% - 40px - 124px - env(safe-area-inset-bottom, 0px)), 0);
+        transform: translate3d(0, calc(100% - 40px - 166px - env(safe-area-inset-bottom, 0px)), 0);
     }
 
     .phone-bottom-sheet.snap-half {
@@ -323,6 +362,7 @@
 
     /* Whole-Sheet Gesture Zones & Scroll Handoff */
 
+    .phone-bottom-sheet .phone-telemetry-strip,
     .phone-bottom-sheet .phone-station-banner,
     .phone-bottom-sheet .phone-search-row,
     .phone-bottom-sheet .phone-bldg-header,
@@ -406,18 +446,24 @@
     .phone-search-wrap {
         margin: 0 16px 8px;
         height: 44px;
-        background: rgba(30, 41, 59, 0.8);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 12px;
+        background: rgba(16, 35, 30, 0.85);
+        border: 1px solid rgba(52, 211, 153, 0.2);
+        border-radius: 13px;
         display: flex;
         align-items: center;
         padding: 0 12px;
         gap: 8px;
         flex-shrink: 0;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .phone-search-wrap:focus-within {
+        border-color: rgba(52, 211, 153, 0.55);
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.14);
     }
 
     .phone-filter-wrap {
-        position: relative;
+        position: static;
         flex-shrink: 0;
     }
 
@@ -427,11 +473,12 @@
         justify-content: center;
         gap: 5px;
         height: 44px;
+        min-height: 44px;
         padding: 0 12px;
-        background: rgba(30, 41, 59, 0.8);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 12px;
-        color: #94a3b8;
+        background: rgba(16, 35, 30, 0.85);
+        border: 1px solid rgba(52, 211, 153, 0.2);
+        border-radius: 13px;
+        color: #a7f3d0;
         font-family: inherit;
         font-size: 13px;
         font-weight: 600;
@@ -478,17 +525,159 @@
         line-height: 1;
     }
 
+    .phone-bottom-sheet:has(.phone-filter-dropdown.open) {
+        overflow: visible !important;
+        z-index: 460;
+    }
+
+    .phone-bottom-sheet:has(.phone-filter-dropdown.open) .sheet-view.active {
+        overflow: visible !important;
+    }
+
+    .phone-filter-btn {
+        width: 42px;
+        min-width: 42px;
+        height: 42px;
+        min-height: 42px;
+        padding: 0;
+        position: relative;
+        gap: 0;
+        border-radius: 12px;
+    }
+
+    .phone-filter-btn .phone-filter-icon {
+        width: 15px;
+        height: 15px;
+    }
+
+    .phone-filter-btn .phone-filter-btn-text {
+        display: none;
+    }
+
+    .phone-filter-btn .phone-filter-count-badge {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        min-width: 17px;
+        height: 17px;
+        padding: 0 4px;
+        font-size: 10px;
+        line-height: 17px;
+        border-radius: 999px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.55);
+    }
+
+    .phone-filter-dropdown .fdm-header {
+        padding: 10px 12px;
+    }
+
+    .phone-filter-dropdown .fdm-title {
+        font-size: 10.5px;
+        letter-spacing: 0.08em;
+    }
+
+    .phone-filter-dropdown .fdm-split-grid {
+        grid-template-columns: minmax(0, 1.32fr) minmax(0, 0.96fr);
+        max-height: min(60dvh, 430px);
+        overflow-y: auto;
+    }
+
+    .phone-filter-dropdown .fdm-col-type {
+        border-right: 1px solid rgba(52, 211, 153, 0.14);
+    }
+
+    .phone-filter-dropdown .fdm-col-header {
+        padding: 7px 9px 5px;
+        font-size: 9.5px;
+        letter-spacing: 0.07em;
+    }
+
+    .phone-filter-dropdown .fdm-options,
+    .phone-filter-dropdown .fdm-status-options {
+        padding: 4px;
+        gap: 2px;
+    }
+
+    .phone-filter-dropdown .fdm-item {
+        padding: 6px 7px;
+        gap: 6px;
+        border-radius: 9px;
+        align-items: center;
+    }
+
+    .phone-filter-dropdown .fdm-checkbox {
+        width: 15px;
+        height: 15px;
+        min-width: 15px;
+        border-radius: 4px;
+    }
+
+    .phone-filter-dropdown .fdm-status-radio,
+    .phone-filter-dropdown .fdm-status-checkbox {
+        width: 15px;
+        height: 15px;
+        min-width: 15px;
+        border-radius: 999px;
+    }
+
+    .phone-filter-dropdown .fdm-status-radio:checked::after,
+    .phone-filter-dropdown .fdm-status-checkbox:checked::after {
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+    }
+
+    .phone-filter-dropdown .fdm-status-hint {
+        margin: 4px 2px 2px;
+        padding: 6px 8px;
+        font-size: 10px;
+        line-height: 1.3;
+    }
+
+    .phone-filter-dropdown .fdm-item-icon {
+        width: 14px;
+        height: 14px;
+        min-width: 14px;
+        margin-top: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .phone-filter-dropdown .fdm-item-icon svg {
+        width: 13px;
+        height: 13px;
+    }
+
+    .phone-filter-dropdown .fdm-status-dot {
+        width: 8px;
+        height: 8px;
+        margin-top: 0;
+    }
+
+    .phone-filter-dropdown .fdm-item-name {
+        font-size: 11px;
+        line-height: 1.2;
+        font-weight: 600;
+    }
+
+    .phone-filter-dropdown .fdm-item-desc {
+        display: none;
+    }
+
     .phone-filter-dropdown {
         position: absolute;
         top: calc(100% + 8px);
+        left: 0;
         right: 0;
-        width: 320px;
-        max-width: calc(100vw - 32px);
-        background: rgba(15, 23, 42, 0.96);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.14);
+        width: 100%;
+        max-width: calc(100vw - 24px);
+        background: linear-gradient(180deg, rgba(13, 29, 25, 0.98) 0%, rgba(7, 16, 14, 0.98) 100%);
+        backdrop-filter: blur(22px);
+        -webkit-backdrop-filter: blur(22px);
+        border: 1px solid rgba(52, 211, 153, 0.3);
         border-radius: 16px;
+        z-index: 1200;
         box-shadow: 0 20px 45px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05);
         z-index: 1100;
         overflow: hidden;
@@ -558,11 +747,13 @@
 
     .phone-search-wrap input {
         flex: 1;
+        min-width: 0;
+        height: 100%;
         background: transparent;
         border: none;
         outline: none;
         color: #f8fafc;
-        font-size: 15px;
+        font-size: 14px;
         font-family: inherit;
     }
 
@@ -651,21 +842,22 @@
         align-items: center;
         gap: 12px;
         padding: 10px 14px;
-        background: rgba(255, 255, 255, 0.04);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        border-radius: 12px;
+        background: rgba(16, 35, 30, 0.56);
+        border: 1px solid rgba(52, 211, 153, 0.12);
+        border-radius: 14px;
         cursor: pointer;
-        min-height: 52px;
-        transition: background 0.15s;
+        min-height: 54px;
+        transition: background 0.15s, border-color 0.15s, transform 0.12s;
     }
 
     .phone-dir-item:active {
-        background: rgba(255, 255, 255, 0.1);
+        background: rgba(16, 185, 129, 0.16);
+        transform: scale(0.99);
     }
 
     .phone-dir-item.active {
-        background: rgba(34, 197, 94, 0.12);
-        border-color: rgba(34, 197, 94, 0.35);
+        background: rgba(16, 185, 129, 0.14);
+        border-color: rgba(52, 211, 153, 0.45);
     }
 
     .phone-dir-badge {
@@ -690,17 +882,31 @@
         font-size: 15px;
         font-weight: 700;
         color: #f1f5f9;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+        word-break: break-word;
+        line-height: 1.3;
     }
 
     .phone-dir-sub {
         font-size: 12px;
         color: #94a3b8;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+        word-break: break-word;
+        line-height: 1.35;
+        margin-top: 2px;
+    }
+
+    .search-match-mark {
+        background: rgba(250, 204, 21, 0.24);
+        color: #fef08a;
+        border-radius: 3px;
+        padding: 0 2px;
+        font-weight: 700;
+        box-shadow: inset 0 0 0 1px rgba(250, 204, 21, 0.38);
     }
 
     /* --- 2. BUILDING DETAILS VIEW --- */
@@ -752,11 +958,13 @@
     }
 
     .phone-sheet-close-btn {
-        width: 36px;
-        height: 36px;
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
         border-radius: 50%;
-        background: rgba(255, 255, 255, 0.08);
-        border: none;
+        background: rgba(16, 35, 30, 0.85);
+        border: 1px solid rgba(52, 211, 153, 0.22);
         color: #cbd5e1;
         font-size: 16px;
         display: flex;
@@ -764,6 +972,12 @@
         justify-content: center;
         cursor: pointer;
         flex-shrink: 0;
+        transition: transform 0.15s ease, background 0.15s ease;
+    }
+
+    .phone-sheet-close-btn:active {
+        transform: scale(0.92);
+        background: rgba(52, 211, 153, 0.18);
     }
 
     .phone-bldg-scrollable {
@@ -782,10 +996,10 @@
         width: 100%;
         border-radius: 16px;
         overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(52, 211, 153, 0.22);
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
         position: relative;
-        background: rgba(15, 23, 42, 0.6);
+        background: rgba(7, 16, 14, 0.72);
     }
 
     /* Multi-photo mosaic: 1 big on left, 2 stacked on right */
@@ -869,21 +1083,21 @@
         position: absolute;
         bottom: 8px;
         right: 8px;
-        background: rgba(15, 23, 42, 0.85);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        border: 1px solid rgba(255, 255, 255, 0.22);
+        background: rgba(7, 16, 14, 0.88);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        border: 1px solid rgba(52, 211, 153, 0.32);
         color: #f8fafc;
         font-size: 11px;
         font-weight: 600;
-        padding: 4px 9px;
+        padding: 4px 10px;
         border-radius: 20px;
         display: flex;
         align-items: center;
         gap: 5px;
         pointer-events: none;
         z-index: 2;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
     }
 
     /* No photo placeholder */
@@ -892,9 +1106,9 @@
         padding: 22px 16px;
         text-align: center;
         border-radius: 14px;
-        background: linear-gradient(135deg, rgba(30, 41, 59, 0.5), rgba(15, 23, 42, 0.7));
-        border: 1px dashed rgba(255, 255, 255, 0.15);
-        color: #94a3b8;
+        background: linear-gradient(135deg, rgba(16, 35, 30, 0.65), rgba(7, 16, 14, 0.85));
+        border: 1px dashed rgba(52, 211, 153, 0.26);
+        color: #a7f3d0;
         font-size: 13px;
         display: flex;
         flex-direction: column;
@@ -975,8 +1189,8 @@
 
     .phone-sheet-actions {
         padding: 10px 16px calc(12px + env(safe-area-inset-bottom, 0px));
-        background: rgba(15, 23, 42, 0.98);
-        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(7, 16, 14, 0.98);
+        border-top: 1px solid rgba(52, 211, 153, 0.16);
         display: flex;
         gap: 10px;
         flex-shrink: 0;
@@ -1035,13 +1249,13 @@
         left: 12px;
         right: 12px;
         z-index: 1000;
-        background: rgba(15, 23, 42, 0.96);
-        backdrop-filter: blur(18px);
-        -webkit-backdrop-filter: blur(18px);
-        border: 1.5px solid rgba(56, 189, 248, 0.45);
-        border-radius: 20px;
-        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.75), 0 0 20px rgba(56, 189, 248, 0.2);
-        padding: 12px 16px;
+        background: rgba(7, 16, 14, 0.94);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(52, 211, 153, 0.38);
+        border-radius: 18px;
+        box-shadow: inset 0 1px 0 rgba(167, 243, 208, 0.14), 0 12px 32px rgba(0, 0, 0, 0.72);
+        padding: 11px 14px;
         display: none;
         align-items: center;
         gap: 12px;
@@ -1060,15 +1274,15 @@
     .ptnh-icon-wrap {
         width: 44px;
         height: 44px;
-        border-radius: 14px;
-        background: linear-gradient(135deg, #0284c7, #2563eb);
+        border-radius: 13px;
+        background: linear-gradient(135deg, #10b981, #059669);
         color: #ffffff;
         font-size: 22px;
         display: flex;
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
-        box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4);
+        box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
     }
 
     .ptnh-text-wrap {
@@ -1091,16 +1305,17 @@
 
     .ptnh-secondary-step {
         font-size: 12px;
-        color: #94a3b8;
+        color: #a7f3d0;
+        opacity: 0.82;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
     }
 
     .ptnh-dist-pill {
-        background: rgba(56, 189, 248, 0.15);
-        border: 1px solid rgba(56, 189, 248, 0.35);
-        color: #38bdf8;
+        background: rgba(16, 185, 129, 0.16);
+        border: 1px solid rgba(52, 211, 153, 0.4);
+        color: #6ee7b7;
         font-size: 13px;
         font-weight: 800;
         padding: 6px 10px;
@@ -1117,12 +1332,14 @@
         flex-direction: column;
         gap: 8px;
         flex-shrink: 0;
+        border-bottom: 1px solid rgba(52, 211, 153, 0.12);
     }
 
     .phone-route-peek-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
+        min-height: 28px;
         cursor: pointer;
         user-select: none;
     }
@@ -1131,65 +1348,80 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
+        gap: 8px;
         width: 100%;
         font-size: 13.5px;
         color: #cbd5e1;
+        min-width: 0;
+    }
+
+    .phone-route-dest-badge > span:first-child {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
     }
 
     .phone-route-dest-badge strong {
-        color: #38bdf8;
+        color: #6ee7b7;
     }
 
     .remain-tag {
         background: rgba(34, 197, 94, 0.15);
-        border: 1px solid rgba(34, 197, 94, 0.3);
+        border: 1px solid rgba(34, 197, 94, 0.35);
         color: #4ade80;
         font-size: 11.5px;
         font-weight: 700;
         padding: 3px 9px;
         border-radius: 10px;
         white-space: nowrap;
+        flex-shrink: 0;
     }
 
     .phone-route-peek-controls {
         display: flex;
-        align-items: center;
-        justify-content: space-between;
+        flex-direction: column;
+        align-items: stretch;
         gap: 8px;
     }
 
     .phone-speed-bar {
         display: flex;
         align-items: center;
-        gap: 6px;
-        background: rgba(255, 255, 255, 0.04);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 10px;
-        padding: 3px 7px;
-        flex-shrink: 0;
+        justify-content: space-between;
+        gap: 8px;
+        background: rgba(16, 35, 30, 0.72);
+        border: 1px solid rgba(52, 211, 153, 0.16);
+        border-radius: 12px;
+        padding: 2px 6px 2px 10px;
+        min-height: 46px;
+        box-sizing: border-box;
     }
 
     .phone-speed-label {
         font-size: 10px;
         font-weight: 800;
-        color: #94a3b8;
-        letter-spacing: 0.5px;
+        color: #6ee7b7;
+        letter-spacing: 0.6px;
         text-transform: uppercase;
+        flex-shrink: 0;
     }
 
     .phone-speed-pills {
-        display: flex;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         align-items: center;
-        gap: 3px;
+        gap: 4px;
+        flex: 1;
     }
 
     .phone-speed-pills .speed-pill {
-        height: 28px;
-        min-width: 32px;
+        height: 44px;
+        min-width: 44px;
         padding: 0 6px;
-        font-size: 11.5px;
+        font-size: 12px;
         font-weight: 700;
-        border-radius: 7px;
+        border-radius: 9px;
         background: transparent;
         border: 1px solid transparent;
         color: #94a3b8;
@@ -1198,49 +1430,52 @@
     }
 
     .phone-speed-pills .speed-pill.active {
-        background: #0284c7;
-        border-color: #38bdf8;
-        color: #ffffff;
-        box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
+        background: linear-gradient(135deg, #10b981, #059669);
+        border-color: rgba(167, 243, 208, 0.55);
+        color: #022c22;
+        font-weight: 800;
+        box-shadow: 0 2px 10px rgba(16, 185, 129, 0.38);
     }
 
     .phone-peek-action-btns {
-        display: flex;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         align-items: center;
-        gap: 6px;
-        flex-shrink: 0;
+        gap: 8px;
+        width: 100%;
     }
 
     .phone-btn-mini {
-        height: 34px;
-        padding: 0 11px;
-        border-radius: 10px;
-        font-size: 12.5px;
+        height: 44px;
+        min-height: 44px;
+        padding: 0 12px;
+        border-radius: 12px;
+        font-size: 13px;
         font-weight: 700;
         font-family: inherit;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 5px;
+        gap: 6px;
         cursor: pointer;
         border: none;
         transition: transform 0.15s ease, background 0.15s ease;
     }
 
     .phone-btn-mini:active {
-        transform: scale(0.96);
+        transform: scale(0.97);
     }
 
     .phone-btn-mini.subtle {
-        background: rgba(255, 255, 255, 0.08);
-        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: rgba(16, 35, 30, 0.88);
+        border: 1px solid rgba(52, 211, 153, 0.25);
         color: #f1f5f9;
     }
 
     .phone-btn-mini.danger {
-        background: rgba(239, 68, 68, 0.2);
-        border: 1px solid rgba(239, 68, 68, 0.4);
-        color: #fca5a5;
+        background: rgba(239, 68, 68, 0.18);
+        border: 1px solid rgba(248, 113, 113, 0.42);
+        color: #fecaca;
     }
 
     .phone-btn-mini.primary {
@@ -1394,7 +1629,7 @@
 
 
 
-@media (max-width: 768px) {
+@media screen and (max-width: 768px), screen and (orientation: landscape) and (max-height: 540px) {
     /* 1. Hide Mapbox NavigationControl (Zoom In, Zoom Out, Compass) on mobile */
     .mapboxgl-ctrl-group:has(.mapboxgl-ctrl-zoom-in),
     .mapboxgl-ctrl-group:has(.mapboxgl-ctrl-compass),
@@ -1404,12 +1639,17 @@
         display: none !important;
     }
 
-    /* 2. Style Orbit and Fullscreen to match the 38px circular floating control buttons */
+    /* 2. Style Orbit and Fullscreen to match 44x44px ergonomic botanical touch controls */
     .ctrl-orbit-group,
     .mapboxgl-ctrl-group:has(.mapboxgl-ctrl-fullscreen) {
-        width: 38px !important;
-        height: 38px !important;
+        width: 44px !important;
+        height: 44px !important;
+        box-sizing: content-box !important;
         border-radius: 50% !important;
+        background: rgba(7, 16, 14, 0.92) !important;
+        border: 1px solid rgba(52, 211, 153, 0.28) !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
@@ -1417,8 +1657,8 @@
 
     .ctrl-orbit-btn,
     .mapboxgl-ctrl-fullscreen {
-        width: 38px !important;
-        height: 38px !important;
+        width: 44px !important;
+        height: 44px !important;
         border-radius: 50% !important;
         display: flex !important;
         align-items: center !important;
@@ -1428,8 +1668,10 @@
     /* 3. Parallel right-side control column: Settings, Map Layer (Drone/Map), Orbit, Fullscreen */
     .map-settings-widget {
         display: flex !important;
-        top: calc(var(--safe-top, 0px) + 14px) !important;
-        right: 14px !important;
+        width: 44px !important;
+        height: 44px !important;
+        top: calc(var(--safe-top, 0px) + 12px) !important;
+        right: 12px !important;
         left: auto !important;
         z-index: 160 !important;
         opacity: 1 !important;
@@ -1439,8 +1681,10 @@
 
     .map-layer-widget {
         display: flex !important;
-        top: calc(var(--safe-top, 0px) + 60px) !important;
-        right: 14px !important;
+        width: 44px !important;
+        height: 44px !important;
+        top: calc(var(--safe-top, 0px) + 62px) !important;
+        right: 12px !important;
         left: auto !important;
         z-index: 160 !important;
         opacity: 1 !important;
@@ -1448,15 +1692,26 @@
         transition: top 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease !important;
     }
 
+    .map-settings-trigger-btn,
+    .map-layer-trigger-btn {
+        width: 44px !important;
+        height: 44px !important;
+        background: rgba(7, 16, 14, 0.92) !important;
+        border: 1px solid rgba(52, 211, 153, 0.28) !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+
     .mapboxgl-ctrl-top-right {
-        top: calc(var(--safe-top, 0px) + 106px) !important;
-        right: 14px !important;
+        top: calc(var(--safe-top, 0px) + 112px) !important;
+        right: 12px !important;
         left: auto !important;
         z-index: 100 !important;
         display: flex !important;
         flex-direction: column !important;
         align-items: center !important;
-        width: 38px !important;
+        gap: 6px !important;
+        width: 44px !important;
         transition: top 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
     }
 
@@ -1479,24 +1734,24 @@
     /* Shift parallel right rail smoothly down below Top Nav HUD during active navigation */
     body.phone-nav-active .map-settings-widget {
         display: flex !important;
-        top: calc(var(--safe-top, 0px) + 88px) !important;
-        right: 14px !important;
+        top: calc(var(--safe-top, 0px) + 90px) !important;
+        right: 12px !important;
         opacity: 1 !important;
         pointer-events: auto !important;
     }
 
     body.phone-nav-active .map-layer-widget {
         display: flex !important;
-        top: calc(var(--safe-top, 0px) + 134px) !important;
-        right: 14px !important;
+        top: calc(var(--safe-top, 0px) + 140px) !important;
+        right: 12px !important;
         opacity: 1 !important;
         pointer-events: auto !important;
         transform: translateY(0);
     }
 
     body.phone-nav-active .mapboxgl-ctrl-top-right {
-        top: calc(var(--safe-top, 0px) + 180px) !important;
-        right: 14px !important;
+        top: calc(var(--safe-top, 0px) + 190px) !important;
+        right: 12px !important;
     }
 
     body.sidebar-collapsed .floating-camera-controls.active {
@@ -1530,14 +1785,14 @@
     top: calc(var(--safe-top) + 14px);
     left: 14px;
     right: 14px;
-    background: rgba(15, 23, 42, 0.96);
+    background: linear-gradient(180deg, rgba(13, 29, 25, 0.97) 0%, rgba(7, 16, 14, 0.98) 100%);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1.5px solid rgba(56, 189, 248, 0.45);
+    border: 1.5px solid rgba(52, 211, 153, 0.45);
     border-radius: 16px;
     padding: 14px 16px;
     z-index: 99999;
-    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.7), 0 0 24px rgba(56, 189, 248, 0.25);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.7), 0 0 24px rgba(16, 185, 129, 0.22);
     color: #f8fafc;
     animation: slideDownIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
     display: flex;
@@ -1643,7 +1898,7 @@
 .phone-welcome-modal-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(2, 6, 23, 0.84);
+    background: rgba(4, 12, 10, 0.84);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     z-index: 999990;
@@ -1671,11 +1926,11 @@
 .phone-welcome-modal-card {
     width: 100%;
     max-width: 440px;
-    background: linear-gradient(170deg, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.99));
-    border: 1.5px solid rgba(56, 189, 248, 0.45);
+    background: linear-gradient(170deg, rgba(16, 35, 30, 0.98), rgba(7, 16, 14, 0.99));
+    border: 1.5px solid rgba(52, 211, 153, 0.45);
     border-radius: 24px;
     padding: 22px 20px 20px;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 32px rgba(56, 189, 248, 0.28);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 32px rgba(16, 185, 129, 0.25);
     color: #f8fafc;
     display: flex;
     flex-direction: column;
@@ -1845,8 +2100,20 @@ body.mode-phone .sidebar,
 body.mode-phone .turn-by-turn-banner,
 body.mode-phone .floating-speed-controls,
 body.mode-phone #building-panel,
-body.mode-phone #color-picker-modal {
+body.mode-phone #color-picker-modal,
+body.mode-phone .kiosk-arrival-action-bar,
+body.mode-phone #kiosk-arrived-alert {
     display: none !important;
+}
+
+body.mode-phone .map-layer-modal:not(.active) {
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+body.mode-phone .mlm-close-btn {
+    width: 44px !important;
+    height: 44px !important;
 }
 
 body.mode-phone .floating-camera-controls {
@@ -1858,36 +2125,38 @@ body.mode-phone .floating-camera-controls.active {
     position: fixed !important;
     left: 50% !important;
     transform: translateX(-50%) !important;
-    bottom: calc(var(--safe-bottom, 0px) + 138px) !important;
+    bottom: calc(var(--safe-bottom, 0px) + 170px) !important;
     top: auto !important;
     z-index: 90 !important;
-    padding: 4px 8px !important;
-    gap: 5px !important;
-    border-radius: 20px !important;
-    background: rgba(15, 23, 42, 0.92) !important;
-    backdrop-filter: blur(16px) !important;
-    -webkit-backdrop-filter: blur(16px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.14) !important;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+    padding: 4px 6px !important;
+    gap: 4px !important;
+    border-radius: 999px !important;
+    background: var(--botanical-glass, rgba(7, 16, 14, 0.92)) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(52, 211, 153, 0.26) !important;
+    box-shadow: inset 0 1px 0 rgba(167, 243, 208, 0.12), 0 8px 24px rgba(0, 0, 0, 0.55) !important;
     transition: opacity 0.25s ease, transform 0.25s ease !important;
 }
 
 body.mode-phone .floating-camera-controls .fcc-label {
-    font-size: 10px !important;
+    font-size: 9.5px !important;
     font-weight: 800 !important;
-    letter-spacing: 0.5px !important;
-    color: #64748b !important;
+    letter-spacing: 0.6px !important;
+    color: #6ee7b7 !important;
+    opacity: 0.8;
     margin-right: 2px !important;
-    margin-left: 2px !important;
+    margin-left: 6px !important;
 }
 
 body.mode-phone .floating-camera-controls .fcc-btn {
-    height: 32px !important;
-    padding: 0 10px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    padding: 0 11px !important;
     font-size: 11.5px !important;
     font-weight: 600 !important;
     gap: 5px !important;
-    border-radius: 16px !important;
+    border-radius: 999px !important;
 }
 
 body.mode-phone .floating-camera-controls .fcc-btn svg {
@@ -1923,9 +2192,14 @@ body.mode-phone .mapboxgl-ctrl-compass {
 
 body.mode-phone .ctrl-orbit-group,
 body.mode-phone .mapboxgl-ctrl-group:has(.mapboxgl-ctrl-fullscreen) {
-    width: 38px !important;
-    height: 38px !important;
+    width: 44px !important;
+    height: 44px !important;
+    box-sizing: content-box !important;
     border-radius: 50% !important;
+    background: rgba(7, 16, 14, 0.92) !important;
+    border: 1px solid rgba(52, 211, 153, 0.28) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -1933,8 +2207,8 @@ body.mode-phone .mapboxgl-ctrl-group:has(.mapboxgl-ctrl-fullscreen) {
 
 body.mode-phone .ctrl-orbit-btn,
 body.mode-phone .mapboxgl-ctrl-fullscreen {
-    width: 38px !important;
-    height: 38px !important;
+    width: 44px !important;
+    height: 44px !important;
     border-radius: 50% !important;
     display: flex !important;
     align-items: center !important;
@@ -1943,8 +2217,10 @@ body.mode-phone .mapboxgl-ctrl-fullscreen {
 
 body.mode-phone .map-settings-widget {
     display: flex !important;
-    top: calc(var(--safe-top, 0px) + 14px) !important;
-    right: 14px !important;
+    width: 44px !important;
+    height: 44px !important;
+    top: calc(var(--safe-top, 0px) + 12px) !important;
+    right: 12px !important;
     left: auto !important;
     z-index: 160 !important;
     opacity: 1 !important;
@@ -1954,8 +2230,10 @@ body.mode-phone .map-settings-widget {
 
 body.mode-phone .map-layer-widget {
     display: flex !important;
-    top: calc(var(--safe-top, 0px) + 60px) !important;
-    right: 14px !important;
+    width: 44px !important;
+    height: 44px !important;
+    top: calc(var(--safe-top, 0px) + 62px) !important;
+    right: 12px !important;
     left: auto !important;
     z-index: 160 !important;
     opacity: 1 !important;
@@ -1963,15 +2241,26 @@ body.mode-phone .map-layer-widget {
     transition: top 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease !important;
 }
 
+body.mode-phone .map-settings-trigger-btn,
+body.mode-phone .map-layer-trigger-btn {
+    width: 44px !important;
+    height: 44px !important;
+    background: rgba(7, 16, 14, 0.92) !important;
+    border: 1px solid rgba(52, 211, 153, 0.28) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
 body.mode-phone .mapboxgl-ctrl-top-right {
-    top: calc(var(--safe-top, 0px) + 106px) !important;
-    right: 14px !important;
+    top: calc(var(--safe-top, 0px) + 112px) !important;
+    right: 12px !important;
     left: auto !important;
     z-index: 100 !important;
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
-    width: 38px !important;
+    gap: 6px !important;
+    width: 44px !important;
     transition: top 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
@@ -1982,8 +2271,8 @@ body.mode-phone .ctrl-orbit-group {
 body.mode-phone.has-active-route .map-settings-widget,
 body.mode-phone.phone-nav-active .map-settings-widget {
     display: flex !important;
-    top: calc(var(--safe-top, 0px) + 88px) !important;
-    right: 14px !important;
+    top: calc(var(--safe-top, 0px) + 90px) !important;
+    right: 12px !important;
     opacity: 1 !important;
     pointer-events: auto !important;
 }
@@ -1991,8 +2280,8 @@ body.mode-phone.phone-nav-active .map-settings-widget {
 body.mode-phone.has-active-route .map-layer-widget,
 body.mode-phone.phone-nav-active .map-layer-widget {
     display: flex !important;
-    top: calc(var(--safe-top, 0px) + 134px) !important;
-    right: 14px !important;
+    top: calc(var(--safe-top, 0px) + 140px) !important;
+    right: 12px !important;
     opacity: 1 !important;
     pointer-events: auto !important;
     transform: translateY(0);
@@ -2001,8 +2290,8 @@ body.mode-phone.phone-nav-active .map-layer-widget {
 
 body.mode-phone.has-active-route .mapboxgl-ctrl-top-right,
 body.mode-phone.phone-nav-active .mapboxgl-ctrl-top-right {
-    top: calc(var(--safe-top, 0px) + 180px) !important;
-    right: 14px !important;
+    top: calc(var(--safe-top, 0px) + 190px) !important;
+    right: 12px !important;
 }
 
 body.mode-phone #phone-bottom-sheet {
@@ -2015,6 +2304,11 @@ body.mode-phone #phone-bottom-sheet {
     height: calc(92dvh - env(safe-area-inset-top, 0px) + 40px);
     padding-bottom: 40px;
     box-sizing: border-box;
+    background: linear-gradient(180deg, #0d1d19 0%, #07100e 100%);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-top: 1px solid rgba(52, 211, 153, 0.28);
+    box-shadow: inset 0 1px 0 rgba(167, 243, 208, 0.14), 0 -14px 40px rgba(0, 0, 0, 0.78);
     flex-direction: column;
     overflow: hidden;
     overscroll-behavior-y: contain;
@@ -2036,7 +2330,7 @@ body.mode-phone #phone-bottom-sheet.snap-peek.bldg-active {
 }
 
 body.mode-phone #phone-bottom-sheet.snap-peek.route-active {
-    transform: translate3d(0, calc(100% - 40px - 124px - env(safe-area-inset-bottom, 0px)), 0);
+    transform: translate3d(0, calc(100% - 40px - 166px - env(safe-area-inset-bottom, 0px)), 0);
 }
 
 body.mode-phone #phone-bottom-sheet.snap-half {
@@ -2059,7 +2353,7 @@ body.mode-phone .kiosk-marker-label {
     display: none;
 }
 
-@media (max-width: 768px) {
+@media screen and (max-width: 768px), screen and (orientation: landscape) and (max-height: 540px) {
     .phone-top-bar {
         display: flex;
         position: fixed;
@@ -2119,24 +2413,24 @@ body.mode-phone .phone-top-bar {
     gap: 7px;
     padding: 0 14px;
     height: 44px;
-    background: rgba(15, 23, 42, 0.88);
-    -webkit-backdrop-filter: blur(16px);
-    backdrop-filter: blur(16px);
-    border: 1.5px solid rgba(56, 189, 248, 0.45);
+    background: var(--botanical-glass, rgba(7, 16, 14, 0.90));
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(52, 211, 153, 0.36);
     border-radius: 9999px;
     color: #f8fafc;
     font-size: 13px;
     font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+    box-shadow: inset 0 1px 0 rgba(167, 243, 208, 0.12), 0 4px 16px rgba(0, 0, 0, 0.45);
     max-width: calc(100% - 54px);
     transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
 }
 
 .phone-station-pill:active {
     transform: scale(0.95);
-    border-color: rgba(56, 189, 248, 0.8);
-    background: rgba(30, 41, 59, 0.95);
+    border-color: rgba(52, 211, 153, 0.8);
+    background: rgba(16, 35, 30, 0.96);
 }
 
 .phone-station-pill-dot {
@@ -2159,67 +2453,82 @@ body.mode-phone .phone-top-bar {
 
 .phone-station-pill-chevron {
     font-size: 10px;
-    color: #94a3b8;
+    color: #a7f3d0;
     margin-left: 2px;
 }
 
-/* 2. Station Banner inside Phone Directory Bottom Sheet */
+/* 2. Slim Botanical Telemetry Strip inside Directory Bottom Sheet */
 
-.phone-station-banner {
+.phone-telemetry-strip {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
-    padding: 10px 14px;
-    margin: 0 16px 12px;
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.65), rgba(15, 23, 42, 0.85));
-    border: 1px solid rgba(56, 189, 248, 0.3);
-    border-radius: 14px;
+    gap: 10px;
+    width: calc(100% - 32px);
+    height: 44px;
+    min-height: 44px;
+    padding: 0 12px;
+    margin: 0 16px 8px;
+    background: rgba(16, 185, 129, 0.08);
+    border: 1px solid rgba(52, 211, 153, 0.24);
+    border-radius: 12px;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-    transition: all 0.2s ease;
+    box-sizing: border-box;
+    font-family: inherit;
+    text-align: left;
+    transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
 }
 
-.phone-station-banner:active {
-    transform: scale(0.98);
-    border-color: rgba(56, 189, 248, 0.6);
-    background: rgba(30, 41, 59, 0.9);
+.phone-telemetry-strip:active {
+    transform: scale(0.985);
+    background: rgba(16, 185, 129, 0.14);
+    border-color: rgba(52, 211, 153, 0.45);
 }
 
-.phone-station-banner-tag {
-    display: block;
-    font-size: 9.5px;
-    font-weight: 800;
-    color: #38bdf8;
-    letter-spacing: 0.8px;
-    text-transform: uppercase;
-    margin-bottom: 2px;
-}
-
-.phone-station-banner-name {
-    font-size: 14px;
-    font-weight: 800;
-    color: #f8fafc;
-    line-height: 1.2;
-}
-
-.phone-station-change-btn {
-    display: inline-flex;
+.pts-left {
+    display: flex;
     align-items: center;
-    gap: 5px;
-    padding: 6px 12px;
-    background: rgba(56, 189, 248, 0.14);
-    border: 1px solid rgba(56, 189, 248, 0.45);
-    border-radius: 9999px;
-    color: #38bdf8;
-    font-size: 11px;
-    font-weight: 700;
-    pointer-events: none;
+    gap: 7px;
+    min-width: 0;
+    flex: 1;
+}
+
+.pts-live-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 8px #22c55e;
     flex-shrink: 0;
 }
 
-.pscb-arrow {
+.pts-label {
     font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.7px;
+    color: #6ee7b7;
+    opacity: 0.85;
+    flex-shrink: 0;
+}
+
+.phone-telemetry-strip .phone-station-banner-name {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #f8fafc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pts-switch-chip {
+    font-size: 11px;
+    font-weight: 700;
+    color: #6ee7b7;
+    background: rgba(16, 185, 129, 0.14);
+    border: 1px solid rgba(52, 211, 153, 0.35);
+    padding: 4px 10px;
+    border-radius: 999px;
+    flex-shrink: 0;
 }
 
 /* 3. Mobile Station Switcher Modal / Action Sheet */
@@ -2227,7 +2536,7 @@ body.mode-phone .phone-top-bar {
 .phone-station-modal-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(2, 6, 23, 0.82);
+    background: rgba(4, 12, 10, 0.78);
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
     z-index: 999999;
@@ -2248,11 +2557,11 @@ body.mode-phone .phone-top-bar {
 .phone-station-modal-sheet {
     width: 100%;
     max-width: 520px;
-    background: #0b1329;
-    border-top: 1.5px solid rgba(255, 255, 255, 0.14);
+    background: linear-gradient(180deg, #0d1d19 0%, #07100e 100%);
+    border-top: 1.5px solid rgba(52, 211, 153, 0.34);
     border-radius: 24px 24px 0 0;
     padding: 20px 18px calc(24px + env(safe-area-inset-bottom, 0px));
-    box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.85);
+    box-shadow: inset 0 1px 0 rgba(167, 243, 208, 0.14), 0 -12px 48px rgba(0, 0, 0, 0.85);
     animation: slideUpModalSheet 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -2266,7 +2575,7 @@ body.mode-phone .phone-top-bar {
     justify-content: space-between;
     margin-bottom: 16px;
     padding-bottom: 12px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid rgba(52, 211, 153, 0.16);
 }
 
 .phone-station-modal-badge {
@@ -2289,7 +2598,7 @@ body.mode-phone .phone-top-bar {
 
 .phone-station-modal-sub {
     font-size: 12px;
-    color: #94a3b8;
+    color: rgba(167, 243, 208, 0.72);
     margin: 0;
 }
 
@@ -2297,19 +2606,20 @@ body.mode-phone .phone-top-bar {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    color: #cbd5e1;
+    background: rgba(16, 35, 30, 0.75);
+    border: 1px solid rgba(52, 211, 153, 0.26);
+    color: #a7f3d0;
     font-size: 14px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.15s;
+    transition: background 0.15s, border-color 0.15s;
 }
 
 .phone-station-modal-close:hover {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(16, 185, 129, 0.22);
+    border-color: rgba(52, 211, 153, 0.5);
     color: #ffffff;
 }
 
@@ -2324,8 +2634,8 @@ body.mode-phone .phone-top-bar {
     align-items: center;
     gap: 14px;
     padding: 14px 16px;
-    background: rgba(255, 255, 255, 0.035);
-    border: 1.5px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(135deg, rgba(16, 38, 31, 0.82) 0%, rgba(10, 24, 20, 0.92) 100%);
+    border: 1.5px solid rgba(52, 211, 153, 0.22);
     border-radius: 16px;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -2333,20 +2643,22 @@ body.mode-phone .phone-top-bar {
 
 .phone-station-card:active {
     transform: scale(0.98);
+    border-color: rgba(52, 211, 153, 0.48);
 }
 
 .phone-station-card.active {
-    background: rgba(34, 197, 94, 0.12);
-    border-color: rgba(34, 197, 94, 0.6);
-    box-shadow: 0 4px 18px rgba(34, 197, 94, 0.18);
+    background: linear-gradient(135deg, rgba(22, 101, 52, 0.38) 0%, rgba(16, 54, 39, 0.72) 100%);
+    border-color: rgba(34, 197, 94, 0.68);
+    box-shadow: 0 4px 18px rgba(34, 197, 94, 0.20);
 }
 
 .psc-icon-wrap {
     width: 44px;
     height: 44px;
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(16, 185, 129, 0.10);
+    border: 1px solid rgba(52, 211, 153, 0.26);
+    color: #6ee7b7;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2354,8 +2666,9 @@ body.mode-phone .phone-top-bar {
 }
 
 .phone-station-card.active .psc-icon-wrap {
-    background: rgba(34, 197, 94, 0.2);
-    border-color: rgba(34, 197, 94, 0.5);
+    background: rgba(34, 197, 94, 0.22);
+    border-color: rgba(34, 197, 94, 0.55);
+    color: #4ade80;
 }
 
 .psc-icon {
@@ -2396,13 +2709,13 @@ body.mode-phone .phone-top-bar {
 
 .psc-province {
     font-size: 11px;
-    color: #94a3b8;
+    color: rgba(167, 243, 208, 0.72);
     white-space: normal;
 }
 
 .psc-desc {
     font-size: 11.5px;
-    color: #cbd5e1;
+    color: rgba(209, 250, 229, 0.82);
     line-height: 1.4;
     white-space: normal;
     word-break: normal;
@@ -2415,9 +2728,9 @@ body.mode-phone .phone-top-bar {
     border-radius: 9999px;
     font-size: 11px;
     font-weight: 700;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    color: #94a3b8;
+    background: rgba(16, 35, 30, 0.75);
+    border: 1px solid rgba(52, 211, 153, 0.24);
+    color: #a7f3d0;
     flex-shrink: 0;
 }
 
@@ -2447,5 +2760,186 @@ body.mode-phone .phone-top-bar {
 @keyframes slideDownModalSheet {
     from { transform: translateY(0); }
     to { transform: translateY(100%); }
+}
+
+/* ==========================================================================
+   4. COMPACT ANDROID (<= 375px) & LANDSCAPE PHONE SIDE-RAIL MODE
+   ========================================================================== */
+
+@media screen and (max-width: 375px) {
+    .phone-search-row {
+        margin: 0 12px 8px;
+        gap: 6px;
+    }
+
+    .phone-telemetry-strip {
+        width: calc(100% - 24px);
+        margin: 0 12px 8px;
+        padding: 0 10px;
+    }
+
+    .phone-search-wrap {
+        padding: 0 10px;
+        gap: 6px;
+    }
+
+    .phone-search-wrap input {
+        font-size: 13.5px;
+    }
+
+    .phone-filter-btn {
+        padding: 0 10px;
+        font-size: 12.5px;
+    }
+
+    .phone-directory-content {
+        padding: 0 12px calc(12px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .phone-route-peek-panel {
+        padding: 4px 12px 10px;
+    }
+}
+
+@media screen and (orientation: landscape) and (max-height: 540px) {
+    body.mode-phone .phone-top-bar,
+    .phone-top-bar {
+        right: auto;
+        left: calc(var(--safe-left, 0px) + 12px);
+        top: calc(var(--safe-top, 0px) + 10px);
+    }
+
+    body.mode-phone #phone-bottom-sheet:has(.phone-filter-dropdown.open),
+    .phone-bottom-sheet:has(.phone-filter-dropdown.open) {
+        overflow: visible !important;
+        z-index: 600 !important;
+    }
+
+    body.mode-phone #phone-bottom-sheet:has(.phone-filter-dropdown.open) .sheet-view.active,
+    .phone-bottom-sheet:has(.phone-filter-dropdown.open) .sheet-view.active {
+        overflow: visible !important;
+    }
+
+    .phone-filter-dropdown {
+        position: fixed !important;
+        left: 0 !important;
+        right: auto !important;
+        top: 6px !important;
+        bottom: auto !important;
+        width: min(640px, calc(100vw - 88px)) !important;
+        max-width: calc(100vw - 76px) !important;
+        max-height: calc(100dvh - 80px) !important;
+        z-index: 1210 !important;
+    }
+
+    .phone-filter-backdrop {
+        left: calc(-1 * (var(--safe-left, 0px) + 12px)) !important;
+        top: calc(-1 * (var(--safe-top, 0px) + 64px)) !important;
+        width: 100vw !important;
+        height: 100dvh !important;
+        right: auto !important;
+        bottom: auto !important;
+        z-index: 1050 !important;
+    }
+
+    .phone-filter-dropdown .fdm-header {
+        padding: 8px 14px;
+    }
+
+    .phone-filter-dropdown .fdm-split-grid {
+        grid-template-columns: minmax(0, 1.38fr) minmax(0, 0.96fr);
+        max-height: calc(100dvh - 122px);
+    }
+
+    .phone-filter-dropdown .fdm-col-header {
+        padding: 6px 10px 4px;
+    }
+
+    .phone-filter-dropdown .fdm-item {
+        padding: 5px 8px;
+        gap: 6px;
+    }
+
+    .phone-filter-dropdown .fdm-item-name {
+        font-size: 11px;
+    }
+
+    body.mode-phone #phone-bottom-sheet,
+    .phone-bottom-sheet {
+        left: calc(var(--safe-left, 0px) + 12px) !important;
+        right: auto !important;
+        top: calc(var(--safe-top, 0px) + 64px) !important;
+        bottom: calc(var(--safe-bottom, 0px) + 12px) !important;
+        width: clamp(290px, 43vw, 370px) !important;
+        height: auto !important;
+        padding-bottom: 0 !important;
+        border-radius: 20px !important;
+        border: 1px solid rgba(52, 211, 153, 0.28) !important;
+        transform: none !important;
+        transition: opacity 0.24s ease, transform 0.24s ease !important;
+    }
+
+    body.mode-phone .phone-telemetry-strip .pts-label,
+    .phone-telemetry-strip .pts-label {
+        display: none;
+    }
+
+    body.mode-phone #phone-bottom-sheet.snap-peek,
+    .phone-bottom-sheet.snap-peek {
+        top: auto !important;
+        max-height: calc(100dvh - 76px);
+    }
+
+    body.mode-phone #phone-bottom-sheet.snap-peek.route-active,
+    .phone-bottom-sheet.snap-peek.route-active {
+        top: auto !important;
+        max-height: 210px;
+    }
+
+    body.mode-phone #phone-bottom-sheet:not(.snap-full) .phone-directory-list,
+    body.mode-phone #phone-bottom-sheet:not(.snap-full) .phone-bldg-scrollable,
+    body.mode-phone #phone-bottom-sheet:not(.snap-full) .phone-route-scrollable,
+    .phone-bottom-sheet:not(.snap-full) .phone-directory-list,
+    .phone-bottom-sheet:not(.snap-full) .phone-bldg-scrollable,
+    .phone-bottom-sheet:not(.snap-full) .phone-route-scrollable {
+        overflow-y: auto !important;
+        touch-action: pan-y !important;
+    }
+
+    body.mode-phone .phone-top-nav-hud,
+    .phone-top-nav-hud {
+        left: calc(clamp(290px, 43vw, 370px) + var(--safe-left, 0px) + 24px) !important;
+        right: 68px !important;
+        top: calc(var(--safe-top, 0px) + 10px) !important;
+    }
+
+    body.mode-phone .floating-camera-controls.active,
+    .floating-camera-controls.active {
+        left: calc((clamp(290px, 43vw, 370px) + 100vw) / 2) !important;
+        bottom: calc(var(--safe-bottom, 0px) + 12px) !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        transform: translateX(-50%) scale(1) !important;
+    }
+
+    body.mode-phone.has-active-route .map-settings-widget,
+    body.mode-phone.phone-nav-active .map-settings-widget {
+        top: calc(var(--safe-top, 0px) + 12px) !important;
+    }
+
+    body.mode-phone.has-active-route .map-layer-widget,
+    body.mode-phone.phone-nav-active .map-layer-widget {
+        top: calc(var(--safe-top, 0px) + 62px) !important;
+    }
+
+    body.mode-phone.has-active-route .mapboxgl-ctrl-top-right,
+    body.mode-phone.phone-nav-active .mapboxgl-ctrl-top-right {
+        top: calc(var(--safe-top, 0px) + 112px) !important;
+    }
+
+    .mapboxgl-ctrl-bottom-left {
+        left: calc(clamp(290px, 43vw, 370px) + 24px) !important;
+        bottom: 10px !important;
+    }
 }
 

@@ -4,6 +4,8 @@
 import { map, getRoofColorCaseStyle } from './map-setup.js';
 import { state } from './data/state.js';
 import { LARES_DRAWINGS } from './data/buildings.js';
+import { activeStatusFilters } from './status-filter.js';
+import { isLowPolyMode } from './performance.js';
 
 let cachedBuildings = null;
 let lastOccludedIds = [];
@@ -11,7 +13,10 @@ let lastCheckTime = 0;
 let lastCheckCoord = null;
 
 const BASE_NO_3D_MODEL_FILTER = ['!=', ['get', 'has_3d_model'], true];
-const getBaseFilter = () => BASE_NO_3D_MODEL_FILTER;
+const getModelStatusFilter = () => activeStatusFilters.has('Existing')
+    ? ['==', ['coalesce', ['get', 'facility_status'], 'Existing'], 'Existing']
+    : ['==', ['get', 'id'], '__none__'];
+const getBaseFilter = () => ['all', BASE_NO_3D_MODEL_FILTER, getModelStatusFilter()];
 
 // Fast zero-allocation Euclidean distance in meters calibrated for Batangas (~13.96° N)
 export function fastMetersDistance(c1, c2) {
@@ -51,6 +56,7 @@ export function initBuildingSpatialIndex() {
 // Ensure companion translucent layers exist in Mapbox style
 export function ensureOcclusionLayers() {
     if (!map || !map.getStyle()) return false;
+    if (isLowPolyMode()) return false;
 
     // 1. Procedural walls & roofs transparent layers
     const origLayerDef = map.getStyle().layers ? map.getStyle().layers.find(l => l.id === '3d-drawings') : null;
@@ -339,10 +345,12 @@ export function applyOcclusionFilters(occludedIds) {
         const modelLayerIds = ['lares-3d-models-layer', 'rares-3d-models-layer', 'qares-3d-models-layer', '3d-buildings-models-layer'];
         const transModelLayerIds = ['lares-3d-models-transparent', 'rares-3d-models-transparent', 'qares-3d-models-transparent', '3d-buildings-models-transparent'];
 
+        const modelStatusFilter = getModelStatusFilter();
+
         if (occludedIds.length === 0) {
-            // A. All solid custom 3D models (show all on solid layer, hide transparent layer completely)
+            // A. All solid custom 3D models (show all existing models on solid layer, hide transparent layer completely)
             modelLayerIds.forEach(id => {
-                if (map.getLayer(id)) map.setFilter(id, null);
+                if (map.getLayer(id)) map.setFilter(id, modelStatusFilter);
             });
             transModelLayerIds.forEach(id => {
                 if (map.getLayer(id)) {
@@ -366,11 +374,11 @@ export function applyOcclusionFilters(occludedIds) {
         } else {
             // A. Custom 3D models: Solid layer excludes occludedIds, translucent layer displays occludedIds
             modelLayerIds.forEach(id => {
-                if (map.getLayer(id)) map.setFilter(id, ['!', ['in', ['get', 'id'], ['literal', occludedIds]]]);
+                if (map.getLayer(id)) map.setFilter(id, ['all', modelStatusFilter, ['!', ['in', ['get', 'id'], ['literal', occludedIds]]]]);
             });
             transModelLayerIds.forEach(id => {
                 if (map.getLayer(id)) {
-                    map.setFilter(id, ['in', ['get', 'id'], ['literal', occludedIds]]);
+                    map.setFilter(id, ['all', modelStatusFilter, ['in', ['get', 'id'], ['literal', occludedIds]]]);
                     // Only display transparent layer if the parent station layer is currently visible
                     const parentSolidId = id.replace('-transparent', '-layer');
                     const isParentVisible = map.getLayer(parentSolidId) && map.getLayoutProperty(parentSolidId, 'visibility') === 'visible';
@@ -407,6 +415,7 @@ export function applyOcclusionFilters(occludedIds) {
 // High-performance throttled occlusion updater for 60fps loops
 
 export function updateOcclusion(targetCoord, destinationId) {
+    if (isLowPolyMode()) return;
 
     const now = Date.now();
 
@@ -447,8 +456,13 @@ export function resetOcclusion() {
     lastOccludedIds = [];
     lastCheckCoord = null;
     lastCheckTime = 0;
-    
-    if (!map || !map.getStyle()) return;
+
+    if (!map || (typeof map.isStyleLoaded === 'function' && !map.isStyleLoaded())) return;
+    try {
+        if (!map.getStyle()) return;
+    } catch (e) {
+        return;
+    }
 
     try {
         const baseFilter = getBaseFilter();
@@ -462,8 +476,9 @@ export function resetOcclusion() {
             map.setLayoutProperty('3d-drawings-roofs-transparent', 'visibility', 'none');
             map.setFilter('3d-drawings-roofs-transparent', ['all', baseFilter, ['in', ['get', 'id'], ['literal', []]]]);
         }
+        const modelStatusFilter = getModelStatusFilter();
         ['lares-3d-models-layer', 'rares-3d-models-layer', 'qares-3d-models-layer', '3d-buildings-models-layer'].forEach(id => {
-            if (map.getLayer(id)) map.setFilter(id, null);
+            if (map.getLayer(id)) map.setFilter(id, modelStatusFilter);
         });
         ['lares-3d-models-transparent', 'rares-3d-models-transparent', 'qares-3d-models-transparent', '3d-buildings-models-transparent'].forEach(id => {
             if (map.getLayer(id)) {

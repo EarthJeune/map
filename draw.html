@@ -2,12 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Interactive Building Footprint Drawer — DA-LARES, DA-QARES & DA-RARES</title>
+<title>Interactive Building Footprint Drawer — DA-LARES, DA-QARES, DA-RARES & DA-CARES</title>
 <meta name="viewport" content="initial-scale=1,maximum-scale=1">
 <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
 <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
 <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.js"></script>
 <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.css" type="text/css">
+<script src="/js/portal/editor-bridge.js?v=304"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -506,7 +507,7 @@
 
   <!-- Campus Station Switcher -->
   <div class="section-label" id="stationSectionLabel">Campus Station</div>
-  <div class="layer-switcher" style="margin-bottom: 12px;">
+  <div class="layer-switcher" style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom: 12px;">
     <button class="layer-btn active" id="btn-station-lares" onclick="switchStation('lares')">
       <span>🌾 DA-LARES (Lipa)</span>
     </button>
@@ -515,6 +516,9 @@
     </button>
     <button class="layer-btn" id="btn-station-rares" onclick="switchStation('rares')">
       <span>🌿 DA-RARES (Tanay)</span>
+    </button>
+    <button class="layer-btn" id="btn-station-cares" onclick="switchStation('cares')">
+      <span>🌴 DA-CARES (Naic)</span>
     </button>
   </div>
 
@@ -663,10 +667,29 @@
         </select>
       </div>
 
-      <div id="customIdGroup" class="form-group" style="display:none;">
-        <label for="customIdInput">Custom Building ID (lowercase_with_underscores)</label>
-        <input type="text" id="customIdInput" placeholder="e.g. storage_facility">
+      <div id="customIdGroup" class="form-group" style="display:none; background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.25); padding:10px; border-radius:8px;">
+        <label for="customNameInput">Official Facility Name *</label>
+        <input type="text" id="customNameInput" placeholder="e.g. Soil Innovation Annex" style="margin-bottom:8px;">
+        <label for="customIdInput">Custom Building ID (lowercase_with_underscores) *</label>
+        <input type="text" id="customIdInput" placeholder="e.g. soil_innovation_annex" style="margin-bottom:8px;">
+        <label for="customCategorySelect">Directory Category</label>
+        <select id="customCategorySelect">
+          <option value="infrastructure">Agri Infrastructure / Facility</option>
+          <option value="office">Office Building</option>
+          <option value="laboratory">Laboratory</option>
+          <option value="conference">Conference Hall</option>
+          <option value="trial_sites">Agricultural Test / Trial Site</option>
+          <option value="orchard">Orchard</option>
+          <option value="digital_agri">Digital Agriculture Project</option>
+        </select>
       </div>
+    </div>
+
+    <div id="unmappedMysqlPickerGroup" class="form-group" style="display:none;">
+      <label for="unmappedMysqlSelect">Link to Unmapped /admin Draft (MySQL)</label>
+      <select id="unmappedMysqlSelect" onchange="if(window.applyUnmappedMysqlPick) window.applyUnmappedMysqlPick(this.value)">
+        <option value="">-- Optional: Pick unmapped MySQL draft --</option>
+      </select>
     </div>
 
     <!-- QARES Facility Fields -->
@@ -759,7 +782,7 @@ mapboxgl.accessToken = 'pk.eyJ1IjoiZWFydGgwMzA3IiwiYSI6ImNtdWFqNTR5czAxNmEyd29lM
 // Detect Station from URL Query Param
 const urlParams = new URLSearchParams(window.location.search);
 const urlParamStation = urlParams.get('station');
-let currentStation = (urlParamStation === 'qares' || urlParamStation === 'rares') ? urlParamStation : 'lares';
+let currentStation = IGuideEditorBridge.resolveStation(urlParamStation, ['lares', 'qares', 'rares', 'cares'], 'lares');
 window.currentStation = currentStation;
 let activeBaseLayer = 'drone';
 
@@ -776,7 +799,8 @@ const STATION_CONFIG = {
         buildingsFile: 'buildings.js & buildings.json',
         buildingsApi: '/api/buildings',
         saveBtnText: '💾 Save Directly to Map (buildings.js)',
-        hasBoundary: false
+        hasBoundary: false,
+        pendingSurvey: false
     },
     qares: {
         center: [121.37178, 13.94658],
@@ -790,7 +814,8 @@ const STATION_CONFIG = {
         buildingsFile: 'qares_buildings.json',
         buildingsApi: '/api/qares/buildings',
         saveBtnText: '💾 Save Directly to Map (qares_buildings.json)',
-        hasBoundary: true
+        hasBoundary: true,
+        pendingSurvey: false
     },
     rares: {
         center: [121.33930, 14.57500],
@@ -804,7 +829,23 @@ const STATION_CONFIG = {
         buildingsFile: 'rares_buildings.json',
         buildingsApi: '/api/rares/buildings',
         saveBtnText: '💾 Save Directly to Map (rares_buildings.json)',
-        hasBoundary: true
+        hasBoundary: true,
+        pendingSurvey: false
+    },
+    cares: {
+        center: [120.7712, 14.3164],
+        zoom: 17.5,
+        name: 'DA-CARES (Naic Campus)',
+        badge: '🌴 DA-CARES Naic Campus',
+        title: '🏢 CARES Building Drawer',
+        subtitle: 'Cavite Agricultural Research & Experiment Station — Pending Field Survey.',
+        roadsFile: '—',
+        roadsEndpoint: null,
+        buildingsFile: null,
+        buildingsApi: null,
+        saveBtnText: '🌴 Pending Field Survey (DA-CARES)',
+        hasBoundary: false,
+        pendingSurvey: true
     }
 };
 
@@ -1328,9 +1369,85 @@ let pendingFeatureId = null;
 let isEditingExisting = false;
 let selectedFeature = null;
 
-// Populate LARES building dropdown cleanly
+// MySQL Building Directory Registry (unifies /admin & draw.html across stations)
+const focusBldgParam = (urlParams.get('bldg') || '').trim();
+const mysqlNamesByStation = { lares: {}, qares: {}, rares: {}, cares: {} };
+const unmappedDraftsByStation = { lares: [], qares: [], rares: [], cares: [] };
+
+async function syncMysqlBuildingDirectory(station) {
+    const st = (station || currentStation || 'lares').toLowerCase();
+    try {
+        let rows = null;
+        try {
+            const adm = await IGuideEditorBridge.authFetch(`/api/admin/buildings?station=${encodeURIComponent(st)}&_t=${Date.now()}`);
+            if (Array.isArray(adm)) rows = adm;
+        } catch (_) {}
+        if (!rows) {
+            try {
+                const res = await fetch(`/api/bootstrap?station=${encodeURIComponent(st)}&_t=${Date.now()}`, { cache: 'no-store' });
+                if (res.ok) {
+                    const boot = await res.json();
+                    if (Array.isArray(boot?.buildings)) rows = boot.buildings;
+                }
+            } catch (_) {}
+        }
+        if (!Array.isArray(rows)) return;
+        const nameMap = {};
+        const unmapped = [];
+        rows.forEach(b => {
+            const code = String(b.building_code || '').trim();
+            if (!code) return;
+            nameMap[code] = b.name || code;
+            if (b.name && st === 'lares' && !(code in KNOWN_BUILDING_NAMES)) {
+                KNOWN_BUILDING_NAMES[code] = b.name;
+            }
+            const hasGeo = (b.has_geometry !== undefined)
+                ? Boolean(b.has_geometry)
+                : Boolean((b.footprint_geojson && String(b.footprint_geojson).trim()) || (b.marker_lng && b.marker_lat));
+            if (!hasGeo) {
+                unmapped.push({ code, name: b.name || code, category: b.category || 'infrastructure' });
+            }
+        });
+        mysqlNamesByStation[st] = nameMap;
+        unmappedDraftsByStation[st] = unmapped;
+        if (st === currentStation) {
+            populateBuildingDropdown();
+            refreshUnmappedMysqlPicker();
+        }
+    } catch (_) {}
+}
+
+function refreshUnmappedMysqlPicker() {
+    const grp = document.getElementById('unmappedMysqlPickerGroup');
+    const sel = document.getElementById('unmappedMysqlSelect');
+    if (!grp || !sel) return;
+    const unmapped = unmappedDraftsByStation[currentStation] || [];
+    if (currentStation === 'lares' || unmapped.length === 0) {
+        grp.style.display = 'none';
+        return;
+    }
+    grp.style.display = 'block';
+    sel.innerHTML = `<option value="">-- Optional: Link to Unmapped /admin Draft (${unmapped.length}) --</option>`
+        + unmapped.map(u => `<option value="${u.code}">⚠ ${u.name} (${u.code})</option>`).join('');
+}
+
+window.applyUnmappedMysqlPick = function(code) {
+    if (!code) return;
+    const u = (unmappedDraftsByStation[currentStation] || []).find(item => item.code === code);
+    if (!u) return;
+    if (currentStation === 'qares') {
+        document.getElementById('qaresBuildingId').value = u.code;
+        document.getElementById('qaresBuildingName').value = u.name;
+    } else if (currentStation === 'rares') {
+        document.getElementById('raresBuildingId').value = u.code;
+        document.getElementById('raresBuildingName').value = u.name;
+    }
+};
+
+// Populate LARES building dropdown cleanly (seed directory + MySQL buildings + unmapped /admin drafts)
 const selectElem = document.getElementById('buildingSelect');
 function populateBuildingDropdown() {
+    const prevVal = selectElem.value;
     selectElem.innerHTML = '';
     const placeholderOpt = document.createElement('option');
     placeholderOpt.value = '';
@@ -1339,22 +1456,38 @@ function populateBuildingDropdown() {
     placeholderOpt.textContent = '-- Select Campus Facility --';
     selectElem.appendChild(placeholderOpt);
 
-    const sortedIds = Object.keys(KNOWN_BUILDING_NAMES).sort((a, b) => {
-        return KNOWN_BUILDING_NAMES[a].localeCompare(KNOWN_BUILDING_NAMES[b]);
-    });
+    const unmapped = unmappedDraftsByStation.lares || [];
+    const unmappedSet = new Set(unmapped.map(u => u.code));
+    if (unmapped.length > 0) {
+        unmapped.forEach(u => {
+            const opt = document.createElement('option');
+            opt.value = u.code;
+            opt.textContent = `⚠ [Unmapped Draft] ${u.name} (${u.code})`;
+            selectElem.appendChild(opt);
+        });
+    }
+
+    const mergedNames = { ...KNOWN_BUILDING_NAMES, ...(mysqlNamesByStation.lares || {}) };
+    const sortedIds = Object.keys(mergedNames)
+        .filter(id => !unmappedSet.has(id))
+        .sort((a, b) => String(mergedNames[a] || a).localeCompare(String(mergedNames[b] || b)));
 
     sortedIds.forEach(id => {
         const opt = document.createElement('option');
         opt.value = id;
         const has3D = (id in CUSTOM_3D_BUILDINGS);
-        opt.textContent = `${KNOWN_BUILDING_NAMES[id]} (${id})${has3D ? ' [3D Model]' : ''}`;
+        opt.textContent = `${mergedNames[id]} (${id})${has3D ? ' [3D Model]' : ''}`;
         selectElem.appendChild(opt);
     });
 
     const customOpt = document.createElement('option');
     customOpt.value = '__custom__';
-    customOpt.textContent = '➕ Enter Custom Building ID...';
+    customOpt.textContent = '➕ Create New Custom Building (Auto-Syncs to MySQL)...';
     selectElem.appendChild(customOpt);
+
+    if (prevVal && Array.from(selectElem.options).some(o => o.value === prevVal)) {
+        selectElem.value = prevVal;
+    }
 }
 populateBuildingDropdown();
 
@@ -1362,7 +1495,8 @@ window.onBuildingSelectChange = function(val) {
     const customGroup = document.getElementById('customIdGroup');
     if (val === '__custom__') {
         customGroup.style.display = 'block';
-        document.getElementById('customIdInput').focus();
+        const nameInp = document.getElementById('customNameInput');
+        if (nameInp) nameInp.focus();
     } else {
         customGroup.style.display = 'none';
         document.getElementById('buildingHas3D').checked = (val in CUSTOM_3D_BUILDINGS);
@@ -1397,7 +1531,8 @@ function updateStationUIState() {
     const isQares = (currentStation === 'qares');
     const isRares = (currentStation === 'rares');
     const isLares = (currentStation === 'lares');
-    const cfg = STATION_CONFIG[currentStation];
+    const isCares = (currentStation === 'cares');
+    const cfg = STATION_CONFIG[currentStation] || STATION_CONFIG.lares;
 
     // Buttons
     document.getElementById('btn-station-lares').classList.toggle('active', isLares);
@@ -1407,6 +1542,10 @@ function updateStationUIState() {
     if (btnRares) {
         btnRares.classList.toggle('active', isRares);
         btnRares.classList.toggle('qares-btn', isRares);
+    }
+    const btnCares = document.getElementById('btn-station-cares');
+    if (btnCares) {
+        btnCares.classList.toggle('active', isCares);
     }
 
     // Badges & Labels
@@ -1425,7 +1564,12 @@ function updateStationUIState() {
     // Save button styling and text
     const saveBtn = document.getElementById('saveDirectBtn');
     saveBtn.textContent = cfg.saveBtnText;
+    saveBtn.disabled = Boolean(cfg.pendingSurvey);
+    saveBtn.style.opacity = cfg.pendingSurvey ? '0.55' : '';
     saveBtn.classList.toggle('qares-save', isQares || isRares);
+
+    IGuideEditorBridge.syncCaresBanner(currentStation);
+    IGuideEditorBridge.applyStationButtonLocks();
 
     // Roads toggle label
     document.getElementById('roadsToggleLabel').textContent = `🛣️ Show Roads Reference (${cfg.roadsFile})`;
@@ -1679,8 +1823,9 @@ function openModalForFeature(f) {
         subtitle.textContent = `Specify attributes for this drawn ${stLabel} campus facility.`;
     }
 
-    const currentId = f.properties.id || '';
-    const currentName = f.properties.name || '';
+    const currentId = f.properties.id || (!isEditingExisting && focusBldgParam ? focusBldgParam : '');
+    const currentName = f.properties.name || ((mysqlNamesByStation[currentStation] || {})[currentId]) || '';
+    refreshUnmappedMysqlPicker();
 
     if (isQares) {
         document.getElementById('qaresBuildingId').value = currentId || `qares_facility_${Date.now() % 1000}`;
@@ -1695,17 +1840,25 @@ function openModalForFeature(f) {
         const select = document.getElementById('buildingSelect');
         const customGroup = document.getElementById('customIdGroup');
         const customInput = document.getElementById('customIdInput');
+        const customNameInput = document.getElementById('customNameInput');
+        const customCatSelect = document.getElementById('customCategorySelect');
 
-        if (currentId && currentId in KNOWN_BUILDING_NAMES) {
+        if (currentId && Array.from(select.options).some(o => o.value === currentId)) {
             select.value = currentId;
             customGroup.style.display = 'none';
         } else if (currentId) {
             select.value = '__custom__';
             customGroup.style.display = 'block';
             customInput.value = currentId;
+            customInput.dataset.manual = '1';
+            if (customNameInput) customNameInput.value = currentName || currentId;
+            if (customCatSelect && f.properties.category) customCatSelect.value = f.properties.category;
         } else {
             select.value = '';
             customGroup.style.display = 'none';
+            if (customInput) { customInput.value = ''; customInput.dataset.manual = ''; }
+            if (customNameInput) customNameInput.value = '';
+            if (customCatSelect) customCatSelect.value = 'infrastructure';
         }
         document.getElementById('buildingHas3D').checked = f.properties.has_3d_model || (currentId in CUSTOM_3D_BUILDINGS);
     }
@@ -1766,14 +1919,31 @@ window.confirmModal = function() {
             const select = document.getElementById('buildingSelect');
             buildingId = select.value;
             if (buildingId === '__custom__') {
-                const customVal = document.getElementById('customIdInput').value.trim();
-                buildingId = customVal.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+                const customNameVal = (document.getElementById('customNameInput')?.value || '').trim();
+                const rawCustomId = (document.getElementById('customIdInput')?.value || '').trim();
+                const baseSlug = rawCustomId || customNameVal;
+                buildingId = baseSlug.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+                if (!buildingId) {
+                    alert('Please enter an Official Facility Name or Custom Building ID.');
+                    return;
+                }
+                buildingName = customNameVal || KNOWN_BUILDING_NAMES[buildingId] || buildingId;
+                category = document.getElementById('customCategorySelect')?.value || 'infrastructure';
+                KNOWN_BUILDING_NAMES[buildingId] = buildingName;
+                if (pendingFeatureId) {
+                    draw.setFeatureProperty(pendingFeatureId, 'category', category);
+                }
+                if (selectedFeature && selectedFeature.id === pendingFeatureId) {
+                    selectedFeature.properties.category = category;
+                }
+                populateBuildingDropdown();
+            } else {
+                if (!buildingId) {
+                    alert('Please select or specify a Building ID.');
+                    return;
+                }
+                buildingName = KNOWN_BUILDING_NAMES[buildingId] || (mysqlNamesByStation.lares || {})[buildingId] || buildingId;
             }
-            if (!buildingId) {
-                alert('Please select or specify a Building ID.');
-                return;
-            }
-            buildingName = KNOWN_BUILDING_NAMES[buildingId] || buildingId;
             has3D = document.getElementById('buildingHas3D').checked;
         }
 
@@ -1876,7 +2046,7 @@ document.addEventListener('DOMContentLoaded', () => {
             window.confirmModal();
         });
     }
-    ['qaresBuildingId', 'qaresBuildingName', 'raresBuildingId', 'raresBuildingName', 'buildingHeight', 'buildingMinHeight', 'customIdInput'].forEach(id => {
+    ['qaresBuildingId', 'qaresBuildingName', 'raresBuildingId', 'raresBuildingName', 'buildingHeight', 'buildingMinHeight', 'customIdInput', 'customNameInput'].forEach(id => {
         const el = document.getElementById(id);
         if (el) {
             el.addEventListener('keydown', (e) => {
@@ -1885,6 +2055,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.confirmModal();
                 }
             });
+        }
+    });
+    const cName = document.getElementById('customNameInput');
+    const cId = document.getElementById('customIdInput');
+    cId?.addEventListener('input', () => { cId.dataset.manual = cId.value.trim() ? '1' : ''; });
+    cName?.addEventListener('input', () => {
+        if (cId && !cId.dataset.manual) {
+            cId.value = cName.value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
         }
     });
 });
@@ -1947,10 +2125,21 @@ window.toggleBoundaryLayer = function(visible) {
 };
 
 // Direct Save to Backend (supports LARES, QARES and RARES)
-window.saveDirectlyToMap = function() {
+window.saveDirectlyToMap = async function() {
     let data;
     const btn = document.getElementById('saveDirectBtn');
     const cfg = STATION_CONFIG[currentStation];
+    if (!cfg || cfg.pendingSurvey || !cfg.buildingsApi) {
+        showToast('🌴 DA-CARES (Naic) is pending field survey.');
+        return;
+    }
+    const confirmed = await IGuideEditorBridge.confirmSave({
+        title: 'Save Building Footprints?',
+        message: `Are you sure you want to save the ${(currentStation || 'lares').toUpperCase()} building footprints to ${cfg.buildingsFile}?`,
+        confirmLabel: 'Yes, Save Footprints'
+    });
+    if (!confirmed) return;
+
     btn.textContent = `Saving to ${cfg.buildingsFile}...`;
     btn.disabled = true;
 
@@ -2009,32 +2198,44 @@ window.saveDirectlyToMap = function() {
         localStorage.setItem('building_draw_autosave_qares', JSON.stringify(data));
     }
 
-    fetch(cfg.buildingsApi, {
+    IGuideEditorBridge.authFetch(cfg.buildingsApi, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
     })
-    .then(r => r.json())
     .then(res => {
-        if (res.success) {
-            btn.textContent = `✅ Saved ${res.count} buildings!`;
+        if (res && res.success) {
+            const dbCreated = Array.isArray(res.createdCodes) ? res.createdCodes.length : 0;
+            btn.textContent = dbCreated > 0
+                ? `✅ Saved ${res.count} (+${dbCreated} synced to MySQL!)`
+                : `✅ Saved ${res.count} buildings!`;
             btn.style.background = "#10b981";
-            showToast(`✅ Successfully saved ${res.count} ${currentStation.toUpperCase()} building footprints across all categories!`);
+            showToast(dbCreated > 0
+                ? `✅ Saved ${res.count} ${currentStation.toUpperCase()} footprints & auto-created ${dbCreated} MySQL record(s)!`
+                : `✅ Successfully saved ${res.count} ${currentStation.toUpperCase()} footprints & synced MySQL!`);
+            syncMysqlBuildingDirectory(currentStation);
+            try {
+                const bc = new BroadcastChannel('iguide_db_sync');
+                bc.postMessage({ type: 'db_synced', station: currentStation, at: Date.now() });
+                bc.close();
+            } catch (_) {}
             setTimeout(() => {
                 btn.textContent = cfg.saveBtnText;
                 btn.style.background = (currentStation === 'lares') ? '#22c55e' : '#0284c7';
                 btn.disabled = false;
             }, 3000);
         } else {
-            alert('Failed to save: ' + (res.error || 'Unknown error'));
+            alert('Failed to save: ' + ((res && res.error) || 'Unknown error'));
             btn.textContent = "❌ Error Saving";
             btn.disabled = false;
         }
     })
     .catch(err => {
-        alert('Network error saving buildings: ' + err.message);
+        alert('Save blocked / error: ' + err.message);
         btn.textContent = "❌ Error Saving";
-        btn.disabled = false;
+        setTimeout(() => {
+            btn.textContent = cfg.saveBtnText;
+            btn.disabled = false;
+        }, 2500);
     });
 };
 
@@ -2092,6 +2293,12 @@ function getBeforeDrawId() {
 // Load Reference Roads & Entrances for active station
 function loadReferenceRoads(station) {
     const cfg = STATION_CONFIG[station];
+    if (!cfg || cfg.pendingSurvey || !cfg.roadsEndpoint) {
+        if (map.getSource('roads-reference')) {
+            map.getSource('roads-reference').setData({ type: 'FeatureCollection', features: [] });
+        }
+        return;
+    }
     fetch(cfg.roadsEndpoint + '?t=' + Date.now())
         .then(res => res.json())
         .then(roadsData => {
@@ -2105,7 +2312,12 @@ function loadReferenceRoads(station) {
 // Fetch buildings from backend and load into Draw canvas
 function loadStationBuildings(station) {
     const cfg = STATION_CONFIG[station];
+    if (!cfg || cfg.pendingSurvey || !cfg.buildingsApi) {
+        updateMapLabels();
+        return;
+    }
     const storageKey = 'building_draw_autosave_' + station;
+    syncMysqlBuildingDirectory(station);
 
     // Ensure QARES autosave has proper colors without purging user drawings
     if (station === 'qares') {
@@ -2233,8 +2445,10 @@ function loadStationBuildings(station) {
 }
 
 // Switch Station function
-window.switchStation = function(station) {
-    if (station === currentStation) return;
+window.switchStation = function(station, forceBypass = false) {
+    if (!STATION_CONFIG[station]) return;
+    if (!forceBypass && !IGuideEditorBridge.canSwitchTo(station, showToast)) return;
+    if (station === currentStation && !forceBypass) return;
 
     // Autosave current station data before switching
     if (currentStation === 'qares') {
@@ -2250,7 +2464,7 @@ window.switchStation = function(station) {
         currentData.station = 'rares';
         currentData.name = 'RARES Buildings';
         localStorage.setItem('building_draw_autosave_rares', JSON.stringify(currentData));
-    } else {
+    } else if (currentStation === 'lares') {
         const currentData = draw.getAll();
         localStorage.setItem('building_draw_autosave_lares', JSON.stringify(currentData));
     }
@@ -2456,6 +2670,18 @@ map.on('load', () => {
     updateStationUIState();
     loadReferenceRoads(currentStation);
     loadStationBuildings(currentStation);
+});
+
+IGuideEditorBridge.init({
+    validStations: ['lares', 'qares', 'rares', 'cares'],
+    currentStation,
+    onForceStation: (st) => {
+        if (st && STATION_CONFIG[st] && st !== currentStation) {
+            window.switchStation(st, true);
+        } else {
+            updateStationUIState();
+        }
+    }
 });
 </script>
 </body>

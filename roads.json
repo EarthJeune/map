@@ -2657,6 +2657,1179 @@
         ],
         "type": "LineString"
       }
+    },
+    {
+      "id": "90d5ddb6b96cbdfccd6954cdc9028376",
+      "type": "Feature",
+      "properties": {
+        "id": "road_1",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.16925243375192,
+            13.9599506692566
+          ],
+          [
+            121.1692239145994,
+            13.960024416197939
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "bae20f5103550c4d311fdd2210cdb969",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "zone_citrus_orchard",
+        "name": "Entrance: zone_citrus_orchard",
+        "station": "lares",
+        "id": "entrance_1"
+      },
+      "geometry": {
+        "coordinates": [
+          121.1692227853352,
+          13.96002614344691
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "ffd1936593d9f32fa4ecf6af02b6b114",
+      "type": "Feature",
+      "properties": {
+        "id": "road_1",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.16708450593825,
+            13.959897132088102
+          ],
+          [
+            121.16709238676401,
+            13.959875221944955
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "5cec9824491052691ca98c7bbe0bdc57",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "zone_upland_rice_exp",
+        "name": "Entrance: zone_upland_rice_exp",
+        "station": "lares",
+        "id": "entrance_1"
+      },
+      "geometry": {
+        "coordinates": [
+          121.16709265603174,
+          13.959875063904434
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "5316a8bb7eaa6e4325108173df701357",
+      "type": "Feature",
+      "properties": {
+        "id": "road_2",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.16737388274521,
+            13.95999431079072
+          ],
+          [
+            121.16738070859407,
+            13.959972399824863
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "91a7504092301e1b0a4ba3434672c116",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "zone_veg_exp",
+        "name": "Entrance: zone_veg_exp",
+        "station": "lares",
+        "id": "entrance_2"
+      },
+      "geometry": {
+        "coordinates": [
+          121.16738090898764,
+          13.959972399824863
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "287e58c26480cb0723f21598702c83ba",
+      "type": "Feature",
+      "properties": {
+        "id": "road_3",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.1676163157386,
+            13.960076427760299
+          ],
+          [
+            121.16762534675075,
+            13.960050875055373
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "e383ddafe8c54a5fe9c0e6b3863f30f7",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "zone_cguard_corn",
+        "name": "Entrance: zone_cguard_corn",
+        "station": "lares",
+        "id": "entrance_3"
+      },
+      "geometry": {
+        "coordinates": [
+          121.16762534674928,
+          13.960050443037431
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "30551f7190feb6f9e9e2afdb70444e56",
+      "type": "Feature",
+      "properties": {
+        "id": "road_4",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.16711969287866,
+            13.959129887029874
+          ],
+          [
+            121.16717176094465,
+            13.959145620395503
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "eef87d499e72462fb1564a5488b05c00",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "zone_tc_makapuno_screenhouse",
+        "name": "Entrance: zone_tc_makapuno_screenhouse",
+        "station": "lares",
+        "id": "entrance_4"
+      },
+      "geometry": {
+        "coordinates": [
+          121.16717222607758,
+          13.959146523193809
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "be2ffb1f5d080942e4be7decd7b77072",
+      "type": "Feature",
+      "properties": {
+        "id": "road_5",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.16767559857766,
+            13.95940656607111
+          ],
+          [
+            121.16770396616931,
+            13.959331045100441
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "7871d6d717c3634aabf25363de55ed49",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "zone_coffee_citrus_screenhouse",
+        "name": "Entrance: zone_coffee_citrus_screenhouse",
+        "station": "lares",
+        "id": "entrance_5"
+      },
+      "geometry": {
+        "coordinates": [
+          121.16770396616931,
+          13.959329929027092
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "8c29d59a151b1cf54e5632701a139d0a",
+      "type": "Feature",
+      "properties": {
+        "id": "road_6",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.16781523321703,
+            13.958545483392726
+          ],
+          [
+            121.16782429777476,
+            13.958521680056336
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "b5dad5a3a9e90fde55f08151e8b85d6e",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "zone_mango_banana_jackfruit",
+        "name": "Entrance: zone_mango_banana_jackfruit",
+        "station": "lares",
+        "id": "entrance_6"
+      },
+      "geometry": {
+        "coordinates": [
+          121.16782403008375,
+          13.958521420265612
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "aa62f486fe0376d6a620afa90127c400",
+      "type": "Feature",
+      "properties": {
+        "id": "road_7",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.16766042780904,
+            13.958492321011263
+          ],
+          [
+            121.16774685893239,
+            13.958268044497416
+          ],
+          [
+            121.16775533022741,
+            13.95824502527222
+          ],
+          [
+            121.16777396707522,
+            13.95821789546794
+          ],
+          [
+            121.16778667401712,
+            13.958197342584057
+          ],
+          [
+            121.16779260392298,
+            13.958173501236999
+          ],
+          [
+            121.16782733623069,
+            13.958111842568044
+          ],
+          [
+            121.16784004317265,
+            13.958069914663682
+          ],
+          [
+            121.16785275011455,
+            13.958034563679348
+          ],
+          [
+            121.16790323941882,
+            13.957842537834395
+          ],
+          [
+            121.16794801011838,
+            13.95769988581229
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "f57e8132111ef0b5c01772e7a66dc762",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "zone_organic_veg_prod",
+        "name": "Entrance: zone_organic_veg_prod",
+        "station": "lares",
+        "id": "entrance_7"
+      },
+      "geometry": {
+        "coordinates": [
+          121.167948528029,
+          13.957696963087372
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "577872772d05ae12125feaa4c6806d2a",
+      "type": "Feature",
+      "properties": {
+        "id": "road_8",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.16894348294818,
+            13.958929458343462
+          ],
+          [
+            121.16895624586738,
+            13.958893217776932
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "3acc24ed169d811634c4919d3c7012d3",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "zone_dwarf_makapuno",
+        "name": "Entrance: zone_dwarf_makapuno",
+        "station": "lares",
+        "id": "entrance_8"
+      },
+      "geometry": {
+        "coordinates": [
+          121.16895659806175,
+          13.958892053834717
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "48de31837c2bfade887a12ae717d9910",
+      "type": "Feature",
+      "properties": {
+        "id": "road_9",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.16986664247997,
+            13.959258043388544
+          ],
+          [
+            121.1698751161166,
+            13.95923117046388
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "cab6c334e20b44eda939c5b7bfeac48a",
+      "type": "Feature",
+      "properties": {
+        "id": "road_10",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.17071079918412,
+            13.959556499375523
+          ],
+          [
+            121.17072070479378,
+            13.95952525693059
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "659e7d2ac6f5ee17fe24691ec2bc7e11",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "zone_soybean_seeds_prod",
+        "name": "Entrance: zone_soybean_seeds_prod",
+        "station": "lares",
+        "id": "entrance_9"
+      },
+      "geometry": {
+        "coordinates": [
+          121.17072088642851,
+          13.959525236708416
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "59803c221c288f2ceb3cd694f10a0fc5",
+      "type": "Feature",
+      "properties": {
+        "id": "road_11",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.17122312708591,
+            13.95975220089835
+          ],
+          [
+            121.1712829722706,
+            13.959694123208266
+          ],
+          [
+            121.17132286906048,
+            13.959597327025662
+          ],
+          [
+            121.17138925817477,
+            13.959411015151304
+          ],
+          [
+            121.1714093121056,
+            13.959348883303093
+          ],
+          [
+            121.17144920889535,
+            13.95923272770382
+          ],
+          [
+            121.17148910568523,
+            13.959113345500214
+          ],
+          [
+            121.1715423014059,
+            13.95898751013847
+          ],
+          [
+            121.17158219819572,
+            13.958877807457952
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "594590d2b54ba37d1652915d5837e0ed",
+      "type": "Feature",
+      "properties": {
+        "id": "road_12",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.17158201099727,
+            13.958877230202972
+          ],
+          [
+            121.17160876367666,
+            13.958817191570475
+          ],
+          [
+            121.17162882818576,
+            13.958742548924818
+          ],
+          [
+            121.17165725290624,
+            13.95867439692205
+          ],
+          [
+            121.17160541959157,
+            13.958651679583312
+          ],
+          [
+            121.17156194648817,
+            13.958632207577054
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "69805c367bc9991cc6e8db69619c2240",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "zone_cassava_production_36_38",
+        "name": "Entrance: zone_cassava_production_36_38",
+        "station": "lares",
+        "id": "entrance_10"
+      },
+      "geometry": {
+        "coordinates": [
+          121.17155860240308,
+          13.958632207577054
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "9587bd25af6f94bddc4540e4eabdacf7",
+      "type": "Feature",
+      "properties": {
+        "id": "road_13",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.17109932977053,
+            13.960079546914997
+          ],
+          [
+            121.17113648920372,
+            13.960091086721064
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "96684972ea2984caeb516319a8e68665",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "zone_tall_makapuno_cacao_29",
+        "name": "Entrance: zone_tall_makapuno_cacao_29",
+        "station": "lares",
+        "id": "entrance_11"
+      },
+      "geometry": {
+        "coordinates": [
+          121.17113731199885,
+          13.960091485967112
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "c8c33ea28f9673f6b6eddb8a2db2af92",
+      "type": "Feature",
+      "properties": {
+        "id": "road_14",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.17136899565531,
+            13.95946832521166
+          ],
+          [
+            121.17143342280445,
+            13.959487220079424
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "1255173549bc5dbfe294b49046344db1",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "zone_tall_makapuno_cacao_42",
+        "name": "Entrance: zone_tall_makapuno_cacao_42",
+        "station": "lares",
+        "id": "entrance_12"
+      },
+      "geometry": {
+        "coordinates": [
+          121.17143622398805,
+          13.959488141315362
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "3defe01ac8f27c9ec7442721fb0fd02a",
+      "type": "Feature",
+      "properties": {
+        "id": "road_15",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.17166669584697,
+            13.961395712514218
+          ],
+          [
+            121.17165577846362,
+            13.961419074718947
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "28ac8d454aad68cf9ca1465551082d2e",
+      "type": "Feature",
+      "properties": {
+        "id": "road_16",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.17166649499495,
+            13.961395736081002
+          ],
+          [
+            121.1716795918444,
+            13.961369468852297
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "d10c996a5ca4468bc27b5e4c8b1f4a99",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "zone_mango_orchard_45",
+        "name": "Entrance: zone_mango_orchard_45",
+        "station": "lares",
+        "id": "entrance_13"
+      },
+      "geometry": {
+        "coordinates": [
+          121.17165559253021,
+          13.961424783406741
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "4f90feeab90cd797c63e1deea16ac133",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "zone_mango_orchard_16",
+        "name": "Entrance: zone_mango_orchard_16",
+        "station": "lares",
+        "id": "entrance_14"
+      },
+      "geometry": {
+        "coordinates": [
+          121.17168109180216,
+          13.961363646266776
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "edbc99a3f337679f19bd7c62751a677d",
+      "type": "Feature",
+      "properties": {
+        "id": "road_17",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.17088409490418,
+            13.96051729725913
+          ],
+          [
+            121.17086742789866,
+            13.960560429782433
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "7c266644ffe24d77149ae37c369a54df",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "zone_corn_seed_prod_13_15",
+        "name": "Entrance: zone_corn_seed_prod_13_15",
+        "station": "lares",
+        "id": "entrance_15"
+      },
+      "geometry": {
+        "coordinates": [
+          121.17086757695898,
+          13.96056391458805
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "446a04e4d38733883fa4621e9156c2d6",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "zone_corn_seed_prod_2",
+        "name": "Entrance: zone_corn_seed_prod_2",
+        "station": "lares",
+        "id": "entrance_16"
+      },
+      "geometry": {
+        "coordinates": [
+          121.1708661065303,
+          13.960563959608336
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "4523b9a3d3979c72b7e5186efcb80522",
+      "type": "Feature",
+      "properties": {
+        "id": "road_18",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.16901668470138,
+            13.959868081650711
+          ],
+          [
+            121.16900004848094,
+            13.959916516248285
+          ],
+          [
+            121.16897925320706,
+            13.959958896512504
+          ],
+          [
+            121.16894598076777,
+            13.960038611751429
+          ],
+          [
+            121.16892518549395,
+            13.960094109686466
+          ],
+          [
+            121.16890019800582,
+            13.960171770245495
+          ],
+          [
+            121.16888035820477,
+            13.960242020767438
+          ],
+          [
+            121.16884449637035,
+            13.960335552725113
+          ],
+          [
+            121.16880639317117,
+            13.960435610126623
+          ],
+          [
+            121.1687727727014,
+            13.960518266207998
+          ],
+          [
+            121.1687503590556,
+            13.960581345828714
+          ],
+          [
+            121.16873915223363,
+            13.960622673846899
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "85d252416b004701c1e5062fb706ddaf",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "zone_indigenous_trees",
+        "name": "Entrance: zone_indigenous_trees",
+        "station": "lares",
+        "id": "entrance_17"
+      },
+      "geometry": {
+        "coordinates": [
+          121.16873668241834,
+          13.960632424297373
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "aff669460fd799aeb539bb8dac4c854c",
+      "type": "Feature",
+      "properties": {
+        "id": "road_19",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.16831464850026,
+            13.959630816597524
+          ],
+          [
+            121.16832599063258,
+            13.959601181952934
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "c3fe512b8e2f93ab8314a6bffb01014b",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "zone_coffee_orchard",
+        "name": "Entrance: zone_coffee_orchard",
+        "station": "lares",
+        "id": "entrance_18"
+      },
+      "geometry": {
+        "coordinates": [
+          121.16832631766454,
+          13.959598836420142
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "04627ff42c487a4b08391943eb8e4b34",
+      "type": "Feature",
+      "properties": {
+        "id": "road_20",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.16864247677563,
+            13.95882969889044
+          ],
+          [
+            121.16863420577562,
+            13.958852632466403
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "313c6f12c51e51e201dc1405483e7a5c",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "zone_coffee_orchard",
+        "name": "Entrance: zone_coffee_orchard",
+        "station": "lares",
+        "id": "entrance_19"
+      },
+      "geometry": {
+        "coordinates": [
+          121.16863282171829,
+          13.958855990437925
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "a11a2a62b7f0cd42ce0d64ef820ed316",
+      "type": "Feature",
+      "properties": {
+        "id": "road_21",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.16949914219634,
+            13.96004028571818
+          ],
+          [
+            121.1695179092103,
+            13.959991251479408
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "f45c79836b5c23c93a799be646c32abb",
+      "type": "Feature",
+      "properties": {
+        "id": "road_22",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.16982289004187,
+            13.959245655193115
+          ],
+          [
+            121.16981016813776,
+            13.95927775529644
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "c8838fe6e9bbd2c6cadb2f536c72c993",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "zone_vegetable_production_area",
+        "name": "Entrance: zone_vegetable_production_area",
+        "station": "lares",
+        "id": "entrance_20"
+      },
+      "geometry": {
+        "coordinates": [
+          121.16980862256605,
+          13.959280005185633
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "103f5d1cdbf05207f17dd6365cd540b1",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "zone_vegetable_production_area",
+        "name": "Entrance: zone_vegetable_production_area",
+        "station": "lares",
+        "id": "entrance_21"
+      },
+      "geometry": {
+        "coordinates": [
+          121.16951956105038,
+          13.959991550323139
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "8f6438b1c7615cd0c02ffbd3354e1a8e",
+      "type": "Feature",
+      "properties": {
+        "id": "road_23",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.17043692372363,
+            13.96036448144433
+          ],
+          [
+            121.17045083259097,
+            13.960330736346847
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "a68a6a1dcc134fa06181f1543b472dc4",
+      "type": "Feature",
+      "properties": {
+        "id": "road_24",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.17074986970528,
+            13.95956875660174
+          ],
+          [
+            121.17072690071797,
+            13.959635628469442
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "aaf865e3ad2e1649888b6dedffcb8d6c",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "zone_fruit_trees_citrus_orchard",
+        "name": "Entrance: zone_fruit_trees_citrus_orchard",
+        "station": "lares",
+        "id": "entrance_22"
+      },
+      "geometry": {
+        "coordinates": [
+          121.17072690071797,
+          13.959637486021236
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "39adc6fd78c5d11583e735dcea325645",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "zone_fruit_trees_citrus_orchard",
+        "name": "Entrance: zone_fruit_trees_citrus_orchard",
+        "station": "lares",
+        "id": "entrance_23"
+      },
+      "geometry": {
+        "coordinates": [
+          121.17045209993995,
+          13.96032929925532
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "e40a3038594af93fa5c0d2e91cc2a213",
+      "type": "Feature",
+      "properties": {
+        "id": "road_25",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.16787478136735,
+            13.959475848131788
+          ],
+          [
+            121.16789452011113,
+            13.959423665106186
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "caf5290ee27e997bfb031d9f6e8eee5e",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "zone_pomelo_orchard_19",
+        "name": "Entrance: zone_pomelo_orchard_19",
+        "station": "lares",
+        "id": "entrance_24"
+      },
+      "geometry": {
+        "coordinates": [
+          121.16789488030258,
+          13.95942296599516
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "37c47007a03d0013ee88e92c41d36dde",
+      "type": "Feature",
+      "properties": {
+        "id": "road_26",
+        "station": "lares"
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            121.16814334750399,
+            13.95866041477882
+          ],
+          [
+            121.1681314706176,
+            13.958694224851513
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "id": "4705f67d5ac22637f52261611ce4a7fd",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "zone_pomelo_orchard_19",
+        "name": "Entrance: zone_pomelo_orchard_19",
+        "station": "lares",
+        "id": "entrance_25"
+      },
+      "geometry": {
+        "coordinates": [
+          121.16813101389317,
+          13.958695111331949
+        ],
+        "type": "Point"
+      }
+    },
+    {
+      "id": "c991abba7d16c2da486a4e684a7a87af",
+      "type": "Feature",
+      "properties": {
+        "type": "entrance",
+        "buildingId": "zone_cassava_production_43",
+        "name": "Entrance: zone_cassava_production_43",
+        "station": "lares",
+        "id": "entrance_26"
+      },
+      "geometry": {
+        "coordinates": [
+          121.16987475762352,
+          13.959228854731691
+        ],
+        "type": "Point"
+      }
     }
   ]
 }

@@ -8,7 +8,7 @@ import { getActiveStationDefaultView, STATIONS } from './data/stations.js';
 
 import { BUILDING_DIRECTORY, DEFAULT_BUILDING_COLORS, STANDALONE_GATES, getBuildingById } from './data/buildings.js';
 
-import { renderBuildingOfficesHTML, getFlatBuildingOffices, isOfficeMatched, findMatchedOffice, getOfficeSearchSubtitle, isBuildingMatched, getBuildingSearchSubtitle, isPlotZoneMatched, matchesSearchText } from './data/offices.js';
+import { renderBuildingOfficesHTML, getFlatBuildingOffices, isOfficeMatched, findMatchedOffice, getOfficeSearchSubtitle, isBuildingMatched, getBuildingSearchSubtitle, getBuildingSearchRelevanceScore, isPlotZoneMatched, getPlotSearchSubtitle, getPlotSearchRelevanceScore, highlightSearchTermsHtml, escapeSearchHtml, matchesSearchText } from './data/offices.js';
 
 import { getBuildingWayfindingInfo } from './data/descriptions.js';
 
@@ -16,6 +16,7 @@ import { FIELD_COMMODITY_ZONES } from './data/plots.js';
 import { lucideIcon, renderIconOrText } from './data/icons.js';
 
 import { activeTypeFilters, EMBEDDED_CONFERENCE_HALLS, toggleTypeFilter, resetTypeFilters, updateFilterDropdownUI, isNavigationActive } from './sidebar.js';
+import { isFacilityStatusVisible, renderFacilityStatusBadgeHtml } from './status-filter.js';
 
 import { deselectPlotZone, clearSubPlotHighlight, zoomToSubPlot, selectPlotZone } from './plot-layers.js';
 
@@ -313,7 +314,7 @@ export function initPhoneSheetGestures() {
 
         let peekBase = 142;
 
-        if (sheet.classList.contains('route-active')) peekBase = 124;
+        if (sheet.classList.contains('route-active')) peekBase = 166;
 
         else if (sheet.classList.contains('bldg-active')) peekBase = 92;
 
@@ -793,7 +794,7 @@ export function renderPhoneBuildingGallery(buildingId) {
 
 
 
-    const bldg = BUILDING_DIRECTORY.find(b => b.id === buildingId);
+    const bldg = getBuildingById(buildingId) || BUILDING_DIRECTORY.find(b => b.id === buildingId);
 
     const bldgName = bldg ? bldg.name : 'Building';
 
@@ -801,7 +802,11 @@ export function renderPhoneBuildingGallery(buildingId) {
 
     let candidatePhotos = [];
 
-    if (BUILDING_PHOTOS[buildingId] && BUILDING_PHOTOS[buildingId].length > 0) {
+    if (Array.isArray(bldg?.images) && bldg.images.length > 0) {
+
+        candidatePhotos = bldg.images.map(im => im.src || im.image_webp_url).filter(Boolean);
+
+    } else if (BUILDING_PHOTOS[buildingId] && BUILDING_PHOTOS[buildingId].length > 0) {
 
         candidatePhotos = [...BUILDING_PHOTOS[buildingId]];
 
@@ -1098,10 +1103,10 @@ export function handleWelcomeProceed() {
     const urlParams = (typeof window !== 'undefined') ? new URLSearchParams(window.location.search) : null;
     const isDevOverride = Boolean((state && state.isAdmin) || (urlParams && urlParams.get('dev') === '1'));
 
-    // The second picture (#station-dev-modal) only pops up when clicking "Explore Campus" if the station is under development
-    if (targetStation && targetStation.status === 'under_development' && !isDevOverride) {
+    // CARES is strictly inaccessible to visitors (no 3D assets/roads/buildings surveyed yet)
+    if (targetId === 'cares' && !isDevOverride) {
         if (typeof window.showStationDevModal === 'function') {
-            window.showStationDevModal(targetId);
+            window.showStationDevModal('cares');
         }
         return;
     }
@@ -1187,6 +1192,12 @@ export function togglePhoneFilterDropdown(e) {
 
     if (btn) btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
 
+    if (isOpen && state.phoneSheetCurrentSnap !== 'full') {
+
+        setPhoneSheetSnap('full');
+
+    }
+
 }
 
 
@@ -1221,6 +1232,15 @@ export function renderPhoneDirectory(filter = '') {
 
     if (!list) return;
 
+    if (state.currentStationId === 'qares') {
+        if (typeof window.filterQARESSearch === 'function') window.filterQARESSearch(filter);
+        return;
+    }
+    if (state.currentStationId === 'rares') {
+        if (typeof window.filterRARESSearch === 'function') window.filterRARESSearch(filter);
+        return;
+    }
+
     const lowerFilter = filter.toLowerCase().trim();
 
 
@@ -1251,8 +1271,14 @@ export function renderPhoneDirectory(filter = '') {
 
             }
 
-            // Utility amenities (Water Tank, CR) are omitted from the default unfiltered view (strictly 39 numbered facilities)
-            if (!hasTypeFilters && !lowerFilter && (b.hasMarker === false || b.num === null)) {
+            // Utility amenities (Water Tank, CR) are omitted from the default unfiltered view unless non-Existing status
+            if (!hasTypeFilters && !lowerFilter && (b.hasMarker === false || b.num === null) && (b.facility_status || 'Existing') === 'Existing') {
+
+                return false;
+
+            }
+
+            if (!isFacilityStatusVisible(b.facility_status || 'Existing')) {
 
                 return false;
 
@@ -1271,6 +1297,16 @@ export function renderPhoneDirectory(filter = '') {
             return isBuildingMatched(b, lowerFilter) || !!matchedOffice;
 
         });
+
+        if (lowerFilter) {
+            const bldgScores = new Map();
+            filteredBuildings.forEach((b) => {
+                const matchedOffice = findMatchedOffice(b.id, lowerFilter);
+                const wfInfo = getBuildingWayfindingInfo(b.id, b.desc);
+                bldgScores.set(b.id, getBuildingSearchRelevanceScore(b, lowerFilter, matchedOffice, wfInfo));
+            });
+            filteredBuildings.sort((a, b) => (bldgScores.get(b.id) || 0) - (bldgScores.get(a.id) || 0));
+        }
 
     }
 
@@ -1312,11 +1348,17 @@ export function renderPhoneDirectory(filter = '') {
 
     if (!hasTypeFilters && !lowerFilter) {
 
-        matchedPlots = plotZonesList;
+        matchedPlots = plotZonesList.filter(z => isFacilityStatusVisible(z.facility_status || 'Existing'));
 
     } else if (showOrchard || showTrial || showNursery || lowerFilter) {
 
         matchedPlots = plotZonesList.filter(z => {
+
+            if (!isFacilityStatusVisible(z.facility_status || 'Existing')) {
+
+                return false;
+
+            }
 
             const zCat = z.category;
 
@@ -1343,6 +1385,12 @@ export function renderPhoneDirectory(filter = '') {
             return isPlotZoneMatched(z, lowerFilter);
 
         });
+
+        if (lowerFilter) {
+            const plotScores = new Map();
+            matchedPlots.forEach((z) => plotScores.set(z.id, getPlotSearchRelevanceScore(z, lowerFilter)));
+            matchedPlots.sort((a, b) => (plotScores.get(b.id) || 0) - (plotScores.get(a.id) || 0));
+        }
 
     }
 
@@ -1452,25 +1500,29 @@ export function renderPhoneDirectory(filter = '') {
 
         const wfInfo = getBuildingWayfindingInfo(b.id, b.desc);
 
-        let subText = wfInfo.compactTag || b.desc || b.section || 'DA-LARES Facility';
+        const rawDefaultTag = wfInfo.compactTag || b.desc || b.section || 'DA-LARES Facility';
+        let subText = lowerFilter ? highlightSearchTermsHtml(rawDefaultTag, lowerFilter) : escapeSearchHtml(rawDefaultTag);
 
         if (b.id === 'plot22_water_tank' || b.id === 'plot22_comfort_room') {
-            subText = `<span class="phone-dir-plot-tag">Plot 22</span> ${wfInfo.compactTag || b.desc || 'Facility'}`;
+            const rawPlotTag = wfInfo.compactTag || b.desc || 'Facility';
+            subText = `<span class="phone-dir-plot-tag">Plot 22</span> ${lowerFilter ? highlightSearchTermsHtml(rawPlotTag, lowerFilter) : escapeSearchHtml(rawPlotTag)}`;
         }
 
         if (matchedOffice) {
 
             const matchedLabel = getOfficeSearchSubtitle(matchedOffice, lowerFilter);
+            const labelHtml = lowerFilter ? highlightSearchTermsHtml(matchedLabel, lowerFilter) : escapeSearchHtml(matchedLabel);
 
-            subText = `<span class="phone-dir-office-tag" title="${matchedLabel.replace(/"/g, '&quot;')}"><span class="dot-office">${lucideIcon('building-2', 12)}</span><span class="office-name-text">${matchedLabel}</span></span>`;
+            subText = `<span class="phone-dir-office-tag" title="${escapeSearchHtml(matchedLabel)}"><span class="dot-office">${lucideIcon('building-2', 12)}</span><span class="office-name-text">${labelHtml}</span></span>`;
 
         } else if (lowerFilter) {
 
-            const bldgAliasSub = getBuildingSearchSubtitle(b, lowerFilter);
+            const bldgAliasSub = getBuildingSearchSubtitle(b, lowerFilter, wfInfo);
 
             if (bldgAliasSub) {
 
-                subText = `<span class="phone-dir-office-tag" title="${bldgAliasSub.replace(/"/g, '&quot;')}"><span class="dot-office">${lucideIcon('landmark', 12)}</span><span class="office-name-text">${bldgAliasSub}</span></span>`;
+                const aliasHtml = highlightSearchTermsHtml(bldgAliasSub, lowerFilter);
+                subText = `<span class="phone-dir-office-tag" title="${escapeSearchHtml(bldgAliasSub)}"><span class="dot-office">${lucideIcon('landmark', 12)}</span><span class="office-name-text">${aliasHtml}</span></span>`;
 
             }
 
@@ -1479,6 +1531,9 @@ export function renderPhoneDirectory(filter = '') {
 
 
         const officeArg = matchedOffice ? matchedOffice.replace(/'/g, "\'") : '';
+
+        const phoneStatusBadge = renderFacilityStatusBadgeHtml(b.facility_status);
+        const bldgNameHtml = lowerFilter ? highlightSearchTermsHtml(b.name, lowerFilter) : escapeSearchHtml(b.name);
 
         html += `
 
@@ -1492,7 +1547,9 @@ export function renderPhoneDirectory(filter = '') {
 
                 <div class="phone-dir-info">
 
-                    <div class="phone-dir-name">${b.name}</div>
+                    <div class="phone-dir-name">${bldgNameHtml}</div>
+
+                    ${phoneStatusBadge ? `<div class="dir-status-wrap">${phoneStatusBadge}</div>` : ''}
 
                     <div class="phone-dir-sub">${subText}</div>
 
@@ -1513,6 +1570,8 @@ export function renderPhoneDirectory(filter = '') {
     matchedConferenceHalls.forEach((item) => {
 
         const isConfSelected = (state.selectedBuildingId === item.buildingId && state.activeSearchedOffice === item.targetOffice);
+        const confNameHtml = lowerFilter ? highlightSearchTermsHtml(item.name, lowerFilter) : escapeSearchHtml(item.name);
+        const confDescHtml = lowerFilter ? highlightSearchTermsHtml(item.desc, lowerFilter) : escapeSearchHtml(item.desc);
 
         html += `
 
@@ -1526,9 +1585,9 @@ export function renderPhoneDirectory(filter = '') {
 
                 <div class="phone-dir-info">
 
-                    <div class="phone-dir-name">${item.name}</div>
+                    <div class="phone-dir-name">${confNameHtml}</div>
 
-                    <div class="phone-dir-sub"><span class="phone-dir-conf-tag">Conference Hall</span> ${item.desc}</div>
+                    <div class="phone-dir-sub"><span class="phone-dir-conf-tag">Conference Hall</span> ${confDescHtml}</div>
 
                 </div>
 
@@ -1549,6 +1608,8 @@ export function renderPhoneDirectory(filter = '') {
         const isGateSelected = (state.selectedBuildingId === gate.id);
 
         const gColor = gate.color || '#10b981';
+        const gateNameHtml = lowerFilter ? highlightSearchTermsHtml(gate.name, lowerFilter) : escapeSearchHtml(gate.name);
+        const gateDescHtml = lowerFilter ? highlightSearchTermsHtml(gate.desc || '', lowerFilter) : escapeSearchHtml(gate.desc || '');
 
         html += `
 
@@ -1562,9 +1623,9 @@ export function renderPhoneDirectory(filter = '') {
 
                 <div class="phone-dir-info">
 
-                    <div class="phone-dir-name">${gate.name}</div>
+                    <div class="phone-dir-name">${gateNameHtml}</div>
 
-                    <div class="phone-dir-sub"><span class="phone-dir-gate-tag" style="background:${gColor}22; color:${gColor};">GATE</span> ${gate.desc}</div>
+                    <div class="phone-dir-sub"><span class="phone-dir-gate-tag" style="background:${gColor}22; color:${gColor};">GATE</span> ${gateDescHtml}</div>
 
                 </div>
 
@@ -1588,6 +1649,13 @@ export function renderPhoneDirectory(filter = '') {
 
         const tagLabel = zone.category === 'orchard' ? 'Orchard' : (zone.category === 'crop' ? 'Trial Site' : 'Facility');
 
+        const phonePlotStatusBadge = renderFacilityStatusBadgeHtml(zone.facility_status);
+        const plotSubRaw = lowerFilter ? getPlotSearchSubtitle(zone, lowerFilter) : (zone.description || '');
+        const plotNameHtml = lowerFilter ? highlightSearchTermsHtml(zone.name, lowerFilter) : escapeSearchHtml(zone.name);
+        const plotSubHtml = lowerFilter ? highlightSearchTermsHtml(plotSubRaw, lowerFilter) : escapeSearchHtml(plotSubRaw);
+        const plotRangeRaw = zone.plotRange ? zone.plotRange : tagLabel;
+        const plotRangeHtml = lowerFilter ? highlightSearchTermsHtml(plotRangeRaw, lowerFilter) : escapeSearchHtml(plotRangeRaw);
+
         html += `
 
             <div class="phone-dir-item ${isPlotSelected ? 'active' : ''}" data-plot-id="${zone.id}" onclick="selectPlotZone('${zone.id}')">
@@ -1600,9 +1668,11 @@ export function renderPhoneDirectory(filter = '') {
 
                 <div class="phone-dir-info">
 
-                    <div class="phone-dir-name">${zone.name}</div>
+                    <div class="phone-dir-name">${plotNameHtml}</div>
 
-                    <div class="phone-dir-sub"><span class="phone-dir-plot-tag">${zone.plotRange ? zone.plotRange : tagLabel}</span> ${zone.description || ''}</div>
+                    ${phonePlotStatusBadge ? `<div class="dir-status-wrap">${phonePlotStatusBadge}</div>` : ''}
+
+                    <div class="phone-dir-sub"><span class="phone-dir-plot-tag">${plotRangeHtml}</span> ${plotSubHtml}</div>
 
                 </div>
 
@@ -1654,6 +1724,24 @@ export function filterPhoneDirectory() {
 
     }
 
+    if (state.currentStationId === 'rares') {
+
+        if (typeof window.filterRARESSearch === 'function') {
+
+            window.filterRARESSearch(val);
+
+        }
+
+        if (state.phoneSheetCurrentSnap === 'peek' && val.length > 0) {
+
+            setPhoneSheetSnap('half');
+
+        }
+
+        return;
+
+    }
+
     renderPhoneDirectory(val);
 
     if (state.phoneSheetCurrentSnap === 'peek' && val.length > 0) {
@@ -1662,19 +1750,8 @@ export function filterPhoneDirectory() {
 
     }
 
-    // If phone building details view is active, update offices in real time
-
-    if (state.phoneSheetCurrentView === 'bldg' && state.selectedBuildingId) {
-
-        const officesContainer = document.getElementById('phone-bldg-offices-container');
-
-        if (officesContainer) {
-
-            officesContainer.innerHTML = renderBuildingOfficesHTML(state.selectedBuildingId, val);
-
-        }
-
-    }
+    // If phone building/plot details view is active, update highlights in real time
+    refreshPhoneDetailSearchHighlights(val);
 
 }
 
@@ -1691,7 +1768,126 @@ export function clearPhoneSearch() {
     if (clearBtn) clearBtn.style.display = 'none';
 
     renderPhoneDirectory('');
+    refreshPhoneDetailSearchHighlights('');
 
+}
+
+
+
+let activePhonePlotContext = null;
+
+function renderPhonePlotSections(zone, areaText, plotCountText, rangeText, searchQuery = '') {
+    const visualVal = document.getElementById('phone-bldg-visual');
+    const servicesVal = document.getElementById('phone-bldg-services');
+    const subplotsContainer = document.getElementById('phone-bldg-subplots-container');
+    const overviewRaw = zone.description || `Research field block for ${zone.name}.`;
+
+    if (visualVal) {
+        visualVal.dataset.rawText = overviewRaw;
+        visualVal.innerHTML = highlightSearchTermsHtml(overviewRaw, searchQuery);
+    }
+
+    if (servicesVal) {
+        const cropLine = zone.currentCrop
+            ? `<div><strong style="color:#4ade80;">Current Planted Crop:</strong> <span style="color:#f8fafc;">${highlightSearchTermsHtml(zone.currentCrop, searchQuery)}</span></div>`
+            : '';
+        const treeLine = (zone.treeCount !== null && zone.treeCount !== undefined && zone.treeCount !== '')
+            ? `<div><strong style="color:#4ade80;">Tree / Plant Count:</strong> <span style="color:#f8fafc;">${Number(zone.treeCount).toLocaleString()} trees/plants</span></div>`
+            : '';
+        const cycleLine = zone.cycleMonths
+            ? `<div><strong style="color:#38bdf8;">Cropping Cycle:</strong> <span style="color:#f8fafc;">${highlightSearchTermsHtml(zone.cycleMonths, searchQuery)}</span></div>`
+            : '';
+        const statusLine = zone.status
+            ? `<div><strong style="color:#38bdf8;">Plot Status:</strong> <span style="color:#86efac; font-weight:700;">${highlightSearchTermsHtml(zone.status, searchQuery)}</span></div>`
+            : '';
+
+        servicesVal.innerHTML = `
+            <div style="display:flex; flex-direction:column; gap:5px; font-size:12px; margin-top:2px;">
+                ${cropLine}
+                ${treeLine}
+                ${cycleLine}
+                ${statusLine}
+                <div><strong style="color:#38bdf8;">Estimated Area:</strong> <span style="color:#f8fafc;">${escapeSearchHtml(areaText)}</span></div>
+                <div><strong style="color:#38bdf8;">Total Plots:</strong> <span style="color:#f8fafc;">${escapeSearchHtml(plotCountText)} (${highlightSearchTermsHtml(rangeText, searchQuery)})</span></div>
+                <div><strong style="color:#38bdf8;">Plot Category:</strong> <span style="color:#f8fafc;">${escapeSearchHtml((zone.category || 'Agricultural Plot').toUpperCase())}</span></div>
+            </div>
+        `;
+    }
+
+    if (subplotsContainer) {
+        if (zone.subPlots && zone.subPlots.length > 0) {
+            const normQuery = String(searchQuery || '').trim().toLowerCase();
+            subplotsContainer.style.display = 'block';
+            let html = `
+                <div class="phone-subplots-card" style="margin-top:12px; padding:12px; background:rgba(15,23,42,0.65); border:1px solid rgba(255,255,255,0.08); border-radius:12px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <span style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.8px; color:#38bdf8;">${lucideIcon('sprout', 14)} Sub-Plots (${zone.subPlots.length})</span>
+                        <span style="font-size:10px; color:#94a3b8;">Tap to zoom</span>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+            `;
+            zone.subPlots.forEach(sp => {
+                const subTitle = sp.label || sp.name || `Screenhouse ${sp.plotNum}`;
+                const coordsJson = sp.centerCoords ? `[${sp.centerCoords[0]}, ${sp.centerCoords[1]}]` : 'null';
+                const bldgJson = sp.buildingId ? `'${sp.buildingId}'` : 'null';
+                const isSubMatched = Boolean(normQuery && (
+                    matchesSearchText(subTitle, normQuery) ||
+                    (sp.details && matchesSearchText(sp.details, normQuery)) ||
+                    (sp.crop && matchesSearchText(sp.crop, normQuery))
+                ));
+                html += `
+                    <div class="office-pill sub-plot-chip ${isSubMatched ? 'highlighted' : ''}" data-plot-num="${sp.plotNum}" data-id="${sp.buildingId || ''}" data-zone-id="${zone.id}"
+                         onclick="if(window.zoomToSubPlot) window.zoomToSubPlot('${sp.plotNum}', ${coordsJson}, ${bldgJson}, '${zone.id}')"
+                         title="Tap to focus ${escapeSearchHtml(subTitle)}"
+                         style="cursor:pointer; display:flex; align-items:flex-start; gap:10px; padding:8px 12px; border-radius:8px; background:rgba(30,41,59,0.7); border:1px solid rgba(255,255,255,0.08);">
+                        <span class="op-dot" style="background:${zone.color || '#10b981'}; width:8px; height:8px; border-radius:50%; margin-top:5px; flex-shrink:0;"></span>
+                        <div style="display:flex; flex-direction:column; line-height:1.25;">
+                            <span class="op-name" style="font-size:12px; font-weight:700; color:#f8fafc;">${highlightSearchTermsHtml(subTitle, searchQuery)}</span>
+                            ${sp.details ? `<span style="font-size:11px; color:#94a3b8; margin-top:2px;">${highlightSearchTermsHtml(sp.details, searchQuery)}</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            html += `</div></div>`;
+            subplotsContainer.innerHTML = html;
+        } else {
+            subplotsContainer.style.display = 'none';
+            subplotsContainer.innerHTML = '';
+        }
+    }
+}
+
+export function refreshPhoneDetailSearchHighlights(query = '') {
+    if (state.phoneSheetCurrentView !== 'bldg') return;
+    const trimmed = String(query || '').trim();
+
+    if (state.selectedPlotZoneId && activePhonePlotContext && activePhonePlotContext.zone && activePhonePlotContext.zone.id === state.selectedPlotZoneId) {
+        const { zone, areaText, plotCountText, rangeText } = activePhonePlotContext;
+        renderPhonePlotSections(zone, areaText, plotCountText, rangeText, trimmed);
+        return;
+    }
+
+    const visualEl = document.getElementById('phone-bldg-visual');
+    const servicesEl = document.getElementById('phone-bldg-services');
+    if (visualEl && typeof visualEl.dataset.rawText === 'string') {
+        visualEl.innerHTML = highlightSearchTermsHtml(visualEl.dataset.rawText, trimmed);
+    }
+    if (servicesEl && typeof servicesEl.dataset.rawText === 'string' && !servicesEl.dataset.isGate) {
+        servicesEl.innerHTML = highlightSearchTermsHtml(servicesEl.dataset.rawText, trimmed);
+    }
+
+    if (state.selectedBuildingId) {
+        const officesContainer = document.getElementById('phone-bldg-offices-container');
+        if (officesContainer) {
+            officesContainer.innerHTML = renderBuildingOfficesHTML(state.selectedBuildingId, trimmed);
+            const highlightedPill = officesContainer.querySelector('.office-pill.highlighted');
+            if (highlightedPill) {
+                setTimeout(() => {
+                    highlightedPill.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 120);
+            }
+        }
+    }
 }
 
 
@@ -1794,48 +1990,58 @@ export function showPhoneBuildingDetails(buildingId, targetOffice = '') {
 
 
 
+    const isUnderDevStation = Boolean(building.isQARES || building.isRARES);
+
     // Set titles
-
     const titleEl = document.getElementById('phone-bldg-title');
-
     const descEl = document.getElementById('phone-bldg-desc');
-
     if (titleEl) titleEl.textContent = building.name;
-
-    if (descEl) descEl.textContent = isGate ? (building.desc || 'Campus Access Gate') : (wfInfo.compactTag || building.desc || 'Research Facility');
-
-
+    if (descEl) {
+        descEl.textContent = isGate
+            ? (building.desc || 'Campus Access Gate')
+            : (isUnderDevStation ? (building.category || 'Facility') : (wfInfo.compactTag || building.desc || 'Research Facility'));
+    }
+    const pStatusEl = document.getElementById('phone-bldg-status-pill');
+    if (pStatusEl) pStatusEl.innerHTML = isGate ? '' : renderFacilityStatusBadgeHtml(building.facility_status);
 
     // Populate Visual Landmark & Key Services
-
     const visualEl = document.getElementById('phone-bldg-visual');
-
     const servicesEl = document.getElementById('phone-bldg-services');
+    const visualCard = visualEl ? visualEl.closest('.pbi-card') : null;
+    const servicesCard = servicesEl ? servicesEl.closest('.pbi-card') : null;
+    const activePhoneQuery = (document.getElementById('phone-search-input')?.value || document.getElementById('search-input')?.value || '').trim();
+    activePhonePlotContext = null;
 
-    if (visualEl) visualEl.textContent = isGate ? (building.desc || 'Campus Perimeter Gate') : wfInfo.visualLandmark;
-
-    if (servicesEl) {
-
-        if (isGate) {
-
-            servicesEl.innerHTML = `
-
-                <div style="font-size:12px; color:#f8fafc;">
-
-                    Official campus ingress / egress checkpoint staffed by DA security personnel.
-
-                    ${building.guardHouseName ? `<br><span style="color:#38bdf8; font-weight:600;">Stationed Post:</span> ${building.guardHouseName}` : ''}
-
-                </div>
-
-            `;
-
-        } else {
-
-            servicesEl.textContent = wfInfo.keyServices;
-
+    if (isUnderDevStation) {
+        if (visualCard) visualCard.style.display = 'none';
+        if (servicesCard) servicesCard.style.display = 'none';
+        if (visualEl) { visualEl.dataset.rawText = ''; visualEl.textContent = ''; }
+        if (servicesEl) { servicesEl.dataset.rawText = ''; servicesEl.textContent = ''; }
+    } else {
+        if (visualCard) visualCard.style.display = '';
+        if (servicesCard) servicesCard.style.display = '';
+        if (visualEl) {
+            const rawVis = isGate ? (building.desc || 'Campus Perimeter Gate') : (wfInfo.visualLandmark || '');
+            visualEl.dataset.rawText = rawVis;
+            visualEl.innerHTML = highlightSearchTermsHtml(rawVis, activePhoneQuery);
         }
-
+        if (servicesEl) {
+            if (isGate) {
+                servicesEl.dataset.isGate = '1';
+                servicesEl.dataset.rawText = '';
+                servicesEl.innerHTML = `
+                    <div style="font-size:12px; color:#f8fafc;">
+                        Official campus ingress / egress checkpoint staffed by DA security personnel.
+                        ${building.guardHouseName ? `<br><span style="color:#38bdf8; font-weight:600;">Stationed Post:</span> ${escapeSearchHtml(building.guardHouseName)}` : ''}
+                    </div>
+                `;
+            } else {
+                delete servicesEl.dataset.isGate;
+                const rawSrv = wfInfo.keyServices || '';
+                servicesEl.dataset.rawText = rawSrv;
+                servicesEl.innerHTML = highlightSearchTermsHtml(rawSrv, activePhoneQuery);
+            }
+        }
     }
 
 
@@ -1901,8 +2107,13 @@ export function showPhoneBuildingDetails(buildingId, targetOffice = '') {
 
 
     // Render Google Maps photo mosaic / gallery form
-
-    renderPhoneBuildingGallery(buildingId);
+    const galContainer = document.getElementById('phone-bldg-gallery-container');
+    if (isUnderDevStation) {
+        if (galContainer) galContainer.style.display = 'none';
+    } else {
+        if (galContainer) galContainer.style.display = '';
+        renderPhoneBuildingGallery(buildingId);
+    }
 
 
 
@@ -1993,6 +2204,10 @@ export function showPhonePlotDetails(zoneOrId) {
 
     if (titleEl) titleEl.textContent = zone.name;
 
+    const pStatusEl = document.getElementById('phone-bldg-status-pill');
+
+    if (pStatusEl) pStatusEl.innerHTML = renderFacilityStatusBadgeHtml(zone.facility_status);
+
 
 
     const plotCountText = `${zone.plotCount || 1} Plot${(zone.plotCount > 1) ? 's' : ''}`;
@@ -2035,139 +2250,26 @@ export function showPhonePlotDetails(zoneOrId) {
 
 
 
-    // 3. Hide walking action buttons for plots (infographics only)
-
+    // 3. Show walking action buttons and kiosk origin row for plots
     const actionsInline = document.getElementById('phone-bldg-actions-inline');
+    if (actionsInline) actionsInline.style.display = 'flex';
 
-    if (actionsInline) actionsInline.style.display = 'none';
-
-
-
-    // 4. Information rows
-
+    // 4. Information rows & 6. Sub-Plots Breakdown (Screenhouses in Plot 17, Plot 18, Water Tank & CR in Plot 22)
     const visualLbl = document.getElementById('pbi-visual-lbl');
-
-    const visualVal = document.getElementById('phone-bldg-visual');
-
-    if (visualLbl) visualLbl.textContent = 'OVERVIEW & COMMODITY';
-
-    if (visualVal) visualVal.textContent = zone.description || `Research field block for ${zone.name}.`;
-
-
-
     const servicesLbl = document.getElementById('pbi-services-lbl');
-
-    const servicesVal = document.getElementById('phone-bldg-services');
-
+    if (visualLbl) visualLbl.textContent = 'PLOT OVERVIEW';
     if (servicesLbl) servicesLbl.textContent = 'KEY PLOT METRICS';
 
-    if (servicesVal) {
-
-        servicesVal.innerHTML = `
-
-            <div style="display:flex; flex-direction:column; gap:5px; font-size:12px; margin-top:2px;">
-
-                <div><strong style="color:#38bdf8;">Estimated Area:</strong> <span style="color:#f8fafc;">${areaText}</span></div>
-
-                <div><strong style="color:#38bdf8;">Total Plots:</strong> <span style="color:#f8fafc;">${plotCountText} (${rangeText})</span></div>
-
-                <div><strong style="color:#38bdf8;">Commodity Category:</strong> <span style="color:#f8fafc;">${(zone.category || 'Agricultural Field').toUpperCase()}</span></div>
-
-            </div>
-
-        `;
-
-    }
-
-
-
     const kioskOriginRow = document.getElementById('pbi-kiosk-origin-row');
-
-    if (kioskOriginRow) kioskOriginRow.style.display = 'none';
-
-
+    if (kioskOriginRow) kioskOriginRow.style.display = 'flex';
 
     // 5. Offices container: empty for plots
-
     const officesContainer = document.getElementById('phone-bldg-offices-container');
-
     if (officesContainer) officesContainer.innerHTML = '';
 
-
-
-    // 6. Sub-Plots Breakdown (Screenhouses in Plot 17, Plot 18, Water Tank & CR in Plot 22)
-
-    const subplotsContainer = document.getElementById('phone-bldg-subplots-container');
-
-    if (subplotsContainer) {
-
-        if (zone.subPlots && zone.subPlots.length > 0) {
-
-            subplotsContainer.style.display = 'block';
-
-            let html = `
-
-                <div class="phone-subplots-card" style="margin-top:12px; padding:12px; background:rgba(15,23,42,0.65); border:1px solid rgba(255,255,255,0.08); border-radius:12px;">
-
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-
-                        <span style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.8px; color:#38bdf8;">${lucideIcon('sprout', 14)} Sub-Plots in this Zone (${zone.subPlots.length})</span>
-
-                        <span style="font-size:10px; color:#94a3b8;">Tap to zoom</span>
-
-                    </div>
-
-                    <div style="display:flex; flex-direction:column; gap:6px;">
-
-            `;
-
-            zone.subPlots.forEach(sp => {
-
-                const subTitle = sp.label || sp.name || `Screenhouse ${sp.plotNum}`;
-
-                const coordsJson = sp.centerCoords ? `[${sp.centerCoords[0]}, ${sp.centerCoords[1]}]` : 'null';
-
-                const bldgJson = sp.buildingId ? `'${sp.buildingId}'` : 'null';
-
-                html += `
-
-                    <div class="office-pill sub-plot-chip" data-plot-num="${sp.plotNum}" data-id="${sp.buildingId || ''}" data-zone-id="${zone.id}"
-
-                         onclick="if(window.zoomToSubPlot) window.zoomToSubPlot('${sp.plotNum}', ${coordsJson}, ${bldgJson}, '${zone.id}')"
-
-                         title="Tap to focus ${subTitle}"
-
-                         style="cursor:pointer; display:flex; align-items:flex-start; gap:10px; padding:8px 12px; border-radius:8px; background:rgba(30,41,59,0.7); border:1px solid rgba(255,255,255,0.08);">
-
-                        <span class="op-dot" style="background:${zone.color || '#10b981'}; width:8px; height:8px; border-radius:50%; margin-top:5px; flex-shrink:0;"></span>
-
-                        <div style="display:flex; flex-direction:column; line-height:1.25;">
-
-                            <span class="op-name" style="font-size:12px; font-weight:700; color:#f8fafc;">${subTitle}</span>
-
-                            ${sp.details ? `<span style="font-size:11px; color:#94a3b8; margin-top:2px;">${sp.details}</span>` : ''}
-
-                        </div>
-
-                    </div>
-
-                `;
-
-            });
-
-            html += `</div></div>`;
-
-            subplotsContainer.innerHTML = html;
-
-        } else {
-
-            subplotsContainer.style.display = 'none';
-
-            subplotsContainer.innerHTML = '';
-
-        }
-
-    }
+    activePhonePlotContext = { zone, areaText, plotCountText, rangeText };
+    const activePhoneQuery = (document.getElementById('phone-search-input')?.value || document.getElementById('search-input')?.value || '').trim();
+    renderPhonePlotSections(zone, areaText, plotCountText, rangeText, activePhoneQuery);
 
 
 

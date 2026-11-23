@@ -9,7 +9,11 @@
         "height": 3,
         "min_height": 0,
         "has_3d_model": true,
-        "station": "lares"
+        "station": "lares",
+        "marker_coords": [
+          121.16582873,
+          13.95827081
+        ]
       },
       "geometry": {
         "coordinates": [
@@ -139,7 +143,11 @@
         "height": 5,
         "min_height": 0,
         "has_3d_model": true,
-        "station": "lares"
+        "station": "lares",
+        "marker_coords": [
+          121.16594973,
+          13.95912081
+        ]
       },
       "geometry": {
         "coordinates": [
@@ -177,7 +185,11 @@
         "height": 5,
         "min_height": 0,
         "has_3d_model": true,
-        "station": "lares"
+        "station": "lares",
+        "marker_coords": [
+          121.16631686,
+          13.95911881
+        ]
       },
       "geometry": {
         "coordinates": [
@@ -307,7 +319,11 @@
         "height": 5,
         "min_height": 0,
         "has_3d_model": true,
-        "station": "lares"
+        "station": "lares",
+        "marker_coords": [
+          121.16620184,
+          13.95931306
+        ]
       },
       "geometry": {
         "coordinates": [
@@ -421,7 +437,11 @@
         "height": 5,
         "min_height": 0,
         "has_3d_model": true,
-        "station": "lares"
+        "station": "lares",
+        "marker_coords": [
+          121.16647073,
+          13.95807481
+        ]
       },
       "geometry": {
         "coordinates": [
@@ -459,7 +479,11 @@
         "height": 5,
         "min_height": 0,
         "has_3d_model": true,
-        "station": "lares"
+        "station": "lares",
+        "marker_coords": [
+          121.16658073,
+          13.95821281
+        ]
       },
       "geometry": {
         "coordinates": [
@@ -555,7 +579,11 @@
         "height": 10,
         "min_height": 0,
         "has_3d_model": true,
-        "station": "lares"
+        "station": "lares",
+        "marker_coords": [
+          121.16696688,
+          13.95815603
+        ]
       },
       "geometry": {
         "coordinates": [
@@ -631,30 +659,34 @@
         "height": 5,
         "min_height": 0,
         "has_3d_model": true,
-        "station": "lares"
+        "station": "lares",
+        "marker_coords": [
+          121.16692287,
+          13.95933876
+        ]
       },
       "geometry": {
         "coordinates": [
           [
             [
-              121.16679710323854,
-              13.95950445638274
+              121.16684442397775,
+              13.95939356335621
             ],
             [
-              121.16686733520311,
-              13.95925491732561
+              121.16689086427988,
+              13.959250791249135
             ],
             [
-              121.16699801515904,
-              13.95928775190236
+              121.16700170244138,
+              13.95928325709212
             ],
             [
-              121.16691947087753,
-              13.9595375311571
+              121.16695448807809,
+              13.959427440584935
             ],
             [
-              121.16679710323854,
-              13.95950445638274
+              121.16684442397775,
+              13.95939356335621
             ]
           ]
         ],
@@ -669,7 +701,11 @@
         "height": 5,
         "min_height": 0,
         "has_3d_model": true,
-        "station": "lares"
+        "station": "lares",
+        "marker_coords": [
+          121.1669121,
+          13.95797038
+        ]
       },
       "geometry": {
         "coordinates": [
@@ -731,7 +767,11 @@
         "height": 5,
         "min_height": 0,
         "has_3d_model": true,
-        "station": "lares"
+        "station": "lares",
+        "marker_coords": [
+          121.16706474,
+          13.95789492
+        ]
       },
       "geometry": {
         "coordinates": [
@@ -777,7 +817,11 @@
         "height": 5,
         "min_height": 0,
         "has_3d_model": true,
-        "station": "lares"
+        "station": "lares",
+        "marker_coords": [
+          121.16687473,
+          13.95851881
+        ]
       },
       "geometry": {
         "coordinates": [
@@ -815,7 +859,11 @@
         "height": 5,
         "min_height": 0,
         "has_3d_model": true,
-        "station": "lares"
+        "station": "lares",
+        "marker_coords": [
+          121.16702179,
+          13.95846618
+        ]
       },
       "geometry": {
         "coordinates": [
@@ -853,7 +901,11 @@
         "height": 5,
         "min_height": 0,
         "has_3d_model": true,
-        "station": "lares"
+        "station": "lares",
+        "marker_coords": [
+          121.16716016,
+          13.95854935
+        ]
       },
       "geometry": {
         "coordinates": [
@@ -923,7 +975,11 @@
         "height": 10,
         "min_height": 0,
         "has_3d_model": true,
-        "station": "lares"
+        "station": "lares",
+        "marker_coords": [
+          121.16711045,
+          13.95880881
+        ]
       },
       "geometry": {
         "coordinates": [
@@ -961,7 +1017,11 @@
         "height": 5,
         "min_height": 0,
         "has_3d_model": true,
-        "station": "lares"
+        "station": "lares",
+        "marker_coords": [
+          121.16696386,
+          13.95748241
+        ]
       },
       "geometry": {
         "coordinates": [
@@ -1007,7 +1067,11 @@
         "height": 7,
         "min_height": 0,
         "has_3d_model": true,
-        "station": "lares"
+        "station": "lares",
+        "marker_coords": [
+          121.16754416,
+          13.95828192
+        ]
       },
       "geometry": {
         "coordinates": [
@@ -1045,7 +1109,11 @@
         "height": 5,
         "min_height": 0,
         "has_3d_model": true,
-        "station": "lares"
+        "station": "lares",
+        "marker_coords": [
+          121.16754978,
+          13.95813448
+        ]
       },
       "geometry": {
         "coordinates": [
@@ -1091,7 +1159,11 @@
         "height": 5,
         "min_height": 0,
         "has_3d_model": true,
-        "station": "lares"
+        "station": "lares",
+        "marker_coords": [
+          121.16938223,
+          13.95896348
+        ]
       },
       "geometry": {
         "coordinates": [
@@ -1137,7 +1209,11 @@
         "height": 3,
         "min_height": 0,
         "has_3d_model": true,
-        "station": "lares"
+        "station": "lares",
+        "marker_coords": [
+          121.1658178,
+          13.95916548
+        ]
       },
       "geometry": {
         "coordinates": [
@@ -1175,7 +1251,11 @@
         "height": 3,
         "min_height": 0,
         "has_3d_model": true,
-        "station": "lares"
+        "station": "lares",
+        "marker_coords": [
+          121.17248016,
+          13.96163366
+        ]
       },
       "geometry": {
         "coordinates": [
@@ -1213,7 +1293,11 @@
         "height": 3,
         "min_height": 0,
         "has_3d_model": true,
-        "station": "lares"
+        "station": "lares",
+        "marker_coords": [
+          121.16694693,
+          13.95764871
+        ]
       },
       "geometry": {
         "coordinates": [
@@ -1252,7 +1336,11 @@
         "height": 5,
         "min_height": 0,
         "station": "lares",
-        "has_3d_model": true
+        "has_3d_model": true,
+        "marker_coords": [
+          121.16855139,
+          13.9600696
+        ]
       },
       "geometry": {
         "coordinates": [
@@ -1287,13 +1375,17 @@
       "properties": {
         "id": "plot22_water_tank",
         "name": "LARES Water Tank",
-        "height": 9.0,
+        "height": 9,
         "min_height": 0,
         "station": "lares",
         "has_3d_model": true,
         "category": "infrastructure",
         "isSubPlot": false,
-        "hasMarker": false
+        "hasMarker": false,
+        "marker_coords": [
+          121.16899078,
+          13.9597697
+        ]
       },
       "geometry": {
         "coordinates": [
@@ -1360,13 +1452,17 @@
       "properties": {
         "id": "plot22_comfort_room",
         "name": "Comfort Room",
-        "height": 3.0,
+        "height": 3,
         "min_height": 0,
         "station": "lares",
         "has_3d_model": true,
         "category": "infrastructure",
         "isSubPlot": false,
-        "hasMarker": false
+        "hasMarker": false,
+        "marker_coords": [
+          121.16894553,
+          13.95974914
+        ]
       },
       "geometry": {
         "coordinates": [
@@ -1390,6 +1486,834 @@
             [
               121.16895513,
               13.9597658
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      }
+    },
+    {
+      "id": "ae2d4830c0559584655800d446ee6e63",
+      "type": "Feature",
+      "properties": {
+        "id": "plot17_screenhouse_1",
+        "name": "Vegetables Screenhouse 1",
+        "height": 7,
+        "min_height": 0,
+        "station": "lares",
+        "has_3d_model": true,
+        "category": "trial_sites",
+        "isSubPlot": true,
+        "hasMarker": false
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              121.16722001524909,
+              13.959150457598724
+            ],
+            [
+              121.16724050320954,
+              13.959097375585188
+            ],
+            [
+              121.1674042450893,
+              13.959156078948013
+            ],
+            [
+              121.16738443363465,
+              13.959207279429847
+            ],
+            [
+              121.16722001524909,
+              13.959150457598724
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      }
+    },
+    {
+      "id": "8819a3d6a2ce4f5cb5ca2d69fdc87f1b",
+      "type": "Feature",
+      "properties": {
+        "id": "plot17_screenhouse_2",
+        "name": "Vegetables Screenhouse 2",
+        "height": 7,
+        "min_height": 0,
+        "station": "lares",
+        "has_3d_model": true,
+        "category": "trial_sites",
+        "isSubPlot": true,
+        "hasMarker": false
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              121.16740545606945,
+              13.959151900995039
+            ],
+            [
+              121.16724246310173,
+              13.959093178438323
+            ],
+            [
+              121.1672629424603,
+              13.95904098868715
+            ],
+            [
+              121.16742503314549,
+              13.959099624001084
+            ],
+            [
+              121.16740545606945,
+              13.959151900995039
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      }
+    },
+    {
+      "id": "24b8bd3084e8fcab3f6383aeb4aac68a",
+      "type": "Feature",
+      "properties": {
+        "id": "plot17_screenhouse_3",
+        "name": "Citrus Mother Plants Screenhouse",
+        "height": 7,
+        "min_height": 0,
+        "station": "lares",
+        "has_3d_model": true,
+        "category": "trial_sites",
+        "isSubPlot": true,
+        "hasMarker": false
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              121.1674273283349,
+              13.959094956285938
+            ],
+            [
+              121.16726486394492,
+              13.959036280097365
+            ],
+            [
+              121.16728591171466,
+              13.958984518977331
+            ],
+            [
+              121.16744649003215,
+              13.959042513051259
+            ],
+            [
+              121.1674273283349,
+              13.959094956285938
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      }
+    },
+    {
+      "id": "51e062d866cf7b538855e54c84a32d54",
+      "type": "Feature",
+      "properties": {
+        "id": "plot17_screenhouse_4",
+        "name": "Embryo Cultured Macapuno Seedlings & Tissue Cultured Banana Screenhouse",
+        "height": 7,
+        "min_height": 0,
+        "station": "lares",
+        "has_3d_model": true,
+        "category": "trial_sites",
+        "isSubPlot": true,
+        "hasMarker": false
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              121.16728634217463,
+              13.958980593456303
+            ],
+            [
+              121.16731456646585,
+              13.958908117104215
+            ],
+            [
+              121.16747674129647,
+              13.958967242106496
+            ],
+            [
+              121.16744810980447,
+              13.95903931854511
+            ],
+            [
+              121.16728634217463,
+              13.958980593456303
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      }
+    },
+    {
+      "id": "4c66f87fb281e9519bd5e9768e0b8c26",
+      "type": "Feature",
+      "properties": {
+        "id": "plot17_screenhouse_5",
+        "name": "Coffee Seedlings Screenhouse",
+        "height": 6,
+        "min_height": 0,
+        "station": "lares",
+        "has_3d_model": true,
+        "category": "trial_sites",
+        "isSubPlot": true,
+        "hasMarker": false
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              121.1674628639908,
+              13.95893093892522
+            ],
+            [
+              121.1675212259417,
+              13.958779445385531
+            ],
+            [
+              121.16736584634123,
+              13.958719616140797
+            ],
+            [
+              121.1673074824381,
+              13.958873758642966
+            ],
+            [
+              121.1674628639908,
+              13.95893093892522
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      }
+    },
+    {
+      "id": "6af03105834ee59ba3093c0a74fc46d7",
+      "type": "Feature",
+      "properties": {
+        "id": "plot18_greenhouse_complex",
+        "name": "Citrus Seedlings Screenhouse (Screenhouses 6–8)",
+        "height": 8,
+        "min_height": 0,
+        "station": "lares",
+        "has_3d_model": true,
+        "category": "trial_sites",
+        "isSubPlot": true,
+        "hasMarker": false
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              121.16745197644019,
+              13.95912515578604
+            ],
+            [
+              121.16755849214587,
+              13.958847066241475
+            ],
+            [
+              121.1677735999424,
+              13.958926601479675
+            ],
+            [
+              121.16766717029401,
+              13.959204402785048
+            ],
+            [
+              121.16745197644019,
+              13.95912515578604
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      }
+    },
+    {
+      "id": "b40a1d9f6b969c21351388f5e4e286f9",
+      "type": "Feature",
+      "properties": {
+        "id": "plot18_screenhouse_9",
+        "name": "Citrus Seedlings Screenhouse (Screenhouse 9)",
+        "height": 5,
+        "min_height": 0,
+        "station": "lares",
+        "has_3d_model": true,
+        "category": "trial_sites",
+        "isSubPlot": true,
+        "hasMarker": false
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              121.16770166132784,
+              13.959267371233466
+            ],
+            [
+              121.16774916677622,
+              13.959139382861508
+            ],
+            [
+              121.16780426023979,
+              13.95915671138573
+            ],
+            [
+              121.16775409976236,
+              13.959285368802512
+            ],
+            [
+              121.16770166132784,
+              13.959267371233466
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      }
+    },
+    {
+      "id": "41b550a32a6dc06f23f28cb66e5585d8",
+      "type": "Feature",
+      "properties": {
+        "id": "plot18_screenhouse_9_headhouse",
+        "name": "Citrus Seedlings Headhouse",
+        "height": 5,
+        "min_height": 0,
+        "station": "lares",
+        "has_3d_model": true,
+        "category": "trial_sites",
+        "isSubPlot": true,
+        "hasMarker": false
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              121.16769315896988,
+              13.959264151124955
+            ],
+            [
+              121.167757943462,
+              13.959286958525439
+            ],
+            [
+              121.16773782783412,
+              13.959340206598384
+            ],
+            [
+              121.16767291949839,
+              13.959318289044589
+            ],
+            [
+              121.16769315896988,
+              13.959264151124955
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      }
+    },
+    {
+      "id": "1ad96563d540b0e95dca4a090a55a694",
+      "type": "Feature",
+      "properties": {
+        "id": "lares_agricultural_supplies_storage",
+        "name": "LARES Agricultural Supplies Storage",
+        "height": 5,
+        "min_height": 0,
+        "station": "lares",
+        "category": "infrastructure",
+        "has_3d_model": true,
+        "isSubPlot": false,
+        "hasMarker": true
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              121.16695446665955,
+              13.95942767874618
+            ],
+            [
+              121.166945254685,
+              13.959455304461258
+            ],
+            [
+              121.16696243945876,
+              13.959461414589668
+            ],
+            [
+              121.16693815191815,
+              13.959536139580038
+            ],
+            [
+              121.16680918223011,
+              13.959496687863322
+            ],
+            [
+              121.16684425299786,
+              13.959393702103128
+            ],
+            [
+              121.16695446665955,
+              13.95942767874618
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      }
+    },
+    {
+      "id": "45c6b13aa236dd5a7fc7f925314fced1",
+      "type": "Feature",
+      "properties": {
+        "id": "warehouse_1",
+        "name": "LARES Synthetic Fertilizer Storage / LARES Pesticide Storage",
+        "height": 5,
+        "min_height": 0,
+        "station": "lares",
+        "has_3d_model": true,
+        "category": "infrastructure",
+        "isSubPlot": false,
+        "hasMarker": true
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              121.16681256020888,
+              13.959563440377622
+            ],
+            [
+              121.16689771597424,
+              13.959597028993883
+            ],
+            [
+              121.16687387006567,
+              13.959654731668593
+            ],
+            [
+              121.16678914615574,
+              13.959620978689117
+            ],
+            [
+              121.16681256020888,
+              13.959563440377622
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      }
+    },
+    {
+      "id": "852c603c372dfb4d0fff4ea5af3a9c4d",
+      "type": "Feature",
+      "properties": {
+        "id": "lares_farm_machinery_shed_1",
+        "name": "LARES Farm Machinery Shed 1",
+        "height": 5,
+        "min_height": 0,
+        "station": "lares",
+        "has_3d_model": true,
+        "category": "infrastructure",
+        "isSubPlot": false,
+        "hasMarker": true
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              121.16686323443372,
+              13.959654050889483
+            ],
+            [
+              121.16691429234515,
+              13.959674754655566
+            ],
+            [
+              121.16687925594721,
+              13.959758685030879
+            ],
+            [
+              121.166829156217,
+              13.95973899315355
+            ],
+            [
+              121.16686323443372,
+              13.959654050889483
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      }
+    },
+    {
+      "id": "f3b7c29a1e844519b5d038e2176cb9a1",
+      "type": "Feature",
+      "properties": {
+        "id": "lares_organic_fertilizer_storage",
+        "name": "LARES Organic Fertilizer Storage",
+        "height": 5,
+        "min_height": 0,
+        "station": "lares",
+        "has_3d_model": true,
+        "category": "infrastructure",
+        "isSubPlot": false,
+        "hasMarker": true
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              121.166829156217,
+              13.95973899315355
+            ],
+            [
+              121.16687925594721,
+              13.959758685030879
+            ],
+            [
+              121.16683582759765,
+              13.9598627184901
+            ],
+            [
+              121.16678691555319,
+              13.959844280870087
+            ],
+            [
+              121.166829156217,
+              13.95973899315355
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      }
+    },
+    {
+      "id": "80392d2f30262b38d5fd8b227304b43f",
+      "type": "Feature",
+      "properties": {
+        "id": "warehouse_3",
+        "name": "LARES Corn Seed Processing Facility",
+        "height": 5,
+        "min_height": 0,
+        "station": "lares",
+        "has_3d_model": true,
+        "category": "infrastructure",
+        "isSubPlot": false,
+        "hasMarker": true
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              121.16689833649531,
+              13.959928425036367
+            ],
+            [
+              121.16677714050974,
+              13.95988115987575
+            ],
+            [
+              121.16674145778916,
+              13.959968380646956
+            ],
+            [
+              121.16686346814964,
+              13.96001481781741
+            ],
+            [
+              121.16689833649531,
+              13.959928425036367
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      }
+    },
+    {
+      "id": "96e4190a7da23494a4c77e00b6196308",
+      "type": "Feature",
+      "properties": {
+        "id": "warehouse_4",
+        "name": "LARES Farm Machinery Shed 2",
+        "height": 5,
+        "min_height": 0,
+        "station": "lares",
+        "has_3d_model": true,
+        "category": "infrastructure",
+        "isSubPlot": false,
+        "hasMarker": true
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              121.16671599932971,
+              13.959999073660398
+            ],
+            [
+              121.16673540975574,
+              13.95995308238814
+            ],
+            [
+              121.16685786769403,
+              13.960001486889666
+            ],
+            [
+              121.16686390228665,
+              13.959981952874998
+            ],
+            [
+              121.16687584761996,
+              13.959985368262736
+            ],
+            [
+              121.16687866781638,
+              13.959976818537697
+            ],
+            [
+              121.16711294847556,
+              13.960054485152568
+            ],
+            [
+              121.16709084333218,
+              13.960122878691891
+            ],
+            [
+              121.16671599932971,
+              13.959999073660398
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      }
+    },
+    {
+      "id": "229203d746a708104ef49bc94e03a52a",
+      "type": "Feature",
+      "properties": {
+        "id": "warehouse_5",
+        "name": "Rice Banner Warehouse",
+        "height": 5,
+        "min_height": 0,
+        "station": "lares",
+        "has_3d_model": true,
+        "category": "infrastructure",
+        "isSubPlot": false,
+        "hasMarker": true
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              121.16714582235187,
+              13.959955674200017
+            ],
+            [
+              121.16719853043912,
+              13.959972151119759
+            ],
+            [
+              121.1672057770699,
+              13.959951712824424
+            ],
+            [
+              121.16726000959582,
+              13.959969981932424
+            ],
+            [
+              121.16725299761266,
+              13.959991019702802
+            ],
+            [
+              121.16735729935715,
+              13.960026556039324
+            ],
+            [
+              121.16730041159292,
+              13.960193016655722
+            ],
+            [
+              121.16708885236591,
+              13.960121215039877
+            ],
+            [
+              121.16711202446702,
+              13.96005827446469
+            ],
+            [
+              121.16708668645643,
+              13.960049741076524
+            ],
+            [
+              121.167102347436,
+              13.960003149272584
+            ],
+            [
+              121.16712656984944,
+              13.960011033400756
+            ],
+            [
+              121.16714582235187,
+              13.959955674200017
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      }
+    },
+    {
+      "id": "42dab122d4161f6aa966ca0f1b209261",
+      "type": "Feature",
+      "properties": {
+        "id": "warehouse_6",
+        "name": "Cassava Dryer",
+        "height": 5,
+        "min_height": 0,
+        "station": "lares",
+        "has_3d_model": true,
+        "category": "infrastructure",
+        "isSubPlot": false,
+        "hasMarker": true
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              121.16734772834269,
+              13.96011219396749
+            ],
+            [
+              121.16737383694476,
+              13.960040438952745
+            ],
+            [
+              121.1674360211918,
+              13.960060019143896
+            ],
+            [
+              121.16741102524992,
+              13.960133063286833
+            ],
+            [
+              121.16734772834269,
+              13.96011219396749
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      }
+    },
+    {
+      "id": "9c08ce5ef5956989ae628312f592be71",
+      "type": "Feature",
+      "properties": {
+        "id": "warehouse_7",
+        "name": "Corn Banner Warehouse",
+        "height": 5,
+        "min_height": 0,
+        "station": "lares",
+        "has_3d_model": true,
+        "category": "infrastructure",
+        "isSubPlot": false,
+        "hasMarker": true
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              121.16745997217595,
+              13.960240806475554
+            ],
+            [
+              121.16750822611766,
+              13.96010978217744
+            ],
+            [
+              121.1675532330085,
+              13.960125297594644
+            ],
+            [
+              121.16756548212658,
+              13.960091475895268
+            ],
+            [
+              121.1676085193833,
+              13.960108342162997
+            ],
+            [
+              121.16759652810674,
+              13.960140772411862
+            ],
+            [
+              121.1676843728672,
+              13.960169166723162
+            ],
+            [
+              121.16763647235933,
+              13.960302568535624
+            ],
+            [
+              121.16745997217595,
+              13.960240806475554
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      }
+    },
+    {
+      "id": "1215b1c3436edb1376e371ebb7815bf3",
+      "type": "Feature",
+      "properties": {
+        "id": "warehouse_7_annex",
+        "name": "Corn Banner Warehouse Annex",
+        "height": 5,
+        "min_height": 0,
+        "station": "lares",
+        "has_3d_model": true,
+        "category": "infrastructure",
+        "isSubPlot": false,
+        "hasMarker": false
+      },
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              121.16746020084156,
+              13.960239945487913
+            ],
+            [
+              121.1674043794784,
+              13.96022148264393
+            ],
+            [
+              121.16743656728693,
+              13.960136010532423
+            ],
+            [
+              121.16749216410267,
+              13.960152856382038
+            ],
+            [
+              121.16746020084156,
+              13.960239945487913
             ]
           ]
         ],

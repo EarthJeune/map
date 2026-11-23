@@ -105,6 +105,7 @@ async function main() {
             is_subplot TINYINT(1) DEFAULT 0,
             has_marker TINYINT(1) DEFAULT 1,
             is_visible TINYINT(1) DEFAULT 1,
+            facility_status ENUM('Existing', 'Under Construction', 'Proposed') NOT NULL DEFAULT 'Existing',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             UNIQUE KEY uq_station_building (station_id, building_code),
@@ -165,6 +166,7 @@ async function main() {
             area_hectares DECIMAL(8,2) NULL,
             soil_type VARCHAR(150) NULL,
             status VARCHAR(80) DEFAULT 'Active',
+            facility_status ENUM('Existing', 'Under Construction', 'Proposed') NOT NULL DEFAULT 'Existing',
             description TEXT NULL,
             image_webp_url VARCHAR(255) NULL,
             center_lng DOUBLE NULL,
@@ -430,6 +432,7 @@ async function main() {
     let imgCount = 0;
     for (const file of webpFiles) {
         const base = file.replace(/\.webp$/, '');
+        if (base.startsWith('zone_') || base.endsWith('_marker')) continue;
         let stationId = 'lares';
         let bCode = base;
         let caption = 'Primary Facility View';
@@ -438,6 +441,8 @@ async function main() {
 
         if (base.startsWith('rares_')) {
             stationId = 'rares';
+        } else if (base.startsWith('qares_')) {
+            stationId = 'qares';
         } else if (base.endsWith('_inside')) {
             bCode = base.replace(/_inside$/, '');
             caption = 'Interior / Inside View';

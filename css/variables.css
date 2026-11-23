@@ -29,13 +29,22 @@
     --accent-slate: #94a3b8;
 
     /* --- Surface & Glassmorphic Backgrounds --- */
-    --dark-bg: #0a0f1c;
-    --dark-bg-glass: rgba(10, 15, 28, 0.94);
-    --dark-surface: rgba(15, 23, 42, 0.92);
-    --card-bg: rgba(255, 255, 255, 0.06);
-    --card-bg-hover: rgba(255, 255, 255, 0.1);
-    --card-border: rgba(255, 255, 255, 0.1);
-    --card-border-subtle: rgba(255, 255, 255, 0.06);
+    --dark-bg: #07100e;
+    --dark-bg-glass: rgba(7, 16, 14, 0.96);
+    --dark-surface: rgba(11, 24, 21, 0.94);
+    --card-bg: rgba(16, 35, 30, 0.56);
+    --card-bg-hover: rgba(16, 185, 129, 0.14);
+    --card-border: rgba(52, 211, 153, 0.22);
+    --card-border-subtle: rgba(52, 211, 153, 0.12);
+
+    /* --- Botanical Aero-Telemetry Mobile Tokens --- */
+    --botanical-deep: #07100e;
+    --botanical-surface: #0b1815;
+    --botanical-card: #10231e;
+    --botanical-border: rgba(52, 211, 153, 0.24);
+    --botanical-rim: rgba(167, 243, 208, 0.14);
+    --botanical-glass: rgba(7, 16, 14, 0.88);
+    --touch-min: 44px;
 
     /* --- Typography & Text Hierarchy --- */
     --text-main: #f1f5f9;

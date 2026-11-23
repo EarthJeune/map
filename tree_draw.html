@@ -2,11 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>DA-LARES 3D Tree Planter & Drawer</title>
+    <title>iGUIDE 3D Tree Planter & Drawer — DA-CALABARZON</title>
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
     <!-- Mapbox GL JS v3.31.0 -->
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.31.0/mapbox-gl.css" rel="stylesheet">
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.31.0/mapbox-gl.js"></script>
+    <script src="/js/portal/editor-bridge.js?v=304"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -237,6 +238,34 @@
             border-color: #fbbf24;
             z-index: 100;
         }
+        .station-switcher {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+        .layer-btn {
+            padding: 7px 8px;
+            border-radius: 8px;
+            background: rgba(30, 41, 59, 0.72);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #cbd5e1;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            text-align: center;
+        }
+        .layer-btn:hover { background: rgba(51, 65, 85, 0.9); color: #fff; }
+        .layer-btn.active {
+            background: rgba(34, 197, 94, 0.22);
+            border-color: #22c55e;
+            color: #4ade80;
+            font-weight: 700;
+        }
+        .action-btn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -244,8 +273,31 @@
 
     <div class="planter-panel">
         <div class="panel-header">
-            <h3 class="panel-title">🌳 Tree Planter</h3>
+            <div>
+                <h3 class="panel-title">🌳 3D Tree Planter</h3>
+                <div id="tree-station-subtitle" style="font-size:11px; color:#94a3b8; margin-top:2px;">DA-LARES (Lipa City)</div>
+            </div>
             <span class="tree-badge" id="tree-count-badge">0 Trees</span>
+        </div>
+
+        <!-- 4-Station Switcher -->
+        <div>
+            <div class="section-label">Campus Station</div>
+            <div class="station-switcher">
+                <button type="button" class="layer-btn active" id="btn-station-lares" onclick="switchStation('lares')">🌾 DA-LARES</button>
+                <button type="button" class="layer-btn" id="btn-station-qares" onclick="switchStation('qares')">🌱 DA-QARES</button>
+                <button type="button" class="layer-btn" id="btn-station-rares" onclick="switchStation('rares')">🌿 DA-RARES</button>
+                <button type="button" class="layer-btn" id="btn-station-cares" onclick="switchStation('cares')">🌴 DA-CARES</button>
+            </div>
+        </div>
+
+        <!-- 2D Base Layer (Drone vs Satellite) -->
+        <div>
+            <div class="section-label">2D Map Base Imagery</div>
+            <div class="station-switcher">
+                <button type="button" class="layer-btn active" id="btn-imagery-drone" onclick="setTreeImagery('drone')">🚁 Drone Shot</button>
+                <button type="button" class="layer-btn" id="btn-imagery-google" onclick="setTreeImagery('google')">🛰️ Google Sat</button>
+            </div>
         </div>
 
         <!-- Mode Switcher -->
@@ -319,8 +371,56 @@
     <script>
         mapboxgl.accessToken = 'pk.eyJ1IjoiZWFydGgwMzA3IiwiYSI6ImNtdWFqNTR5czAxNmEyd29lMm42YjZlMDkifQ.xdPOP5RVPdn6YNka-ZdwoQ';
 
+        const TREE_STATION_CONFIG = {
+            lares: {
+                name: 'DA-LARES (Lipa City)',
+                center: [121.1664, 13.9586],
+                zoom: 18.2,
+                droneUrl: '/api/tiles/lares/{z}/{x}/{y}.png',
+                bounds: [121.165052, 13.956537, 121.173221, 13.963068],
+                buildingsSource: '/api/buildings',
+                treesFile: 'trees.json',
+                pendingSurvey: false
+            },
+            qares: {
+                name: 'DA-QARES (Tiaong)',
+                center: [121.37178, 13.94658],
+                zoom: 17.8,
+                droneUrl: '/api/tiles/qares/{z}/{x}/{y}.png',
+                bounds: [121.366888, 13.941220, 121.376150, 13.950960],
+                buildingsSource: '/api/qares/buildings',
+                treesFile: 'qares_trees.json',
+                pendingSurvey: false
+            },
+            rares: {
+                name: 'DA-RARES (Tanay)',
+                center: [121.33930, 14.57500],
+                zoom: 17.8,
+                droneUrl: '/api/tiles/rares/{z}/{x}/{y}.png',
+                bounds: [121.3366, 14.5727, 121.3421, 14.5773],
+                buildingsSource: '/api/rares/buildings',
+                treesFile: 'rares_trees.json',
+                pendingSurvey: false
+            },
+            cares: {
+                name: 'DA-CARES (Naic)',
+                center: [120.7712, 14.3164],
+                zoom: 17.5,
+                droneUrl: null,
+                bounds: null,
+                buildingsSource: null,
+                treesFile: 'cares_trees.json',
+                pendingSurvey: true
+            }
+        };
+
+        const urlParams = new URLSearchParams(window.location.search);
+        let currentStation = IGuideEditorBridge.resolveStation(urlParams.get('station'), ['lares', 'qares', 'rares', 'cares'], 'lares');
+        window.currentStation = currentStation;
+
         // Planter state
-        let currentMode = 'google'; // 'google' (Satellite tracing) or 'mapbox' (3D Preview)
+        let currentMode = 'google'; // 'google' (2D Imagery tracing) or 'mapbox' (3D Preview)
+        let imageryMode = 'drone';  // 'drone' | 'google'
         let selectedTreeType = 'tree_mango';
         let selectedScale = 1.0;
         let treeFeatures = [];
@@ -333,22 +433,67 @@
             'tree_bush':  { name: 'Fruit Bush',        icon: '🌿', file: 'models/tree_bush.glb' }
         };
 
-        // Initialize Map directly in Mapbox Standard so the style is stable,
-        // but with Google Satellite layer in slot: 'bottom' and Mapbox generic trees TURNED OFF!
         const map = new mapboxgl.Map({
             container: 'map',
             style: 'mapbox://styles/mapbox/standard',
-            center: [121.1664, 13.9586],
-            zoom: 18.2,
+            center: TREE_STATION_CONFIG[currentStation].center,
+            zoom: TREE_STATION_CONFIG[currentStation].zoom,
             pitch: 0,
-            bearing: -28,
+            bearing: currentStation === 'lares' ? -28 : 0,
             antialias: true
         });
 
         map.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
+        function syncTreeImageryVisibility() {
+            const show2D = (currentMode === 'google');
+            if (map.getLayer('google-satellite-layer')) {
+                map.setLayoutProperty('google-satellite-layer', 'visibility', show2D ? 'visible' : 'none');
+            }
+            ['lares', 'qares', 'rares'].forEach(st => {
+                const lId = `${st}-drone-layer`;
+                if (map.getLayer(lId)) {
+                    const vis = (show2D && imageryMode === 'drone' && currentStation === st) ? 'visible' : 'none';
+                    map.setLayoutProperty(lId, 'visibility', vis);
+                }
+            });
+            ['lares', 'qares', 'rares'].forEach(st => {
+                const bId = `${st}-buildings-3d-extrusion`;
+                if (map.getLayer(bId)) {
+                    map.setLayoutProperty(bId, 'visibility', (!show2D && currentStation === st) ? 'visible' : 'none');
+                }
+            });
+            if (map.getLayer('3d-tree-models-layer')) {
+                map.setLayoutProperty('3d-tree-models-layer', 'visibility', show2D ? 'none' : 'visible');
+            }
+        }
+
+        function setTreeImagery(mode) {
+            imageryMode = (mode === 'google') ? 'google' : 'drone';
+            document.getElementById('btn-imagery-drone')?.classList.toggle('active', imageryMode === 'drone');
+            document.getElementById('btn-imagery-google')?.classList.toggle('active', imageryMode === 'google');
+            syncTreeImageryVisibility();
+        }
+
+        function syncTreeStationUi() {
+            const cfg = TREE_STATION_CONFIG[currentStation] || TREE_STATION_CONFIG.lares;
+            ['lares', 'qares', 'rares', 'cares'].forEach(st => {
+                document.getElementById(`btn-station-${st}`)?.classList.toggle('active', st === currentStation);
+            });
+            const sub = document.getElementById('tree-station-subtitle');
+            if (sub) sub.textContent = cfg.name;
+            const saveBtn = document.getElementById('btn-save-trees');
+            if (saveBtn) {
+                saveBtn.disabled = Boolean(cfg.pendingSurvey);
+                saveBtn.textContent = cfg.pendingSurvey
+                    ? '🌴 Pending Field Survey (DA-CARES)'
+                    : `💾 Save Directly to Map (${cfg.treesFile})`;
+            }
+            IGuideEditorBridge.syncCaresBanner(currentStation);
+            IGuideEditorBridge.applyStationButtonLocks();
+        }
+
         map.on('style.load', () => {
-            // 1. Configure Mapbox basemap (disable generic trees, landmarks, POI clutter, and exterior building colors)
             try {
                 map.setConfigProperty('basemap', 'show3dTrees', false);
                 map.setConfigProperty('basemap', 'show3dBuildings', false);
@@ -367,8 +512,6 @@
                 });
             } catch (e) { console.warn('Config properties error:', e); }
 
-            // 2. Add Google Satellite raster source & layer in slot: 'top'
-            // Using slot: 'top' ensures pure, unobstructed Google Satellite imagery with NO Mapbox roads or beige footprints drawn over it!
             if (!map.getSource('google-satellite')) {
                 map.addSource('google-satellite', {
                     type: 'raster',
@@ -383,37 +526,58 @@
                     type: 'raster',
                     source: 'google-satellite',
                     slot: 'top',
-                    layout: {
-                        visibility: 'visible' // Visible in 2D Satellite mode, hidden in 3D Preview
-                    }
+                    layout: { visibility: 'visible' }
                 });
             }
 
-            // 3. DA-LARES Compound 3D Buildings (drawings.json) in slot 'middle'
-            if (!map.getSource('lares-drawings-source')) {
-                map.addSource('lares-drawings-source', {
-                    type: 'geojson',
-                    data: 'drawings.json'
-                });
-            }
-            if (!map.getLayer('3d-drawings-extrusion')) {
-                map.addLayer({
-                    id: '3d-drawings-extrusion',
-                    source: 'lares-drawings-source',
-                    type: 'fill-extrusion',
-                    slot: 'middle',
-                    layout: {
-                        'visibility': 'none' // Hidden in satellite mode, visible in 3D preview
-                    },
-                    paint: {
-                        'fill-extrusion-color': '#f0ece4',
-                        'fill-extrusion-height': ['get', 'height'],
-                        'fill-extrusion-base': ['get', 'min_height'],
-                        'fill-extrusion-opacity': 0.95,
-                        'fill-extrusion-emissive-strength': 0.25
-                    }
-                });
-            }
+            // Station drone raster overlays (slot: 'top' right over Google Satellite)
+            ['lares', 'qares', 'rares'].forEach(st => {
+                const cfg = TREE_STATION_CONFIG[st];
+                if (!map.getSource(`${st}-drone-source`)) {
+                    map.addSource(`${st}-drone-source`, {
+                        type: 'raster',
+                        tiles: [cfg.droneUrl],
+                        tileSize: 256,
+                        minzoom: 14,
+                        maxzoom: 21,
+                        bounds: cfg.bounds
+                    });
+                }
+                if (!map.getLayer(`${st}-drone-layer`)) {
+                    map.addLayer({
+                        id: `${st}-drone-layer`,
+                        type: 'raster',
+                        source: `${st}-drone-source`,
+                        slot: 'top',
+                        layout: { visibility: 'none' },
+                        paint: { 'raster-opacity': 1.0, 'raster-fade-duration': 0 }
+                    });
+                }
+
+                // 3D building extrusions per station for 3D Preview inspection
+                if (cfg.buildingsSource && !map.getSource(`${st}-buildings-source`)) {
+                    map.addSource(`${st}-buildings-source`, {
+                        type: 'geojson',
+                        data: cfg.buildingsSource
+                    });
+                }
+                if (cfg.buildingsSource && !map.getLayer(`${st}-buildings-3d-extrusion`)) {
+                    map.addLayer({
+                        id: `${st}-buildings-3d-extrusion`,
+                        source: `${st}-buildings-source`,
+                        type: 'fill-extrusion',
+                        slot: 'middle',
+                        layout: { visibility: 'none' },
+                        paint: {
+                            'fill-extrusion-color': '#e2e8f0',
+                            'fill-extrusion-height': ['coalesce', ['get', 'height'], 8],
+                            'fill-extrusion-base': ['coalesce', ['get', 'min_height'], 0],
+                            'fill-extrusion-opacity': 0.92,
+                            'fill-extrusion-emissive-strength': 0.2
+                        }
+                    });
+                }
+            });
 
             // 4. Register the 4 real low-poly 3D models
             Object.keys(TREE_CONFIGS).forEach(key => {
@@ -456,25 +620,69 @@
                 });
             }
 
-            // 5. Load trees from trees.json on server
-            loadTreesFromServer();
+            // 5. Sync UI + load trees for active station
+            syncTreeStationUi();
+            syncTreeImageryVisibility();
+            loadTreesFromServer(currentStation);
         });
 
-        function loadTreesFromServer() {
-            fetch('/api/trees')
+        function switchStation(stationId, forceBypass = false) {
+            if (!TREE_STATION_CONFIG[stationId]) return;
+            if (!forceBypass && !IGuideEditorBridge.canSwitchTo(stationId)) return;
+            if (stationId === currentStation && !forceBypass) return;
+
+            currentStation = stationId;
+            window.currentStation = stationId;
+            try {
+                const u = new URL(window.location);
+                u.searchParams.set('station', stationId);
+                window.history.replaceState({}, '', u);
+            } catch (_) {}
+
+            syncTreeStationUi();
+            syncTreeImageryVisibility();
+
+            const cfg = TREE_STATION_CONFIG[stationId];
+            map.flyTo({
+                center: cfg.center,
+                zoom: cfg.zoom,
+                pitch: currentMode === 'mapbox' ? 55 : 0,
+                bearing: stationId === 'lares' ? -28 : 0,
+                duration: 1200
+            });
+            loadTreesFromServer(stationId);
+        }
+
+        function loadTreesFromServer(station = currentStation) {
+            const cfg = TREE_STATION_CONFIG[station] || TREE_STATION_CONFIG.lares;
+            if (cfg.pendingSurvey) {
+                treeFeatures = [];
+                updateUI();
+                syncTreeSources();
+                return;
+            }
+            fetch(`/api/trees?station=${encodeURIComponent(station)}&t=${Date.now()}`)
                 .then(r => r.json())
                 .then(data => {
-                    if (data && Array.isArray(data.features)) {
-                        treeFeatures = data.features;
-                        updateUI();
-                        syncTreeSources();
-                    }
+                    if (station !== currentStation) return;
+                    treeFeatures = (data && Array.isArray(data.features)) ? data.features : [];
+                    updateUI();
+                    syncTreeSources();
                 })
-                .catch(e => console.log('Starting with clean tree state:', e));
+                .catch(e => {
+                    console.log('Starting with clean tree state:', e);
+                    treeFeatures = [];
+                    updateUI();
+                    syncTreeSources();
+                });
         }
 
         // Click on map to plant a tree
         map.on('click', (e) => {
+            if (TREE_STATION_CONFIG[currentStation]?.pendingSurvey) {
+                alert('DA-CARES (Naic) is pending field survey. Planting is paused until field survey imagery is ready.');
+                return;
+            }
             const coords = [parseFloat(e.lngLat.lng.toFixed(7)), parseFloat(e.lngLat.lat.toFixed(7))];
             const newTree = {
                 type: 'Feature',
@@ -549,61 +757,33 @@
             });
         }
 
-        // Instant, smooth toggle between Google Satellite & Mapbox 3D Preview (NO map.setStyle reload!)
+        // Instant, smooth toggle between 2D Imagery & Mapbox 3D Preview
         function togglePlanterMapMode() {
             const btn = document.getElementById('btn-toggle-view');
             const icon = document.getElementById('view-icon');
             const txt = document.getElementById('view-text');
 
             if (currentMode === 'google') {
-                // Switch to Mapbox 3D Preview
                 currentMode = 'mapbox';
                 btn.classList.add('mapbox-active');
                 icon.textContent = '🛰️';
-                txt.textContent = 'Switch to Google Satellite';
+                txt.textContent = 'Switch to 2D Imagery';
 
-                // Hide Google Satellite raster layer & hide 2D pins
-                if (map.getLayer('google-satellite-layer')) {
-                    map.setLayoutProperty('google-satellite-layer', 'visibility', 'none');
-                }
                 mapMarkers.forEach(m => {
                     if (m.getElement()) m.getElement().style.display = 'none';
                 });
-
-                // Show 3D models & 3D buildings layer
-                if (map.getLayer('3d-tree-models-layer')) {
-                    map.setLayoutProperty('3d-tree-models-layer', 'visibility', 'visible');
-                }
-                if (map.getLayer('3d-drawings-extrusion')) {
-                    map.setLayoutProperty('3d-drawings-extrusion', 'visibility', 'visible');
-                }
-
-                // Tilt into 3D view
+                syncTreeImageryVisibility();
                 map.easeTo({ pitch: 55, duration: 800 });
             } else {
-                // Switch back to Google Satellite
                 currentMode = 'google';
                 btn.classList.remove('mapbox-active');
                 icon.textContent = '🗺️';
                 txt.textContent = 'Switch to Mapbox 3D Preview';
 
-                // Show Google Satellite raster & show 2D pins
-                if (map.getLayer('google-satellite-layer')) {
-                    map.setLayoutProperty('google-satellite-layer', 'visibility', 'visible');
-                }
                 mapMarkers.forEach(m => {
                     if (m.getElement()) m.getElement().style.display = '';
                 });
-
-                // Hide 3D models and buildings in top-down mode
-                if (map.getLayer('3d-tree-models-layer')) {
-                    map.setLayoutProperty('3d-tree-models-layer', 'visibility', 'none');
-                }
-                if (map.getLayer('3d-drawings-extrusion')) {
-                    map.setLayoutProperty('3d-drawings-extrusion', 'visibility', 'none');
-                }
-
-                // Top-down 2D view
+                syncTreeImageryVisibility();
                 map.easeTo({ pitch: 0, duration: 600 });
             }
         }
@@ -640,56 +820,75 @@
             }
         }
 
-        function saveTreesDirectly() {
+        async function saveTreesDirectly() {
+            const cfg = TREE_STATION_CONFIG[currentStation] || TREE_STATION_CONFIG.lares;
+            if (cfg.pendingSurvey) {
+                alert('DA-CARES (Naic) is pending field survey.');
+                return;
+            }
+            const confirmed = await IGuideEditorBridge.confirmSave({
+                title: 'Save Tree Placement?',
+                message: `Are you sure you want to save ${treeFeatures.length} planted tree(s) for ${(currentStation || 'lares').toUpperCase()} to ${cfg.treesFile}?`,
+                confirmLabel: 'Yes, Save Trees'
+            });
+            if (!confirmed) return;
+
             const btn = document.getElementById('btn-save-trees');
             btn.disabled = true;
-            btn.textContent = 'Saving...';
+            btn.textContent = `Saving to ${cfg.treesFile}...`;
 
             const payload = {
                 type: 'FeatureCollection',
+                station: currentStation,
                 features: treeFeatures
             };
 
-            fetch('/api/trees', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            })
-            .then(r => r.json())
-            .then(res => {
-                if (res.success) {
-                    btn.textContent = `✅ Saved ${res.count} Trees to trees.json!`;
-                    btn.style.background = '#10b981';
-                    setTimeout(() => {
-                        btn.textContent = '💾 Save Directly to Map (trees.json)';
-                        btn.style.background = '#22c55e';
-                        btn.disabled = false;
-                    }, 3000);
-                } else {
-                    alert('Save failed: ' + (res.error || 'Unknown error'));
-                    btn.textContent = '❌ Error Saving';
+            try {
+                const res = await IGuideEditorBridge.authFetch(`/api/trees?station=${encodeURIComponent(currentStation)}`, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                btn.textContent = `✅ Saved ${res.count} Trees to ${cfg.treesFile}!`;
+                btn.style.background = '#10b981';
+                setTimeout(() => {
+                    btn.textContent = `💾 Save Directly to Map (${cfg.treesFile})`;
+                    btn.style.background = '#22c55e';
                     btn.disabled = false;
-                }
-            })
-            .catch(err => {
-                alert('Network error saving trees: ' + err.message);
-                btn.textContent = '❌ Error Saving';
-                btn.disabled = false;
-            });
+                }, 3000);
+            } catch (err) {
+                alert('Save blocked: ' + err.message);
+                btn.textContent = '❌ Save Blocked / Error';
+                setTimeout(() => {
+                    syncTreeStationUi();
+                }, 2000);
+            }
         }
 
         function copyTreesGeoJSON() {
             const geojsonStr = JSON.stringify({
                 type: 'FeatureCollection',
+                station: currentStation,
                 features: treeFeatures
             }, null, 2);
 
             navigator.clipboard.writeText(geojsonStr).then(() => {
-                alert(`Copied ${treeFeatures.length} trees GeoJSON to clipboard!`);
+                alert(`Copied ${treeFeatures.length} ${currentStation.toUpperCase()} trees GeoJSON to clipboard!`);
             }).catch(e => {
                 prompt('Copy GeoJSON below:', geojsonStr);
             });
         }
+
+        IGuideEditorBridge.init({
+            validStations: ['lares', 'qares', 'rares', 'cares'],
+            currentStation,
+            onForceStation: (st) => {
+                if (st && TREE_STATION_CONFIG[st] && st !== currentStation) {
+                    switchStation(st, true);
+                } else {
+                    syncTreeStationUi();
+                }
+            }
+        });
     </script>
 </body>
 </html>

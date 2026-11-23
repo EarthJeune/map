@@ -37,12 +37,25 @@ export function createKioskMarker() {
     el.className = 'kiosk-marker' + (state.isAdmin ? ' admin-mode' : ' visitor-mode');
 
     const prefix = isQares ? 'QARES • ' : isRares ? 'RARES • ' : '';
+    const stationTitle = isQares ? 'DA-QARES' : isRares ? 'DA-RARES' : 'DA-LARES';
     if (state.isAdmin) {
         const dragNotice = isDraggable ? `${lucideIcon('unlock', 12)} (Drag to move)` : `${lucideIcon('lock', 12)} (Admin)`;
         const bgStyle = isDraggable ? 'background:#eab308;color:#000;border:1px solid #ca8a04;' : '';
-        el.innerHTML = `<div class="kiosk-marker-pulse"></div><div class="kiosk-marker-dot"></div><div class="kiosk-marker-label" style="cursor:pointer;pointer-events:auto;${bgStyle}" onclick="toggleKioskLock(event)">${lucideIcon('map-pin', 13)} ${prefix}You Are Here ${dragNotice}</div>`;
+        el.innerHTML = `
+            <div class="kiosk-marker-pulse"></div>
+            <div class="kiosk-marker-dot">${lucideIcon('monitor', 14)}</div>
+            <div class="kiosk-marker-label" style="cursor:pointer;pointer-events:auto;${bgStyle}" onclick="toggleKioskLock(event)">
+                <div class="kiosk-marker-label-main">${lucideIcon('map-pin', 12)} <span>${prefix}You Are Here ${dragNotice}</span></div>
+                <div class="kiosk-marker-label-sub">iGUIDE INFORMATION KIOSK</div>
+            </div>`;
     } else {
-        el.innerHTML = `<div class="kiosk-marker-pulse"></div><div class="kiosk-marker-dot"></div><div class="kiosk-marker-label" style="pointer-events:none;cursor:default;user-select:none;">${lucideIcon('map-pin', 13)} ${prefix}You Are Here</div>`;
+        el.innerHTML = `
+            <div class="kiosk-marker-pulse"></div>
+            <div class="kiosk-marker-dot" onclick="focusCompoundKiosk(event)" title="${stationTitle} iGUIDE Information Kiosk">${lucideIcon('monitor', 14)}</div>
+            <div class="kiosk-marker-label" onclick="focusCompoundKiosk(event)" title="Tap to focus on the compound iGUIDE Information Kiosk">
+                <div class="kiosk-marker-label-main">${lucideIcon('map-pin', 12)} <span class="kml-you-are-here">${prefix}YOU ARE HERE</span><span class="kml-phone-only">${prefix}iGUIDE KIOSK</span></div>
+                <div class="kiosk-marker-label-sub">iGUIDE INFORMATION KIOSK</div>
+            </div>`;
     }
 
     const marker = new mapboxgl.Marker({
@@ -141,6 +154,27 @@ export function repositionActiveKioskPin(newCoords) {
 }
 if (typeof window !== 'undefined') {
     window.repositionActiveKioskPin = repositionActiveKioskPin;
+    window.focusCompoundKiosk = function (event) {
+        if (event) event.stopPropagation();
+        const isQares = (state.currentStationId === 'qares');
+        const isRares = (state.currentStationId === 'rares');
+        const coords = isQares
+            ? (state.QARES_KIOSK_COORDS || [121.3713315, 13.9432268])
+            : isRares
+            ? (state.RARES_KIOSK_COORDS || [121.3393, 14.5750])
+            : (state.KIOSK_COORDS || SAVED_MAIN_KIOSK_COORDS);
+        const stLabel = isQares ? 'DA-QARES' : isRares ? 'DA-RARES' : 'DA-LARES';
+        if (map && Array.isArray(coords)) {
+            map.flyTo({
+                center: coords,
+                zoom: Math.max(map.getZoom(), 18.8),
+                pitch: 56,
+                duration: 1100,
+                essential: true
+            });
+        }
+        showAutoExitToast(`${stLabel} iGUIDE Information Kiosk • On-site walking routes start here`, 3400);
+    };
 }
 
 let idleAnimFrame = null;

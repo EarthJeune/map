@@ -69,6 +69,14 @@ export function applyAppModeToDOM() {
         window.updateSidebarToggleIcon();
     }
 
+    if (typeof window.applyPerformanceProfileClass === 'function') {
+        window.applyPerformanceProfileClass();
+    }
+
+    if (typeof window.getOptimalPixelRatio === 'function' && typeof window.applyMapboxPixelRatio === 'function') {
+        window.applyMapboxPixelRatio(window.getOptimalPixelRatio());
+    }
+
     if (typeof window.updatePerformanceUI === 'function') {
         window.updatePerformanceUI();
     }

@@ -3,9 +3,11 @@
 
 import { STATIONS, DEFAULT_STATION_ID, DEFAULT_FILTER_TYPES, getActiveStationDefaultView, getStationIntroViews } from './data/stations.js';
 import { state } from './data/state.js';
-import { map, stopIntroAnimation, playIntroAnimation, setupMapboxStandardLayers, setup3DBuildingModelsLayer, setupStation3DModels, safeMoveLayer } from './map-setup.js';
+import { map, stopIntroAnimation, playIntroAnimation, setupMapboxStandardLayers, setup3DBuildingModelsLayer, setupStation3DModels, safeMoveLayer, syncGoogleSatelliteVisibility } from './map-setup.js';
+import { isLowPolyMode } from './performance.js';
 import { INTRO_START_VIEW } from './data/config.js';
-import { buildDirectory } from './sidebar.js';
+import { buildDirectory, renderStatusFiltersInDropdowns } from './sidebar.js';
+import { isFacilityStatusVisible, renderFacilityStatusBadgeHtml } from './status-filter.js';
 import { removeMarkers, createMarkers, createEntranceArrowMarker, removeSectionBadges } from './markers.js';
 import { createKioskMarker, stopIdleRotation, resetIdle } from './idle.js';
 import { buildRoadGraph } from './routing.js';
@@ -112,11 +114,14 @@ function renderDynamicStationContainers(activeStationId) {
         welcomeGrid.innerHTML = stationList.map(st => {
             const isActive = st.id === activeStationId;
             const isLive = st.status === 'active';
+            const isCares = st.id === 'cares';
             const tags = Array.isArray(st.welcomeTags) ? st.welcomeTags.slice(0, 3) : [];
             const badgeHtml = isLive
                 ? `<span class="dash-wsc-badge active"><span class="dash-pulse-dot"></span> Active Flagship</span>`
-                : `<span class="dash-wsc-badge dev">Under Development</span>`;
-            const ctaText = isLive ? 'Enter Campus' : 'Preview Station';
+                : (isCares
+                    ? `<span class="dash-wsc-badge dev">Coming Soon</span>`
+                    : `<span class="dash-wsc-badge dev">Under Development</span>`);
+            const ctaText = isLive ? 'Enter Campus' : (isCares ? 'Under Dev' : 'Preview Station');
             return `
                 <div class="dash-welcome-station-card${isActive ? ' active' : ''}" data-station="${escapeHtml(st.id)}" onclick="selectWelcomeStation('${escapeHtml(st.id)}')" title="Select ${escapeHtml(st.name)} Station">
                     <div class="dash-wsc-top">
@@ -209,6 +214,9 @@ function renderDynamicStationContainers(activeStationId) {
             quickTagsEl.style.display = 'none';
         }
     }
+
+    // 6. Status Filter options inside desktop & mobile dropdowns
+    renderStatusFiltersInDropdowns();
 }
 
 function updateStationUI(stationId) {
@@ -218,6 +226,21 @@ function updateStationUI(stationId) {
     const subEl = document.getElementById('station-subtitle');
     if (labelEl) labelEl.textContent = st.label;
     if (subEl) subEl.textContent = st.sub;
+
+    // Toggle Station Under Development Warning Banner (QARES / RARES)
+    const isUnderDev = st && st.status === 'under_development';
+    const warningBanner = document.getElementById('station-dev-warning-banner');
+    const warningDesc = document.getElementById('sdwb-desc');
+    if (warningBanner) {
+        if (isUnderDev) {
+            if (warningDesc) {
+                warningDesc.innerHTML = `<strong>${escapeHtml(st.name)}</strong> is under development • 3D models and surveying in progress`;
+            }
+            warningBanner.style.display = 'inline-flex';
+        } else {
+            warningBanner.style.display = 'none';
+        }
+    }
 
     // Update active highlight on dropdown items
     document.querySelectorAll('.station-dropdown-item').forEach(item => {
@@ -320,15 +343,16 @@ export function switchResearchStation(stationId, forceBypass = false) {
     if (state.currentStationId === stationId) return;
 
     const targetStation = STATIONS[stationId];
-    // Respect MySQL station status ('under_development' vs 'active'/'live') controlled in /admin.
-    // Only authenticated Admins (state.isAdmin) or explicit ?dev=1 bypass the Under Development modal.
     const urlParams = (typeof window !== 'undefined') ? new URLSearchParams(window.location.search) : null;
     const isDevOverride = Boolean(state.isAdmin || (urlParams && urlParams.get('dev') === '1'));
-    if (targetStation && targetStation.status === 'under_development' && !forceBypass && !isDevOverride) {
-        showStationDevModal(stationId);
+
+    // CARES is strictly inaccessible to visitors (no 3D assets/roads/buildings surveyed yet)
+    if (stationId === 'cares' && !forceBypass && !isDevOverride) {
+        showStationDevModal('cares');
         return;
     }
 
+    // QARES, RARES, and active stations: visitors are allowed to view visually with a warning banner!
     performStationSwitch(stationId);
 }
 
@@ -364,9 +388,25 @@ export function performStationSwitch(stationId) {
     }
 
     const targetStation = STATIONS[stationId];
+    const urlParams = (typeof window !== 'undefined') ? new URLSearchParams(window.location.search) : null;
+    const isDevOverride = Boolean(state.isAdmin || (urlParams && urlParams.get('dev') === '1'));
+
+    // Safety guard: CARES is strictly inaccessible to visitors
+    if (stationId === 'cares' && !isDevOverride) {
+        console.warn('[StationSwitch] CARES is not accessible to visitors yet.');
+        showStationDevModal('cares');
+        return;
+    }
+
     state.currentStationId = stationId;
 
     updateStationUI(stationId);
+
+    if (targetStation && targetStation.status === 'under_development') {
+        if (typeof showMobileToast === 'function') {
+            showMobileToast(`⚠️ ${targetStation.name} is under development — viewing 3D campus preview`, 4000);
+        }
+    }
 
     // 2. Show Smooth Transition Curtain
     const curtain = document.getElementById('station-transition-curtain');
@@ -548,9 +588,7 @@ export function performStationSwitch(stationId) {
                 if (map.getLayer('lares-drone-layer')) {
                     try { map.setLayoutProperty('lares-drone-layer', 'visibility', isDrone ? 'visible' : 'none'); } catch (e) { }
                 }
-                if (map.getLayer('google-satellite-layer')) {
-                    try { map.setLayoutProperty('google-satellite-layer', 'visibility', isDrone ? 'visible' : 'none'); } catch (e) { }
-                }
+                syncGoogleSatelliteVisibility();
 
                 if (map.getLayer('trees-3d') && state.treesVisible) {
                     try { map.setLayoutProperty('trees-3d', 'visibility', 'visible'); } catch (e) { }
@@ -740,6 +778,27 @@ function bindQARESBuildingEvents() {
     map.on('mouseleave', 'qares-footprints-roofs', () => { map.getCanvas().style.cursor = ''; });
 }
 
+let raresEventsBound = false;
+export function bindRARESBuildingEvents() {
+    if (!map || raresEventsBound) return;
+    if (!map.getLayer('rares-footprints-3d')) return;
+    raresEventsBound = true;
+
+    const onRaresBuildingClick = (e) => {
+        if (!e.features || !e.features.length) return;
+        const f = e.features[0];
+        const p = f.properties || {};
+        const bId = p.id;
+        if (bId && typeof window.navigateTo === 'function') {
+            window.navigateTo(bId);
+        }
+    };
+
+    map.on('click', 'rares-footprints-3d', onRaresBuildingClick);
+    map.on('mouseenter', 'rares-footprints-3d', () => { map.getCanvas().style.cursor = 'pointer'; });
+    map.on('mouseleave', 'rares-footprints-3d', () => { map.getCanvas().style.cursor = ''; });
+}
+
 export function buildQARESMaskFromBoundary(boundaryGeoJson) {
     if (!boundaryGeoJson || !boundaryGeoJson.features) return null;
     let front = null;
@@ -851,13 +910,11 @@ export function loadQARESData() {
         try { map.removeLayer('qares-roads-line'); } catch (e) { }
     }
 
-    // 1. Ensure LARES mask is turned OFF and satellite imagery is visible
+    // 1. Ensure LARES mask is turned OFF and keep Google Satellite under QARES drone tiles
     if (map && map.getLayer('lares-mask-layer')) {
         try { map.setLayoutProperty('lares-mask-layer', 'visibility', 'none'); } catch (e) { }
     }
-    if (map && map.getLayer('google-satellite-layer')) {
-        try { map.setLayoutProperty('google-satellite-layer', 'visibility', isDrone ? 'visible' : 'none'); } catch (e) { }
-    }
+    syncGoogleSatelliteVisibility();
 
     // 2. High-Resolution QARES Drone Orthomosaic Layer (Tiled MBTiles Pyramid, Zooms 14-21)
     try {
@@ -970,9 +1027,9 @@ export function loadQARESData() {
                 },
                 paint: {
                     'line-color': '#4ade80',
-                    'line-width': 10,
-                    'line-blur': 4,
-                    'line-opacity': 0.35
+                    'line-width': 8,
+                    'line-blur': 0,
+                    'line-opacity': 0.24
                 }
             });
         } else if (map.getLayer('qares-boundary-glow')) {
@@ -1270,6 +1327,9 @@ export function loadQARESData() {
 
         // Render Directory for QARES (retaining Buildings part)
         renderQARESDirectory(data, 'Buildings');
+        if (typeof window.applyFacilityStatusFilters === 'function') {
+            window.applyFacilityStatusFilters();
+        }
     }
 
     // Immediate mount from cached memory baseline (zero delay on style change)
@@ -1277,11 +1337,14 @@ export function loadQARESData() {
         applyQARESFootprints(qaresBuildingsBaseline);
     }
 
-    // 4. Fetch QARES Buildings GeoJSON (ensures fresh data)
+        // 4. Fetch QARES Buildings GeoJSON (ensures fresh data)
     fetch('qares_buildings.json?v=' + Date.now())
         .then(r => r.json())
         .then(data => {
             applyQARESFootprints(data);
+            if (typeof window.syncDatabaseBootstrap === 'function') {
+                window.syncDatabaseBootstrap('qares');
+            }
         })
         .catch(e => console.log('Notice: Could not load QARES buildings.', e));
 
@@ -1427,6 +1490,7 @@ export function getGroupedRARESFacilities(data) {
                 id: `rares_building_${baseNum || id}`,
                 name: props.name || `Facility ${baseNum || ''}`,
                 category: props.category || 'Buildings',
+                facility_status: props.facility_status || 'Existing',
                 description: props.description || '',
                 features: [],
                 allCoordinates: []
@@ -1466,6 +1530,7 @@ export function getGroupedRARESFacilities(data) {
             id: g.id,
             name: g.name,
             category: g.category,
+            facility_status: g.facility_status || 'Existing',
             description: g.description,
             coords: centerCoords,
             structureCount: g.features.length,
@@ -1479,6 +1544,26 @@ export function getGroupedRARESFacilities(data) {
     });
 
     return result;
+}
+
+function matchesStationTypeFilter(rawCat, name = '') {
+    const types = (typeof window !== 'undefined' && window.activeTypeFilters instanceof Set)
+        ? window.activeTypeFilters
+        : null;
+    if (!types || types.size === 0) return true;
+    const c = String(rawCat || '').trim().toLowerCase();
+    if (c && c !== 'buildings' && types.has(c)) return true;
+
+    const n = String(name || '').toLowerCase();
+    let inferred = 'infrastructure';
+    if (/(lab|tissue|soil|chemical|embryo|wine)/.test(n)) inferred = 'laboratory';
+    else if (/(office|admin|hub|apco|coordinating|pmpu)/.test(n)) inferred = 'office';
+    else if (/(conference|hall|court)/.test(n)) inferred = 'conference';
+    else if (/(aws|weather|sensor|digital)/.test(n)) inferred = 'digital_agri';
+    else if (/(trial|nursery|seed|crop|production|compost|organic|livestock|bsf|sgpp)/.test(n)) inferred = 'trial_sites';
+    else if (/(orchard|mango|citrus|coffee|banana|makapuno)/.test(n)) inferred = 'orchard';
+    else if (c && c !== 'buildings' && c !== 'infrastructure') inferred = c;
+    return types.has(inferred);
 }
 
 export function renderRARESDirectory(data = raresBuildingsBaseline, filterCat = 'all', isPreFiltered = false, customList = null) {
@@ -1495,6 +1580,10 @@ export function renderRARESDirectory(data = raresBuildingsBaseline, filterCat = 
             facilities = facilities.filter(f => f.category === filterCat);
         }
     }
+    facilities = facilities.filter(f =>
+        isFacilityStatusVisible(f.facility_status || 'Existing') &&
+        matchesStationTypeFilter(f.category, f.name)
+    );
 
     const headerTitle = isPreFiltered ? `RARES SEARCH (${facilities.length})` : `RARES BUILDINGS (${facilities.length})`;
     let html = `<div class="dir-section-header" style="padding: 12px 16px 8px; font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: 0.5px; display:flex; justify-content:space-between; align-items:center;">
@@ -1506,7 +1595,7 @@ export function renderRARESDirectory(data = raresBuildingsBaseline, filterCat = 
         html += `<div style="padding: 36px 16px; text-align: center; color: #94a3b8; font-size: 13px; line-height: 1.5;">
             <div style="font-size: 28px; margin-bottom: 8px;">🌿</div>
             <div style="font-weight: 600; color: #e2e8f0; margin-bottom: 4px;">DA-RARES Tanay Campus Active</div>
-            <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Traced buildings from the Building Drawer will appear here.</div>
+            <div style="font-size: 11px; color: #64748b; margin-top: 4px;">No matching facilities found for active filters.</div>
         </div>`;
     } else {
         facilities.forEach((fac) => {
@@ -1514,15 +1603,16 @@ export function renderRARESDirectory(data = raresBuildingsBaseline, filterCat = 
             const name = fac.name;
             const sub = getRARESSubtitle(name, fac.description);
             const bId = fac.id;
-            const centerCoords = fac.coords;
 
+            const stBadge = renderFacilityStatusBadgeHtml(fac.facility_status);
             html += `
-            <div class="dir-item" data-id="${bId}" onclick="flyToRARESFacility(${centerCoords[0]}, ${centerCoords[1]}, '${bId}')" data-category="${fac.category || 'Buildings'}" style="cursor: pointer;">
+            <div class="dir-item" data-id="${bId}" onclick="navigateTo('${bId}')" data-category="${fac.category || 'Buildings'}" style="cursor: pointer;">
                 <div class="dir-item-icon" style="background: rgba(16, 185, 129, 0.16); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35);">
                     <span class="dir-item-icon-number">${num}</span>
                 </div>
                 <div class="dir-item-info">
                     <div class="dir-item-name">${name}</div>
+                    ${stBadge ? `<div class="dir-status-wrap">${stBadge}</div>` : ''}
                     <div class="dir-item-desc">${sub}</div>
                 </div>
                 <div class="dir-item-arrow">→</div>
@@ -1538,7 +1628,7 @@ export function renderRARESDirectory(data = raresBuildingsBaseline, filterCat = 
             phtml = `<div style="padding: 36px 16px; text-align: center; color: #94a3b8; font-size: 13px; line-height: 1.5;">
                 <div style="font-size: 28px; margin-bottom: 8px;">🌿</div>
                 <div style="font-weight: 600; color: #e2e8f0; margin-bottom: 4px;">DA-RARES Tanay Campus Active</div>
-                <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Traced buildings from the Building Drawer will appear here.</div>
+                <div style="font-size: 11px; color: #64748b; margin-top: 4px;">No matching facilities found for active filters.</div>
             </div>`;
         } else {
             facilities.forEach((fac) => {
@@ -1546,15 +1636,16 @@ export function renderRARESDirectory(data = raresBuildingsBaseline, filterCat = 
                 const name = fac.name;
                 const sub = getRARESSubtitle(name, fac.description);
                 const bId = fac.id;
-                const centerCoords = fac.coords;
 
+                const pstBadge = renderFacilityStatusBadgeHtml(fac.facility_status);
                 phtml += `
-                <div class="phone-dir-item" data-id="${bId}" onclick="flyToRARESFacility(${centerCoords[0]}, ${centerCoords[1]}, '${bId}'); if(window.setPhoneSheetSnap) window.setPhoneSheetSnap('half');" style="cursor: pointer;">
+                <div class="phone-dir-item" data-id="${bId}" onclick="navigateTo('${bId}'); if(window.setPhoneSheetSnap) window.setPhoneSheetSnap('half');" style="cursor: pointer;">
                     <div class="phone-dir-badge" style="background: rgba(16, 185, 129, 0.18); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); font-weight: 800;">
                         ${num}
                     </div>
                     <div class="phone-dir-info">
                         <div class="phone-dir-name">${name}</div>
+                        ${pstBadge ? `<div class="dir-status-wrap">${pstBadge}</div>` : ''}
                         <div class="phone-dir-sub">${sub}</div>
                     </div>
                     <div class="phone-dir-arrow">›</div>
@@ -1594,6 +1685,10 @@ export function filterRARESSearch(query = '') {
 }
 
 export function flyToRARESFacility(lng, lat, id) {
+    if (id && typeof window !== 'undefined' && typeof window.navigateTo === 'function') {
+        window.navigateTo(id);
+        return;
+    }
     if (!map) return;
     map.flyTo({
         center: [lng, lat],
@@ -1601,18 +1696,6 @@ export function flyToRARESFacility(lng, lat, id) {
         pitch: 45,
         essential: true
     });
-    if (id) {
-        const baseId = id.split('.')[0];
-        document.querySelectorAll('#directory .dir-item').forEach(el => {
-            const isMatch = (el.dataset.id === id || el.dataset.id === baseId);
-            el.classList.toggle('active', isMatch);
-            if (isMatch) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        });
-        document.querySelectorAll('#phone-directory-list .phone-dir-item').forEach(el => {
-            const isMatch = (el.dataset.id === id || el.dataset.id === baseId);
-            el.classList.toggle('active', isMatch);
-        });
-    }
 }
 
 export function loadRARESData() {
@@ -1634,9 +1717,7 @@ export function loadRARESData() {
     if (map.getLayer('lares-drone-layer')) {
         try { map.setLayoutProperty('lares-drone-layer', 'visibility', 'none'); } catch (e) { }
     }
-    if (map.getLayer('google-satellite-layer')) {
-        try { map.setLayoutProperty('google-satellite-layer', 'visibility', isDrone ? 'visible' : 'none'); } catch (e) { }
-    }
+    syncGoogleSatelliteVisibility();
 
     // 1. High-Resolution RARES Drone Orthomosaic Layer (Offline MBTiles, Zooms 14-21)
     const styleLayers = map.getStyle()?.layers;
@@ -1754,9 +1835,9 @@ export function loadRARESData() {
                 },
                 paint: {
                     'line-color': '#4ade80',
-                    'line-width': 10,
-                    'line-blur': 4,
-                    'line-opacity': 0.35
+                    'line-width': 8,
+                    'line-blur': 0,
+                    'line-opacity': 0.24
                 }
             }, bldgsModelBeforeId);
         } else if (map.getLayer('rares-boundary-glow')) {
@@ -1887,13 +1968,14 @@ export function loadRARESData() {
                 map.getSource('rares-footprints-source').setData(data);
             }
             const bldgVis = state.buildingsVisible !== false ? 'visible' : 'none';
+            const raresExtrudeFilter = ['!=', ['get', 'has_3d_model'], true];
             if (!map.getLayer('rares-footprints-3d') && map.getSource('rares-footprints-source')) {
                 map.addLayer({
                     id: 'rares-footprints-3d',
                     type: 'fill-extrusion',
                     source: 'rares-footprints-source',
                     slot: 'middle',
-                    filter: ['!=', ['get', 'has_3d_model'], true],
+                    filter: raresExtrudeFilter,
                     layout: { 'visibility': bldgVis },
                     paint: {
                         'fill-extrusion-color': '#d4d8de',
@@ -1904,12 +1986,16 @@ export function loadRARESData() {
                 }, bldgsModelBeforeId);
             } else if (map.getLayer('rares-footprints-3d')) {
                 try {
-                    map.setFilter('rares-footprints-3d', ['!=', ['get', 'has_3d_model'], true]);
+                    map.setFilter('rares-footprints-3d', raresExtrudeFilter);
                     map.setLayoutProperty('rares-footprints-3d', 'visibility', bldgVis);
                 } catch (e) {}
             }
             if (typeof setupStation3DModels === 'function') {
                 setupStation3DModels(map, 'rares', (state.currentMapStyleMode === 'mapbox'));
+            }
+            bindRARESBuildingEvents();
+            if (typeof window.applyFacilityStatusFilters === 'function') {
+                window.applyFacilityStatusFilters();
             }
 
             // 6. Mount RARES Agricultural Plots (toggleable via Map Settings -> Agricultural Plots)
@@ -1965,6 +2051,9 @@ export function loadRARESData() {
                 safeMoveLayer(map, lid);
             });
 
+            if (typeof window.syncDatabaseBootstrap === 'function') {
+                window.syncDatabaseBootstrap('rares');
+            }
             if (typeof window.createMarkers === 'function') {
                 window.createMarkers();
             }
@@ -1972,6 +2061,42 @@ export function loadRARESData() {
         .catch(() => {
             renderRARESDirectory();
         });
+
+    const extractRaresEntrances = (roadData) => {
+        if (!roadData || !roadData.features) return;
+        if (!state.raresEntrances) state.raresEntrances = {};
+        if (typeof window !== 'undefined' && !window.BUILDING_ENTRANCES) window.BUILDING_ENTRANCES = {};
+        roadData.features.forEach(f => {
+            if (f.geometry && f.geometry.type === 'Point' && f.properties && f.properties.type === 'entrance' && f.properties.buildingId) {
+                const bId = f.properties.buildingId;
+                if (!state.raresEntrances[bId]) state.raresEntrances[bId] = [];
+                state.raresEntrances[bId].push(f.geometry.coordinates);
+                if (typeof window !== 'undefined') {
+                    if (!window.BUILDING_ENTRANCES[bId]) window.BUILDING_ENTRANCES[bId] = [];
+                    window.BUILDING_ENTRANCES[bId].push(f.geometry.coordinates);
+                }
+            }
+        });
+    };
+
+    if (!state.raresRoadGraph) {
+        fetch('rares_roads.json')
+            .then(r => (r.ok ? r.json() : null))
+            .then(roadData => {
+                if (roadData && roadData.features) {
+                    extractRaresEntrances(roadData);
+                    state.raresRoadGraph = buildRoadGraph(roadData);
+                    state.roadGraph = state.raresRoadGraph;
+                    window.roadGraph = state.raresRoadGraph;
+                }
+            })
+            .catch(() => {});
+    } else {
+        state.roadGraph = state.raresRoadGraph;
+        window.roadGraph = state.raresRoadGraph;
+    }
+
+    bindRARESBuildingEvents();
 
     // Ensure Kiosk "You Are Here" pin is mounted
     if (typeof createKioskMarker === 'function') {
@@ -2100,12 +2225,15 @@ export function renderQARESDirectory(data, filterCat = 'Buildings', isPreFiltere
     };
 
     const allFeatures = data.features || [];
-    // Retain Buildings part in QARES directory list
-    const features = isPreFiltered ? allFeatures : allFeatures.filter(f => {
+    // Retain Buildings part in QARES directory list + Filter by Facility Status & Type
+    const features = (isPreFiltered ? allFeatures : allFeatures.filter(f => {
         if (filterCat === 'all') return true;
         const cat = f.properties.filter_type || f.properties.category || 'Buildings';
         return cat === filterCat;
-    });
+    })).filter(f =>
+        isFacilityStatusVisible((f.properties && f.properties.facility_status) || 'Existing') &&
+        matchesStationTypeFilter(f.properties?.category, f.properties?.name)
+    );
 
     if (dirEl) {
         const headerTitle = isPreFiltered ? `QARES SEARCH (${features.length})` : `QARES BUILDINGS (${features.length})`;
@@ -2130,7 +2258,9 @@ export function renderQARESDirectory(data, filterCat = 'Buildings', isPreFiltere
                 const badgeBorder = `${shade}55`;
 
                 let centerCoords = [121.37152, 13.94609];
-                if (f.geometry && f.geometry.type === 'Polygon' && f.geometry.coordinates && f.geometry.coordinates[0]) {
+                if (props.marker_coords && Array.isArray(props.marker_coords) && props.marker_coords.length === 2) {
+                    centerCoords = props.marker_coords;
+                } else if (f.geometry && f.geometry.type === 'Polygon' && f.geometry.coordinates && f.geometry.coordinates[0]) {
                     const ring = f.geometry.coordinates[0];
                     let sumLng = 0, sumLat = 0;
                     ring.forEach(c => { sumLng += c[0]; sumLat += c[1]; });
@@ -2138,6 +2268,7 @@ export function renderQARESDirectory(data, filterCat = 'Buildings', isPreFiltere
                 }
 
                 const subText = getQARESSubtitle(name, props.desc);
+                const qBadge = renderFacilityStatusBadgeHtml(props.facility_status);
 
                 html += `
                     <div class="dir-item" data-id="${props.id || `qares_${num}`}" onclick="navigateTo('${props.id || `qares_${num}`}');">
@@ -2146,6 +2277,7 @@ export function renderQARESDirectory(data, filterCat = 'Buildings', isPreFiltere
                         </div>
                         <div class="dir-item-info">
                             <div class="dir-item-name">${name}</div>
+                            ${qBadge ? `<div class="dir-status-wrap">${qBadge}</div>` : ''}
                             <div class="dir-item-desc">${subText}</div>
                         </div>
                         <div class="dir-item-arrow">→</div>
@@ -2172,7 +2304,9 @@ export function renderQARESDirectory(data, filterCat = 'Buildings', isPreFiltere
                 const num = idx + 1;
 
                 let centerCoords = [121.37152, 13.94609];
-                if (f.geometry && f.geometry.type === 'Polygon' && f.geometry.coordinates && f.geometry.coordinates[0]) {
+                if (props.marker_coords && Array.isArray(props.marker_coords) && props.marker_coords.length === 2) {
+                    centerCoords = props.marker_coords;
+                } else if (f.geometry && f.geometry.type === 'Polygon' && f.geometry.coordinates && f.geometry.coordinates[0]) {
                     const ring = f.geometry.coordinates[0];
                     let sumLng = 0, sumLat = 0;
                     ring.forEach(c => { sumLng += c[0]; sumLat += c[1]; });
@@ -2180,6 +2314,7 @@ export function renderQARESDirectory(data, filterCat = 'Buildings', isPreFiltere
                 }
 
                 const subText = getQARESSubtitle(name, props.desc);
+                const qpBadge = renderFacilityStatusBadgeHtml(props.facility_status);
 
                 phtml += `
                     <div class="phone-dir-item" data-id="${props.id || `qares_${num}`}" onclick="navigateTo('${props.id || `qares_${num}`}'); if(window.setPhoneSheetSnap) window.setPhoneSheetSnap('half');" style="cursor: pointer;">
@@ -2188,6 +2323,7 @@ export function renderQARESDirectory(data, filterCat = 'Buildings', isPreFiltere
                         </div>
                         <div class="phone-dir-info">
                             <div class="phone-dir-name">${name}</div>
+                            ${qpBadge ? `<div class="dir-status-wrap">${qpBadge}</div>` : ''}
                             <div class="phone-dir-sub">${subText}</div>
                         </div>
                         <div class="phone-dir-arrow">›</div>
@@ -2257,18 +2393,36 @@ export function showStationDevModal(stationId) {
 
     const titleEl = document.getElementById('station-dev-title');
     const subEl = document.getElementById('station-dev-sub');
+    const descEl = modal.querySelector('.station-dev-desc');
     const previewBtn = document.getElementById('station-dev-preview-btn');
 
     if (titleEl) titleEl.textContent = `${st.name} (${st.province || st.sub})`;
     if (subEl) subEl.textContent = st.fullName || st.sub;
 
+    const isCares = stationId === 'cares';
+    const urlParams = (typeof window !== 'undefined') ? new URLSearchParams(window.location.search) : null;
+    const isDevOverride = Boolean(state.isAdmin || (!isDeployedMode()) || (urlParams && urlParams.get('dev') === '1'));
+
+    if (descEl) {
+        if (isCares) {
+            descEl.innerHTML = `The interactive 3D digital campus map and wayfinding directory for <strong>DA-CARES</strong> is currently undergoing initial surveying and boundary registration. Campus visualizer is <strong>not yet accessible</strong>.`;
+        } else {
+            descEl.innerHTML = `The interactive 3D digital campus map and wayfinding directory for <strong>${escapeHtml(st.name)}</strong> is currently <strong>under development</strong>. 3D architectural models, boundary surveying, and facility directories are actively in progress.`;
+        }
+    }
+
     if (previewBtn) {
-        // In local development or admin mode (?admin=1), allow exploring preview
-        const isDev = !isDeployedMode();
-        const isAdmin = (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('admin') === '1');
-        previewBtn.style.display = (isDev || isAdmin) ? 'inline-flex' : 'none';
-        previewBtn.dataset.targetStation = stationId;
-        previewBtn.innerHTML = `<span>${isDev ? 'Explore Station (Dev)' : 'Explore Preview (Admin)'}</span>`;
+        if (isCares) {
+            // CARES is strictly inaccessible to visitors (only admin override)
+            previewBtn.style.display = isDevOverride ? 'inline-flex' : 'none';
+            previewBtn.dataset.targetStation = stationId;
+            previewBtn.innerHTML = `<span>Explore Preview (Admin)</span>`;
+        } else {
+            // QARES and RARES: visitors can view visually with a warning
+            previewBtn.style.display = 'inline-flex';
+            previewBtn.dataset.targetStation = stationId;
+            previewBtn.innerHTML = `<span>Explore 3D Campus (Under Dev) →</span>`;
+        }
     }
 
     modal.style.display = 'flex';

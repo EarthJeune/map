@@ -72,79 +72,40 @@ The server uses `path.join(__dirname, 'LARES v1.mbtiles')`. Placing the file ins
 
 ---
 
-## 4. Database Resilience Architecture
+## 4. Database Architecture, Live Portal & Backups
 
-The backend ([server.js](server.js)) is architected with a **3-tier fail-safe design** so the kiosk will **never crash** or display a `500 Server Error`, even if the database service is stopped or uninstalled:
+The application runs on **Node.js + Express (`server.js`)** backed by the **MySQL `kiosk` database** (for RBAC auth, `/login` governance, facility records, offices, `.webp` photos, agricultural plots, plot split/merge history, audit logs, and live `data_version` kiosk sync).
 
-```mermaid
-flowchart TD
-    A["Kiosk Request: /api/pin or /api/drone-offset"] --> B{"Tier 1: Is MySQL Running?"}
-    B -- "Connected" --> C["Read/Write to MySQL 'kiosk' DB"]
-    B -- "Offline / Not Installed" --> D{"Tier 2: Does local JSON exist?"}
-    D -- "File Found" --> E["Read/Write to disk: pin.json / drone_offset.json"]
-    D -- "Missing / Deleted" --> F["Tier 3: In-Memory Campus Safe Defaults\n(Argosino Hall Lounge: [121.1665, 13.9581])"]
+> [!IMPORTANT]
+> **Production MySQL Is Required:** Do NOT disable MySQL on the live Server PC. The multi-role Portal (`/login`), Reviewer approval queue, and auto-syncing 3D status layers read from MySQL `kiosk`.
+
+### 🔑 Separating Live Data vs. Local Development Code
+When users and lobby kiosks are **live in production**, keep these two environments strictly isolated:
+- **Your Laptop (Local Dev):** Has its own local MySQL, `NO_TUNNEL=1`, `LOCK_STATIC_DISK_EDITORS=0`, and **blank `SMTP_APP_PASSWORD`** (so local test OTPs print to terminal instead of emailing real DA personnel). Do all code updates and MCP Blender `.glb` modeling here first.
+- **Live Server PC (24/7 Production):** Keeps its own `.env` (never committed), its own live MySQL `kiosk` data, uploaded `images/`, and `*.mbtiles` files. Set **`LOCK_STATIC_DISK_EDITORS=1`** in the Server PC's `.env` so browser visual geometry editors cannot overwrite Git-tracked `.json`/`.js` files directly on disk while day-to-day MySQL edits in `/login` remain 100% live!
+
+### 💾 Mandatory Pre-Deploy Backup (`scripts/backup_before_deploy.ps1`)
+Before running `git pull` on the live Server PC, always take a 1-command snapshot first:
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\backup_before_deploy.ps1
 ```
-
-### What is currently inside MySQL (`kiosk`):
-1. **`settings` Table (5 rows):**
-   - `kiosk_pin`: `[121.16643, 13.95812]` (Argosino Hall coordinates)
-   - `qares_kiosk_pin`: `[121.37115, 13.94305]`
-   - `drone_offset`: `{"dx":0, "dy":0, "autoApply":true}`
-   - `tunnel_url`: Public Cloudflare URL for mobile QR codes
-   - `drawing_counter`: Drawing tool polygon index
-2. **`building_colors` Table (37 rows):**
-   - Custom hex color codes for 2D roof fills and numbered map badge icons.
-
-> [!NOTE]
-> On the new Server PC, **MySQL is completely optional**. If you do not install MySQL, the system automatically uses Tier 2 (`pin.json`), working 100% out of the box with zero database administration required.
+This exports `kiosk_db.sql` (`mysqldump`), copies `images/`, and saves runtime `.json` files into `..\iguide_backups\<timestamp>\`. Never run `git reset --hard` or `git clean -fd` on the live Server PC.
 
 ---
 
-## 5. Security & Admin Mode Governance
+## 5. Security, `/login` Governance & Cache-Busting
 
-### Why Runtime Admin Mode is Removed from the Public Web Kiosk
-In development, Admin Mode (`Alt + Shift + A` or `?admin=1`) was used to drag the "You Are Here" pin and adjust drone offset sliders. 
-
-For the production domain deployment:
-1. **Calibration is Finished:** The kiosk location at Argosino Hall (`[121.16657, 13.95811]`) is permanent and verified.
-2. **Eliminates Public Tampering:** Because the app will be on a domain, anyone online could attempt `?admin=1`. Removing runtime admin controls makes the public site **100% read-only and unhackable**.
-3. **No PIN Friction:** Visitors and staff never have to deal with an on-screen PIN pad on a public touch display.
-4. **Permanent Mobile Lockdown:** Mobile phones scanning the QR code strictly ignore any admin flags.
-
-### How to Relocate the Kiosk in the Future (If Moved):
-If DA staff ever moves the physical kiosk to another building:
-- Open [pin.json](pin.json) on the Server PC and update the coordinates:
-  ```json
-  { "coordinates": [121.16657, 13.95811], "station": "lares" }
-  ```
-- Or launch the internal developer drawing tool ([draw.html](draw.html)) locally on the server PC.
+1. **Public Map (`/`) is Read-Only:** Visitors & lobby kiosks cannot access admin mode (`state.isAdmin` is permanently `false` on `/`). Public users can explore 3D campuses and filter by **Existing / Under Construction / Proposed** status.
+2. **Role-Gated Spatial Portal (`/login`):** All live content edits run through **Super Admin / Administrator / Reviewer / GIS Editor** accounts with 2-step email OTP verification (`Draft -> Station Reviewer Approve -> Administrator Publish`).
+3. **Zero-Reload Public Sync:** Publishing changes in `/login` bumps `settings.data_version` and broadcasts `iguide_db_sync` so open kiosks/phones live-update within 30 seconds.
+4. **Asset Cache-Busting on Code Deploys:** Whenever you modify `js/` or `css/` files locally and deploy to the server, bump the `?v=...` query parameters in `index.html` and `admin.html` so kiosk & mobile browsers immediately fetch updated modules.
 
 ---
 
 ## 6. Domain Roadmap: Pre-Domain vs. Official Domain
 
-The application is structured to operate seamlessly both before and after DA acquires its official domain:
-
-```
-┌────────────────────────────────────────────────────────────────────────┐
-│                   PHASE 1: PRE-DOMAIN (TODAY)                          │
-├────────────────────────────────────────────────────────────────────────┤
-│ • Kiosk Display:    http://localhost:8080/?mode=kiosk                  │
-│ • Local Network:    http://192.168.x.x:8080                            │
-│ • Mobile QR Code:   https://xxxx.trycloudflare.com (Cloudflare Tunnel) │
-│                     *Visitors on 4G/5G mobile data can connect freely* │
-└──────────────────────────────────┬─────────────────────────────────────┘
-                                   │
-                                   ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│                PHASE 2: OFFICIAL DOMAIN (FUTURE)                       │
-├────────────────────────────────────────────────────────────────────────┤
-│ • Kiosk Display:    https://map.da-lares.gov.ph/?mode=kiosk            │
-│ • Mobile QR Code:   https://map.da-lares.gov.ph                        │
-│ • Configuration:    Add CUSTOM_DOMAIN=https://map.da-lares.gov.ph      │
-│                     into .env (zero code modifications needed)         │
-└────────────────────────────────────────────────────────────────────────┘
-```
+- **Pre-Domain / Quick Tunnel:** Leave `PUBLIC_BASE_URL=` blank in `.env`; `server.js` starts a Cloudflare Tunnel automatically unless `NO_TUNNEL=1`.
+- **Official Domain (`https://map.da-lares.gov.ph`):** Set `PUBLIC_BASE_URL=https://map.da-lares.gov.ph` in `.env` cleanly without modifying application code.
 
 ---
 
@@ -198,19 +159,25 @@ netstat -ano | findstr :8080
 2. Confirm the file name matches `LARES v1.mbtiles` exactly.
 
 ### Step 4: Configure Environment (`.env`)
-Create or edit `.env` in the project root:
+Copy [.env.example](../.env.example) to `.env` in the project root on the Server PC and set your live production values:
 ```env
 PORT=8080
 
-# Optional: If you install MySQL, enter credentials here.
-# If not installing MySQL, leave blank or omit; the server uses pin.json automatically.
-DB_HOST=localhost
+# Live MySQL database on Server PC
+DB_HOST=127.0.0.1
 DB_USER=root
-DB_PASSWORD=
+DB_PASSWORD=your-strong-db-password
 DB_NAME=kiosk
 
+# Prevent browser disk-geometry overwrites from conflicting with Git code deploys
+LOCK_STATIC_DISK_EDITORS=1
+
 # When official domain is ready:
-# CUSTOM_DOMAIN=https://map.da-lares.gov.ph
+# PUBLIC_BASE_URL=https://map.da-lares.gov.ph
+```
+Then initialize database tables & seed default records if this is a brand-new server:
+```cmd
+node database/migrate_and_seed.mjs
 ```
 
 ### Step 5: Test Server Startup

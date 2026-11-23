@@ -2,12 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>DA-LARES Agricultural Field Plot Calibration — Drone Orthomosaic</title>
+<title>Agricultural Field Plot Calibration — DA-LARES, DA-QARES, DA-RARES & DA-CARES</title>
 <meta name="viewport" content="initial-scale=1,maximum-scale=1">
 <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
 <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
 <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.js"></script>
 <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.css" type="text/css">
+<script src="/js/portal/editor-bridge.js?v=304"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; }
@@ -282,7 +283,7 @@
   </div>
 
   <div class="section-label">Campus Station</div>
-  <div class="layer-switcher" style="margin-bottom: 12px;">
+  <div class="layer-switcher" style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom: 12px;">
     <button class="layer-btn active" id="btn-station-lares" onclick="switchStation('lares')">
       <span>🌾 DA-LARES (Lipa)</span>
     </button>
@@ -291,6 +292,9 @@
     </button>
     <button class="layer-btn" id="btn-station-rares" onclick="switchStation('rares')">
       <span>🌿 DA-RARES (Tanay)</span>
+    </button>
+    <button class="layer-btn" id="btn-station-cares" onclick="switchStation('cares')">
+      <span>🌴 DA-CARES (Naic)</span>
     </button>
   </div>
 
@@ -431,7 +435,7 @@ mapboxgl.accessToken = 'pk.eyJ1IjoiZWFydGgwMzA3IiwiYSI6ImNtdWFqNTR5czAxNmEyd29lM
 
 // Check URL query param for default station
 const urlParams = new URLSearchParams(window.location.search);
-let currentStation = (urlParams.get('station') === 'rares') ? 'rares' : (urlParams.get('station') === 'qares') ? 'qares' : 'lares';
+let currentStation = IGuideEditorBridge.resolveStation(urlParams.get('station'), ['lares', 'qares', 'rares', 'cares'], 'lares');
 
 const STATION_CONFIG = {
     lares: {
@@ -446,6 +450,7 @@ const STATION_CONFIG = {
         title: 'DA-LARES Field Plot Calibration',
         subtitle: '45 Calibrated Plots • Auto-Persists on Refresh',
         saveBtnText: '💾 Save Plotted Layout',
+        pendingSurvey: false,
         presets: [
             "Citrus Orchard", "Corn Research", "Mango Orchard", "Cassava Production",
             "ATI Corn Trial", "Cassava Germplasm", "Tall Makapuno & Cacao", "Glutinous Flint Corn",
@@ -468,6 +473,7 @@ const STATION_CONFIG = {
         title: 'DA-QARES Field Plot Calibration',
         subtitle: 'Tiaong Campus Plots • Auto-Persists on Refresh',
         saveBtnText: '💾 Save Plotted Layout',
+        pendingSurvey: false,
         presets: [
             "Coconut & Makapuno Trial", "Corn Demonstration", "Vegetable Nursery",
             "Fruit Orchard", "Organic Agriculture", "Custom"
@@ -485,6 +491,7 @@ const STATION_CONFIG = {
         title: 'DA-RARES Agricultural Plot Calibration',
         subtitle: '28 Ground-Truth Plots • Auto-Saves to rares_plots.json',
         saveBtnText: '💾 Save Directly to Map (rares_plots.json)',
+        pendingSurvey: false,
         presets: [
             "SGPP (Smart Greenhouse Project in the Philippines)",
             "Nursery A", "Nursery B", "Mango Area",
@@ -494,6 +501,21 @@ const STATION_CONFIG = {
             "Forage Area", "Pre-composting Area", "Vermicomposting Area",
             "Hydroponics Area", "Rest Area", "Custom"
         ]
+    },
+    cares: {
+        center: [120.7712, 14.3164],
+        zoom: 17.5,
+        name: 'DA-CARES (Naic, Cavite)',
+        storageKey: 'cares_calibrated_plots_v1',
+        plotsApi: null,
+        roadsFile: null,
+        boundaryFile: null,
+        droneLayerId: null,
+        title: 'DA-CARES Field Plot Calibration',
+        subtitle: 'Pending Field Survey — Satellite preview only',
+        saveBtnText: '🌴 Pending Field Survey (DA-CARES)',
+        pendingSurvey: true,
+        presets: ["Trial Plot", "Custom"]
     }
 };
 
@@ -2687,7 +2709,7 @@ function saveSquaresToStorage() {
         return out;
     });
     try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(squares));
+        localStorage.setItem(getStorageKey(), JSON.stringify(squares));
         const statusText = document.getElementById('save-status-text');
         if (statusText) statusText.textContent = `All ${squares.length} plots saved • Persists on refresh`;
     } catch(e) {
@@ -2696,12 +2718,23 @@ function saveSquaresToStorage() {
 }
 
 // Manual Save Button Handler
-window.manualSaveLayout = function() {
+window.manualSaveLayout = async function() {
+    if (STATION_CONFIG[currentStation]?.pendingSurvey) {
+        showToast('🌴 DA-CARES (Naic) is pending field survey.', '#f59e0b');
+        return;
+    }
+    const all = draw.getAll();
+    const count = (all && all.features) ? all.features.length : 0;
+    const confirmed = await IGuideEditorBridge.confirmSave({
+        title: 'Save Plotted Layout?',
+        message: `Are you sure you want to save all ${count} plot polygon(s) for ${(currentStation || 'lares').toUpperCase()}?`,
+        confirmLabel: 'Yes, Save Layout'
+    });
+    if (!confirmed) return;
+
     saveSquaresToStorage();
     const btn = document.getElementById('btn-manual-save');
     const originalHtml = btn ? btn.innerHTML : '';
-    const all = draw.getAll();
-    const count = (all && all.features) ? all.features.length : 0;
 
     if (currentStation === 'rares') {
         const features = (all && all.features) ? all.features : [];
@@ -2751,12 +2784,10 @@ window.manualSaveLayout = function() {
             btn.style.background = '#0284c7';
         }
 
-        fetch('/api/rares/plots', {
+        IGuideEditorBridge.authFetch('/api/rares/plots', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(geojson)
         })
-        .then(r => r.json())
         .then(res => {
             if (btn) {
                 btn.innerHTML = '<span>✅</span> Saved to Map File!';
@@ -2776,7 +2807,7 @@ window.manualSaveLayout = function() {
                 btn.innerHTML = originalHtml;
                 btn.style.background = '';
             }
-            showToast('⚠️ Saved locally in browser storage', '#eab308');
+            showToast('❌ ' + (err.message || 'Save blocked'), '#ef4444');
         });
         return;
     }
@@ -2988,10 +3019,17 @@ async function loadSquaresState(forceBaseline = false) {
         }
     }
 
+    if (currentStation === 'cares') {
+        syncPlottedSquares();
+        const statusText = document.getElementById('save-status-text');
+        if (statusText) statusText.textContent = 'DA-CARES (Naic) — Pending Field Survey';
+        return;
+    }
+
     let squaresToLoad = null;
     if (!forceBaseline) {
         try {
-            const stored = localStorage.getItem(STORAGE_KEY);
+            const stored = localStorage.getItem(getStorageKey());
             if (stored) {
                 const parsed = JSON.parse(stored);
                 if (Array.isArray(parsed) && parsed.length > 0) {
@@ -3003,8 +3041,11 @@ async function loadSquaresState(forceBaseline = false) {
         }
     }
 
-    if (!squaresToLoad || squaresToLoad.length === 0) {
+    if ((!squaresToLoad || squaresToLoad.length === 0) && currentStation === 'lares') {
         squaresToLoad = DEFAULT_CALIBRATED_SQUARES;
+    }
+    if (!squaresToLoad) {
+        squaresToLoad = [];
     }
 
     squaresToLoad.forEach((sq, idx) => {
@@ -3052,13 +3093,14 @@ async function loadSquaresState(forceBaseline = false) {
 }
 
 // Station Switcher
-window.switchStation = async function(st, isInitial = false) {
+window.switchStation = async function(st, isInitial = false, forceBypass = false) {
     if (!STATION_CONFIG[st]) return;
+    if (!isInitial && !forceBypass && !IGuideEditorBridge.canSwitchTo(st, (m) => showToast(m, '#ef4444'))) return;
     currentStation = st;
     const cfg = STATION_CONFIG[st];
 
     // 1. Update UI Buttons
-    ['lares', 'qares', 'rares'].forEach(k => {
+    ['lares', 'qares', 'rares', 'cares'].forEach(k => {
         const btn = document.getElementById('btn-station-' + k);
         if (btn) btn.classList.toggle('active', k === st);
     });
@@ -3076,7 +3118,13 @@ window.switchStation = async function(st, isInitial = false) {
     const saveBtn = document.getElementById('btn-manual-save');
     if (titleEl) titleEl.textContent = cfg.title;
     if (subEl) subEl.textContent = cfg.subtitle;
-    if (saveBtn) saveBtn.innerHTML = `<span>💾</span> ${cfg.saveBtnText || 'Save Plotted Layout'}`;
+    if (saveBtn) {
+        saveBtn.disabled = Boolean(cfg.pendingSurvey);
+        saveBtn.style.opacity = cfg.pendingSurvey ? '0.55' : '';
+        saveBtn.innerHTML = cfg.pendingSurvey ? cfg.saveBtnText : `<span>💾</span> ${cfg.saveBtnText || 'Save Plotted Layout'}`;
+    }
+    IGuideEditorBridge.syncCaresBanner(st);
+    IGuideEditorBridge.applyStationButtonLocks();
 
     // 4. Update Presets Dropdown
     const select = document.getElementById('box-zone-select');
@@ -3115,6 +3163,8 @@ window.switchStation = async function(st, isInitial = false) {
                     map.getSource('roads-source').setData(rData);
                 }
             } catch(e) {}
+        } else if (map.getSource('roads-source')) {
+            map.getSource('roads-source').setData({ type: 'FeatureCollection', features: [] });
         }
 
         // Update Boundary guide line
@@ -3156,8 +3206,11 @@ map.on('load', async () => {
     // Road Network Lines
     try {
         const initialCfg = STATION_CONFIG[currentStation] || STATION_CONFIG.lares;
-        const roadsRes = await fetch(initialCfg.roadsFile || './roads.json');
-        const roadsData = await roadsRes.json();
+        let roadsData = { type: 'FeatureCollection', features: [] };
+        if (initialCfg.roadsFile) {
+            const roadsRes = await fetch(initialCfg.roadsFile);
+            roadsData = await roadsRes.json();
+        }
         map.addSource('roads-source', { type: 'geojson', data: roadsData });
         map.addLayer({
             id: 'roads-casing',
@@ -3419,6 +3472,10 @@ window.clearAllSquares = function() {
 };
 
 window.resetToBaseline45Plots = function() {
+    if (STATION_CONFIG[currentStation]?.pendingSurvey) {
+        showToast('🌴 DA-CARES (Naic) is pending field survey.', '#f59e0b');
+        return;
+    }
     if (currentStation === 'rares') {
         if (confirm('Reload the 28 RARES agricultural plots from rares_plots.json?')) {
             try { localStorage.removeItem('plot_draw_autosave_rares'); } catch(e) {}
@@ -3427,8 +3484,16 @@ window.resetToBaseline45Plots = function() {
         }
         return;
     }
+    if (currentStation === 'qares') {
+        if (confirm('Clear QARES localStorage plot drafts?')) {
+            try { localStorage.removeItem(getStorageKey()); } catch(e) {}
+            loadSquaresState(true);
+            showToast('🔄 Cleared QARES plot canvas', '#10b981');
+        }
+        return;
+    }
     if (confirm('Reset canvas back to the 45 calibrated ground-truth plots?')) {
-        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(getStorageKey());
         loadSquaresState(true);
         showToast('🔄 Restored 45 calibrated baseline plots', '#10b981');
     }
@@ -3569,6 +3634,19 @@ window.toggleRoadLines = function(show) {
     if (map.getLayer('roads-casing')) map.setLayoutProperty('roads-casing', 'visibility', vis);
     if (map.getLayer('roads-line')) map.setLayoutProperty('roads-line', 'visibility', vis);
 };
+
+IGuideEditorBridge.init({
+    validStations: ['lares', 'qares', 'rares', 'cares'],
+    currentStation,
+    onForceStation: (st) => {
+        if (st && STATION_CONFIG[st] && st !== currentStation) {
+            window.switchStation(st, false, true);
+        } else {
+            IGuideEditorBridge.syncCaresBanner(currentStation);
+            IGuideEditorBridge.applyStationButtonLocks();
+        }
+    }
+});
 </script>
 
 </body>

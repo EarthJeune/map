@@ -2,195 +2,301 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Pill & Marker Calibrator — DA-LARES, DA-QARES & DA-RARES</title>
+  <title>Pill & Marker Calibrator — DA-LARES, DA-QARES, DA-RARES & DA-CARES</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="https://api.mapbox.com/mapbox-gl-js/v3.1.2/mapbox-gl.css" rel="stylesheet">
   <script src="https://api.mapbox.com/mapbox-gl-js/v3.1.2/mapbox-gl.js"></script>
+  <script src="/js/portal/editor-bridge.js?v=304"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body, html { width: 100%; height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #0b1121; color: #f8fafc; }
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #06110e;
+      color: #f8fafc;
+    }
     #map { width: 100%; height: 100%; }
+
+    /* Push Mapbox top-right nav controls cleanly below top bar */
+    .mapboxgl-ctrl-top-right {
+      top: 76px !important;
+      right: 14px !important;
+    }
 
     /* Top Control Bar */
     .top-bar {
       position: absolute;
-      top: 14px;
-      left: 14px;
-      right: 14px;
+      top: 12px;
+      left: 12px;
+      right: 12px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 12px;
+      flex-wrap: wrap;
+      gap: 10px;
       pointer-events: none;
       z-index: 100;
     }
     .top-bar-left, .top-bar-right {
       display: flex;
       align-items: center;
-      gap: 10px;
+      flex-wrap: wrap;
+      gap: 8px;
       pointer-events: auto;
     }
     .panel-card {
-      background: rgba(15, 23, 42, 0.88);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(8, 22, 18, 0.92);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(52, 211, 153, 0.24);
       border-radius: 12px;
-      padding: 8px 14px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      padding: 7px 12px;
+      box-shadow: 0 8px 26px rgba(0, 0, 0, 0.48), 0 0 0 1px rgba(16, 185, 129, 0.08);
       display: flex;
       align-items: center;
-      gap: 10px;
+      flex-wrap: wrap;
+      gap: 8px;
     }
     .title-badge {
       font-size: 13px;
       font-weight: 800;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.4px;
       color: #34d399;
       display: flex;
       align-items: center;
       gap: 6px;
+      padding-right: 4px;
+      white-space: nowrap;
     }
     .station-btn {
-      background: rgba(30, 41, 59, 0.8);
-      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(15, 36, 30, 0.85);
+      border: 1px solid rgba(52, 211, 153, 0.18);
       color: #cbd5e1;
-      padding: 6px 12px;
+      padding: 6px 11px;
       border-radius: 8px;
       font-size: 12px;
       font-weight: 600;
       cursor: pointer;
+      white-space: nowrap;
       transition: all 0.15s ease;
     }
-    .station-btn:hover { background: rgba(51, 65, 85, 0.9); color: #fff; }
+    .station-btn:hover { background: rgba(20, 52, 43, 0.95); color: #fff; border-color: rgba(52, 211, 153, 0.42); }
     .station-btn.active {
-      background: #059669;
-      color: #fff;
-      border-color: #10b981;
-      box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+      background: linear-gradient(135deg, #059669, #10b981);
+      color: #032216;
+      font-weight: 800;
+      border-color: #34d399;
+      box-shadow: 0 0 14px rgba(16, 185, 129, 0.45);
+    }
+
+    .pill-count-chip {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(52, 211, 153, 0.25);
+      color: #6ee7b7;
+      white-space: nowrap;
+    }
+    .pill-count-chip.is-dirty {
+      background: rgba(245, 158, 11, 0.18);
+      border-color: rgba(251, 191, 36, 0.48);
+      color: #fcd34d;
     }
 
     .btn-action {
-      background: #10b981;
-      color: #fff;
-      border: none;
-      padding: 8px 16px;
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #032216;
+      border: 1px solid rgba(110, 231, 183, 0.45);
+      padding: 7px 14px;
       border-radius: 8px;
-      font-size: 13px;
-      font-weight: 700;
+      font-size: 12.5px;
+      font-weight: 800;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 6px;
-      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+      white-space: nowrap;
       transition: all 0.15s ease;
     }
-    .btn-action:hover { background: #059669; transform: translateY(-1px); }
+    .btn-action:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
+    .btn-action:disabled { cursor: not-allowed; opacity: 0.55; }
+
     .btn-secondary {
-      background: rgba(51, 65, 85, 0.8);
-      color: #cbd5e1;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      padding: 8px 14px;
+      background: rgba(17, 38, 32, 0.85);
+      color: #d1fae5;
+      border: 1px solid rgba(52, 211, 153, 0.24);
+      padding: 7px 12px;
       border-radius: 8px;
       font-size: 12px;
       font-weight: 600;
       cursor: pointer;
+      white-space: nowrap;
       transition: all 0.15s ease;
     }
-    .btn-secondary:hover { background: rgba(71, 85, 105, 0.9); color: #fff; }
+    .btn-secondary:hover:not(:disabled) { background: rgba(24, 54, 45, 0.95); color: #fff; border-color: rgba(52, 211, 153, 0.45); }
+    .btn-secondary:disabled { cursor: not-allowed; opacity: 0.45; }
 
     /* Floating Inspector / Selected Pill Card */
     .inspector-card {
       position: absolute;
-      bottom: 24px;
+      bottom: 22px;
       left: 14px;
-      background: rgba(15, 23, 42, 0.92);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      border-radius: 12px;
-      padding: 12px 18px;
-      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+      background: rgba(8, 22, 18, 0.94);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(52, 211, 153, 0.28);
+      border-radius: 14px;
+      padding: 12px 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
       z-index: 100;
-      max-width: 380px;
+      width: min(370px, calc(100vw - 28px));
       display: flex;
       flex-direction: column;
       gap: 8px;
     }
+    .inspector-search-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .inspector-select {
+      width: 100%;
+      background: rgba(6, 17, 14, 0.9);
+      color: #e2e8f0;
+      border: 1px solid rgba(52, 211, 153, 0.24);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-family: inherit;
+      outline: none;
+      cursor: pointer;
+    }
+    .inspector-select:focus { border-color: #34d399; }
     .inspector-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
+      gap: 10px;
     }
-    .inspector-title { font-size: 14px; font-weight: 700; color: #f8fafc; }
+    .inspector-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #f8fafc;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
     .inspector-badge {
       background: #10b981;
-      color: #fff;
+      color: #032216;
       font-size: 12px;
       font-weight: 800;
-      padding: 2px 8px;
+      padding: 2px 9px;
       border-radius: 999px;
+      flex-shrink: 0;
     }
-    .inspector-coords {
-      font-family: monospace;
+    .inspector-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
       font-size: 11px;
       color: #94a3b8;
-      background: rgba(0, 0, 0, 0.3);
-      padding: 4px 8px;
+    }
+    .inspector-offset-tag {
+      padding: 2px 7px;
       border-radius: 6px;
+      font-weight: 700;
+      background: rgba(16, 185, 129, 0.14);
+      color: #6ee7b7;
+    }
+    .inspector-offset-tag.custom {
+      background: rgba(56, 189, 248, 0.18);
+      color: #7dd3fc;
+    }
+    .inspector-coords {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11px;
+      color: #cbd5e1;
+      background: rgba(0, 0, 0, 0.36);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 5px 8px;
+      border-radius: 7px;
     }
 
     /* Draggable Marker Pill Styling */
     .draggable-pill-marker {
-      width: 32px;
-      height: 32px;
+      width: 30px;
+      height: 30px;
       border-radius: 50%;
       background: #10b981;
-      border: 2.5px solid #0f172a;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), 0 0 10px rgba(16, 185, 129, 0.4);
+      border: 2.5px solid #042f2e;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.55), 0 0 8px rgba(16, 185, 129, 0.45);
       color: #ffffff;
       font-weight: 800;
-      font-size: 13px;
+      font-size: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: grab;
       user-select: none;
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
     }
     .draggable-pill-marker:hover {
-      transform: scale(1.25);
-      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6);
+      transform: scale(1.22);
+      box-shadow: 0 6px 18px rgba(16, 185, 129, 0.65);
       z-index: 1000 !important;
+    }
+    .draggable-pill-marker.is-custom {
+      background: #0284c7;
+      border-color: #7dd3fc;
+      box-shadow: 0 4px 14px rgba(56, 189, 248, 0.6);
+    }
+    .draggable-pill-marker.is-selected {
+      border-color: #fde047;
+      box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.45), 0 6px 18px rgba(0, 0, 0, 0.6);
+      z-index: 1100 !important;
     }
     .draggable-pill-marker.active-drag {
       cursor: grabbing;
-      transform: scale(1.35);
+      transform: scale(1.32);
       background: #34d399;
       border-color: #ffffff;
-      box-shadow: 0 8px 24px rgba(52, 211, 153, 0.8);
+      box-shadow: 0 8px 24px rgba(52, 211, 153, 0.85);
       z-index: 2000 !important;
-    }
-    .draggable-pill-marker.is-custom {
-      border-color: #38bdf8;
-      box-shadow: 0 4px 14px rgba(56, 189, 248, 0.5);
     }
 
     /* Toast Notification */
     #toast {
       position: absolute;
-      top: 75px;
+      top: 76px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(16, 185, 129, 0.95);
-      color: #ffffff;
-      padding: 10px 20px;
-      border-radius: 8px;
-      font-size: 13px;
+      background: rgba(6, 78, 59, 0.96);
+      border: 1px solid rgba(52, 211, 153, 0.45);
+      color: #ecfdf5;
+      padding: 9px 18px;
+      border-radius: 10px;
+      font-size: 12.5px;
       font-weight: 700;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
       display: none;
-      z-index: 200;
+      z-index: 220;
       pointer-events: none;
+      max-width: 90vw;
+      text-align: center;
+    }
+
+    @media (max-width: 1120px) {
+      .mapboxgl-ctrl-top-right {
+        top: 124px !important;
+      }
     }
   </style>
 </head>
@@ -203,13 +309,15 @@
         <span class="title-badge">🎯 Pill Calibrator</span>
         <button class="station-btn" id="btn-lares" onclick="switchStation('lares')">🌾 DA-LARES</button>
         <button class="station-btn" id="btn-qares" onclick="switchStation('qares')">🌱 DA-QARES</button>
-        <button class="station-btn active" id="btn-rares" onclick="switchStation('rares')">🌿 DA-RARES</button>
+        <button class="station-btn" id="btn-rares" onclick="switchStation('rares')">🌿 DA-RARES</button>
         <button class="station-btn" id="btn-cares" onclick="switchStation('cares')">🌴 DA-CARES</button>
+        <span class="pill-count-chip" id="pillCountChip">0 pills</span>
       </div>
     </div>
 
     <div class="top-bar-right">
       <div class="panel-card">
+        <span class="pill-count-chip" id="dirtyChip" style="display:none;">0 edited</span>
         <button class="btn-secondary" onclick="resetCurrentPillToCentroid()" id="btnResetCentroid" title="Snap selected pill back to building polygon center">↺ Reset Pill to Center</button>
         <button class="btn-action" onclick="savePills()" id="btnSave">💾 Save Pill Positions</button>
       </div>
@@ -217,11 +325,20 @@
   </div>
 
   <div class="inspector-card" id="inspectorCard">
+    <div class="inspector-search-row">
+      <select class="inspector-select" id="pillQuickJump" onchange="jumpToSelectedPill(this.value)" title="Jump to any facility pill">
+        <option value="">🔍 Jump to facility pill…</option>
+      </select>
+    </div>
     <div class="inspector-header">
       <span class="inspector-title" id="inspName">Click or Drag Any Pill</span>
       <span class="inspector-badge" id="inspNum">#</span>
     </div>
-    <div class="inspector-coords" id="inspCoords">Drag a number pill with your mouse to adjust its position.</div>
+    <div class="inspector-meta">
+      <span id="inspLeg">Green = Polygon Center • Blue = Calibrated</span>
+      <span class="inspector-offset-tag" id="inspOffsetTag">—</span>
+    </div>
+    <div class="inspector-coords" id="inspCoords">Drag a numbered pill to fine-tune its pin placement on the map.</div>
   </div>
 
   <div id="toast">Saved successfully!</div>
@@ -230,34 +347,34 @@
     mapboxgl.accessToken = 'pk.eyJ1IjoiZWFydGgwMzA3IiwiYSI6ImNtdWFqNTR5czAxNmEyd29lMm42YjZlMDkifQ.xdPOP5RVPdn6YNka-ZdwoQ';
 
     const STATIONS = {
-      rares: {
-        name: 'DA-RARES (Tanay)',
-        center: [121.33985, 14.57645],
-        zoom: 18.2,
-        endpoint: '/api/rares/buildings',
-        tileUrl: '/api/tiles/rares/{z}/{x}/{y}.png',
-        dataFile: 'rares_buildings.json'
+      lares: {
+        name: 'DA-LARES (Lipa)',
+        center: [121.16670, 13.95875],
+        zoom: 17.9,
+        endpoint: '/api/buildings',
+        tileUrl: '/api/tiles/lares/{z}/{x}/{y}.png',
+        dataFile: 'buildings.json'
       },
       qares: {
         name: 'DA-QARES (Tiaong)',
-        center: [121.37152, 13.94609],
-        zoom: 18.2,
+        center: [121.37165, 13.94455],
+        zoom: 17.4,
         endpoint: '/api/qares/buildings',
         tileUrl: '/api/tiles/qares/{z}/{x}/{y}.png',
         dataFile: 'qares_buildings.json'
       },
-      lares: {
-        name: 'DA-LARES (Lipa)',
-        center: [121.16645, 13.95875],
-        zoom: 18.2,
-        endpoint: '/api/buildings',
-        tileUrl: '/api/tiles/{z}/{x}/{y}.png',
-        dataFile: 'buildings.json'
+      rares: {
+        name: 'DA-RARES (Tanay)',
+        center: [121.34005, 14.57580],
+        zoom: 17.7,
+        endpoint: '/api/rares/buildings',
+        tileUrl: '/api/tiles/rares/{z}/{x}/{y}.png',
+        dataFile: 'rares_buildings.json'
       },
       cares: {
         name: 'DA-CARES (Naic)',
         center: [120.7712, 14.3164],
-        zoom: 17.5,
+        zoom: 17.4,
         endpoint: null,
         tileUrl: null,
         dataFile: null
@@ -265,12 +382,81 @@
     };
 
     const urlParams = new URLSearchParams(window.location.search);
-    let currentStation = urlParams.get('station') || 'rares';
-    if (!STATIONS[currentStation]) currentStation = 'rares';
+    let currentStation = IGuideEditorBridge.resolveStation(urlParams.get('station'), ['lares', 'qares', 'rares', 'cares'], 'lares');
 
     let currentBuildingsData = null;
-    let markersMap = new Map(); // id -> mapboxgl.Marker
-    let selectedFeatureId = null;
+    const markersMap = new Map(); // groupKey -> { marker, feat, centroid, group, el }
+    let selectedGroupKey = null;
+    const dirtyKeys = new Set();
+    let toastTimer = null;
+
+    function isValidLngLat(pair) {
+      return Array.isArray(pair) && pair.length >= 2 &&
+        Number.isFinite(Number(pair[0])) && Number.isFinite(Number(pair[1])) &&
+        Math.abs(Number(pair[0])) <= 180 && Math.abs(Number(pair[1])) <= 90 &&
+        Number(pair[0]) !== 0 && Number(pair[1]) !== 0;
+    }
+
+    function distanceMeters(a, b) {
+      if (!isValidLngLat(a) || !isValidLngLat(b)) return 0;
+      const dx = (Number(a[0]) - Number(b[0])) * 111320 * Math.cos((Number(a[1]) * Math.PI) / 180);
+      const dy = (Number(a[1]) - Number(b[1])) * 110540;
+      return Math.hypot(dx, dy);
+    }
+
+    function calculateGeometryCentroid(geometry) {
+      if (!geometry || !geometry.coordinates) return null;
+      let ring = null;
+      if (geometry.type === 'Polygon' && Array.isArray(geometry.coordinates[0])) {
+        ring = geometry.coordinates[0];
+      } else if (geometry.type === 'MultiPolygon' && Array.isArray(geometry.coordinates[0]) && Array.isArray(geometry.coordinates[0][0])) {
+        ring = geometry.coordinates[0][0];
+      }
+      if (!ring || !ring.length) return null;
+      const first = ring[0];
+      const last = ring[ring.length - 1];
+      const pts = (ring.length > 1 && first[0] === last[0] && first[1] === last[1]) ? ring.slice(0, -1) : ring;
+      if (!pts.length) return null;
+      let sumX = 0, sumY = 0;
+      for (const p of pts) {
+        sumX += Number(p[0]) || 0;
+        sumY += Number(p[1]) || 0;
+      }
+      return [sumX / pts.length, sumY / pts.length];
+    }
+
+    function updateDirtyBadge() {
+      const chip = document.getElementById('dirtyChip');
+      if (!chip) return;
+      if (dirtyKeys.size > 0) {
+        chip.style.display = '';
+        chip.className = 'pill-count-chip is-dirty';
+        chip.textContent = `${dirtyKeys.size} unsaved`;
+      } else {
+        chip.style.display = 'none';
+      }
+    }
+
+    function syncPillStationUi() {
+      const cfg = STATIONS[currentStation] || STATIONS.lares;
+      ['lares', 'qares', 'rares', 'cares'].forEach(st => {
+        document.getElementById(`btn-${st}`)?.classList.toggle('active', st === currentStation);
+      });
+      const saveBtn = document.getElementById('btnSave');
+      const resetBtn = document.getElementById('btnResetCentroid');
+      const isPending = !cfg.endpoint;
+      if (saveBtn) {
+        saveBtn.disabled = isPending;
+        saveBtn.textContent = isPending ? '🌴 Pending Field Survey' : '💾 Save Pill Positions';
+      }
+      if (resetBtn) {
+        resetBtn.disabled = isPending || !selectedGroupKey;
+      }
+      IGuideEditorBridge.syncCaresBanner(currentStation);
+      IGuideEditorBridge.applyStationButtonLocks();
+      updateDirtyBadge();
+    }
+    syncPillStationUi();
 
     const map = new mapboxgl.Map({
       container: 'map',
@@ -281,70 +467,90 @@
       bearing: 0
     });
 
-    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    map.addControl(new mapboxgl.NavigationControl({ showCompass: true }), 'top-right');
+
+    function hideVectorBuildingClutter() {
+      try {
+        const layers = map.getStyle()?.layers || [];
+        layers.forEach(l => {
+          if (!l || !l.id) return;
+          if (/building|poi-label|transit-label/i.test(l.id) && !l.id.startsWith('bldg-footprints')) {
+            map.setLayoutProperty(l.id, 'visibility', 'none');
+          }
+        });
+      } catch (_) {}
+    }
 
     map.on('load', () => {
+      hideVectorBuildingClutter();
       loadStationLayers();
       loadBuildings();
     });
 
     function loadStationLayers() {
       const cfg = STATIONS[currentStation];
-      if (cfg.tileUrl) {
-        if (!map.getSource('drone-source')) {
-          map.addSource('drone-source', {
-            type: 'raster',
-            tiles: [cfg.tileUrl],
-            tileSize: 256,
-            minzoom: 14,
-            maxzoom: 22
-          });
-          map.addLayer({
-            id: 'drone-layer',
-            type: 'raster',
-            source: 'drone-source',
-            paint: { 'raster-opacity': 1.0 }
-          });
-        }
+      if (cfg && cfg.tileUrl && !map.getSource('drone-source')) {
+        map.addSource('drone-source', {
+          type: 'raster',
+          tiles: [cfg.tileUrl],
+          tileSize: 256,
+          minzoom: 14,
+          maxzoom: 22
+        });
+        map.addLayer({
+          id: 'drone-layer',
+          type: 'raster',
+          source: 'drone-source',
+          paint: { 'raster-opacity': 1.0 }
+        });
       }
-    }
-
-    function calculateCentroid(coords) {
-      const ring = coords[0];
-      let sumX = 0, sumY = 0, count = 0;
-      const pts = ring[0][0] === ring[ring.length - 1][0] && ring[0][1] === ring[ring.length - 1][1]
-        ? ring.slice(0, -1)
-        : ring;
-      pts.forEach(p => {
-        sumX += p[0];
-        sumY += p[1];
-        count++;
-      });
-      return [sumX / count, sumY / count];
     }
 
     async function loadBuildings() {
-      // Clear existing markers
-      markersMap.forEach(m => m.remove());
+      markersMap.forEach(m => m.marker.remove());
       markersMap.clear();
+      selectedGroupKey = null;
+      dirtyKeys.clear();
+      syncPillStationUi();
 
       const cfg = STATIONS[currentStation];
       if (!cfg.endpoint) {
+        document.getElementById('pillCountChip').textContent = 'Pending Survey';
+        document.getElementById('pillQuickJump').innerHTML = '<option value="">🌴 Pending Field Survey</option>';
         showToast('ℹ️ DA-CARES is pending field survey — no building footprints yet.');
         return;
       }
-      try {
-        const resp = await fetch(cfg.endpoint + '?t=' + Date.now());
-        currentBuildingsData = await resp.json();
-      } catch (e) {
-        console.warn('API error, falling back to static file:', e);
-        const resp = await fetch(cfg.dataFile + '?t=' + Date.now());
-        currentBuildingsData = await resp.json();
+
+      // Fetch disk/endpoint GeoJSON + authoritative MySQL bootstrap metadata in parallel
+      const [geoRes, bootRes] = await Promise.all([
+        fetch(cfg.endpoint + '?t=' + Date.now()).catch(() => null),
+        fetch(`/api/bootstrap?station=${encodeURIComponent(currentStation)}&t=${Date.now()}`).catch(() => null)
+      ]);
+
+      if (geoRes && geoRes.ok) {
+        currentBuildingsData = await geoRes.json();
+      } else {
+        const fallbackResp = await fetch(cfg.dataFile + '?t=' + Date.now());
+        currentBuildingsData = await fallbackResp.json();
       }
 
-      if (!currentBuildingsData || !currentBuildingsData.features) return;
+      const metaByCode = new Map();
+      if (bootRes && bootRes.ok) {
+        try {
+          const boot = await bootRes.json();
+          if (Array.isArray(boot.buildings)) {
+            boot.buildings.forEach(row => {
+              if (row && row.building_code) {
+                metaByCode.set(String(row.building_code).trim(), row);
+              }
+            });
+          }
+        } catch (_) {}
+      }
 
-      // Add building footprints layer
+      if (!currentBuildingsData || !Array.isArray(currentBuildingsData.features)) return;
+
+      // Render building polygon outlines on map (all footprints visible as spatial reference)
       if (map.getSource('bldg-footprints-source')) {
         map.getSource('bldg-footprints-source').setData(currentBuildingsData);
       } else {
@@ -372,158 +578,279 @@
         });
       }
 
-      // Group facilities by base number (same grouping as campus map)
+      // Group visible facilities cleanly using authoritative station numbering & names
       const groups = new Map();
-      currentBuildingsData.features.forEach(f => {
+      let sequentialFallback = 0;
+
+      currentBuildingsData.features.forEach((f, featIdx) => {
         const p = f.properties || {};
-        const num = p.num || p.number || (p.id && parseInt(p.id.replace(/[^0-9]/g, ''), 10)) || null;
-        const key = num !== null ? num : (p.id || 'bldg_' + Math.random());
+        const code = String(p.building_code || p.id || `bldg_${featIdx}`).trim();
+        const meta = metaByCode.get(code) || null;
+
+        // Skip sub-plots (Screenhouses 1-9) & utility non-marker items (Water Tank, CR) just like the main map
+        const isSubplot = p.isSubPlot === true ||
+          code.startsWith('plot17_') ||
+          code.startsWith('plot18_') ||
+          code.endsWith('_annex') ||
+          code.endsWith('_headhouse') ||
+          Boolean(meta && (meta.is_subplot === 1 || meta.is_subplot === true));
+        const hasNoMarker = p.hasMarker === false ||
+          (meta && (meta.has_marker === 0 || meta.has_marker === false));
+
+        if (isSubplot || hasNoMarker) return;
+        if (currentStation === 'qares' && !meta && (p.filter_type || p.category || 'Buildings') !== 'Buildings') {
+          return;
+        }
+
+        let num = null;
+        if (meta && meta.building_num !== null && meta.building_num !== undefined && meta.building_num !== '') {
+          const parsedMetaNum = Number(meta.building_num);
+          if (Number.isFinite(parsedMetaNum)) num = parsedMetaNum;
+        } else if (currentStation === 'rares') {
+          const m = code.match(/_([0-9]+)/);
+          if (m) num = parseInt(m[1], 10);
+        } else if (Number.isFinite(Number(p.num))) {
+          num = Number(p.num);
+        } else {
+          sequentialFallback += 1;
+          num = sequentialFallback;
+        }
+
+        // For RARES multi-part roofs (13 & 13.1, 36.1..36.5), share one numbered pill per base facility number.
+        // For LARES & QARES, group strictly by unique building_code so no two buildings can collide!
+        const key = (currentStation === 'rares' && num !== null)
+          ? `num_${num}`
+          : `code_${code}`;
+
+        const displayName = (meta && meta.name) || p.name || code;
+
         if (!groups.has(key)) {
           groups.set(key, {
-            num: num,
-            name: p.name || `Facility ${num}`,
+            key,
+            code,
+            num,
+            name: displayName,
+            meta,
             features: []
           });
         }
         groups.get(key).features.push(f);
       });
 
-      // Mount each group as a draggable pill
-      groups.forEach((g, key) => {
+      const sortedGroups = Array.from(groups.values()).sort((a, b) => {
+        const na = a.num !== null ? a.num : 99999;
+        const nb = b.num !== null ? b.num : 99999;
+        if (na !== nb) return na - nb;
+        return String(a.name).localeCompare(String(b.name));
+      });
+
+      const quickSelect = document.getElementById('pillQuickJump');
+      let selectHtml = `<option value="">🔍 Jump to facility pill (${sortedGroups.length})…</option>`;
+
+      sortedGroups.forEach(g => {
         const mainFeat = g.features[0];
         const p = mainFeat.properties || {};
-        const centroid = calculateCentroid(mainFeat.geometry.coordinates);
-        
-        // Priority: custom marker_coords, fallback: centroid
-        let markerCoords = p.marker_coords || centroid;
+        const meta = g.meta;
+
+        const dbCoords = (meta && isValidLngLat([meta.marker_lng, meta.marker_lat]))
+          ? [Number(meta.marker_lng), Number(meta.marker_lat)]
+          : null;
+        const centroid = calculateGeometryCentroid(mainFeat.geometry) || dbCoords || STATIONS[currentStation].center;
+        const geoCoords = isValidLngLat(p.marker_coords) ? [Number(p.marker_coords[0]), Number(p.marker_coords[1])] : null;
+        const markerCoords = geoCoords || dbCoords || centroid;
+        const offsetM = distanceMeters(markerCoords, centroid);
+        const isCustom = offsetM > 1.0 || (geoCoords && offsetM > 0.25);
 
         const el = document.createElement('div');
-        el.className = 'draggable-pill-marker' + (p.marker_coords ? ' is-custom' : '');
-        el.textContent = g.num !== null ? g.num : '🏛️';
-        el.title = `${g.name} (Hold & Drag to Move)`;
+        el.className = 'draggable-pill-marker' + (isCustom ? ' is-custom' : '');
+        el.textContent = g.num !== null ? String(g.num) : '•';
+        el.dataset.pillKey = g.key;
+        el.title = `#${g.num !== null ? g.num : '—'} ${g.name} (Drag to calibrate)`;
 
         const marker = new mapboxgl.Marker({
           element: el,
           draggable: true,
           anchor: 'center'
         })
-        .setLngLat(markerCoords)
-        .addTo(map);
+          .setLngLat(markerCoords)
+          .addTo(map);
 
         el.addEventListener('click', (e) => {
           e.stopPropagation();
-          selectPill(mainFeat, g.num, g.name, marker.getLngLat());
+          const cur = marker.getLngLat();
+          selectPill(g.key, [cur.lng, cur.lat]);
         });
 
         marker.on('dragstart', () => {
           el.classList.add('active-drag');
-          selectPill(mainFeat, g.num, g.name, marker.getLngLat());
+          const cur = marker.getLngLat();
+          selectPill(g.key, [cur.lng, cur.lat]);
         });
 
         marker.on('drag', () => {
-          const lngLat = marker.getLngLat();
-          updateInspector(g.name, g.num, lngLat.lng, lngLat.lat);
+          const cur = marker.getLngLat();
+          updateInspector(g.key, [cur.lng, cur.lat]);
         });
 
         marker.on('dragend', () => {
           el.classList.remove('active-drag');
-          el.classList.add('is-custom');
-          const lngLat = marker.getLngLat();
-          const cleanLng = parseFloat(lngLat.lng.toFixed(8));
-          const cleanLat = parseFloat(lngLat.lat.toFixed(8));
-          
-          // Apply to all features in this group
+          const cur = marker.getLngLat();
+          const cleanLng = parseFloat(cur.lng.toFixed(8));
+          const cleanLat = parseFloat(cur.lat.toFixed(8));
+          const movedDist = distanceMeters([cleanLng, cleanLat], centroid);
+
           g.features.forEach(f => {
             if (!f.properties) f.properties = {};
             f.properties.marker_coords = [cleanLng, cleanLat];
           });
 
-          selectPill(mainFeat, g.num, g.name, { lng: cleanLng, lat: cleanLat });
-          showToast(`Moved Pill #${g.num} to [${cleanLng}, ${cleanLat}]`);
+          el.classList.toggle('is-custom', movedDist > 0.25);
+          dirtyKeys.add(g.key);
+          selectPill(g.key, [cleanLng, cleanLat]);
+          syncPillStationUi();
+          showToast(`Moved #${g.num ?? '—'} ${g.name} (${movedDist.toFixed(1)}m from center)`);
         });
 
-        markersMap.set(key, { marker, feat: mainFeat, centroid, group: g });
+        markersMap.set(g.key, { marker, feat: mainFeat, centroid, group: g, el });
+
+        const labelNum = g.num !== null ? `#${g.num}` : '•';
+        selectHtml += `<option value="${g.key}">${labelNum} — ${g.name}</option>`;
       });
+
+      if (quickSelect) quickSelect.innerHTML = selectHtml;
+      document.getElementById('pillCountChip').textContent = `${sortedGroups.length} pills`;
+      syncPillStationUi();
     }
 
-    function selectPill(feat, num, name, lngLat) {
-      selectedFeatureId = num;
-      updateInspector(name, num, lngLat.lng, lngLat.lat);
+    function selectPill(groupKey, lngLatPair) {
+      selectedGroupKey = groupKey;
+      markersMap.forEach((item, k) => {
+        item.el.classList.toggle('is-selected', k === groupKey);
+      });
+      const qs = document.getElementById('pillQuickJump');
+      if (qs && qs.value !== groupKey) qs.value = groupKey;
+      updateInspector(groupKey, lngLatPair);
+      syncPillStationUi();
     }
 
-    function updateInspector(name, num, lng, lat) {
-      document.getElementById('inspName').textContent = name || 'Facility';
-      document.getElementById('inspNum').textContent = '#' + (num || '');
-      document.getElementById('inspCoords').textContent = `Longitude: ${lng.toFixed(8)}, Latitude: ${lat.toFixed(8)}`;
+    function jumpToSelectedPill(groupKey) {
+      if (!groupKey) return;
+      const item = markersMap.get(groupKey);
+      if (!item) return;
+      const cur = item.marker.getLngLat();
+      selectPill(groupKey, [cur.lng, cur.lat]);
+      map.easeTo({ center: [cur.lng, cur.lat], zoom: Math.max(map.getZoom(), 18.4), duration: 450 });
+    }
+
+    function updateInspector(groupKey, lngLatPair) {
+      const item = markersMap.get(groupKey);
+      if (!item) return;
+      const g = item.group;
+      const lng = Number(lngLatPair[0]);
+      const lat = Number(lngLatPair[1]);
+      const offsetM = distanceMeters([lng, lat], item.centroid);
+      const isOffset = offsetM > 1.0;
+
+      document.getElementById('inspName').textContent = g.name || g.code || 'Facility';
+      document.getElementById('inspNum').textContent = g.num !== null ? `#${g.num}` : '•';
+      document.getElementById('inspCoords').textContent = `Lng: ${lng.toFixed(8)}   Lat: ${lat.toFixed(8)}`;
+
+      const tag = document.getElementById('inspOffsetTag');
+      if (tag) {
+        tag.className = 'inspector-offset-tag' + (isOffset ? ' custom' : '');
+        tag.textContent = isOffset ? `Offset ${offsetM.toFixed(1)}m` : 'Centered';
+      }
     }
 
     function resetCurrentPillToCentroid() {
-      if (selectedFeatureId === null) {
+      if (!selectedGroupKey) {
         showToast('Please click or drag a pill first to select it.');
         return;
       }
-      const item = markersMap.get(selectedFeatureId);
+      const item = markersMap.get(selectedGroupKey);
       if (!item) return;
 
       const c = item.centroid;
       item.marker.setLngLat(c);
-      item.marker.getElement().classList.remove('is-custom');
+      item.el.classList.remove('is-custom');
 
-      // Remove marker_coords override
       item.group.features.forEach(f => {
-        if (f.properties && f.properties.marker_coords) {
+        if (f.properties && 'marker_coords' in f.properties) {
           delete f.properties.marker_coords;
         }
       });
 
-      updateInspector(item.group.name, item.group.num, c[0], c[1]);
-      showToast(`Pill #${item.group.num} snapped back to polygon center.`);
+      dirtyKeys.add(selectedGroupKey);
+      updateInspector(selectedGroupKey, c);
+      syncPillStationUi();
+      showToast(`Reset #${item.group.num ?? '—'} ${item.group.name} back to polygon center.`);
     }
 
     async function savePills() {
+      const cfg = STATIONS[currentStation];
+      if (!cfg || !cfg.endpoint) {
+        showToast('🌴 DA-CARES is pending field survey — no building footprints yet.');
+        return;
+      }
       if (!currentBuildingsData) return;
+
+      const confirmed = await IGuideEditorBridge.confirmSave({
+        title: 'Save Pill Label Positions?',
+        message: `Are you sure you want to save the updated pill coordinates for ${STATIONS[currentStation].name}?`,
+        confirmLabel: 'Yes, Save Positions'
+      });
+      if (!confirmed) return;
+
       const btn = document.getElementById('btnSave');
       btn.textContent = '⏳ Saving...';
       btn.disabled = true;
 
-      const cfg = STATIONS[currentStation];
-      if (!cfg.endpoint) {
-        showToast('ℹ️ DA-CARES is pending field survey — no building footprints yet.');
-        return;
-      }
       try {
-        const resp = await fetch(cfg.endpoint, {
+        await IGuideEditorBridge.authFetch(cfg.endpoint, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(currentBuildingsData, null, 2)
         });
-        const res = await resp.json();
-        if (resp.ok) {
-          showToast(`✅ Saved! Pill coordinates updated in ${cfg.dataFile}`);
-        } else {
-          showToast(`❌ Error: ${res.error || 'Failed to save'}`);
-        }
+        dirtyKeys.clear();
+        showToast(`✅ Saved ${STATIONS[currentStation].name} pill coordinates to GeoJSON + Database!`);
       } catch (err) {
         console.error(err);
-        showToast('❌ Server error saving pill positions');
+        showToast(`❌ ${err.message || 'Save blocked / server error'}`);
       } finally {
-        btn.textContent = '💾 Save Pill Positions';
-        btn.disabled = false;
+        syncPillStationUi();
       }
     }
 
-    function switchStation(stationId) {
+    function switchStation(stationId, forceBypass = false) {
+      if (!STATIONS[stationId]) return;
+      if (!forceBypass && !IGuideEditorBridge.canSwitchTo(stationId, showToast)) return;
       if (stationId === currentStation) return;
-      window.location.search = '?station=' + stationId;
+      if (!forceBypass && dirtyKeys.size > 0) {
+        const ok = confirm(`You have ${dirtyKeys.size} unsaved pill edit(s) in ${STATIONS[currentStation].name}. Discard and switch station?`);
+        if (!ok) return;
+      }
+      window.location.search = '?station=' + encodeURIComponent(stationId);
     }
 
     function showToast(msg) {
       const toast = document.getElementById('toast');
+      if (!toast) return;
       toast.textContent = msg;
       toast.style.display = 'block';
-      setTimeout(() => { toast.style.display = 'none'; }, 2800);
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { toast.style.display = 'none'; }, 3000);
     }
+
+    IGuideEditorBridge.init({
+      validStations: ['lares', 'qares', 'rares', 'cares'],
+      currentStation,
+      onForceStation: (st) => {
+        if (st && STATIONS[st] && st !== currentStation) {
+          switchStation(st, true);
+        } else {
+          syncPillStationUi();
+        }
+      }
+    });
   </script>
 </body>
 </html>
-

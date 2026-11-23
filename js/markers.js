@@ -8,6 +8,8 @@ import { BUILDING_DIRECTORY, DEFAULT_BUILDING_COLORS } from './data/buildings.js
 
 import { state } from './data/state.js';
 
+import { isFacilityStatusVisible, renderFacilityStatusBadgeHtml } from './status-filter.js';
+
 
 
 export function renderSectionBadges() {
@@ -278,7 +280,7 @@ export const COMPOUND_GATE_BARRIERS = [
 
         subtext: 'Near Guard House A',
 
-        coords: [121.165745, 13.958380],
+        coords: [121.165745, 13.958356],
 
         type: 'entrance',
 
@@ -548,7 +550,10 @@ export function createMarkers() {
 
         itemsToRender = dirList
 
-            .filter(b => !b.isSubPlot && b.hasMarker !== false && !b.id.startsWith('plot17_') && !b.id.startsWith('plot18_') && !b.id.startsWith('plot22_'))
+            .filter(b => !b.isSubPlot && b.hasMarker !== false && b.isVisible !== false
+                && Array.isArray(b.coords) && b.coords.length >= 2
+                && Number.isFinite(Number(b.coords[0])) && Number.isFinite(Number(b.coords[1]))
+                && !b.id.startsWith('plot17_') && !b.id.startsWith('plot18_') && !b.id.startsWith('plot22_'))
 
             .map((b, index) => ({
 
@@ -563,6 +568,8 @@ export function createMarkers() {
                 color: (state.savedBuildingColors && state.savedBuildingColors[b.id] && state.savedBuildingColors[b.id].icon) || b.color || (DEFAULT_BUILDING_COLORS[b.id] && DEFAULT_BUILDING_COLORS[b.id].icon) || '#3b82f6',
 
                 coords: b.coords,
+
+                facility_status: b.facility_status || 'Existing',
 
                 isQARES: false
 
@@ -608,9 +615,13 @@ export function createMarkers() {
 
                 const col = p.color || p.roof_color || QARES_COLORS_DEF[cKey] || '#ef4444';
 
-                let centerCoords = [121.37152, 13.94609];
+                let centerCoords = null;
 
-                if (f.geometry && f.geometry.type === 'Polygon' && f.geometry.coordinates && f.geometry.coordinates[0]) {
+                if (p.marker_coords && Array.isArray(p.marker_coords) && p.marker_coords.length === 2) {
+
+                    centerCoords = p.marker_coords;
+
+                } else if (f.geometry && f.geometry.type === 'Polygon' && f.geometry.coordinates && f.geometry.coordinates[0] && f.geometry.coordinates[0].length > 0) {
 
                     const ring = f.geometry.coordinates[0];
 
@@ -621,6 +632,8 @@ export function createMarkers() {
                     centerCoords = [sumLng / ring.length, sumLat / ring.length];
 
                 }
+
+                if (!centerCoords || !Number.isFinite(Number(centerCoords[0])) || !Number.isFinite(Number(centerCoords[1]))) return null;
 
                 return {
 
@@ -636,9 +649,11 @@ export function createMarkers() {
 
                     coords: centerCoords,
 
+                    facility_status: p.facility_status || 'Existing',
+
                     isQARES: true
                 };
-            });
+            }).filter(Boolean);
         }
     } else if (currentStation === 'rares') {
         const raresData = (typeof window !== 'undefined' && window.raresBuildingsBaseline) ? window.raresBuildingsBaseline : null;
@@ -657,11 +672,15 @@ export function createMarkers() {
                         id: `rares_building_${baseNum || id}`,
                         name: props.name || `Facility ${baseNum || ''}`,
                         desc: props.description || 'RARES Agricultural Facility',
+                        facility_status: props.facility_status || 'Existing',
                         features: [],
                         allCoordinates: []
                     });
                 }
                 const group = groups.get(key);
+                if (props.facility_status && props.facility_status !== 'Existing' && group.facility_status === 'Existing') {
+                    group.facility_status = props.facility_status;
+                }
                 group.features.push(f);
                 if (f.geometry && f.geometry.type === 'Polygon' && f.geometry.coordinates && f.geometry.coordinates[0]) {
                     f.geometry.coordinates[0].forEach(c => group.allCoordinates.push(c));
@@ -669,7 +688,7 @@ export function createMarkers() {
             });
 
             const combinedList = Array.from(groups.values()).map(g => {
-                let centerCoords = [121.3393, 14.5750];
+                let centerCoords = null;
                 const markerFeat = g.features.find(f => f.properties && f.properties.marker_coords);
                 if (markerFeat && Array.isArray(markerFeat.properties.marker_coords) && markerFeat.properties.marker_coords.length === 2) {
                     centerCoords = markerFeat.properties.marker_coords;
@@ -678,6 +697,7 @@ export function createMarkers() {
                     g.allCoordinates.forEach(c => { sumLng += c[0]; sumLat += c[1]; });
                     centerCoords = [sumLng / g.allCoordinates.length, sumLat / g.allCoordinates.length];
                 }
+                if (!centerCoords || !Number.isFinite(Number(centerCoords[0])) || !Number.isFinite(Number(centerCoords[1]))) return null;
                 return {
                     id: g.id,
                     name: g.name,
@@ -685,14 +705,17 @@ export function createMarkers() {
                     num: g.baseNum !== null ? g.baseNum : 1,
                     color: '#10b981',
                     coords: centerCoords,
+                    facility_status: g.facility_status || 'Existing',
                     isRARES: true
                 };
-            });
+            }).filter(Boolean);
 
             combinedList.sort((a, b) => a.num - b.num);
             itemsToRender = combinedList;
         }
     }
+
+    itemsToRender = itemsToRender.filter(b => isFacilityStatusVisible(b.facility_status || 'Existing'));
 
 
 
@@ -718,6 +741,8 @@ export function createMarkers() {
 
         const badgeContent = hasNum ? b.num : (b.icon || '🏛️');
 
+        const statusBadgeHtml = renderFacilityStatusBadgeHtml(b.facility_status, 'marker');
+
         el.innerHTML = `
 
             <div class="bldg-map-badge" style="background:${b.color}; font-size:${hasNum ? '12px' : '15px'};">${badgeContent}</div>
@@ -725,6 +750,8 @@ export function createMarkers() {
             <div class="bldg-map-label-group">
 
                 <span class="bldg-map-name">${b.name}</span>
+
+                ${statusBadgeHtml ? `<div class="bldg-marker-status-wrap">${statusBadgeHtml}</div>` : ''}
 
             </div>
 
@@ -800,9 +827,11 @@ export function createMarkers() {
 
         if (!isPhone) {
 
+            const popupStatusHtml = renderFacilityStatusBadgeHtml(b.facility_status, 'compact');
+
             const popup = new mapboxgl.Popup({ offset: 18, closeButton: true, maxWidth: '240px' })
 
-                .setHTML(`<div class="popup-label main">Building ${b.num}</div><div class="popup-title">${b.name}</div><div class="popup-desc">${b.desc}</div>`);
+                .setHTML(`<div class="popup-label main">${hasNum ? `Building ${b.num}` : 'Facility'}</div><div class="popup-title">${b.name}</div><div class="popup-desc">${b.desc}</div>${popupStatusHtml ? `<div style="margin-top:5px;">${popupStatusHtml}</div>` : ''}`);
 
             marker.setPopup(popup);
 

@@ -2,12 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>DA-LARES Road & Walkway Editor — Drone Orthomosaic</title>
+<title>Road & Walkway Editor — DA-LARES, DA-QARES, DA-RARES & DA-CARES</title>
 <meta name="viewport" content="initial-scale=1,maximum-scale=1">
 <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
 <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
 <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.js"></script>
 <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.css" type="text/css">
+<script src="/js/portal/editor-bridge.js?v=304"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; }
@@ -260,7 +261,7 @@
   </div>
 
   <div class="section-label">Campus Station</div>
-  <div class="layer-switcher" style="margin-bottom: 12px;">
+  <div class="layer-switcher" style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom: 12px;">
       <button class="layer-btn active" id="btn-station-lares" onclick="switchStation('lares')">
           <span>🌾 DA-LARES (Lipa)</span>
       </button>
@@ -269,6 +270,9 @@
       </button>
       <button class="layer-btn" id="btn-station-rares" onclick="switchStation('rares')">
           <span>🌿 DA-RARES (Tanay)</span>
+      </button>
+      <button class="layer-btn" id="btn-station-cares" onclick="switchStation('cares')">
+          <span>🌴 DA-CARES (Naic)</span>
       </button>
   </div>
 
@@ -327,10 +331,14 @@
 
 <!-- Modal for building entrance selection -->
 <div id="buildingModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; align-items:center; justify-content:center;">
-    <div style="background:#0f172a; padding:24px; border-radius:14px; border:1px solid rgba(255,255,255,0.15); width:320px; color:white; box-shadow:0 20px 40px rgba(0,0,0,0.8);">
-        <h3 style="margin-top:0; font-size:16px; color:#38bdf8;">📍 Building Entrance Node</h3>
-        <p style="font-size:12px; color:#94a3b8; margin-bottom:12px;">Which building is this entrance connected to?</p>
-        <select id="buildingSelect" style="width:100%; padding:9px; margin-bottom:18px; background:#1e293b; color:white; border:1px solid #475569; border-radius:6px; font-size:13px;"></select>
+    <div style="background:#0f172a; padding:24px; border-radius:14px; border:1px solid rgba(255,255,255,0.15); width:360px; color:white; box-shadow:0 20px 40px rgba(0,0,0,0.8);">
+        <h3 style="margin-top:0; margin-bottom:6px; font-size:16px; color:#38bdf8;">📍 Facility or Plot Entrance Node</h3>
+        <p style="font-size:12px; color:#94a3b8; margin-bottom:12px;">Which building or agricultural plot is this entrance connected to?</p>
+        <select id="buildingSelect" style="width:100%; padding:9px; margin-bottom:10px; background:#1e293b; color:white; border:1px solid #475569; border-radius:6px; font-size:13px;"></select>
+        <div style="margin-bottom:16px;">
+            <input type="text" id="customBuildingIdInput" placeholder="Or type custom Plot / Entrance ID..." style="width:100%; box-sizing:border-box; padding:8px 10px; background:#0b1329; color:#f8fafc; border:1px dashed #38bdf8; border-radius:6px; font-size:12px;">
+            <div style="font-size:10.5px; color:#64748b; margin-top:4px;">Tip: For plots, select from Agricultural Plots or type e.g. <code>zone_citrus_orchard</code> or <code>plot_1</code></div>
+        </div>
         <div style="display:flex; justify-content:flex-end; gap:8px;">
             <button onclick="cancelEntrance()" style="background:#334155; border:none; color:#cbd5e1; padding:8px 14px; border-radius:6px; cursor:pointer; font-weight:600;">Cancel</button>
             <button onclick="confirmEntrance()" style="background:#10b981; border:none; color:white; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:700;">OK</button>
@@ -343,7 +351,7 @@ mapboxgl.accessToken = 'pk.eyJ1IjoiZWFydGgwMzA3IiwiYSI6ImNtdWFqNTR5czAxNmEyd29lM
 
 // Check URL query param for default station
 const urlParams = new URLSearchParams(window.location.search);
-let currentStation = (urlParams.get('station') === 'rares') ? 'rares' : (urlParams.get('station') === 'qares') ? 'qares' : 'lares';
+let currentStation = IGuideEditorBridge.resolveStation(urlParams.get('station'), ['lares', 'qares', 'rares', 'cares'], 'lares');
 
 const STATION_CONFIG = {
     lares: {
@@ -354,7 +362,8 @@ const STATION_CONFIG = {
         roadsSaveApi: '/api/roads',
         roadsFile: 'roads.json',
         buildingsFile: 'buildings.json',
-        prefix: ''
+        prefix: '',
+        pendingSurvey: false
     },
     qares: {
         center: [121.37178, 13.94658],
@@ -364,7 +373,8 @@ const STATION_CONFIG = {
         roadsSaveApi: '/api/qares/roads',
         roadsFile: 'qares_roads.json',
         buildingsFile: '/api/qares/buildings',
-        prefix: 'qares_'
+        prefix: 'qares_',
+        pendingSurvey: false
     },
     rares: {
         center: [121.3393, 14.5750],
@@ -374,7 +384,19 @@ const STATION_CONFIG = {
         roadsSaveApi: '/api/rares/roads',
         roadsFile: 'rares_roads.json',
         buildingsFile: '/api/rares/buildings',
-        prefix: 'rares_'
+        prefix: 'rares_',
+        pendingSurvey: false
+    },
+    cares: {
+        center: [120.7712, 14.3164],
+        zoom: 17.5,
+        name: 'DA-CARES (Naic, Cavite)',
+        roadsEndpoint: null,
+        roadsSaveApi: null,
+        roadsFile: 'Pending Field Survey',
+        buildingsFile: null,
+        prefix: 'cares_',
+        pendingSurvey: true
     }
 };
 
@@ -691,36 +713,100 @@ function updateBuildingDropdown(station) {
     if (!select) return;
     select.innerHTML = '<option value="">-- Select or Type Building ID --</option>';
 
-    if (station === 'lares') {
-        fetch('buildings.json')
-            .then(r => r.json())
-            .then(data => {
-                const bIdMap = new Map();
-                if (data && data.features) {
-                    data.features.forEach(f => {
-                        const bId = f.properties && f.properties.id;
-                        if (bId) {
-                            const name = (f.properties.name && f.properties.name !== bId)
-                                ? f.properties.name
-                                : bId.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-                            bIdMap.set(bId, name);
-                        }
-                    });
-                }
-                // Ensure Automated Weather Station is explicitly included
-                if (!bIdMap.has('automated_weather_station')) {
-                    bIdMap.set('automated_weather_station', 'Automated Weather Station');
-                }
+    if (station === 'cares') return;
 
-                const sortedEntries = Array.from(bIdMap.entries()).sort((a, b) => a[1].localeCompare(b[1]));
-                sortedEntries.forEach(([bId, name]) => {
-                    const opt = document.createElement('option');
-                    opt.value = bId;
-                    opt.textContent = `${name} (${bId})`;
-                    select.appendChild(opt);
+    if (station === 'lares') {
+        const FALLBACK_LARES_PLOTS = [
+            { plot_code: 'zone_indigenous_trees', plot_number: 'Plot 1', zone_name: 'Indigenous Trees' },
+            { plot_code: 'zone_corn_seed_prod_2', plot_number: 'Plot 2', zone_name: 'Corn Seed Production Area' },
+            { plot_code: 'zone_upland_rice_exp', plot_number: 'Plot 3', zone_name: 'Upland Rice Experimental Area' },
+            { plot_code: 'zone_veg_exp', plot_number: 'Plot 4', zone_name: 'Vegetables Experimental Area' },
+            { plot_code: 'zone_cguard_corn', plot_number: 'Plot 5', zone_name: 'CGUARD Corn' },
+            { plot_code: 'zone_citrus_orchard', plot_number: 'Plots 6–12', zone_name: 'Citrus Orchard' },
+            { plot_code: 'zone_corn_seed_prod_13_15', plot_number: 'Plots 13–15', zone_name: 'Corn Seed Production Area' },
+            { plot_code: 'zone_mango_orchard_16', plot_number: 'Plot 16', zone_name: 'Mango Orchard' },
+            { plot_code: 'zone_tc_makapuno_screenhouse', plot_number: 'Plot 17 (Screenhouses 1–5)', zone_name: 'TC Makapuno & Banana Screenhouse' },
+            { plot_code: 'zone_coffee_citrus_screenhouse', plot_number: 'Plot 18 (Screenhouses 6–9)', zone_name: 'Coffee & Citrus Screenhouse' },
+            { plot_code: 'zone_pomelo_orchard_19', plot_number: 'Plot 19', zone_name: 'Pomelo Orchard' },
+            { plot_code: 'zone_coffee_orchard', plot_number: 'Plot 22 (Utilities)', zone_name: 'Coffee Orchard' },
+            { plot_code: 'zone_vegetable_production_area', plot_number: 'Plots 23–25', zone_name: 'Vegetable Production Area' },
+            { plot_code: 'zone_fruit_trees_citrus_orchard', plot_number: 'Plots 26–28', zone_name: 'Fruit Trees & Citrus Orchard' },
+            { plot_code: 'zone_tall_makapuno_cacao_29', plot_number: 'Plot 29', zone_name: 'Tall Makapuno & Cacao' },
+            { plot_code: 'zone_mango_banana_jackfruit', plot_number: 'Plots 30–32', zone_name: 'Mango, Banana & Jackfruit Trees' },
+            { plot_code: 'zone_dwarf_makapuno', plot_number: 'Plots 33–35', zone_name: 'Dwarf Makapuno' },
+            { plot_code: 'zone_cassava_production_36_38', plot_number: 'Plots 36–38', zone_name: 'Cassava Production Area' },
+            { plot_code: 'zone_soybean_seeds_prod', plot_number: 'Plots 39–41', zone_name: 'Soybean Seeds Production Area' },
+            { plot_code: 'zone_tall_makapuno_cacao_42', plot_number: 'Plot 42', zone_name: 'Tall Makapuno & Cacao' },
+            { plot_code: 'zone_cassava_production_43', plot_number: 'Plot 43', zone_name: 'Cassava Production Area' },
+            { plot_code: 'zone_organic_veg_prod', plot_number: 'Plot 44', zone_name: 'Organic Vegetable Production Area' },
+            { plot_code: 'zone_mango_orchard_45', plot_number: 'Plot 45', zone_name: 'Mango Orchard' }
+        ];
+
+        Promise.allSettled([
+            fetch('buildings.json').then(r => (r.ok ? r.json() : null)),
+            fetch('/api/bootstrap?station=lares&t=' + Date.now()).then(r => (r.ok ? r.json() : null))
+        ]).then(([bldgsRes, bootRes]) => {
+            const data = bldgsRes.status === 'fulfilled' ? bldgsRes.value : null;
+            const boot = bootRes.status === 'fulfilled' ? bootRes.value : null;
+            const bIdMap = new Map();
+
+            if (data && data.features) {
+                data.features.forEach(f => {
+                    const bId = f.properties && f.properties.id;
+                    if (bId) {
+                        const name = (f.properties.name && f.properties.name !== bId)
+                            ? f.properties.name
+                            : bId.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                        bIdMap.set(bId, name);
+                    }
                 });
-            })
-            .catch(e => console.log('Notice: Could not load buildings.json:', e));
+            }
+            if (boot && Array.isArray(boot.buildings)) {
+                boot.buildings.forEach(b => {
+                    if (b && b.building_code && !b.is_subplot && !bIdMap.has(b.building_code)) {
+                        bIdMap.set(b.building_code, b.name || b.building_code);
+                    }
+                });
+            }
+            if (!bIdMap.has('automated_weather_station')) {
+                bIdMap.set('automated_weather_station', 'Automated Weather Station');
+            }
+
+            // Buildings Group
+            const bldgGroup = document.createElement('optgroup');
+            bldgGroup.label = '🏛️ Buildings & Facilities';
+            const sortedEntries = Array.from(bIdMap.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+            sortedEntries.forEach(([bId, name]) => {
+                const opt = document.createElement('option');
+                opt.value = bId;
+                opt.textContent = `${name} (${bId})`;
+                bldgGroup.appendChild(opt);
+            });
+            select.appendChild(bldgGroup);
+
+            // Agricultural Plots Group (live from MySQL bootstrap, with verified 23-zone fallback)
+            const plotGroup = document.createElement('optgroup');
+            plotGroup.label = '🌾 Agricultural Plots & Commodity Zones';
+            const livePlots = (boot && Array.isArray(boot.plots) && boot.plots.length > 0)
+                ? boot.plots
+                : FALLBACK_LARES_PLOTS;
+            const parsePlotOrder = (lbl) => {
+                const m = String(lbl || '').match(/\d+/);
+                return m ? Number(m[0]) : 9999;
+            };
+            const orderedPlots = [...livePlots].sort((a, b) => parsePlotOrder(a.plot_number) - parsePlotOrder(b.plot_number));
+            orderedPlots.forEach(p => {
+                const pCode = p.plot_code || p.id;
+                if (!pCode) return;
+                const pNum = p.plot_number ? `${p.plot_number} - ` : '';
+                const pName = p.zone_name || p.name || pCode;
+                const opt = document.createElement('option');
+                opt.value = pCode;
+                opt.textContent = `${pNum}${pName} (${pCode})`;
+                plotGroup.appendChild(opt);
+            });
+            select.appendChild(plotGroup);
+        }).catch(e => console.log('Notice: Could not load building/plot list:', e));
     } else if (station === 'rares') {
         fetch('/api/rares/buildings?t=' + Date.now())
             .then(r => r.json())
@@ -787,7 +873,9 @@ map.on('draw.create', function(e) {
 
 function confirmEntrance() {
     const select = document.getElementById('buildingSelect');
-    const buildingId = select.value || `${currentStation}_facility`;
+    const customInput = document.getElementById('customBuildingIdInput');
+    const customVal = customInput ? customInput.value.trim() : '';
+    const buildingId = customVal || select.value || `${currentStation}_facility`;
     
     if (pendingEntranceId) {
         draw.setFeatureProperty(pendingEntranceId, 'type', 'entrance');
@@ -796,6 +884,7 @@ function confirmEntrance() {
         draw.setFeatureProperty(pendingEntranceId, 'station', currentStation);
         pendingEntranceId = null;
     }
+    if (customInput) customInput.value = '';
     document.getElementById('buildingModal').style.display = 'none';
     map.fire('draw.update');
 }
@@ -808,13 +897,34 @@ function cancelEntrance() {
     document.getElementById('buildingModal').style.display = 'none';
 }
 
+function syncRoadStationUi(st) {
+    const cfg = STATION_CONFIG[st] || STATION_CONFIG.lares;
+    ['lares', 'qares', 'rares', 'cares'].forEach(k => {
+        document.getElementById('btn-station-' + k)?.classList.toggle('active', k === st);
+    });
+    const saveBtn = document.getElementById('saveDirectBtn');
+    if (saveBtn) {
+        saveBtn.disabled = Boolean(cfg.pendingSurvey);
+        saveBtn.style.opacity = cfg.pendingSurvey ? '0.55' : '';
+        saveBtn.textContent = cfg.pendingSurvey
+            ? '🌴 Pending Field Survey (DA-CARES)'
+            : `💾 Save Directly to Map (${cfg.roadsFile})`;
+    }
+    IGuideEditorBridge.syncCaresBanner(st);
+    IGuideEditorBridge.applyStationButtonLocks();
+}
+
 // Station Switcher
-window.switchStation = function(st) {
-    if (st === currentStation) return;
+window.switchStation = function(st, forceBypass = false) {
+    if (!STATION_CONFIG[st]) return;
+    if (!forceBypass && !IGuideEditorBridge.canSwitchTo(st)) return;
+    if (st === currentStation && !forceBypass) return;
     
     // Autosave edits of previous station
-    const curData = draw.getAll();
-    localStorage.setItem('road_draw_autosave_' + currentStation, JSON.stringify(curData));
+    if (!STATION_CONFIG[currentStation]?.pendingSurvey) {
+        const curData = draw.getAll();
+        localStorage.setItem('road_draw_autosave_' + currentStation, JSON.stringify(curData));
+    }
 
     currentStation = st;
 
@@ -823,11 +933,7 @@ window.switchStation = function(st) {
     newUrl.searchParams.set('station', st);
     window.history.replaceState({}, '', newUrl);
 
-    document.getElementById('btn-station-lares').classList.toggle('active', st === 'lares');
-    document.getElementById('btn-station-qares').classList.toggle('active', st === 'qares');
-    document.getElementById('btn-station-rares').classList.toggle('active', st === 'rares');
-
-    document.getElementById('saveDirectBtn').textContent = `💾 Save Directly to Map (${STATION_CONFIG[st].roadsFile})`;
+    syncRoadStationUi(st);
 
     // Toggle Drone layers
     ['lares-drone-layer', 'qares-drone-layer', 'rares-drone-layer'].forEach(lId => {
@@ -941,6 +1047,10 @@ window.loadStationRoads = function(station) {
     }
 
     const cfg = STATION_CONFIG[station] || STATION_CONFIG.lares;
+    if (cfg.pendingSurvey || !cfg.roadsEndpoint) {
+        updateLabels();
+        return;
+    }
     const endpoint = `${cfg.roadsEndpoint}?t=${Date.now()}`;
     fetch(endpoint)
         .then(res => res.json())
@@ -1186,12 +1296,17 @@ map.on('load', () => {
         }
     });
 
+    syncRoadStationUi(currentStation);
     updateBuildingDropdown(currentStation);
     loadStationRoads(currentStation);
 });
 
 window.reloadFromOriginalBaseline = function() {
     const cfg = STATION_CONFIG[currentStation] || STATION_CONFIG.lares;
+    if (cfg.pendingSurvey || !cfg.roadsEndpoint) {
+        alert('DA-CARES (Naic) is pending field survey.');
+        return;
+    }
     const targetFile = cfg.roadsFile;
     if (!confirm(`Discard all unsaved edits and reload original ${targetFile}?`)) return;
     
@@ -1212,12 +1327,22 @@ window.reloadFromOriginalBaseline = function() {
         });
 };
 
-function saveDirectlyToMap() {
+async function saveDirectlyToMap() {
+    const cfg = STATION_CONFIG[currentStation] || STATION_CONFIG.lares;
+    if (cfg.pendingSurvey || !cfg.roadsSaveApi) {
+        alert('DA-CARES (Naic) is pending field survey — geometry saves are disabled.');
+        return;
+    }
     const data = draw.getAll();
     const btn = document.getElementById('saveDirectBtn');
-    const cfg = STATION_CONFIG[currentStation] || STATION_CONFIG.lares;
     const targetFile = cfg.roadsFile;
     const targetEndpoint = cfg.roadsSaveApi;
+    const confirmed = await IGuideEditorBridge.confirmSave({
+        title: 'Save Road & Entrance Network?',
+        message: `Are you sure you want to save ${data.features.length} road/entrance feature(s) for ${(currentStation || 'lares').toUpperCase()} to ${targetFile}?`,
+        confirmLabel: 'Yes, Save Network'
+    });
+    if (!confirmed) return;
 
     btn.textContent = `Saving to ${targetFile}...`;
     btn.disabled = true;
@@ -1237,14 +1362,12 @@ function saveDirectlyToMap() {
         f.properties.station = currentStation;
     }
     
-    fetch(targetEndpoint, {
+    IGuideEditorBridge.authFetch(targetEndpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
     })
-    .then(r => r.json())
     .then(res => {
-        if (res.success) {
+        if (res && res.success) {
             btn.textContent = `✅ Saved ${res.count} features to ${targetFile}!`;
             btn.style.background = "#10b981";
             setTimeout(() => {
@@ -1253,15 +1376,15 @@ function saveDirectlyToMap() {
                 btn.disabled = false;
             }, 3000);
         } else {
-            alert('Failed to save: ' + (res.error || 'Unknown error'));
+            alert('Failed to save: ' + ((res && res.error) || 'Unknown error'));
             btn.textContent = "❌ Error Saving";
             btn.disabled = false;
         }
     })
     .catch(err => {
-        alert('Network error: ' + err.message);
+        alert('Save blocked / error: ' + err.message);
         btn.textContent = "❌ Error Saving";
-        btn.disabled = false;
+        setTimeout(() => { syncRoadStationUi(currentStation); }, 2500);
     });
 }
 
@@ -1273,6 +1396,18 @@ function exportData() {
     document.execCommand('copy');
     alert(`Copied ${currentStation.toUpperCase()} Road GeoJSON to clipboard!`);
 }
+
+IGuideEditorBridge.init({
+    validStations: ['lares', 'qares', 'rares', 'cares'],
+    currentStation,
+    onForceStation: (st) => {
+        if (st && STATION_CONFIG[st] && st !== currentStation) {
+            window.switchStation(st, true);
+        } else {
+            syncRoadStationUi(currentStation);
+        }
+    }
+});
 </script>
 </body>
 </html>
