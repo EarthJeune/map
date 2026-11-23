@@ -8,6 +8,7 @@ const { spawn, execSync } = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const zlib = require('zlib');
+const phase1 = require('./database/phase1_safety');
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -317,6 +318,32 @@ const requireVisualEditor = (stationParam = null, defaultStation = null) => [
                 summaryText,
                 req
             });
+
+            if (!req._mapEditorQueuedForPublish) {
+                const actorMeta = phase1.formatActorAuditMeta(req.adminUser || { email: actorEmail, userId: actorUserId });
+                phase1.recordEntityVersion(query, {
+                    stationId: st,
+                    targetTable,
+                    targetId: p || editorLabel,
+                    versionNum: 1,
+                    action: 'MAP_EDITOR_SAVE',
+                    summary: summaryText,
+                    snapshot: req.body || {},
+                    source: 'map_editor',
+                    adminUser: req.adminUser || { email: actorEmail, userId: actorUserId }
+                }).catch(() => {});
+                query(
+                    `INSERT INTO admin_audit_logs (
+                        admin_username, action, target_table, target_id, summary,
+                        actor_user_id, actor_display_name, actor_base_role, actor_effective_role, acting_label, is_test
+                     ) VALUES (?, 'MAP_EDITOR_SAVE', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [
+                        actorMeta.email, targetTable, p || st, summaryText,
+                        actorMeta.userId, actorMeta.displayName, actorMeta.baseRole,
+                        actorMeta.effectiveRole, actorMeta.actingLabel, actorMeta.isTest
+                    ]
+                ).catch(() => {});
+            }
         });
         next();
     }
@@ -324,12 +351,53 @@ const requireVisualEditor = (stationParam = null, defaultStation = null) => [
 
 const requireDiskGeometryWrite = (stationParam = null, defaultStation = null) => [
     ...requireVisualEditor(stationParam, defaultStation),
-    (req, res, next) => {
+    async (req, res, next) => {
         if (process.env.LOCK_STATIC_DISK_EDITORS === '1') {
             return res.status(403).json({
                 error: 'Static disk geometry editing is locked in live production (LOCK_STATIC_DISK_EDITORS=1). Edit geometry locally and deploy via Git.'
             });
         }
+        try {
+            const st = String(stationParam || req.query?.station || req.body?.station || defaultStation || 'lares').toLowerCase();
+            const rows = await query(`SELECT require_publish_for_map_editors FROM stations WHERE station_id = ? LIMIT 1`, [st]);
+            const gateOn = Number(rows?.[0]?.require_publish_for_map_editors || 0) === 1;
+            const hasDirectPub = Array.isArray(req.adminUser?.permissions) && req.adminUser.permissions.includes('changes:publish');
+            if (gateOn && !hasDirectPub) {
+                req._mapEditorQueuedForPublish = true;
+                const actor = phase1.formatActorAuditMeta(req.adminUser);
+                const summary = `Map editor update (${req.path}) for DA-${st.toUpperCase()}`;
+                const ins = await query(
+                    `INSERT INTO change_requests (
+                        station_id, target_table, target_id, action, summary,
+                        previous_json, payload_json, status,
+                        submitted_by_email, submitted_by_user_id, submitted_by_name,
+                        actor_base_role, actor_effective_role
+                     ) VALUES (?, 'map_geometry', ?, 'UPDATE', ?, NULL, ?, 'approved', ?, ?, ?, ?, ?)`,
+                    [
+                        st, req.path, summary, JSON.stringify(req.body || {}),
+                        actor.email, actor.userId, actor.displayName,
+                        actor.baseRole, actor.effectiveRole
+                    ]
+                );
+                await query(
+                    `INSERT INTO admin_audit_logs (
+                        admin_username, action, target_table, target_id, summary,
+                        actor_user_id, actor_display_name, actor_base_role, actor_effective_role, acting_label, is_test
+                     ) VALUES (?, 'MAP_EDITOR_QUEUED', 'map_geometry', ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [
+                        actor.email, String(ins.insertId), `Queued ${summary} for Administrator publish`,
+                        actor.userId, actor.displayName, actor.baseRole,
+                        actor.effectiveRole, actor.actingLabel, actor.isTest
+                    ]
+                ).catch(() => {});
+                return res.json({
+                    success: true,
+                    queuedForPublish: true,
+                    changeRequestId: ins.insertId,
+                    message: 'Map editor changes queued for Administrator publish.'
+                });
+            }
+        } catch (_) { }
         next();
     }
 ];

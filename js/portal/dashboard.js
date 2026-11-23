@@ -17,6 +17,7 @@ import {
 } from './core.js';
 
 let auditSearch = '';
+let auditShowTest = false;
 let auditLimit = Number(getSavedPortalPref('iguide_pref_audit_limit', 10)) || 10;
 
 function renderStationStatusPillHtml(status) {
@@ -41,15 +42,24 @@ function renderAuditRowsHtml(items) {
     if (!items || items.length === 0) {
         return `<tr><td colspan="5" style="text-align:center; color:#64748b; padding:24px;">No activity matching your view filter yet.</td></tr>`;
     }
-    return items.map(log => `
+    return items.map(log => {
+        const displayName = log.actor_display_name || log.admin_username || 'System';
+        const roleBadge = log.acting_label
+            ? `<span style="font-size:10.5px; color:#94a3b8; display:block; margin-top:2px;">${escapeHtml(log.acting_label)}</span>`
+            : '';
+        return `
         <tr>
             <td><span class="mono-id">#${log.id}</span></td>
             <td style="color:#94a3b8; font-size:12px;">${new Date(log.created_at).toLocaleString()}</td>
-            <td><span class="mono-code">${escapeHtml(log.admin_username || 'system')}</span></td>
+            <td>
+                <strong style="color:#f8fafc; font-size:12.5px;">${escapeHtml(displayName)}</strong>
+                ${roleBadge}
+            </td>
             <td><span class="status-pill status-pill-blue">${escapeHtml(log.action)}</span></td>
             <td style="color:#cbd5e1;">${escapeHtml(log.summary || '')}</td>
         </tr>
-    `).join('');
+    `;
+    }).join('');
 }
 
 function renderAuditPaginationHtml({ total, page, limit, totalPages }) {
@@ -289,7 +299,11 @@ export async function renderDashboardTab(container) {
                             : 'Showing portal activity for roles lower than Super Admin (Super Admin actions are hidden).'}</div>
                     </div>
                 </div>
-                <div class="dash-audit-search-wrap" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <div class="dash-audit-search-wrap" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                    <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; color:#cbd5e1; cursor:pointer; user-select:none;">
+                        <input type="checkbox" id="dash-audit-show-test" ${auditShowTest ? 'checked' : ''} style="accent-color:#10b981;">
+                        <span>Show test data</span>
+                    </label>
                     <input type="text" id="dash-audit-search" class="form-control" style="width:260px; max-width:100%; height:36px;" placeholder="Filter actor, action, or summary..." value="${escapeHtml(auditSearch)}">
                 </div>
             </div>
@@ -333,7 +347,7 @@ export async function renderDashboardTab(container) {
         const pager = document.getElementById('dash-audit-pagination');
         if (!tbody || !pager) return;
         try {
-            const res = await apiFetch(`/api/admin/audit-logs?page=${page}&limit=${auditLimit}&search=${encodeURIComponent(auditSearch.trim())}`);
+            const res = await apiFetch(`/api/admin/audit-logs?page=${page}&limit=${auditLimit}&search=${encodeURIComponent(auditSearch.trim())}${auditShowTest ? '&includeTest=1' : ''}`);
             currentAuditPage = Number(res.page || 1);
             currentAuditTotal = Number(res.total || 0);
             currentAuditTotalPages = Number(res.totalPages || 1);
@@ -357,6 +371,10 @@ export async function renderDashboardTab(container) {
             auditSearch = e.target.value;
             clearTimeout(auditSearchTimer);
             auditSearchTimer = setTimeout(() => loadAuditLogsPage(1), 250);
+        });
+        document.getElementById('dash-audit-show-test')?.addEventListener('change', (e) => {
+            auditShowTest = Boolean(e.target.checked);
+            loadAuditLogsPage(1);
         });
         if (auditSearch.trim() || auditLimit !== 10) {
             loadAuditLogsPage(1);

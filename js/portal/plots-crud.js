@@ -1065,15 +1065,22 @@ window.openMergePlotWizard = () => {
 };
 
 window.deletePlotRow = async (id) => {
-    const ok = await showPortalConfirm({
+    const p = (PortalState.cachedPlots || []).find(x => x.id === id);
+    const resConfirm = await showPortalConfirm({
         title: 'Delete Agricultural Plot?',
-        message: 'Delete this agricultural plot from the station directory? (GIS Editor deletions are queued for Reviewer approval.)',
+        message: `Delete "${p ? (p.zone_name || p.plot_number) : 'this agricultural plot'}" from the station directory? (GIS Editor deletions are queued for Reviewer approval.)`,
         confirmLabel: 'Delete Plot',
         cancelLabel: 'Cancel',
-        danger: true
+        danger: true,
+        requireReason: true,
+        reasonLabel: 'Reason for deletion (required)',
+        reasonPlaceholder: 'e.g. Duplicate plot entry or decommissioned trial plot'
     });
-    if (!ok) return;
-    const res = await apiFetch(`/api/admin/plots/${id}`, { method: 'DELETE' });
+    if (!resConfirm?.confirmed) return;
+    const res = await apiFetch(`/api/admin/plots/${id}`, {
+        method: 'DELETE',
+        body: JSON.stringify({ delete_reason: resConfirm.reason })
+    });
     if (res.published) broadcastDbSync();
     showToast(res.published ? 'Plot deleted.' : 'Deletion queued for Reviewer approval.');
     window.refreshCurrentTab();

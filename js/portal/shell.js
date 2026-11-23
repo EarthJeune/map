@@ -19,13 +19,13 @@ import { initAuthModule, completeAuthSession, logoutPortal, switchAuthView } fro
 import { initNotificationControls, startNotificationPolling, stopNotificationPolling, renderNotificationsTab, refreshNotifications, syncSidebarQueueBadges } from './notifications.js?v=373';
 import { initRoleSwitcher, syncRoleSwitcherUi } from './role-switcher.js?v=372';
 import { runRoleTransition } from './role-transition.js';
-import { renderDashboardTab } from './dashboard.js?v=370';
-import { renderPinTab } from './pin-station.js?v=371';
-import { renderBuildingsTab } from './buildings-crud.js?v=371';
-import { renderOfficesTab } from './offices-crud.js?v=371';
-import { renderPlotsTab } from './plots-crud.js?v=371';
-import { renderUserAccountsTab, renderLoginLogsTab } from './users-governance.js?v=370';
-import { renderAdminReviewsTab, renderReviewQueueTab, renderReviewDirectoryTab } from './change-requests.js?v=370';
+import { renderDashboardTab } from './dashboard.js?v=374';
+import { renderPinTab } from './pin-station.js?v=374';
+import { renderBuildingsTab } from './buildings-crud.js?v=374';
+import { renderOfficesTab } from './offices-crud.js?v=374';
+import { renderPlotsTab } from './plots-crud.js?v=374';
+import { renderUserAccountsTab, renderLoginLogsTab } from './users-governance.js?v=374';
+import { renderAdminReviewsTab, renderReviewQueueTab, renderReviewDirectoryTab } from './change-requests.js?v=374';
 
 if (window.mapboxgl) {
     window.mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;

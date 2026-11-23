@@ -19,6 +19,7 @@ import {
     renderWorkflowBanner,
     fileToWebpDataUrl,
     showPortalConfirm,
+    openVersionHistoryModal,
     getSavedPortalPref,
     setSavedPortalPref
 } from './core.js';
@@ -1539,19 +1540,23 @@ window.openBuildingModal = async (bldgId) => {
                 <span id="bldg-diff-btn-badge" class="mono-id" style="padding:1px 7px; border-radius:999px; font-size:11px; background:rgba(148,163,184,0.18);">0</span>
             </button>
         `;
+        const historyBtn = editing && editing.id
+            ? `<button type="button" class="btn btn-secondary" id="btn-bldg-version-history" onclick="openBuildingVersionHistory()">${SVG_ICONS.history} <span>Version History</span></button>`
+            : '';
         if (adminDirect) {
             footer.innerHTML = hasGeo
-                ? `${resultBtn}
+                ? `${resultBtn}${historyBtn}
                    <button type="button" class="btn btn-secondary" onclick="closeBuildingModal()">Cancel</button>
                    <button type="button" class="btn btn-blue" onclick="submitBuildingModal(true, false)">Submit for Review</button>
                    <button type="button" class="btn btn-emerald" onclick="submitBuildingModal(false, false)">Save & Publish Live</button>`
-                : `${resultBtn}
+                : `${resultBtn}${historyBtn}
                    <button type="button" class="btn btn-secondary" onclick="closeBuildingModal()">Cancel</button>
                    <button type="button" class="btn btn-blue" onclick="submitBuildingModal(false, true)">Save Unmapped Draft (Hidden)</button>
                    <button type="button" class="btn btn-emerald" disabled style="opacity:0.45; cursor:not-allowed;" title="Draw footprint in draw.html first before publishing live">Save & Publish Live (Needs Geometry)</button>`;
         } else {
-            footer.innerHTML = `${resultBtn}
+            footer.innerHTML = `${resultBtn}${historyBtn}
                <button type="button" class="btn btn-secondary" onclick="closeBuildingModal()">Cancel</button>
+               <button type="button" class="btn btn-blue" onclick="submitBuildingModal(true, true)">Save Changes (Draft)</button>
                <button type="button" class="btn btn-emerald" onclick="submitBuildingModal(true, false)">Submit for Reviewer Approval →</button>`;
         }
     }
@@ -1862,6 +1867,17 @@ window.setPrimaryBuildingPhoto = (slideIdxOrId) => {
     updateResultButtonBadge();
 };
 
+window.openBuildingVersionHistory = () => {
+    const editing = PortalState.editingBuilding;
+    if (!editing || !editing.id) return;
+    openVersionHistoryModal({
+        stationId: PortalState.currentStation,
+        targetTable: 'buildings',
+        targetId: editing.id,
+        entityName: editing.name || editing.building_code
+    });
+};
+
 window.deleteBuildingPhoto = async (slideIdxOrId) => {
     const idx = (typeof slideIdxOrId === 'number' && workingPhotos[slideIdxOrId])
         ? slideIdxOrId
@@ -1869,37 +1885,46 @@ window.deleteBuildingPhoto = async (slideIdxOrId) => {
     if (idx < 0) return;
 
     const ph = workingPhotos[idx];
-    const ok = await showPortalConfirm({
+    const resConfirm = await showPortalConfirm({
         title: 'Remove Facility Photo?',
         message: `Remove "${ph.caption || 'this photo'}" from the building gallery? This change will be bundled into your building submission when you save.`,
         confirmLabel: 'Remove Photo',
         cancelLabel: 'Keep Photo',
-        danger: true
+        danger: true,
+        requireReason: true,
+        reasonLabel: 'Reason for removing photo (required)',
+        reasonPlaceholder: 'e.g. Outdated photo, blurry image, or replaced by newer view'
     });
-    if (!ok) return;
+    if (!resConfirm?.confirmed) return;
 
-    removedPhotos.push(ph);
+    removedPhotos.push({ ...ph, delete_reason: resConfirm.reason });
     workingPhotos.splice(idx, 1);
     workingPhotos.forEach((p, i) => { p.is_primary = i === 0 ? 1 : 0; p.display_order = i; });
     if (activeSlideIdx >= workingPhotos.length) {
         activeSlideIdx = Math.max(0, workingPhotos.length - 1);
     }
-    showToast('Photo removed from gallery. Click Submit / Save below to apply.');
+    showToast('Photo removed from gallery. Click Save Changes or Submit below to apply.');
     renderHeroGallerySection();
     updateResultButtonBadge();
 };
 
 window.deleteBuildingRow = async (id) => {
     const b = PortalState.cachedBuildings.find(x => x.id === id);
-    const ok = await showPortalConfirm({
+    const resConfirm = await showPortalConfirm({
         title: 'Delete Building Record?',
-        message: `Delete "${b ? b.name : 'this building'}" from the station directory?`,
+        message: `Delete "${b ? b.name : 'this building'}" and its directory entry from the station?`,
         confirmLabel: 'Delete Building',
         cancelLabel: 'Cancel',
-        danger: true
+        danger: true,
+        requireReason: true,
+        reasonLabel: 'Reason for deletion (required)',
+        reasonPlaceholder: 'e.g. Demolished structure or duplicate record'
     });
-    if (!ok) return;
-    const res = await apiFetch(`/api/admin/buildings/${id}`, { method: 'DELETE' });
+    if (!resConfirm?.confirmed) return;
+    const res = await apiFetch(`/api/admin/buildings/${id}`, {
+        method: 'DELETE',
+        body: JSON.stringify({ delete_reason: resConfirm.reason })
+    });
     if (res.published) broadcastDbSync();
     showToast(res.published ? 'Building deleted.' : 'Deletion queued for Reviewer approval.');
     window.refreshCurrentTab();

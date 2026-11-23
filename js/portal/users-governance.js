@@ -537,6 +537,13 @@ window.openUserApproveModal = (userId, mode = 'approve') => {
                 <label for="ug-assign-resp">5. Assigned Responsibilities / Scope Notes</label>
                 <textarea id="ug-assign-resp" class="form-control" rows="2">${escapeHtml(u.responsibilities || '')}</textarea>
             </div>
+            ${mode !== 'approve' ? `
+            <div class="form-group" style="margin-top:4px;">
+                <label style="display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-size:12.5px; color:#cbd5e1; text-transform:none;">
+                    <input type="checkbox" id="ug-assign-is-test" ${Number(u.is_test || 0) === 1 ? 'checked' : ''} style="accent-color:#f59e0b;">
+                    <span>Mark as test account (hidden from default audit log unless "Show test data" is enabled)</span>
+                </label>
+            </div>` : ''}
         `,
         footerHtml: `
             <button type="button" class="btn btn-secondary" onclick="closeGovModal()">Cancel</button>
@@ -573,7 +580,8 @@ window.openUserApproveModal = (userId, mode = 'approve') => {
                 station_scope: stationScope,
                 job_title: document.getElementById('ug-assign-position').value.trim(),
                 office_name: document.getElementById('ug-assign-office').value.trim(),
-                responsibilities: document.getElementById('ug-assign-resp').value.trim()
+                responsibilities: document.getElementById('ug-assign-resp').value.trim(),
+                ...(mode !== 'approve' ? { is_test: Boolean(document.getElementById('ug-assign-is-test')?.checked) } : {})
             };
             if (mode === 'approve') {
                 await apiFetch(`/api/admin/users/${u.id}/approve`, { method: 'POST', body: JSON.stringify(payload) });

@@ -577,7 +577,10 @@ export function showPortalConfirm({
     message = 'Are you sure you want to continue?',
     confirmLabel = 'Confirm',
     cancelLabel = 'Cancel',
-    danger = false
+    danger = false,
+    requireReason = false,
+    reasonLabel = 'Reason (required)',
+    reasonPlaceholder = 'Explain why this record is being removed...'
 } = {}) {
     return new Promise((resolve) => {
         const existing = document.getElementById('iguide-portal-confirm-modal');
@@ -599,8 +602,16 @@ export function showPortalConfirm({
             ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>'
             : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>';
 
+        const reasonBlock = requireReason ? `
+            <div style="padding:0 20px 14px;">
+                <label for="ipc-reason-input" style="display:block; font-size:11.5px; font-weight:700; color:${titleColor}; margin-bottom:5px;">${escapeHtml(reasonLabel)}</label>
+                <textarea id="ipc-reason-input" class="form-control" rows="2" placeholder="${escapeHtml(reasonPlaceholder)}" style="width:100%; font-size:12.5px;"></textarea>
+                <div id="ipc-reason-err" style="display:none; margin-top:4px; font-size:11.5px; color:#f43f5e; font-weight:600;">Please enter a short reason (at least 3 characters).</div>
+            </div>
+        ` : '';
+
         overlay.innerHTML = `
-            <div style="width:100%; max-width:420px; background:${cardBg}; border:1px solid ${accentBorder}; border-radius:16px; box-shadow:0 28px 64px rgba(0,0,0,${isLight ? '0.18' : '0.75'}); overflow:hidden; color:${titleColor};">
+            <div style="width:100%; max-width:440px; background:${cardBg}; border:1px solid ${accentBorder}; border-radius:16px; box-shadow:0 28px 64px rgba(0,0,0,${isLight ? '0.18' : '0.75'}); overflow:hidden; color:${titleColor};">
                 <div style="padding:18px 20px 14px; display:flex; align-items:flex-start; gap:13px;">
                     <div style="width:40px; height:40px; border-radius:11px; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:${accentBg}; border:1px solid ${accentBorder}; color:${accentColor};">
                         ${iconSvg}
@@ -610,6 +621,7 @@ export function showPortalConfirm({
                         <div style="font-size:12.5px; color:${msgColor}; line-height:1.5; margin-top:6px;">${escapeHtml(message)}</div>
                     </div>
                 </div>
+                ${reasonBlock}
                 <div style="padding:12px 20px 16px; display:flex; justify-content:flex-end; gap:10px; border-top:1px solid rgba(148,163,184,0.16); background:${footerBg};">
                     <button type="button" id="ipc-cancel-btn" class="btn btn-secondary btn-sm" style="min-width:86px; justify-content:center;">${escapeHtml(cancelLabel)}</button>
                     <button type="button" id="ipc-confirm-btn" class="btn ${danger ? 'btn-danger' : 'btn-emerald'} btn-sm" style="min-width:96px; justify-content:center;">${escapeHtml(confirmLabel)}</button>
@@ -623,15 +635,102 @@ export function showPortalConfirm({
             resolve(val);
         };
         const onKey = (e) => {
-            if (e.key === 'Escape') finish(false);
+            if (e.key === 'Escape') finish(requireReason ? { confirmed: false, reason: '' } : false);
         };
         document.addEventListener('keydown', onKey);
-        overlay.addEventListener('click', (e) => { if (e.target === overlay) finish(false); });
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) finish(requireReason ? { confirmed: false, reason: '' } : false);
+        });
         document.body.appendChild(overlay);
-        document.getElementById('ipc-cancel-btn')?.addEventListener('click', () => finish(false));
-        document.getElementById('ipc-confirm-btn')?.addEventListener('click', () => finish(true));
-        document.getElementById('ipc-confirm-btn')?.focus();
+        document.getElementById('ipc-cancel-btn')?.addEventListener('click', () => finish(requireReason ? { confirmed: false, reason: '' } : false));
+        document.getElementById('ipc-confirm-btn')?.addEventListener('click', () => {
+            if (requireReason) {
+                const reasonVal = String(document.getElementById('ipc-reason-input')?.value || '').trim();
+                if (reasonVal.length < 3) {
+                    const errEl = document.getElementById('ipc-reason-err');
+                    if (errEl) errEl.style.display = 'block';
+                    document.getElementById('ipc-reason-input')?.focus();
+                    return;
+                }
+                finish({ confirmed: true, reason: reasonVal });
+                return;
+            }
+            finish(true);
+        });
+        if (requireReason) {
+            document.getElementById('ipc-reason-input')?.focus();
+        } else {
+            document.getElementById('ipc-confirm-btn')?.focus();
+        }
     });
+}
+
+/**
+ * 1.5: Reusable Version History modal with one-click audited Restore.
+ */
+export async function openVersionHistoryModal({ stationId, targetTable, targetId, entityName = 'Record' } = {}) {
+    const st = stationId || PortalState.currentStation || 'lares';
+    try {
+        const res = await apiFetch(
+            `/api/admin/versions?station=${encodeURIComponent(st)}&target_table=${encodeURIComponent(targetTable)}&target_id=${encodeURIComponent(String(targetId))}`
+        );
+        const versions = Array.isArray(res?.versions) ? res.versions : [];
+        const bodyHtml = versions.length === 0
+            ? `<div style="padding:28px 16px; text-align:center; color:#94a3b8; font-size:13px;">No saved version history recorded for this item yet. Future publishes and map editor saves will appear here.</div>`
+            : `<div style="display:flex; flex-direction:column; gap:10px; max-height:420px; overflow:auto;">
+                ${versions.map(v => {
+                    const actorLabel = v.actor_display_name || v.actor_email || 'System';
+                    const roleTag = v.actor_base_role === 'super_admin' && v.actor_effective_role && v.actor_effective_role !== 'super_admin'
+                        ? `Super Admin acting as ${v.actor_effective_role}`
+                        : (v.actor_effective_role || v.actor_base_role || '');
+                    return `
+                        <div style="padding:12px 14px; border-radius:10px; border:1px solid rgba(148,163,184,0.2); background:rgba(15,23,42,0.55); display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+                            <div style="min-width:0; flex:1;">
+                                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                    <span class="status-pill status-pill-blue">v${Number(v.version_num || 1)}</span>
+                                    <strong style="font-size:13px; color:#f8fafc;">${escapeHtml(v.summary || v.action || 'Saved version')}</strong>
+                                </div>
+                                <div style="font-size:11.5px; color:#94a3b8; margin-top:5px;">
+                                    ${escapeHtml(actorLabel)}${roleTag ? ` (${escapeHtml(roleTag)})` : ''} • ${escapeHtml(v.source || 'portal')} • ${new Date(v.created_at).toLocaleString()}
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-secondary btn-sm" data-restore-version-id="${v.id}">Restore this version</button>
+                        </div>
+                    `;
+                }).join('')}
+            </div>`;
+
+        openGovModal({
+            title: `Version History — ${entityName}`,
+            maxWidth: '680px',
+            bodyHtml,
+            footerHtml: `<button type="button" class="btn btn-secondary" onclick="closeGovModal()">Close</button>`
+        });
+
+        document.querySelectorAll('[data-restore-version-id]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const verId = Number(btn.dataset.restoreVersionId);
+                const ok = await showPortalConfirm({
+                    title: 'Restore Previous Version?',
+                    message: `Restoring this version of "${entityName}" will create a new audited change rather than overwriting history.`,
+                    confirmLabel: 'Restore Version',
+                    cancelLabel: 'Cancel'
+                });
+                if (!ok) return;
+                try {
+                    const out = await apiFetch(`/api/admin/versions/${verId}/restore`, { method: 'POST', body: '{}' });
+                    closeGovModal();
+                    broadcastDbSync();
+                    showToast(out.published ? `Restored "${entityName}" (now v${out.version})` : `Queued restore of "${entityName}" as Request #${out.changeRequestId}`);
+                    window.refreshCurrentTab?.();
+                } catch (err) {
+                    showToast(err.message || 'Could not restore version.');
+                }
+            });
+        });
+    } catch (err) {
+        showToast(err.message || 'Could not load version history.');
+    }
 }
 
 const TA_HEIGHT_MIN = 64;

@@ -12,7 +12,8 @@ import {
     canPublish,
     hasPermission,
     renderWorkflowBanner,
-    showPortalConfirm
+    showPortalConfirm,
+    openVersionHistoryModal
 } from './core.js';
 
 function parseJsonSafe(val, fallback) {
@@ -80,6 +81,7 @@ export async function renderPinTab(container) {
                     </div>
                 </div>
                 <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <button type="button" class="btn btn-secondary" id="pin-version-history-btn">${SVG_ICONS.history} <span>Version History</span></button>
                     ${adminDirect ? `
                         <button type="button" class="btn btn-secondary" id="pin-submit-review-btn">Submit for Review</button>
                         <button type="button" class="btn btn-emerald" id="pin-publish-btn">Save & Publish Live</button>
@@ -114,6 +116,14 @@ export async function renderPinTab(container) {
                         <label>Official Full Station Name</label>
                         <input type="text" id="st-fullname" class="form-control" value="${escapeHtml(st.full_name || '')}">
                     </div>
+                    ${adminDirect ? `
+                    <div class="form-group" style="padding:10px 12px; border-radius:9px; border:1px solid rgba(148,163,184,0.22); background:rgba(15,23,42,0.45);">
+                        <label style="display:flex; align-items:center; gap:9px; cursor:pointer; margin:0; text-transform:none; letter-spacing:0; font-size:12.5px; color:#f8fafc;">
+                            <input type="checkbox" id="st-req-pub-editors" ${Number(st.require_publish_for_map_editors || 0) === 1 ? 'checked' : ''} style="width:15px; height:15px; accent-color:#10b981;">
+                            <span>Require Administrator publish for map-editor changes</span>
+                        </label>
+                        <div class="help-tip" style="margin-top:4px;">When unchecked (default), map editor saves apply directly and still log version history & audit trail.</div>
+                    </div>` : ''}
                     <div class="form-group">
                         <label>Station Subtitle</label>
                         <input type="text" id="st-subtitle" class="form-control" value="${escapeHtml(st.subtitle || '')}">
@@ -258,6 +268,15 @@ export async function renderPinTab(container) {
         renderChips();
     });
 
+    document.getElementById('pin-version-history-btn')?.addEventListener('click', () => {
+        openVersionHistoryModal({
+            stationId: st.station_id,
+            targetTable: 'stations',
+            targetId: st.station_id,
+            entityName: st.name || st.station_id.toUpperCase()
+        });
+    });
+
     // Safety-gated Status Toggle confirmation
     document.getElementById('st-toggle-status-btn')?.addEventListener('click', async () => {
         const hidden = document.getElementById('st-status');
@@ -313,6 +332,7 @@ export async function renderPinTab(container) {
             welcome_tags: welcomeTags,
             quick_tags: quickTags,
             filter_descriptions: filterDescriptions,
+            ...(adminDirect ? { require_publish_for_map_editors: Boolean(document.getElementById('st-req-pub-editors')?.checked) } : {}),
             submitForReview: Boolean(submitForReview)
         };
 

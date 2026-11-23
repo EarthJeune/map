@@ -24,6 +24,7 @@ import {
 } from './core.js';
 import { guardAsyncAction } from '../ui-guard.js';
 import { MAPBOX_ACCESS_TOKEN } from '../data/config.js';
+import { computeSnapshotBeforeAfter, hasGeometryActuallyChanged } from './diff-utils.js';
 
 const spatialAerialSpecs = new Map();
 const spatialAerialMaps = new Map();
@@ -711,12 +712,7 @@ function buildCampusSpatialDiffSpec(cr, overview) {
     const afterMetrics = computeRingsMetrics(afterRings);
     const splitMetrics = computeRingsMetrics(splitRings);
 
-    const geomChanged = Boolean(
-        (beforeRings.length && afterRings.length && JSON.stringify(beforeRings) !== JSON.stringify(afterRings)) ||
-        (!beforeRings.length && afterRings.length && String(cr.action).toUpperCase() === 'CREATE') ||
-        splitRings.length > 0 ||
-        (beforePin && afterPin && distanceMeters(beforePin, afterPin) > 0.3)
-    );
+    const geomChanged = hasGeometryActuallyChanged(prev, next, cr.action) || splitRings.length > 0;
 
     const targetLabel = merged.name || merged.zone_name || merged.office_name || ctx.building?.name || ctx.plot?.zone_name || cr.target_id || 'Target Entity';
     const targetColor = merged.pin_color || merged.color || ctx.building?.pin_color || ctx.plot?.color || '#10b981';
@@ -891,13 +887,14 @@ function renderSpatialContextMapHtml({
                     <span style="color:#f8fafc; font-weight:700; display:inline-flex; align-items:center; gap:5px;">${SVG_ICONS.pin} ${escapeHtml(diffSpec.targetLabel)}</span>
                     ${diffSpec.geomChanged
                 ? `<span class="status-pill status-pill-live" style="font-size:10px;">Spatial Geometry Modified</span>`
-                : `<span class="status-pill status-pill-blue" style="font-size:10px;">Campus Location Verified</span>`}
+                : `<span class="status-pill status-pill-blue" style="font-size:10px;">Location Unchanged</span>`}
                 </div>
+                ${diffSpec.geomChanged ? `
                 <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; font-family:var(--font-mono); font-size:11px;">
                     ${verts ? `<span>Vertices: <strong style="color:#f8fafc;">${verts}</strong></span>` : ''}
                     ${areaM2 > 0 ? `<span>Area: <strong style="color:#6ee7b7;">${Math.round(areaM2).toLocaleString()} m² (${(areaM2 / 10000).toFixed(2)} ha)</strong></span>` : ''}
                     ${shiftM > 0.3 ? `<span>Shift: <strong style="color:#fbbf24;">${shiftM.toFixed(1)} m</strong></span>` : ''}
-                </div>
+                </div>` : ''}
             </div>
         `;
     }
@@ -1614,12 +1611,9 @@ function renderEntityVisitorCardHtml(cr, recordData, badgeText = '', opts = {}) 
 }
 
 function renderCrVisualPreviewHtml(cr, previewMode = 'side', changedKeys = null) {
-    const prev = parseJsonSafe(cr.previous_json);
-    const next = parseJsonSafe(cr.payload_json);
     const ctx = findContextEntityForCr(cr, lastOverviewData);
     const baseRecord = ctx.building || ctx.plot || {};
-    const beforeState = { ...baseRecord, ...prev };
-    const afterState = { ...baseRecord, ...prev, ...next };
+    const { beforeState, afterState } = computeSnapshotBeforeAfter(cr, baseRecord);
     const isDelete = String(cr.action || '').toUpperCase() === 'DELETE';
     const cKeys = changedKeys instanceof Set ? changedKeys : new Set(buildDiffRows(cr).filter(d => d.changed).map(d => d.key));
 
@@ -1851,9 +1845,21 @@ function renderCrListTable() {
                                 <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
                                     ${renderCrStepper(r)}
                                     <div style="font-size:11.5px; color:#94a3b8;">
-                                        Submitted by <strong style="color:#e2e8f0;">${escapeHtml(r.submitted_by_email || 'editor')}</strong>
+                                        Submitted by <strong style="color:#e2e8f0;">${escapeHtml(r.submitted_by_name || r.submitted_by_email || 'Editor')}</strong>
+                                        ${r.base_version ? `<span style="margin-left:6px; opacity:0.8;">• Base v${Number(r.base_version)}</span>` : ''}
                                     </div>
                                 </div>
+                                ${(Array.isArray(r.conflicts) && r.conflicts.length > 0) || r.is_stale_base ? `
+                                    <div style="padding:7px 10px; border-radius:8px; font-size:11.5px; background:rgba(245,158,11,0.12); color:#fde68a; border:1px solid rgba(245,158,11,0.38);">
+                                        ${r.is_stale_base ? `<div><strong>Outdated base version:</strong> Based on v${Number(r.base_version || 1)}, live record is now v${Number(r.live_version || 1)}. Rebase or include an override note to approve.</div>` : ''}
+                                        ${Array.isArray(r.conflicts) && r.conflicts.length > 0 ? `<div><strong>Conflicting open request(s) on this record:</strong> ${r.conflicts.map(c => `#${c.id} (${escapeHtml(c.status)})`).join(', ')}</div>` : ''}
+                                    </div>
+                                ` : ''}
+                                ${r.delete_reason ? `
+                                    <div style="padding:6px 10px; border-radius:8px; font-size:11.5px; background:rgba(244,63,94,0.10); color:#fda4af; border:1px solid rgba(244,63,94,0.28);">
+                                        <strong>Deletion Reason:</strong> "${escapeHtml(r.delete_reason)}"
+                                    </div>
+                                ` : ''}
                                 ${r.reviewer_comment ? `
                                     <div style="padding:6px 10px; border-radius:8px; font-size:11.5px; ${r.status === 'rejected' ? 'background:rgba(244,63,94,0.12); color:#fda4af; border:1px solid rgba(244,63,94,0.3);' : 'background:rgba(16,185,129,0.10); color:#6ee7b7;'}">
                                         <strong>Reviewer Note:</strong> "${escapeHtml(r.reviewer_comment)}"
@@ -1864,6 +1870,16 @@ function renderCrListTable() {
                                 <button type="button" class="btn btn-secondary btn-sm" style="width:100%; justify-content:center;" onclick="openCrDiffModal(${r.id})">
                                     ${SVG_ICONS.map} <span>Inspect Visual Diff</span>
                                 </button>
+                                ${r.status === 'draft' && canRevise ? `
+                                    <button type="button" class="btn btn-emerald btn-sm" style="width:100%; justify-content:center;" onclick="submitDraftRequestNow(${r.id})">
+                                        Submit Draft for Review →
+                                    </button>
+                                ` : ''}
+                                ${r.is_stale_base && ['draft', 'pending', 'rejected'].includes(r.status) ? `
+                                    <button type="button" class="btn btn-secondary btn-sm" style="width:100%; justify-content:center;" onclick="rebaseChangeRequestNow(${r.id})">
+                                        Rebase to Live v${Number(r.live_version || 1)}
+                                    </button>
+                                ` : ''}
                                 ${r.status === 'pending' && canDecide ? `
                                     <button type="button" class="btn btn-emerald btn-sm" style="width:100%; justify-content:center;" onclick="openCrDiffModal(${r.id}, 'review')">
                                         Review & Decide →
@@ -1882,6 +1898,13 @@ function renderCrListTable() {
             r.status === 'approved' && canPublishNow ? `
                                     <button type="button" class="btn btn-emerald btn-sm" style="width:100%; justify-content:center;" onclick="publishChangeRequestNow(${r.id})">
                                         Publish Live
+                                    </button>
+                                ` : ''
+        }
+                                ${
+            r.can_undo_publish && canPublishNow ? `
+                                    <button type="button" class="btn btn-danger btn-sm" style="width:100%; justify-content:center;" onclick="undoPublishedRequestNow(${r.id})">
+                                        Undo Publish (24h)
                                     </button>
                                 ` : ''
         }
@@ -1972,6 +1995,7 @@ async function renderChangeRequestWorkspace(container, { isReviewerView = false 
     }
 
     const counts = {
+        draft: cachedRequests.filter(r => r.status === 'draft').length,
         pending: cachedRequests.filter(r => r.status === 'pending').length,
         rejected: cachedRequests.filter(r => r.status === 'rejected').length,
         approved: cachedRequests.filter(r => r.status === 'approved').length,
@@ -1984,10 +2008,13 @@ async function renderChangeRequestWorkspace(container, { isReviewerView = false 
             activeCrSubTab = 'approved';
         } else if (counts.rejected > 0) {
             activeCrSubTab = 'rejected';
+        } else if (counts.draft > 0) {
+            activeCrSubTab = 'draft';
         }
     }
 
     const subtabs = [
+        ...(counts.draft > 0 || !isReviewerView ? [{ id: 'draft', label: 'Drafts', count: counts.draft }] : []),
         { id: 'pending', label: 'Pending Review', count: counts.pending },
         { id: 'rejected', label: 'Needs Revision (Denied)', count: counts.rejected },
         { id: 'approved', label: 'Approved (Ready to Publish)', count: counts.approved },
@@ -2060,21 +2087,98 @@ export async function renderReviewQueueTab(container) {
     await renderChangeRequestWorkspace(container, { isReviewerView: true });
 }
 
+window.submitDraftRequestNow = async (id) => {
+    const ok = await showPortalConfirm({
+        title: `Submit Grouped Draft #${id} for Review?`,
+        message: 'Send all accumulated changes in this draft as one change request to your Station Reviewer?',
+        confirmLabel: 'Submit for Review',
+        cancelLabel: 'Keep as Draft'
+    });
+    if (!ok) return;
+    try {
+        await apiFetch(`/api/admin/change-requests/${id}/submit-draft`, { method: 'POST', body: '{}' });
+        broadcastDbSync();
+        showToast(`Draft #${id} submitted for Reviewer approval.`);
+        if (currentCrContainer) await renderChangeRequestWorkspace(currentCrContainer, { isReviewerView: currentIsReviewerView });
+    } catch (err) {
+        showToast(err.message);
+    }
+};
+
+window.rebaseChangeRequestNow = async (id) => {
+    const ok = await showPortalConfirm({
+        title: `Rebase Request #${id} onto Live Version?`,
+        message: 'Update this request snapshot to the latest live record version while keeping your proposed changes?',
+        confirmLabel: 'Rebase Now',
+        cancelLabel: 'Cancel'
+    });
+    if (!ok) return;
+    try {
+        const out = await apiFetch(`/api/admin/change-requests/${id}/rebase`, { method: 'POST', body: '{}' });
+        broadcastDbSync();
+        showToast(`Request #${id} rebased onto live version v${out.baseVersion}.`);
+        if (currentCrContainer) await renderChangeRequestWorkspace(currentCrContainer, { isReviewerView: currentIsReviewerView });
+    } catch (err) {
+        showToast(err.message);
+    }
+};
+
+window.undoPublishedRequestNow = async (id) => {
+    const ok = await showPortalConfirm({
+        title: `Undo Published Request #${id}?`,
+        message: 'Revert this published change back to its pre-publish snapshot? This creates an audited undo entry in version history.',
+        confirmLabel: 'Undo Publish',
+        cancelLabel: 'Cancel',
+        danger: true
+    });
+    if (!ok) return;
+    try {
+        await apiFetch(`/api/admin/change-requests/${id}/undo-publish`, { method: 'POST', body: '{}' });
+        broadcastDbSync();
+        lastOverviewData = null;
+        showToast(`Undid publish of Request #${id} and restored prior live state.`);
+        if (currentCrContainer) await renderChangeRequestWorkspace(currentCrContainer, { isReviewerView: currentIsReviewerView });
+    } catch (err) {
+        showToast(err.message);
+    }
+};
+
 window.publishChangeRequestNow = async (id, triggerEl = null) => {
     const cr = cachedRequests.find(r => r.id === Number(id));
     const stLabel = `DA-${String(cr?.station_id || PortalState.currentStation || 'lares').toUpperCase()}`;
     const summaryLabel = cr?.summary ? `"${cr.summary}"` : `Change Request #${id}`;
-    const ok = await showPortalConfirm({
-        title: `Publish Approved Edit Live? (Request #${id})`,
-        message: `Are you sure you want to publish ${summaryLabel} live to the ${stLabel} public 3D map and database? Visitors will see this update immediately.`,
-        confirmLabel: 'Publish Live Now',
-        cancelLabel: 'Cancel',
-        danger: false
-    });
-    if (!ok) return;
+    const isSelfSubmitted = cr && String(cr.submitted_by_email || '').toLowerCase() === String(PortalState.email || '').toLowerCase();
+    const isSuper = PortalState.baseRole === 'super_admin';
+
+    let overrideReason = '';
+    if (isSelfSubmitted && isSuper) {
+        const resConfirm = await showPortalConfirm({
+            title: `Super Admin Self-Publish Override (Request #${id})`,
+            message: `You submitted ${summaryLabel}. Enter a written override reason to publish your own submission live to ${stLabel}:`,
+            confirmLabel: 'Override & Publish Live',
+            cancelLabel: 'Cancel',
+            requireReason: true,
+            reasonLabel: 'Override Reason (logged in audit trail)',
+            reasonPlaceholder: 'e.g. Verified field correction with station lead'
+        });
+        if (!resConfirm?.confirmed) return;
+        overrideReason = resConfirm.reason;
+    } else {
+        const ok = await showPortalConfirm({
+            title: `Publish Approved Edit Live? (Request #${id})`,
+            message: `Are you sure you want to publish ${summaryLabel} live to the ${stLabel} public 3D map and database? Visitors will see this update immediately.`,
+            confirmLabel: 'Publish Live Now',
+            cancelLabel: 'Cancel',
+            danger: false
+        });
+        if (!ok) return;
+    }
     return guardAsyncAction(triggerEl, async () => {
         try {
-            await apiFetch(`/api/admin/change-requests/${id}/publish`, { method: 'POST', body: '{}' });
+            await apiFetch(`/api/admin/change-requests/${id}/publish`, {
+                method: 'POST',
+                body: JSON.stringify(overrideReason ? { override_reason: overrideReason } : {})
+            });
             closeGovModal();
             broadcastDbSync();
             lastOverviewData = null;
@@ -2324,11 +2428,31 @@ window.openCrDiffModal = async (crId, focusMode = '') => {
         }
         if (triggerBtn) triggerBtn.disabled = true;
         try {
+            const payloadBody = { decision, comment };
+            if (decision === 'approved' && (cr.is_stale_base || (PortalState.baseRole === 'super_admin' && String(cr.submitted_by_email || '').toLowerCase() === String(PortalState.email || '').toLowerCase()))) {
+                const ov = await showPortalConfirm({
+                    title: cr.is_stale_base ? 'Override Outdated Base Version?' : 'Super Admin Self-Approval Override',
+                    message: cr.is_stale_base
+                        ? `Request #${cr.id} is based on v${cr.base_version} while live is v${cr.live_version}. Enter a written override note (or cancel and Rebase first).`
+                        : 'You submitted this request. Super Admin self-approval requires a written reason that will be recorded in the audit log.',
+                    confirmLabel: 'Override & Approve',
+                    cancelLabel: 'Cancel',
+                    requireReason: true,
+                    reasonLabel: 'Override Reason (required)',
+                    reasonPlaceholder: 'Explain why this approval override is safe...'
+                });
+                if (!ov?.confirmed) {
+                    if (triggerBtn) triggerBtn.disabled = false;
+                    return;
+                }
+                payloadBody.override_reason = ov.reason;
+            }
             const res = await apiFetch(`/api/review/requests/${cr.id}/decide`, {
                 method: 'POST',
-                body: JSON.stringify({ decision, comment })
+                body: JSON.stringify(payloadBody)
             });
             closeGovModal();
+            broadcastDbSync();
             lastOverviewData = null;
             showToast(decision === 'approved'
                 ? `Approved "${cr.summary}"${res.adminNotified ? ' & notified Administrator!' : '!'}`
@@ -2626,7 +2750,7 @@ window.openReadOnlyBuildingModal = (buildingCode) => {
             </div>
         `,
         footerHtml: `
-            ${hasPermission('reviews:decide') ? `<button type="button" class="btn btn-blue" onclick="openReviewerSuggestModal('building', '${escapeHtml(b.building_code)}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg> Suggest Change to GIS Editor</button>` : ''}
+            ${(hasPermission('reviews:suggest') || hasPermission('reviews:decide')) ? `<button type="button" class="btn btn-blue" onclick="openReviewerSuggestModal('building', '${escapeHtml(b.building_code)}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg> Suggest Change to GIS Editor</button>` : ''}
             <a href="/?station=${encodeURIComponent(PortalState.currentStation)}" target="_blank" class="btn btn-emerald">Open on Live 3D Map ↗</a>
             <button type="button" class="btn btn-secondary" onclick="closeGovModal()">Close Preview</button>
         `
@@ -2723,7 +2847,7 @@ window.openReadOnlyPlotModal = (plotId) => {
             </div>
         `,
         footerHtml: `
-            ${hasPermission('reviews:decide') ? `<button type="button" class="btn btn-blue" onclick="openReviewerSuggestModal('plot', ${p.id})"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg> Suggest Change to GIS Editor</button>` : ''}
+            ${(hasPermission('reviews:suggest') || hasPermission('reviews:decide')) ? `<button type="button" class="btn btn-blue" onclick="openReviewerSuggestModal('plot', ${p.id})"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg> Suggest Change to GIS Editor</button>` : ''}
             <a href="/?station=${encodeURIComponent(PortalState.currentStation)}" target="_blank" class="btn btn-emerald">Open on Live 3D Map ↗</a>
             <button type="button" class="btn btn-secondary" onclick="closeGovModal()">Close Preview</button>
         `
@@ -3079,7 +3203,7 @@ export async function renderReviewDirectoryTab(container, viewMode = 'review-ove
                                 <button type="button" class="btn btn-secondary btn-sm" style="flex:1; justify-content:center;" onclick="openReadOnlyBuildingModal('${escapeHtml(b.building_code)}')">
                                     View Card & Map
                                 </button>
-                                ${hasPermission('reviews:decide') ? `<button type="button" class="btn btn-blue btn-sm" style="justify-content:center; white-space:nowrap;" onclick="openReviewerSuggestModal('building', '${escapeHtml(b.building_code)}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg> Suggest</button>` : ''}
+                                ${(hasPermission('reviews:suggest') || hasPermission('reviews:decide')) ? `<button type="button" class="btn btn-blue btn-sm" style="justify-content:center; white-space:nowrap;" onclick="openReviewerSuggestModal('building', '${escapeHtml(b.building_code)}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg> Suggest</button>` : ''}
                             </div>
                         </div>
                     </div>
@@ -3221,7 +3345,7 @@ export async function renderReviewDirectoryTab(container, viewMode = 'review-ove
                                                     ${o.room_number ? `<span class="ro-room-pill">${escapeHtml(o.room_number)}</span>` : ''}
                                                 </div>
                                                 ${o.description ? `<div style="font-size:11px; color:#94a3b8; line-height:1.35;">${escapeHtml(o.description)}</div>` : ''}
-                                                ${hasPermission('reviews:decide') ? `<div style="margin-top:6px;"><button type="button" class="btn btn-secondary btn-sm" style="padding:3px 9px; font-size:11px;" onclick="openReviewerSuggestModal('office', ${o.id})"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg> Suggest Change</button></div>` : ''}
+                                                ${(hasPermission('reviews:suggest') || hasPermission('reviews:decide')) ? `<div style="margin-top:6px;"><button type="button" class="btn btn-secondary btn-sm" style="padding:3px 9px; font-size:11px;" onclick="openReviewerSuggestModal('office', ${o.id})"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg> Suggest Change</button></div>` : ''}
                                             </div>
                                         `).join('')}
                                     </div>
@@ -3336,7 +3460,7 @@ export async function renderReviewDirectoryTab(container, viewMode = 'review-ove
                             <button type="button" class="btn btn-secondary btn-sm" style="flex:1; justify-content:center;" onclick="openReadOnlyPlotModal(${p.id})">
                                 View Plot & Map
                             </button>
-                            ${hasPermission('reviews:decide') ? `<button type="button" class="btn btn-blue btn-sm" style="justify-content:center; white-space:nowrap;" onclick="openReviewerSuggestModal('plot', ${p.id})"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg> Suggest</button>` : ''}
+                            ${(hasPermission('reviews:suggest') || hasPermission('reviews:decide')) ? `<button type="button" class="btn btn-blue btn-sm" style="justify-content:center; white-space:nowrap;" onclick="openReviewerSuggestModal('plot', ${p.id})"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg> Suggest</button>` : ''}
                         </div>
                     </div>
                 </div>

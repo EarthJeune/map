@@ -675,15 +675,22 @@ window.submitOfficeModal = async (submitForReview = false) => {
 window.saveOfficeModal = () => window.submitOfficeModal(!canPublish());
 
 window.deleteOfficeRow = async (id) => {
-    const ok = await showPortalConfirm({
+    const o = (PortalState.cachedOffices || []).find(x => x.id === id);
+    const resConfirm = await showPortalConfirm({
         title: 'Remove Office Assignment?',
-        message: 'Remove this office from the building directory? (GIS Editor changes will be sent for Reviewer approval.)',
+        message: `Remove "${o ? o.office_name : 'this office'}" from the building directory? (GIS Editor changes will be sent for Reviewer approval.)`,
         confirmLabel: 'Remove Office',
         cancelLabel: 'Cancel',
-        danger: true
+        danger: true,
+        requireReason: true,
+        reasonLabel: 'Reason for removal (required)',
+        reasonPlaceholder: 'e.g. Office relocated or merged into another division'
     });
-    if (!ok) return;
-    const res = await apiFetch(`/api/admin/offices/${id}`, { method: 'DELETE' });
+    if (!resConfirm?.confirmed) return;
+    const res = await apiFetch(`/api/admin/offices/${id}`, {
+        method: 'DELETE',
+        body: JSON.stringify({ delete_reason: resConfirm.reason })
+    });
     if (res.published) broadcastDbSync();
     showToast(res.published ? 'Office deleted.' : 'Deletion queued for Reviewer approval.');
     window.refreshCurrentTab();

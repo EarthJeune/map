@@ -60,6 +60,7 @@ const PERMISSION_DEFS = [
     ['editors:use_visual', 'editors', 'use_visual', 'Use internal GIS Visual Editors and geometry saves'],
     ['reviews:view', 'reviews', 'view', 'View CRUD change requests'],
     ['reviews:decide', 'reviews', 'decide', 'Approve or Deny CRUD change requests with comments'],
+    ['reviews:suggest', 'reviews', 'suggest', 'Recommend facility/directory updates to GIS Editor'],
     ['changes:publish', 'changes', 'publish', 'Publish approved changes or direct Admin edits to live DB'],
     ['users:view', 'users', 'view', 'View internal user directory and approval statuses'],
     ['users:approve_assign', 'users', 'approve_assign', 'Approve or deny user sign-ups and assign roles/offices/duties'],
@@ -73,7 +74,7 @@ const ROLE_PERMISSION_MAP = {
     reviewer: [
         'map:view_public', 'dashboard:view',
         'buildings:read', 'offices:read', 'plots:read',
-        'reviews:view', 'reviews:decide'
+        'reviews:view', 'reviews:decide', 'reviews:suggest'
     ],
     gis_editor: [
         'map:view_public', 'dashboard:view',
@@ -87,7 +88,7 @@ const ROLE_PERMISSION_MAP = {
     administrator: [
         'map:view_public', 'dashboard:view', 'audit:view', 'logins:view',
         'buildings:read', 'offices:read', 'plots:read',
-        'reviews:view', 'changes:publish',
+        'reviews:view', 'reviews:suggest', 'changes:publish',
         'users:view', 'users:approve_assign', 'users:manage_roles',
         'system:reconcile_assets'
     ],
@@ -525,12 +526,16 @@ function createRbacManager(query, logAudit) {
             ? 'all'
             : (stationScope || 'lares');
 
+        const [uMetaRow] = await query(`SELECT full_name, is_test FROM admin_users WHERE id = ? LIMIT 1`, [userId]).catch(() => []);
+
         const ctx = {
             baseRole,
             effectiveRole,
             roleName: effRoleRow ? effRoleRow.name : effectiveRole,
             colorHex: effRoleRow ? effRoleRow.color_hex : '#10b981',
             stationScope: effectiveStationScope,
+            fullName: uMetaRow?.full_name || '',
+            isTest: Number(uMetaRow?.is_test || 0) ? 1 : 0,
             permissions: new Set(permRows.map(p => p.code)),
             expiresAt: Date.now() + CACHE_TTL_MS
         };
@@ -561,6 +566,8 @@ function createRbacManager(query, logAudit) {
                 req.adminUser.stationId = ctx.stationScope === 'all' ? (req.adminUser.stationId || 'lares') : ctx.stationScope;
                 req.adminUser.permissions = Array.from(ctx.permissions);
                 req.adminUser.roleColor = ctx.colorHex;
+                if (ctx.fullName) req.adminUser.fullName = ctx.fullName;
+                req.adminUser.isTest = ctx.isTest || 0;
 
                 if (permissionCode && !ctx.permissions.has(permissionCode)) {
                     logAudit('RBAC_FORBIDDEN', 'rbac', permissionCode, `403 denied ${req.adminUser.email || req.adminUser.userId} (role=${ctx.effectiveRole}) on ${req.method} ${req.originalUrl}`, req.adminUser.email || 'user');

@@ -35,6 +35,7 @@ const {
     buildWorkflowEmail
 } = require('./email_templates');
 const { normalizeOfficePayload } = require('./office_text_normalizer');
+const phase1 = require('./phase1_safety');
 
 module.exports = function createAdminApiRouter(pool, rootDir) {
     const router = express.Router();
@@ -48,11 +49,45 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
         });
     }
 
-    async function logAudit(action, targetTable, targetId, summary, username = 'admin') {
+    async function logAudit(action, targetTable, targetId, summary, actorOrUsername = 'admin') {
         try {
+            let meta;
+            if (actorOrUsername && typeof actorOrUsername === 'object') {
+                meta = phase1.formatActorAuditMeta(actorOrUsername);
+            } else {
+                const uname = String(actorOrUsername || 'admin');
+                let userRow = null;
+                if (uname.includes('@')) {
+                    const rows = await query(`SELECT id, full_name, role, is_test FROM admin_users WHERE LOWER(email) = LOWER(?) LIMIT 1`, [uname]).catch(() => []);
+                    userRow = rows[0] || null;
+                }
+                meta = phase1.formatActorAuditMeta({
+                    userId: userRow?.id || null,
+                    email: uname,
+                    fullName: userRow?.full_name || uname,
+                    baseRole: userRow?.role || (uname === 'super_admin' ? 'super_admin' : 'admin'),
+                    role: userRow?.role || 'admin',
+                    isTest: userRow?.is_test || 0
+                });
+            }
             await query(
-                `INSERT INTO admin_audit_logs (admin_username, action, target_table, target_id, summary) VALUES (?, ?, ?, ?, ?)`,
-                [username, action, targetTable, String(targetId || ''), summary]
+                `INSERT INTO admin_audit_logs (
+                    admin_username, action, target_table, target_id, summary,
+                    actor_user_id, actor_display_name, actor_base_role, actor_effective_role, acting_label, is_test
+                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [
+                    meta.email,
+                    action,
+                    targetTable,
+                    String(targetId || ''),
+                    summary,
+                    meta.userId,
+                    meta.displayName,
+                    meta.baseRole,
+                    meta.effectiveRole,
+                    meta.actingLabel,
+                    meta.isTest
+                ]
             );
         } catch (e) {
             console.warn('[AuditLog] Failed to record audit log:', e.message);
@@ -1283,7 +1318,7 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
                 SELECT u.id, u.email, u.full_name, u.first_name, u.middle_name, u.last_name,
                        u.job_title, u.role, u.station_id, u.office_name, u.responsibilities,
                        u.approval_status, u.rejection_reason, u.approved_by, u.approved_at,
-                       u.last_login_at, u.is_active, u.created_at, u.updated_at,
+                       u.last_login_at, u.is_active, COALESCE(u.is_test, 0) AS is_test, u.created_at, u.updated_at,
                        COALESCE(r.slug, u.role) AS role_slug,
                        COALESCE(r.name, u.role) AS role_name,
                        COALESCE(r.color_hex, '#10b981') AS role_color,
@@ -1498,19 +1533,21 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
                 });
             }
 
-            if (b.job_title !== undefined || b.office_name !== undefined || b.responsibilities !== undefined || b.is_active !== undefined) {
+            if (b.job_title !== undefined || b.office_name !== undefined || b.responsibilities !== undefined || b.is_active !== undefined || b.is_test !== undefined) {
                 await query(`
                     UPDATE admin_users SET
                         job_title = COALESCE(?, job_title),
                         office_name = COALESCE(?, office_name),
                         responsibilities = COALESCE(?, responsibilities),
-                        is_active = COALESCE(?, is_active)
+                        is_active = COALESCE(?, is_active),
+                        is_test = COALESCE(?, is_test)
                     WHERE id = ?
                 `, [
                     b.job_title !== undefined ? b.job_title : null,
                     b.office_name !== undefined ? b.office_name : null,
                     b.responsibilities !== undefined ? b.responsibilities : null,
                     b.is_active !== undefined ? (b.is_active ? 1 : 0) : null,
+                    b.is_test !== undefined ? (b.is_test ? 1 : 0) : null,
                     targetId
                 ]);
             }
@@ -1531,6 +1568,7 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
 
     const NON_SUPER_AUDIT_WHERE = `
         a.action <> 'SUPER_ADMIN_ROLE_SWITCH'
+        AND LOWER(COALESCE(a.actor_base_role, '')) <> 'super_admin'
         AND LOWER(COALESCE(a.admin_username, '')) NOT IN ('super_admin', 'superadmin')
         AND LOWER(COALESCE(a.summary, '')) NOT LIKE 'super_admin %'
         AND NOT EXISTS (
@@ -1563,10 +1601,13 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
         return { page, limit };
     }
 
-    async function fetchPaginatedAuditLogs({ isSuperAdmin, page = 1, limit = 10, search = '', action = '' } = {}) {
+    async function fetchPaginatedAuditLogs({ isSuperAdmin, includeTest = false, page = 1, limit = 10, search = '', action = '' } = {}) {
         const clauses = [];
         const params = [];
         if (!isSuperAdmin) clauses.push(NON_SUPER_AUDIT_WHERE);
+        if (!includeTest) {
+            clauses.push(`COALESCE(a.is_test, 0) = 0 AND NOT EXISTS (SELECT 1 FROM admin_users tu WHERE tu.is_test = 1 AND (tu.id = a.actor_user_id OR (tu.email IS NOT NULL AND LOWER(tu.email) = LOWER(a.admin_username))))`);
+        }
         const cleanAction = String(action || '').trim();
         if (cleanAction) {
             clauses.push('a.action = ?');
@@ -1575,8 +1616,8 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
         const cleanSearch = String(search || '').trim();
         if (cleanSearch) {
             const like = `%${cleanSearch}%`;
-            clauses.push('(a.admin_username LIKE ? OR a.action LIKE ? OR a.target_table LIKE ? OR a.summary LIKE ?)');
-            params.push(like, like, like, like);
+            clauses.push('(a.admin_username LIKE ? OR a.actor_display_name LIKE ? OR a.acting_label LIKE ? OR a.action LIKE ? OR a.target_table LIKE ? OR a.summary LIKE ?)');
+            params.push(like, like, like, like, like, like);
         }
         const whereSql = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
         const [cntRow] = await query(`SELECT COUNT(*) AS cnt FROM admin_audit_logs a ${whereSql}`, params);
@@ -1594,6 +1635,7 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
             page: safePage,
             limit,
             totalPages,
+            includeTest: Boolean(includeTest),
             scope: isSuperAdmin ? 'all' : 'below_super_admin'
         };
     }
@@ -1666,10 +1708,12 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
 
     router.get('/admin/audit-logs', authenticateSession, authorize('audit:view'), async (req, res) => {
         try {
-            const isSuperAdmin = req.adminUser.role === 'super_admin';
+            const isSuperAdmin = req.adminUser.baseRole === 'super_admin' || req.adminUser.role === 'super_admin';
+            const includeTest = req.query.includeTest === '1' || req.query.includeTest === 'true';
             const { page, limit } = parseLogPagination(req.query, 10);
             const result = await fetchPaginatedAuditLogs({
                 isSuperAdmin,
+                includeTest,
                 page,
                 limit,
                 search: req.query.search || '',
@@ -1694,30 +1738,128 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
     // =========================================================================
     // 5. GOVERNANCE: CHANGE REQUESTS, REVISE LOOP, STATION REVIEWER & PUBLISH
     // =========================================================================
-    async function stageChangeRequest({ req, stationId, targetTable, targetId, action, summary, previousObj, payloadObj }) {
+    async function stageChangeRequest({
+        req,
+        stationId,
+        targetTable,
+        targetId,
+        action,
+        summary,
+        previousObj,
+        payloadObj,
+        saveAsDraft = false,
+        deleteReason = null
+    }) {
         const st = String(stationId || 'lares').toLowerCase();
-        const result = await query(`
-            INSERT INTO change_requests (
-                station_id, target_table, target_id, action, summary,
-                previous_json, payload_json, status, submitted_by_email, submitted_by_user_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)
-        `, [
-            st,
-            targetTable,
-            String(targetId || 'general'),
-            action || 'UPDATE',
-            summary || `Update ${targetTable} (${targetId})`,
-            previousObj ? JSON.stringify(previousObj) : null,
-            JSON.stringify(payloadObj || {}),
-            req.adminUser.email || 'editor',
-            req.adminUser.userId || null
-        ]);
+        const act = String(action || 'UPDATE').toUpperCase();
+        const tbl = String(targetTable || 'buildings');
+        const tId = String(targetId || 'general');
+        const actor = phase1.formatActorAuditMeta(req.adminUser);
+
+        // 1.1 Always capture an authoritative server-side "before" snapshot & base_version
+        let authoritativePrev = previousObj || null;
+        let baseVersion = 1;
+        if (act !== 'CREATE') {
+            try {
+                const captured = await phase1.captureFullRecordSnapshot(query, {
+                    stationId: st,
+                    targetTable: tbl,
+                    targetId: tId,
+                    buildingCode: payloadObj?.building_code || previousObj?.building_code || null
+                });
+                if (captured.snapshot) {
+                    authoritativePrev = captured.snapshot;
+                    baseVersion = Number(captured.version || 1);
+                }
+            } catch (_) { }
+        }
+
+        const draftGroupKey = `${st}::${tbl}::${tId}`;
+        const existingDraftRows = actor.userId
+            ? await query(
+                `SELECT * FROM change_requests
+                 WHERE status = 'draft' AND station_id = ? AND target_table = ? AND target_id = ? AND submitted_by_user_id = ?
+                 ORDER BY id DESC LIMIT 1`,
+                [st, tbl, tId, actor.userId]
+            )
+            : [];
+        const existingDraft = existingDraftRows[0] || null;
+
+        let crId = null;
+        const nextStatus = saveAsDraft ? 'draft' : 'pending';
+        const cleanDeleteReason = deleteReason ? String(deleteReason).trim() : null;
+
+        if (existingDraft) {
+            let mergedPayload = payloadObj || {};
+            try {
+                const prevDraftPayload = existingDraft.payload_json ? JSON.parse(existingDraft.payload_json) : {};
+                if (prevDraftPayload && typeof prevDraftPayload === 'object' && !Array.isArray(prevDraftPayload)) {
+                    mergedPayload = { ...prevDraftPayload, ...(payloadObj || {}) };
+                }
+            } catch (_) { }
+            await query(`
+                UPDATE change_requests SET
+                    action = ?,
+                    summary = ?,
+                    payload_json = ?,
+                    status = ?,
+                    delete_reason = COALESCE(?, delete_reason),
+                    actor_base_role = ?,
+                    actor_effective_role = ?,
+                    submitted_by_name = ?,
+                    updated_at = NOW()
+                WHERE id = ?
+            `, [
+                act,
+                summary || existingDraft.summary || `Update ${tbl} (${tId})`,
+                JSON.stringify(mergedPayload),
+                nextStatus,
+                cleanDeleteReason,
+                actor.baseRole,
+                actor.effectiveRole,
+                actor.displayName,
+                existingDraft.id
+            ]);
+            crId = existingDraft.id;
+        } else {
+            const result = await query(`
+                INSERT INTO change_requests (
+                    station_id, target_table, target_id, action, summary,
+                    previous_json, payload_json, status, base_version, delete_reason, draft_group_key,
+                    submitted_by_email, submitted_by_user_id, submitted_by_name,
+                    actor_base_role, actor_effective_role
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `, [
+                st,
+                tbl,
+                tId,
+                act,
+                summary || `Update ${tbl} (${tId})`,
+                authoritativePrev ? JSON.stringify(authoritativePrev) : null,
+                JSON.stringify(payloadObj || {}),
+                nextStatus,
+                baseVersion,
+                cleanDeleteReason,
+                draftGroupKey,
+                actor.email || 'editor',
+                actor.userId || null,
+                actor.displayName,
+                actor.baseRole,
+                actor.effectiveRole
+            ]);
+            crId = result.insertId;
+        }
+
+        if (saveAsDraft) {
+            await logAudit('SAVE_DRAFT_CHANGE_REQUEST', 'change_requests', crId, `Saved draft #${crId} (${st.toUpperCase()} ${tbl}:${tId}): ${summary}`, req.adminUser);
+            return { id: crId, draft: true, baseVersion, notifiedReviewers: 0 };
+        }
 
         const portalUrl = `${getPublicBaseUrl(req)}/login`;
         const reviewers = await rbac.findConcernedUsers({ roles: ['reviewer', 'super_admin'], stationId: st });
         let notified = 0;
         for (const rev of reviewers) {
-            const crTargetName = extractCrTargetName(summary, payloadObj, result.insertId);
+            const crTargetName = extractCrTargetName(summary, payloadObj, crId);
             await rbac.notifyUser(rev.id, {
                 type: 'review_needed',
                 title: `Review Needed: ${crTargetName}`,
@@ -1725,13 +1867,13 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
                 station_id: st,
                 link_tab: 'review-queue',
                 target_table: 'change_requests',
-                target_id: result.insertId
+                target_id: crId
             });
             if (rev.email && rev.role_slug === 'reviewer') {
                 queueBackgroundMail({
                     to: rev.email,
                     subject: `[iGUIDE Review Needed] DA-${st.toUpperCase()}: ${summary}`,
-                    text: `Hello ${rev.full_name || 'Reviewer'},\n\nA CRUD change request for DA-${st.toUpperCase()} needs your review:\n\nSummary: ${summary}\nModule: ${targetTable} (${targetId})\nSubmitted By: ${req.adminUser.email || 'GIS Editor'}\n\nOpen iGUIDE to Approve or Deny with a comment:\n${portalUrl}`,
+                    text: `Hello ${rev.full_name || 'Reviewer'},\n\nA CRUD change request for DA-${st.toUpperCase()} needs your review:\n\nSummary: ${summary}\nModule: ${tbl} (${tId})\nSubmitted By: ${actor.displayName}\n\nOpen iGUIDE to Approve or Deny with a comment:\n${portalUrl}`,
                     html: buildWorkflowEmail({
                         role: rev.role_slug || 'reviewer',
                         headerTitle: '🌿 iGUIDE Review Queue',
@@ -1739,10 +1881,10 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
                         greeting: `Hello ${rev.full_name || 'Reviewer'},`,
                         introText: `A new change request for DA-${st.toUpperCase()} is awaiting your review:`,
                         details: [
-                            { label: 'Request #', value: `#${result.insertId}` },
+                            { label: 'Request #', value: `#${crId}` },
                             { label: 'Summary', value: summary },
-                            { label: 'Module', value: `${targetTable} (${targetId})` },
-                            { label: 'Submitted By', value: req.adminUser.email || 'GIS Editor' }
+                            { label: 'Module', value: `${tbl} (${tId})` },
+                            { label: 'Submitted By', value: actor.displayName }
                         ],
                         ctaLabel: 'Open Review Queue',
                         ctaUrl: portalUrl
@@ -1751,8 +1893,8 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
             }
             notified++;
         }
-        await logAudit('SUBMIT_CHANGE_REQUEST', 'change_requests', result.insertId, `Submitted ${st.toUpperCase()} Request #${result.insertId}: ${summary}`, req.adminUser.email || 'editor');
-        return { id: result.insertId, notifiedReviewers: notified };
+        await logAudit('SUBMIT_CHANGE_REQUEST', 'change_requests', crId, `Submitted ${st.toUpperCase()} Request #${crId}: ${summary}`, req.adminUser);
+        return { id: crId, draft: false, baseVersion, notifiedReviewers: notified };
     }
 
     router.get('/admin/change-requests', authenticateSession, authorize('reviews:view'), async (req, res) => {
@@ -1767,7 +1909,214 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
             } else {
                 rows = await query(`SELECT * FROM change_requests ORDER BY id DESC LIMIT 120`);
             }
-            res.json(rows);
+            // Hide other users' private drafts; keep caller's own drafts (or all for Super Admin)
+            const filtered = rows.filter(r => r.status !== 'draft' || req.adminUser.baseRole === 'super_admin' || Number(r.submitted_by_user_id) === Number(req.adminUser.userId));
+            const enriched = await phase1.attachConflictMetadata(query, filtered);
+            res.json(enriched);
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    router.post('/admin/change-requests/:id/submit-draft', authenticateSession, authorize('buildings:draft_change'), async (req, res) => {
+        const id = Number(req.params.id);
+        try {
+            const [cr] = await query(`SELECT * FROM change_requests WHERE id = ? LIMIT 1`, [id]);
+            if (!cr) return res.status(404).json({ error: 'Draft request not found.' });
+            if (cr.status !== 'draft') return res.status(400).json({ error: 'Only draft requests can be submitted for review.' });
+            if (req.adminUser.baseRole !== 'super_admin' && Number(cr.submitted_by_user_id) !== Number(req.adminUser.userId)) {
+                return res.status(403).json({ error: 'You can only submit your own draft.' });
+            }
+            const nextSummary = req.body?.summary ? String(req.body.summary).trim() : cr.summary;
+            await query(`UPDATE change_requests SET status = 'pending', summary = ?, updated_at = NOW() WHERE id = ?`, [nextSummary, id]);
+            const reviewers = await rbac.findConcernedUsers({ roles: ['reviewer', 'super_admin'], stationId: cr.station_id });
+            for (const rev of reviewers) {
+                const crTargetName = extractCrTargetName(nextSummary, cr.payload_json, id);
+                await rbac.notifyUser(rev.id, {
+                    type: 'review_needed',
+                    title: `Review Needed: ${crTargetName}`,
+                    message: `${nextSummary} (DA-${cr.station_id.toUpperCase()})`,
+                    station_id: cr.station_id,
+                    link_tab: 'review-queue',
+                    target_table: 'change_requests',
+                    target_id: id
+                });
+            }
+            await logAudit('SUBMIT_CHANGE_REQUEST', 'change_requests', id, `Submitted grouped draft Request #${id}: ${nextSummary}`, req.adminUser);
+            res.json({ success: true, id, status: 'pending' });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    router.post('/admin/change-requests/:id/rebase', authenticateSession, authorize('reviews:view'), async (req, res) => {
+        const id = Number(req.params.id);
+        try {
+            const [cr] = await query(`SELECT * FROM change_requests WHERE id = ? LIMIT 1`, [id]);
+            if (!cr) return res.status(404).json({ error: 'Change request not found.' });
+            if (!['draft', 'pending', 'rejected'].includes(cr.status)) {
+                return res.status(400).json({ error: `Cannot rebase a request in "${cr.status}" status.` });
+            }
+            const captured = await phase1.captureFullRecordSnapshot(query, {
+                stationId: cr.station_id,
+                targetTable: cr.target_table,
+                targetId: cr.target_id
+            });
+            if (!captured.snapshot) {
+                return res.status(404).json({ error: 'Live target record no longer exists; cannot rebase.' });
+            }
+            await query(
+                `UPDATE change_requests SET previous_json = ?, base_version = ?, updated_at = NOW() WHERE id = ?`,
+                [JSON.stringify(captured.snapshot), captured.version, id]
+            );
+            await logAudit('REBASE_CHANGE_REQUEST', 'change_requests', id, `Rebased Request #${id} onto live version v${captured.version}`, req.adminUser);
+            res.json({ success: true, id, baseVersion: captured.version });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    router.post('/admin/change-requests/:id/undo-publish', authenticateSession, authorize('changes:publish'), async (req, res) => {
+        const id = Number(req.params.id);
+        try {
+            const result = await runInTransaction(pool, async (txQuery) => {
+                const [cr] = await txQuery(`SELECT * FROM change_requests WHERE id = ? FOR UPDATE`, [id]);
+                if (!cr) {
+                    const err = new Error('Change request not found.');
+                    err.statusCode = 404;
+                    throw err;
+                }
+                if (cr.status !== 'published' || cr.undone_at) {
+                    const err = new Error('This request cannot be undone (not published or already undone).');
+                    err.statusCode = 400;
+                    throw err;
+                }
+                if (!phase1.isWithinUndoWindow(cr.published_at)) {
+                    const err = new Error('Undo window expired: published changes can only be undone within 24 hours.');
+                    err.statusCode = 400;
+                    throw err;
+                }
+                const snapRaw = cr.published_snapshot_json || cr.previous_json;
+                if (!snapRaw) {
+                    const err = new Error('No pre-publish snapshot available to undo this change.');
+                    err.statusCode = 400;
+                    throw err;
+                }
+                const preSnap = JSON.parse(snapRaw);
+                const origAction = String(cr.action || 'UPDATE').toUpperCase();
+                const undoAction = origAction === 'CREATE' ? 'DELETE' : (origAction === 'DELETE' ? 'CREATE' : 'UPDATE');
+                await applyCrudOperation(txQuery, rootDir, {
+                    stationId: cr.station_id,
+                    targetTable: cr.target_table,
+                    targetId: cr.target_id,
+                    action: undoAction,
+                    payload: preSnap,
+                    actorEmail: req.adminUser.email || 'administrator'
+                });
+                const nextVer = await phase1.bumpEntityVersion(txQuery, {
+                    stationId: cr.station_id,
+                    targetTable: cr.target_table,
+                    targetId: cr.target_id
+                });
+                await phase1.recordEntityVersion(txQuery, {
+                    stationId: cr.station_id,
+                    targetTable: cr.target_table,
+                    targetId: cr.target_id,
+                    versionNum: nextVer,
+                    action: 'UNDO_PUBLISH',
+                    summary: `Undid publish of Request #${cr.id}: ${cr.summary}`,
+                    snapshot: preSnap,
+                    changeRequestId: cr.id,
+                    source: 'undo',
+                    adminUser: req.adminUser
+                });
+                await txQuery(
+                    `UPDATE change_requests SET status = 'undone', undone_at = NOW(), undone_by_email = ? WHERE id = ?`,
+                    [req.adminUser.email || 'administrator', cr.id]
+                );
+                return { cr, version: nextVer };
+            });
+            invalidatePublicCache(`UNDO_PUBLISH Request #${id}`);
+            await logAudit('UNDO_PUBLISH', 'change_requests', id, `Undid published Request #${id} (${result.cr.target_table}:${result.cr.target_id})`, req.adminUser);
+            res.json({ success: true, id, version: result.version });
+        } catch (err) {
+            res.status(err.statusCode || 500).json({ error: err.message });
+        }
+    });
+
+    router.get('/admin/versions', authenticateSession, authorize('buildings:read'), async (req, res) => {
+        const stationId = req.adminUser.stationScope !== 'all'
+            ? req.adminUser.stationScope
+            : String(req.query.station || 'lares').toLowerCase();
+        const targetTable = String(req.query.target_table || '').trim();
+        const targetId = String(req.query.target_id || '').trim();
+        try {
+            const clauses = ['station_id = ?'];
+            const params = [stationId];
+            if (targetTable) { clauses.push('target_table = ?'); params.push(targetTable); }
+            if (targetId) { clauses.push('target_id = ?'); params.push(targetId); }
+            const rows = await query(
+                `SELECT * FROM record_versions WHERE ${clauses.join(' AND ')} ORDER BY id DESC LIMIT 60`,
+                params
+            );
+            res.json({ stationId, versions: rows });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    router.post('/admin/versions/:id/restore', authenticateSession, authorize('buildings:draft_change'), async (req, res) => {
+        const verId = Number(req.params.id);
+        try {
+            const [ver] = await query(`SELECT * FROM record_versions WHERE id = ? LIMIT 1`, [verId]);
+            if (!ver) return res.status(404).json({ error: 'Version record not found.' });
+            if (req.adminUser.stationScope !== 'all' && ver.station_id !== req.adminUser.stationScope) {
+                return res.status(403).json({ error: 'Forbidden: Version belongs to another station.' });
+            }
+            const snap = JSON.parse(ver.snapshot_json || '{}');
+            const summary = `Restore ${ver.target_table} (${ver.target_id}) to version v${ver.version_num}`;
+
+            if (hasDirectPublish(req) && ['stations', 'buildings', 'building_offices', 'agricultural_plots'].includes(ver.target_table)) {
+                await applyCrudOperation(query, rootDir, {
+                    stationId: ver.station_id,
+                    targetTable: ver.target_table,
+                    targetId: ver.target_id,
+                    action: 'UPDATE',
+                    payload: snap,
+                    actorEmail: req.adminUser.email || 'admin'
+                });
+                const nextVer = await phase1.bumpEntityVersion(query, {
+                    stationId: ver.station_id,
+                    targetTable: ver.target_table,
+                    targetId: ver.target_id
+                });
+                await phase1.recordEntityVersion(query, {
+                    stationId: ver.station_id,
+                    targetTable: ver.target_table,
+                    targetId: ver.target_id,
+                    versionNum: nextVer,
+                    action: 'RESTORE',
+                    summary,
+                    snapshot: snap,
+                    source: 'restore',
+                    adminUser: req.adminUser
+                });
+                invalidatePublicCache(`RESTORE Version #${verId}`);
+                await logAudit('RESTORE_VERSION', ver.target_table, ver.target_id, `${summary} (now v${nextVer})`, req.adminUser);
+                return res.json({ success: true, published: true, version: nextVer });
+            }
+
+            const staged = await stageChangeRequest({
+                req,
+                stationId: ver.station_id,
+                targetTable: ver.target_table,
+                targetId: ver.target_id,
+                action: 'UPDATE',
+                summary,
+                payloadObj: snap
+            });
+            await logAudit('REQUEST_RESTORE_VERSION', ver.target_table, ver.target_id, `Queued audited restore from v${ver.version_num} as Request #${staged.id}`, req.adminUser);
+            res.json({ success: true, queuedForReview: true, changeRequestId: staged.id });
         } catch (err) {
             res.status(500).json({ error: err.message });
         }
@@ -1867,8 +2216,9 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
 
     router.post('/admin/change-requests/:id/publish', authenticateSession, authorize('changes:publish'), async (req, res) => {
         const crId = Number(req.params.id);
+        const overrideReason = String(req.body?.override_reason || req.body?.overrideReason || '').trim();
         try {
-            const { cr, txResult } = await runInTransaction(pool, async (txQuery) => {
+            const { cr, txResult, selfOverrideUsed } = await runInTransaction(pool, async (txQuery) => {
                 const [lockedCr] = await txQuery(`SELECT * FROM change_requests WHERE id = ? FOR UPDATE`, [crId]);
                 if (!lockedCr) {
                     const err = new Error('Change request not found.');
@@ -1884,6 +2234,31 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
                     err.statusCode = lockedCr.status === 'published' ? 409 : 400;
                     throw err;
                 }
+
+                // 1.4 Self-publish guard (Super Admin can override only with written reason)
+                const selfCheck = phase1.evaluateSelfActionGuard({
+                    submittedByUserId: lockedCr.submitted_by_user_id,
+                    submittedByEmail: lockedCr.submitted_by_email,
+                    actorUser: req.adminUser,
+                    overrideReason,
+                    actionLabel: 'publish'
+                });
+                if (!selfCheck.allowed) {
+                    const err = new Error(selfCheck.error);
+                    err.statusCode = selfCheck.statusCode || 403;
+                    throw err;
+                }
+
+                // Capture pre-publish live snapshot for 24h Undo Publish
+                let prePublishSnapshot = null;
+                try {
+                    const snap = await phase1.captureFullRecordSnapshot(txQuery, {
+                        stationId: lockedCr.station_id,
+                        targetTable: lockedCr.target_table,
+                        targetId: lockedCr.target_id
+                    });
+                    prePublishSnapshot = snap.snapshot;
+                } catch (_) { }
 
                 let parsedPayload = {};
                 try {
@@ -1938,9 +2313,16 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
                     }
                 }
 
+                const pubMeta = phase1.formatActorAuditMeta(req.adminUser);
                 const updRes = await txQuery(
-                    `UPDATE change_requests SET status = 'published', published_by_email = ?, published_at = NOW() WHERE id = ? AND status = 'approved'`,
-                    [req.adminUser.email || 'administrator', lockedCr.id]
+                    `UPDATE change_requests SET status = 'published', published_by_email = ?, published_by_name = ?, published_at = NOW(), published_snapshot_json = ?, override_reason = COALESCE(?, override_reason) WHERE id = ? AND status = 'approved'`,
+                    [
+                        pubMeta.email,
+                        pubMeta.displayName,
+                        prePublishSnapshot ? JSON.stringify(prePublishSnapshot) : lockedCr.previous_json,
+                        selfCheck.overridden ? selfCheck.overrideReason : null,
+                        lockedCr.id
+                    ]
                 );
                 if (!updRes || Number(updRes.affectedRows) !== 1) {
                     const err = new Error('Concurrent publish conflict: request was already claimed.');
@@ -1956,13 +2338,35 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
                         targetId: lockedCr.target_id,
                         action: lockedCr.action,
                         payload: parsedPayload,
-                        actorEmail: req.adminUser.email || 'admin'
+                        actorEmail: pubMeta.email
+                    });
+                    const newVer = await phase1.bumpEntityVersion(txQuery, {
+                        stationId: lockedCr.station_id,
+                        targetTable: lockedCr.target_table,
+                        targetId: lockedCr.target_id
+                    });
+                    const postSnap = await phase1.captureFullRecordSnapshot(txQuery, {
+                        stationId: lockedCr.station_id,
+                        targetTable: lockedCr.target_table,
+                        targetId: lockedCr.target_id
+                    });
+                    await phase1.recordEntityVersion(txQuery, {
+                        stationId: lockedCr.station_id,
+                        targetTable: lockedCr.target_table,
+                        targetId: lockedCr.target_id,
+                        versionNum: newVer,
+                        action: lockedCr.action,
+                        summary: lockedCr.summary,
+                        snapshot: postSnap.snapshot || parsedPayload,
+                        changeRequestId: lockedCr.id,
+                        source: 'portal',
+                        adminUser: req.adminUser
                     });
                 } else {
                     const ver = await bumpDataVersion(txQuery);
                     applyResult = { applied: false, note: 'Text-only change marked published', dataVersion: ver };
                 }
-                return { cr: lockedCr, txResult: applyResult };
+                return { cr: lockedCr, txResult: applyResult, selfOverrideUsed: selfCheck.overridden ? selfCheck.overrideReason : '' };
             });
 
             invalidatePublicCache(`PUBLISH Request #${cr.id}`);
@@ -2015,7 +2419,8 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
                 });
             }
 
-            await logAudit('PUBLISH_CHANGE_REQUEST', 'change_requests', cr.id, `Published Request #${cr.id} (${cr.target_table}:${cr.target_id}) to live DB`, req.adminUser.email || 'admin');
+            const overrideNote = selfOverrideUsed ? ` [Super Admin Self-Override: ${selfOverrideUsed}]` : '';
+            await logAudit('PUBLISH_CHANGE_REQUEST', 'change_requests', cr.id, `Published Request #${cr.id} (${cr.target_table}:${cr.target_id}) to live DB${overrideNote}`, req.adminUser);
             res.json({ success: true, ...txResult });
         } catch (err) {
             res.status(err.statusCode || 500).json({ error: err.message });
@@ -2028,26 +2433,28 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
             : (req.query.station || 'lares').toLowerCase();
         try {
             const rows = await query(
-                `SELECT * FROM change_requests WHERE station_id = ? ORDER BY FIELD(status, 'pending', 'rejected', 'approved', 'published'), id DESC`,
+                `SELECT * FROM change_requests WHERE station_id = ? AND status <> 'draft' ORDER BY FIELD(status, 'pending', 'rejected', 'approved', 'published', 'undone'), id DESC`,
                 [stationId]
             );
-            res.json({ stationId, requests: rows });
+            const enriched = await phase1.attachConflictMetadata(query, rows);
+            res.json({ stationId, requests: enriched });
         } catch (err) {
             res.status(500).json({ error: err.message });
         }
     });
 
     router.post('/review/requests/:id/decide', authenticateSession, authorize('reviews:decide', { checkStation: true }), async (req, res) => {
-        const { decision, comment } = req.body || {};
+        const { decision, comment, override_reason, overrideReason } = req.body || {};
         if (!['approved', 'rejected'].includes(decision)) {
             return res.status(400).json({ error: 'Decision must be approved or rejected.' });
         }
         const cleanComment = String(comment || '').trim();
+        const cleanOverride = String(override_reason || overrideReason || '').trim();
         if (decision === 'rejected' && !cleanComment) {
             return res.status(400).json({ error: 'A review comment explaining what to change is required when denying.' });
         }
         try {
-            const cr = await runInTransaction(pool, async (txQuery) => {
+            const { cr, overrideNotes } = await runInTransaction(pool, async (txQuery) => {
                 const [lockedCr] = await txQuery(`SELECT * FROM change_requests WHERE id = ? FOR UPDATE`, [req.params.id]);
                 if (!lockedCr) {
                     const err = new Error('Change request not found.');
@@ -2064,18 +2471,59 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
                     err.statusCode = 409;
                     throw err;
                 }
+
+                const collectedOverrides = [];
+                if (decision === 'approved') {
+                    // 1.4 Self-approval guard
+                    const selfCheck = phase1.evaluateSelfActionGuard({
+                        submittedByUserId: lockedCr.submitted_by_user_id,
+                        submittedByEmail: lockedCr.submitted_by_email,
+                        actorUser: req.adminUser,
+                        overrideReason: cleanOverride,
+                        actionLabel: 'approve'
+                    });
+                    if (!selfCheck.allowed) {
+                        const err = new Error(selfCheck.error);
+                        err.statusCode = selfCheck.statusCode || 403;
+                        throw err;
+                    }
+                    if (selfCheck.overridden) collectedOverrides.push(`Self-override: ${selfCheck.overrideReason}`);
+
+                    // 1.2 Stale base_version guard
+                    const snap = await phase1.captureFullRecordSnapshot(txQuery, {
+                        stationId: lockedCr.station_id,
+                        targetTable: lockedCr.target_table,
+                        targetId: lockedCr.target_id
+                    });
+                    const staleCheck = phase1.evaluateStaleBaseGuard({
+                        baseVersion: lockedCr.base_version,
+                        liveVersion: snap.version,
+                        action: lockedCr.action,
+                        overrideReason: cleanOverride
+                    });
+                    if (!staleCheck.allowed) {
+                        const err = new Error(staleCheck.error);
+                        err.statusCode = staleCheck.statusCode || 409;
+                        throw err;
+                    }
+                    if (staleCheck.overridden) collectedOverrides.push(`Stale-base override: ${staleCheck.overrideReason}`);
+                }
+
+                const revMeta = phase1.formatActorAuditMeta(req.adminUser);
+                const overrideText = collectedOverrides.length ? collectedOverrides.join(' | ') : null;
                 const upd = await txQuery(
-                    `UPDATE change_requests SET status = ?, reviewer_comment = ?, reviewed_by_email = ?, reviewed_by_user_id = ?, reviewed_at = NOW() WHERE id = ? AND status = 'pending'`,
-                    [decision, cleanComment, req.adminUser.email || 'reviewer', req.adminUser.userId || null, lockedCr.id]
+                    `UPDATE change_requests SET status = ?, reviewer_comment = ?, reviewed_by_email = ?, reviewed_by_user_id = ?, reviewed_by_name = ?, override_reason = COALESCE(?, override_reason), reviewed_at = NOW() WHERE id = ? AND status = 'pending'`,
+                    [decision, cleanComment, revMeta.email, revMeta.userId, revMeta.displayName, overrideText, lockedCr.id]
                 );
                 if (!upd || Number(upd.affectedRows) !== 1) {
                     const err = new Error('Concurrent decision conflict: request already updated.');
                     err.statusCode = 409;
                     throw err;
                 }
-                return lockedCr;
+                return { cr: lockedCr, overrideNotes: overrideText };
             });
-            await logAudit(`REVIEW_${decision.toUpperCase()}`, 'change_requests', cr.id, `${cr.station_id.toUpperCase()} #${cr.id} ${decision}: ${cleanComment}`, req.adminUser.email || 'reviewer');
+            const auditExtra = overrideNotes ? ` [${overrideNotes}]` : '';
+            await logAudit(`REVIEW_${decision.toUpperCase()}`, 'change_requests', cr.id, `${cr.station_id.toUpperCase()} #${cr.id} ${decision}: ${cleanComment}${auditExtra}`, req.adminUser);
 
             const portalUrl = `${getPublicBaseUrl(req)}/login`;
             // 1. Always notify the submitting GIS Editor
@@ -2164,8 +2612,8 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
         }
     });
 
-    // Station Reviewer proactive "Suggest Change / Flag Concern" -> routed to station GIS Editor(s)
-    router.post('/review/suggest-change', authenticateSession, authorize('reviews:decide', { checkStation: true }), async (req, res) => {
+    // Station Reviewer & Administrator proactive "Suggest Change / Recommend Update" -> routed to station GIS Editor(s)
+    router.post('/review/suggest-change', authenticateSession, authorize('reviews:suggest', { checkStation: true }), async (req, res) => {
         const b = req.body || {};
         const stationId = String(b.station_id || req.adminUser.stationId || 'lares').trim().toLowerCase();
         const entityType = String(b.entity_type || '').trim().toLowerCase(); // 'building' | 'office' | 'plot'
@@ -2485,6 +2933,15 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
                     return res.status(403).json({ error: 'Only Super Admin can toggle live deployment status.' });
                 }
             }
+            if (b.require_publish_for_map_editors !== undefined) {
+                if (!(req.adminUser.permissions || []).includes('changes:publish')) {
+                    return res.status(403).json({ error: 'Only Administrator or Super Admin can change the map-editor publish gate.' });
+                }
+                await query(
+                    `UPDATE stations SET require_publish_for_map_editors = ? WHERE station_id = ?`,
+                    [b.require_publish_for_map_editors ? 1 : 0, sId]
+                );
+            }
             if (hasDirectPublish(req)) {
                 await applyCrudOperation(query, rootDir, {
                     stationId: sId,
@@ -2494,11 +2951,20 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
                     payload: b,
                     actorEmail: req.adminUser.email || 'admin'
                 });
+                const nextVer = await phase1.bumpEntityVersion(query, { stationId: sId, targetTable: 'stations', targetId: sId });
+                const [updated] = await query(`SELECT * FROM stations WHERE station_id = ?`, [sId]);
+                await phase1.recordEntityVersion(query, {
+                    stationId: sId, targetTable: 'stations', targetId: sId,
+                    versionNum: nextVer, action: 'UPDATE',
+                    summary: statusChanged
+                        ? `Set DA-${sId.toUpperCase()} visibility to ${b.status === 'live' ? 'Live on Public Map' : 'Under Development'}`
+                        : `Updated station settings & kiosk pin (${sId.toUpperCase()})`,
+                    snapshot: updated || b, source: 'portal', adminUser: req.adminUser
+                });
                 const auditSummary = statusChanged
                     ? `Set DA-${sId.toUpperCase()} visibility to ${b.status === 'live' ? 'Live on Public Map' : 'Under Development'}`
                     : `Updated station ${sId}`;
-                await logAudit('UPDATE_STATION', 'stations', sId, auditSummary, req.adminUser.email || 'admin');
-                const [updated] = await query(`SELECT * FROM stations WHERE station_id = ?`, [sId]);
+                await logAudit('UPDATE_STATION', 'stations', sId, auditSummary, req.adminUser);
                 return res.json({ success: true, published: true, station: updated });
             }
             const staged = await stageChangeRequest({
@@ -2637,25 +3103,23 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
                 await applyCrudOperation(query, rootDir, {
                     stationId: prev.station_id, targetTable: 'buildings', targetId: id, action: 'UPDATE', payload: pubPayload, actorEmail: req.adminUser.email || 'admin'
                 });
-                await logAudit('UPDATE_BUILDING', 'buildings', prev.building_code, `Updated building "${b.name}"`, req.adminUser.email || 'admin');
-                return res.json({ success: true, published: true });
+                const nextVer = await phase1.bumpEntityVersion(query, { stationId: prev.station_id, targetTable: 'buildings', targetId: id });
+                const postSnap = await phase1.captureFullRecordSnapshot(query, { stationId: prev.station_id, targetTable: 'buildings', targetId: id });
+                await phase1.recordEntityVersion(query, {
+                    stationId: prev.station_id, targetTable: 'buildings', targetId: id,
+                    versionNum: nextVer, action: 'UPDATE', summary: `Updated building "${b.name || prev.name}"`,
+                    snapshot: postSnap.snapshot || pubPayload, source: 'portal', adminUser: req.adminUser
+                });
+                await logAudit('UPDATE_BUILDING', 'buildings', prev.building_code, `Updated building "${b.name}"`, req.adminUser);
+                return res.json({ success: true, published: true, version: nextVer });
             }
-            const liveImgs = await query(
-                `SELECT id, image_webp_url, caption, display_order, is_primary FROM building_images WHERE station_id = ? AND building_code = ? ORDER BY is_primary DESC, display_order ASC, id ASC`,
-                [prev.station_id, prev.building_code]
-            );
-            const [modeRow] = await query('SELECT `value` FROM settings WHERE `key` = ? LIMIT 1', [`gallery_mode_${prev.station_id}_${prev.building_code}`]);
-            const prevWithMedia = {
-                ...prev,
-                images: liveImgs || [],
-                gallery_mode: (modeRow && (modeRow.value === 'carousel' || modeRow.value === 'slider')) ? modeRow.value : 'slider'
-            };
             const staged = await stageChangeRequest({
                 req, stationId: prev.station_id, targetTable: 'buildings', targetId: id, action: 'UPDATE',
                 summary: b.review_summary || `Update Building "${b.name || prev.name}"`,
-                previousObj: prevWithMedia, payloadObj: b
+                payloadObj: b,
+                saveAsDraft: wantsSaveDraft
             });
-            res.json({ success: true, queuedForReview: true, unmapped: !hasGeomAfter, changeRequestId: staged.id, notifiedReviewers: staged.notifiedReviewers });
+            res.json({ success: true, queuedForReview: !wantsSaveDraft, draft: wantsSaveDraft, unmapped: !hasGeomAfter, changeRequestId: staged.id, notifiedReviewers: staged.notifiedReviewers });
         } catch (err) {
             res.status(500).json({ error: err.message });
         }
@@ -2663,6 +3127,8 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
 
     router.delete('/admin/buildings/:id', authenticateSession, authorize('buildings:draft_change', { checkStation: true }), async (req, res) => {
         const id = Number(req.params.id);
+        const delCheck = phase1.validateDeleteReason(req.body?.delete_reason || req.body?.reason || req.query?.reason);
+        if (!delCheck.valid) return res.status(400).json({ error: delCheck.error });
         try {
             const [prev] = await query(`SELECT * FROM buildings WHERE id = ? LIMIT 1`, [id]);
             if (!prev) return res.status(404).json({ error: 'Building not found.' });
@@ -2670,16 +3136,23 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
                 return res.status(403).json({ error: 'Forbidden: Building belongs to another station.' });
             }
             if (hasDirectPublish(req)) {
+                const snap = await phase1.captureFullRecordSnapshot(query, { stationId: prev.station_id, targetTable: 'buildings', targetId: id });
+                await phase1.recordEntityVersion(query, {
+                    stationId: prev.station_id, targetTable: 'buildings', targetId: id,
+                    versionNum: snap.version, action: 'DELETE', summary: `Deleted "${prev.name}" (Reason: ${delCheck.reason})`,
+                    snapshot: snap.snapshot || prev, source: 'portal', adminUser: req.adminUser
+                });
                 await applyCrudOperation(query, rootDir, {
                     stationId: prev.station_id, targetTable: 'buildings', targetId: id, action: 'DELETE', payload: prev, actorEmail: req.adminUser.email || 'admin'
                 });
-                await logAudit('DELETE_BUILDING', 'buildings', prev.building_code, `Deleted building "${prev.name}"`, req.adminUser.email || 'admin');
+                await logAudit('DELETE_BUILDING', 'buildings', prev.building_code, `Deleted building "${prev.name}" — Reason: ${delCheck.reason}`, req.adminUser);
                 return res.json({ success: true, published: true });
             }
             const staged = await stageChangeRequest({
                 req, stationId: prev.station_id, targetTable: 'buildings', targetId: id, action: 'DELETE',
                 summary: `Delete Building "${prev.name}" (${prev.building_code})`,
-                previousObj: prev, payloadObj: { id, building_code: prev.building_code, name: prev.name }
+                previousObj: prev, payloadObj: { id, building_code: prev.building_code, name: prev.name, delete_reason: delCheck.reason },
+                deleteReason: delCheck.reason
             });
             res.json({ success: true, queuedForReview: true, changeRequestId: staged.id, notifiedReviewers: staged.notifiedReviewers });
         } catch (err) {
@@ -2836,6 +3309,8 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
 
     router.delete('/admin/building-images/:id', authenticateSession, authorize('buildings:draft_change', { checkStation: true }), async (req, res) => {
         const id = Number(req.params.id);
+        const delCheck = phase1.validateDeleteReason(req.body?.delete_reason || req.body?.reason || req.query?.reason);
+        if (!delCheck.valid) return res.status(400).json({ error: delCheck.error });
         try {
             const [row] = await query(`SELECT * FROM building_images WHERE id = ?`, [id]);
             if (!row) return res.status(404).json({ error: 'Image not found' });
@@ -2846,13 +3321,14 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
                 await applyCrudOperation(query, rootDir, {
                     stationId: row.station_id, targetTable: 'building_images', targetId: id, action: 'DELETE', payload: row, actorEmail: req.adminUser.email || 'admin'
                 });
-                await logAudit('DELETE_BUILDING_IMAGE', 'building_images', row.building_code, `Removed photo "${row.image_webp_url}"`, req.adminUser.email || 'admin');
+                await logAudit('DELETE_BUILDING_IMAGE', 'building_images', row.building_code, `Removed photo "${row.image_webp_url}" — Reason: ${delCheck.reason}`, req.adminUser);
                 return res.json({ success: true, published: true });
             }
             const staged = await stageChangeRequest({
                 req, stationId: row.station_id, targetTable: 'building_images', targetId: id, action: 'DELETE',
                 summary: `Remove Photo "${row.image_webp_url}" from ${row.building_code}`,
-                previousObj: row, payloadObj: { id, building_code: row.building_code, image_webp_url: row.image_webp_url }
+                previousObj: row, payloadObj: { id, building_code: row.building_code, image_webp_url: row.image_webp_url, delete_reason: delCheck.reason },
+                deleteReason: delCheck.reason
             });
             res.json({ success: true, queuedForReview: true, changeRequestId: staged.id, notifiedReviewers: staged.notifiedReviewers });
         } catch (err) {
@@ -2939,6 +3415,8 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
 
     router.delete('/admin/offices/:id', authenticateSession, authorize('offices:draft_change', { checkStation: true }), async (req, res) => {
         const id = Number(req.params.id);
+        const delCheck = phase1.validateDeleteReason(req.body?.delete_reason || req.body?.reason || req.query?.reason);
+        if (!delCheck.valid) return res.status(400).json({ error: delCheck.error });
         try {
             const [prev] = await query(`SELECT * FROM building_offices WHERE id = ? LIMIT 1`, [id]);
             if (!prev) return res.status(404).json({ error: 'Office not found.' });
@@ -2946,16 +3424,22 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
                 return res.status(403).json({ error: 'Forbidden: Office belongs to another station.' });
             }
             if (hasDirectPublish(req)) {
+                await phase1.recordEntityVersion(query, {
+                    stationId: prev.station_id, targetTable: 'building_offices', targetId: id,
+                    versionNum: Number(prev.version || 1), action: 'DELETE', summary: `Removed office "${prev.office_name}" (Reason: ${delCheck.reason})`,
+                    snapshot: prev, source: 'portal', adminUser: req.adminUser
+                });
                 await applyCrudOperation(query, rootDir, {
                     stationId: prev.station_id, targetTable: 'building_offices', targetId: id, action: 'DELETE', payload: prev, actorEmail: req.adminUser.email || 'admin'
                 });
-                await logAudit('DELETE_OFFICE', 'building_offices', prev.building_code, `Removed office "${prev.office_name}"`, req.adminUser.email || 'admin');
+                await logAudit('DELETE_OFFICE', 'building_offices', prev.building_code, `Removed office "${prev.office_name}" — Reason: ${delCheck.reason}`, req.adminUser);
                 return res.json({ success: true, published: true });
             }
             const staged = await stageChangeRequest({
                 req, stationId: prev.station_id, targetTable: 'building_offices', targetId: id, action: 'DELETE',
                 summary: `Remove Office "${prev.office_name}" from ${prev.building_code}`,
-                previousObj: prev, payloadObj: { id, office_name: prev.office_name, building_code: prev.building_code }
+                previousObj: prev, payloadObj: { id, office_name: prev.office_name, building_code: prev.building_code, delete_reason: delCheck.reason },
+                deleteReason: delCheck.reason
             });
             res.json({ success: true, queuedForReview: true, changeRequestId: staged.id, notifiedReviewers: staged.notifiedReviewers });
         } catch (err) {
@@ -3082,6 +3566,8 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
 
     router.delete('/admin/plots/:id', authenticateSession, authorize('plots:draft_change', { checkStation: true }), async (req, res) => {
         const id = Number(req.params.id);
+        const delCheck = phase1.validateDeleteReason(req.body?.delete_reason || req.body?.reason || req.query?.reason);
+        if (!delCheck.valid) return res.status(400).json({ error: delCheck.error });
         try {
             const [prev] = await query(`SELECT * FROM agricultural_plots WHERE id = ? LIMIT 1`, [id]);
             if (!prev) return res.status(404).json({ error: 'Plot not found.' });
@@ -3089,16 +3575,23 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
                 return res.status(403).json({ error: 'Forbidden: Plot belongs to another station.' });
             }
             if (hasDirectPublish(req)) {
+                const snap = await phase1.captureFullRecordSnapshot(query, { stationId: prev.station_id, targetTable: 'agricultural_plots', targetId: id });
+                await phase1.recordEntityVersion(query, {
+                    stationId: prev.station_id, targetTable: 'agricultural_plots', targetId: id,
+                    versionNum: snap.version, action: 'DELETE', summary: `Deleted plot "${prev.zone_name}" (Reason: ${delCheck.reason})`,
+                    snapshot: snap.snapshot || prev, source: 'portal', adminUser: req.adminUser
+                });
                 await applyCrudOperation(query, rootDir, {
                     stationId: prev.station_id, targetTable: 'agricultural_plots', targetId: id, action: 'DELETE', payload: prev, actorEmail: req.adminUser.email || 'admin'
                 });
-                await logAudit('DELETE_PLOT', 'agricultural_plots', prev.plot_code, `Deleted plot "${prev.zone_name}"`, req.adminUser.email || 'admin');
+                await logAudit('DELETE_PLOT', 'agricultural_plots', prev.plot_code, `Deleted plot "${prev.zone_name}" — Reason: ${delCheck.reason}`, req.adminUser);
                 return res.json({ success: true, published: true });
             }
             const staged = await stageChangeRequest({
                 req, stationId: prev.station_id, targetTable: 'agricultural_plots', targetId: id, action: 'DELETE',
                 summary: `Delete Plot "${prev.zone_name}" (${prev.plot_code})`,
-                previousObj: prev, payloadObj: { id, plot_code: prev.plot_code, zone_name: prev.zone_name }
+                previousObj: prev, payloadObj: { id, plot_code: prev.plot_code, zone_name: prev.zone_name, delete_reason: delCheck.reason },
+                deleteReason: delCheck.reason
             });
             res.json({ success: true, queuedForReview: true, changeRequestId: staged.id, notifiedReviewers: staged.notifiedReviewers });
         } catch (err) {
