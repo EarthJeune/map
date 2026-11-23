@@ -4,7 +4,10 @@
   "main": "index.js",
   "scripts": {
     "stress-test": "node tools/stress_test.mjs",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "migrate": "node database/migrations/migrate.mjs up",
+    "migrate:rollback": "node database/migrations/migrate.mjs down",
+    "migrate:status": "node database/migrations/migrate.mjs status",
+    "test": "node --test tools/tests/*.test.mjs"
   },
   "keywords": [],
   "author": "",
