@@ -481,6 +481,12 @@ function computeWordDiff(pastText, newText) {
 
 function renderCrStepper(cr) {
     const st = String(cr.status || 'pending').toLowerCase();
+    if (st === 'denied') {
+        return `<div class="cr-progress-strip" aria-label="Request progress"><span class="cr-progress-step is-done">Draft</span><span class="cr-progress-step is-done">In review</span><span class="cr-progress-step is-revision">Denied (Closed)</span></div>`;
+    }
+    if (st === 'withdrawn') {
+        return `<div class="cr-progress-strip" aria-label="Request progress"><span class="cr-progress-step is-done">Draft</span><span class="cr-progress-step">Withdrawn</span></div>`;
+    }
     const steps = [
         { id: 'draft', label: 'Draft' },
         { id: 'pending', label: 'In review' },
@@ -1757,12 +1763,20 @@ function renderCrDiffSummaryChips(cr) {
         if (isGeom) {
             return `<span class="cr-diff-chip geom"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/></svg> ${escapeHtml(d.label)}</span>`;
         }
-        if (isPhoto) {
-            return `<span class="cr-diff-chip photo"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg> ${escapeHtml(d.label)}</span>`;
+        if (isPhoto || d.key === 'images') {
+            let photoLabel = d.label;
+            if (d.key === 'images') {
+                const bCount = Array.isArray(d.rawBefore) ? d.rawBefore.length : 0;
+                const aCount = Array.isArray(d.rawAfter) ? d.rawAfter.length : 0;
+                if (aCount > bCount) photoLabel = `Photos: +${aCount - bCount} added (${aCount} total)`;
+                else if (aCount < bCount) photoLabel = `Photos: ${bCount - aCount} removed (${aCount} total)`;
+                else photoLabel = `Photos updated (${aCount} total)`;
+            }
+            return `<span class="cr-diff-chip photo"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg> ${escapeHtml(photoLabel)}</span>`;
         }
         const rawAfter = String(d.afterVal || '(cleared)');
-        const shortAfter = rawAfter.length > 48 ? rawAfter.slice(0, 46).trimEnd() + '…' : rawAfter;
-        return `<span class="cr-diff-chip"><strong>${escapeHtml(d.label)}:</strong> ${escapeHtml(shortAfter)}</span>`;
+        const shortAfter = rawAfter.length > 64 ? rawAfter.slice(0, 62).trimEnd() + '…' : rawAfter;
+        return `<span class="cr-diff-chip" title="${escapeHtml(`${d.label}: ${rawAfter}`)}"><strong>${escapeHtml(d.label)}:</strong> ${escapeHtml(shortAfter)}</span>`;
     }).join('') + (diffRows.length > 4 ? `<span class="cr-diff-chip">+${diffRows.length - 4} more</span>` : '');
 }
 
@@ -1881,8 +1895,8 @@ function renderCrListTable() {
                                     </div>
                                 ` : ''}
                                 ${r.reviewer_comment ? `
-                                    <div style="padding:7px 10px; border-radius:8px; font-size:11.5px; ${r.status === 'rejected' ? 'background:rgba(244,63,94,0.12); color:#fda4af; border:1px solid rgba(244,63,94,0.3);' : 'background:rgba(16,185,129,0.10); color:#6ee7b7;'}">
-                                        <strong>Reviewer Feedback:</strong>
+                                    <div style="padding:7px 10px; border-radius:8px; font-size:11.5px; ${['rejected', 'denied'].includes(r.status) ? 'background:rgba(244,63,94,0.12); color:#fda4af; border:1px solid rgba(244,63,94,0.3);' : 'background:rgba(16,185,129,0.10); color:#6ee7b7;'}">
+                                        <strong>${r.status === 'denied' ? 'Denial Reason:' : 'Reviewer Feedback:'}</strong>
                                         ${fb.items.length > 0 ? `<ul style="margin:4px 0 0 18px; padding:0;">${fb.items.map(it => `<li>${escapeHtml(it)}</li>`).join('')}</ul>` : ''}
                                         ${fb.note ? `<div style="margin-top:3px;">${escapeHtml(fb.note)}</div>` : ''}
                                     </div>
@@ -1895,6 +1909,11 @@ function renderCrListTable() {
                                 ${r.status === 'draft' && canRevise ? `
                                     <button type="button" class="btn btn-emerald btn-sm" style="width:100%; justify-content:center;" onclick="submitDraftRequestNow(${r.id})">
                                         Submit Draft for Review →
+                                    </button>
+                                ` : ''}
+                                ${['draft', 'pending'].includes(r.status) && canRevise && (PortalState.baseRole === 'super_admin' || String(r.submitted_by_email || '').toLowerCase() === String(PortalState.email || '').toLowerCase()) ? `
+                                    <button type="button" class="btn btn-secondary btn-sm" style="width:100%; justify-content:center;" onclick="withdrawChangeRequestNow(${r.id})">
+                                        Withdraw Request
                                     </button>
                                 ` : ''}
                                 ${r.is_stale_base && ['draft', 'pending', 'rejected'].includes(r.status) ? `
@@ -1970,13 +1989,16 @@ function renderCrListTable() {
                         <td>
                             <div style="font-size:12px; color:#94a3b8;">By: <strong style="color:#cbd5e1;">${escapeHtml(r.submitted_by_email || 'editor')}</strong></div>
                             ${r.reviewer_comment ? `
-                                <div style="margin-top:5px; padding:5px 8px; border-radius:7px; font-size:11.5px; ${r.status === 'rejected' ? 'background:rgba(244,63,94,0.12); color:#fda4af; border:1px solid rgba(244,63,94,0.3);' : 'background:rgba(16,185,129,0.10); color:#6ee7b7;'}">
-                                    <strong>Reviewer:</strong> "${escapeHtml(r.reviewer_comment)}"
+                                <div style="margin-top:5px; padding:5px 8px; border-radius:7px; font-size:11.5px; ${['rejected', 'denied'].includes(r.status) ? 'background:rgba(244,63,94,0.12); color:#fda4af; border:1px solid rgba(244,63,94,0.3);' : 'background:rgba(16,185,129,0.10); color:#6ee7b7;'}">
+                                    <strong>${r.status === 'denied' ? 'Denied:' : 'Reviewer:'}</strong> "${escapeHtml(r.reviewer_comment)}"
                                 </div>` : ''}
                         </td>
                         <td>
                             <div class="action-cell">
                                 <button type="button" class="btn btn-secondary btn-sm" onclick="openCrDiffModal(${r.id})">${SVG_ICONS.map} <span>Inspect Visual Diff</span></button>
+                                ${['draft', 'pending'].includes(r.status) && canRevise && (PortalState.baseRole === 'super_admin' || String(r.submitted_by_email || '').toLowerCase() === String(PortalState.email || '').toLowerCase()) ? `
+                                    <button type="button" class="btn btn-secondary btn-sm" onclick="withdrawChangeRequestNow(${r.id})">Withdraw</button>
+                                ` : ''}
                                 ${r.status === 'pending' && canDecide ? `
                                     <button type="button" class="btn btn-emerald btn-sm" onclick="openCrDiffModal(${r.id}, 'review')">Review →</button>
                                 ` : ''}
@@ -2108,6 +2130,46 @@ export async function renderReviewQueueTab(container) {
     }
     await renderChangeRequestWorkspace(container, { isReviewerView: true });
 }
+
+window.openAerialCampusLocatorModal = async () => {
+    const st = PortalState.currentStation || 'lares';
+    try {
+        await ensureStationOverviewLoaded(st);
+        const mapHtml = renderSpatialContextMapHtml({
+            stageId: 'global-aerial-locator',
+            overview: lastOverviewData,
+            compact: false
+        });
+        openGovModal({
+            title: `Aerial Campus Locator — DA-${st.toUpperCase()}`,
+            maxWidth: '1080px',
+            bodyHtml: mapHtml,
+            footerHtml: `<button type="button" class="btn btn-secondary" onclick="closeGovModal()">Close</button>`
+        });
+        bindSpatialSvgPanZoom('global-aerial-locator');
+    } catch (err) {
+        showToast(err.message || 'Could not load Aerial Campus Locator.');
+    }
+};
+
+window.withdrawChangeRequestNow = async (id) => {
+    const ok = await showPortalConfirm({
+        title: `Withdraw Request #${id}?`,
+        message: 'Cancel this submission and remove it from the active review queue? It will remain recorded in All History.',
+        confirmLabel: 'Withdraw Request',
+        cancelLabel: 'Keep Request',
+        danger: true
+    });
+    if (!ok) return;
+    try {
+        await apiFetch(`/api/admin/change-requests/${id}/withdraw`, { method: 'POST', body: '{}' });
+        broadcastDbSync();
+        showToast(`Request #${id} withdrawn.`);
+        if (currentCrContainer) await renderChangeRequestWorkspace(currentCrContainer, { isReviewerView: currentIsReviewerView });
+    } catch (err) {
+        showToast(err.message);
+    }
+};
 
 window.submitDraftRequestNow = async (id) => {
     const ok = await showPortalConfirm({
@@ -2303,7 +2365,8 @@ window.openCrDiffModal = async (crId, focusMode = '') => {
     let footerHtml = `<button type="button" class="btn btn-secondary" onclick="closeGovModal()">Close</button>`;
     if (canDecide) {
         footerHtml += `
-            <button type="button" class="btn btn-danger" id="cr-modal-deny-btn">Deny (Request Revision)</button>
+            <button type="button" class="btn btn-danger" id="cr-modal-deny-close-btn">Deny (No Revision)</button>
+            <button type="button" class="btn btn-secondary" id="cr-modal-deny-btn" style="border-color:rgba(245,158,11,0.45); color:#f59e0b;">Request Revision</button>
             <button type="button" class="btn btn-emerald" id="cr-modal-approve-btn">Approve for Publishing</button>
         `;
     }
@@ -2327,8 +2390,8 @@ window.openCrDiffModal = async (crId, focusMode = '') => {
             </div>
 
             ${cr.reviewer_comment ? `
-                <div class="alert-revision-card" style="${cr.status !== 'rejected' ? 'background:rgba(16,185,129,0.10); border-color:rgba(52,211,153,0.32);' : ''}">
-                    <strong style="color:${cr.status === 'rejected' ? '#fda4af' : '#34d399'}; font-size:12.5px;">Reviewer Comment (${escapeHtml(cr.reviewed_by_email || 'Reviewer')}):</strong>
+                <div class="alert-revision-card" style="${!['rejected', 'denied'].includes(cr.status) ? 'background:rgba(16,185,129,0.10); border-color:rgba(52,211,153,0.32);' : ''}">
+                    <strong style="color:${['rejected', 'denied'].includes(cr.status) ? '#fda4af' : '#34d399'}; font-size:12.5px;">${cr.status === 'denied' ? 'Denial Reason' : 'Reviewer Comment'} (${escapeHtml(cr.reviewed_by_email || 'Reviewer')}):</strong>
                     <div style="color:#f8fafc; font-size:13px; margin-top:4px;">"${escapeHtml(cr.reviewer_comment)}"</div>
                 </div>
             ` : ''}
@@ -2443,10 +2506,22 @@ window.openCrDiffModal = async (crId, focusMode = '') => {
         if (checkedItems.length > 0) {
             comment = `Flagged for revision: [${checkedItems.join(', ')}]${rawNote ? ' — ' + rawNote : ''}`;
         }
-        if (decision === 'rejected' && !comment) {
-            showToast('Please check at least one item or enter a review note explaining what to revise.');
+        if ((decision === 'rejected' || decision === 'denied') && !comment) {
+            showToast(decision === 'denied'
+                ? 'Please enter a short reason before denying and closing this request.'
+                : 'Please check at least one item or enter a review note explaining what to revise.');
             cmtEl?.focus();
             return;
+        }
+        if (decision === 'denied') {
+            const okDeny = await showPortalConfirm({
+                title: `Deny & Close Request #${cr.id} Without Revision?`,
+                message: 'This will permanently close the request without sending it back to the GIS Editor for revision. It will stay logged in All History.',
+                confirmLabel: 'Deny & Close',
+                cancelLabel: 'Cancel',
+                danger: true
+            });
+            if (!okDeny) return;
         }
         if (triggerBtn) triggerBtn.disabled = true;
         try {
@@ -2478,7 +2553,9 @@ window.openCrDiffModal = async (crId, focusMode = '') => {
             lastOverviewData = null;
             showToast(decision === 'approved'
                 ? `Approved "${cr.summary}"${res.adminNotified ? ' & notified Administrator!' : '!'}`
-                : `Returned "${cr.summary}" to GIS Editor for revision.`);
+                : (decision === 'denied'
+                    ? `Denied and closed "${cr.summary}" (no revision required).`
+                    : `Returned "${cr.summary}" to GIS Editor for revision.`));
             if (currentCrContainer) await renderChangeRequestWorkspace(currentCrContainer, { isReviewerView: currentIsReviewerView });
         } catch (err) {
             showToast(err.message);
@@ -2488,6 +2565,7 @@ window.openCrDiffModal = async (crId, focusMode = '') => {
 
     document.getElementById('cr-modal-approve-btn')?.addEventListener('click', (e) => sendDecision('approved', e.currentTarget));
     document.getElementById('cr-modal-deny-btn')?.addEventListener('click', (e) => sendDecision('rejected', e.currentTarget));
+    document.getElementById('cr-modal-deny-close-btn')?.addEventListener('click', (e) => sendDecision('denied', e.currentTarget));
 
     document.getElementById('cr-modal-resubmit-btn')?.addEventListener('click', async (e) => {
         const btn = e.currentTarget;

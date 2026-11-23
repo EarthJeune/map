@@ -1949,6 +1949,25 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
         }
     });
 
+    router.post('/admin/change-requests/:id/withdraw', authenticateSession, authorize('buildings:draft_change'), async (req, res) => {
+        const id = Number(req.params.id);
+        try {
+            const [cr] = await query(`SELECT * FROM change_requests WHERE id = ? LIMIT 1`, [id]);
+            if (!cr) return res.status(404).json({ error: 'Change request not found.' });
+            if (!['draft', 'pending'].includes(cr.status)) {
+                return res.status(400).json({ error: `Cannot withdraw a request in "${cr.status}" status.` });
+            }
+            if (req.adminUser.baseRole !== 'super_admin' && Number(cr.submitted_by_user_id) !== Number(req.adminUser.userId)) {
+                return res.status(403).json({ error: 'You can only withdraw your own submission.' });
+            }
+            await query(`UPDATE change_requests SET status = 'withdrawn', updated_at = NOW() WHERE id = ?`, [id]);
+            await logAudit('WITHDRAW_CHANGE_REQUEST', 'change_requests', id, `Withdrew Request #${id}: ${cr.summary}`, req.adminUser);
+            res.json({ success: true, id, status: 'withdrawn' });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
     router.post('/admin/change-requests/:id/rebase', authenticateSession, authorize('reviews:view'), async (req, res) => {
         const id = Number(req.params.id);
         try {
@@ -2433,7 +2452,7 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
             : (req.query.station || 'lares').toLowerCase();
         try {
             const rows = await query(
-                `SELECT * FROM change_requests WHERE station_id = ? AND status <> 'draft' ORDER BY FIELD(status, 'pending', 'rejected', 'approved', 'published', 'undone'), id DESC`,
+                `SELECT * FROM change_requests WHERE station_id = ? AND status <> 'draft' ORDER BY FIELD(status, 'pending', 'rejected', 'approved', 'published', 'denied', 'withdrawn', 'undone'), id DESC`,
                 [stationId]
             );
             const enriched = await phase1.attachConflictMetadata(query, rows);
@@ -2445,13 +2464,13 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
 
     router.post('/review/requests/:id/decide', authenticateSession, authorize('reviews:decide', { checkStation: true }), async (req, res) => {
         const { decision, comment, override_reason, overrideReason } = req.body || {};
-        if (!['approved', 'rejected'].includes(decision)) {
-            return res.status(400).json({ error: 'Decision must be approved or rejected.' });
+        if (!['approved', 'rejected', 'denied'].includes(decision)) {
+            return res.status(400).json({ error: 'Decision must be approved, rejected (request revision), or denied (close without revision).' });
         }
         const cleanComment = String(comment || '').trim();
         const cleanOverride = String(override_reason || overrideReason || '').trim();
-        if (decision === 'rejected' && !cleanComment) {
-            return res.status(400).json({ error: 'A review comment explaining what to change is required when denying.' });
+        if ((decision === 'rejected' || decision === 'denied') && !cleanComment) {
+            return res.status(400).json({ error: 'A review comment explaining the reason is required when requesting revision or denying.' });
         }
         try {
             const { cr, overrideNotes } = await runInTransaction(pool, async (txQuery) => {
@@ -2529,12 +2548,17 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
             // 1. Always notify the submitting GIS Editor
             const decTargetName = extractCrTargetName(cr.summary, cr.payload_json, cr.id);
             if (cr.submitted_by_user_id) {
+                const notifType = decision === 'approved' ? 'review_approved' : (decision === 'denied' ? 'review_denied' : 'review_rejected');
+                const notifTitle = decision === 'approved'
+                    ? `Approved: ${decTargetName}`
+                    : (decision === 'denied' ? `Denied (Closed): ${decTargetName}` : `Revision Needed: ${decTargetName}`);
+                const notifMsg = decision === 'approved'
+                    ? `"${decTargetName}" was approved and forwarded to Administrator for publishing.`
+                    : (decision === 'denied' ? `Request closed without revision: ${cleanComment}` : `Reviewer feedback: ${cleanComment}`);
                 await rbac.notifyUser(cr.submitted_by_user_id, {
-                    type: decision === 'approved' ? 'review_approved' : 'review_rejected',
-                    title: decision === 'approved' ? `Approved: ${decTargetName}` : `Revision Needed: ${decTargetName}`,
-                    message: decision === 'approved'
-                        ? `"${decTargetName}" was approved and forwarded to Administrator for publishing.`
-                        : `Reviewer feedback: ${cleanComment}`,
+                    type: notifType,
+                    title: notifTitle,
+                    message: notifMsg,
                     station_id: cr.station_id,
                     link_tab: 'admin-reviews',
                     target_table: 'change_requests',
