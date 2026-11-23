@@ -525,10 +525,11 @@ window.refreshCurrentTab = () => loadCurrentTab();
 
 window.logoutAdmin = async () => {
     const ok = await showPortalConfirm({
-        title: 'Log Out of iGUIDE Portal?',
-        message: 'Are you sure you want to end your current session and return to the sign-in screen?',
-        confirmLabel: 'Log Out',
-        cancelLabel: 'Stay Signed In',
+        title: 'Confirm Logout',
+        message: 'Are you sure you want to securely log out of the iGUIDE Portal?',
+        confirmLabel: 'Logout',
+        cancelLabel: 'Cancel',
+        tone: 'warning',
         danger: true
     });
     if (!ok) return;

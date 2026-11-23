@@ -680,6 +680,7 @@ export function showPortalConfirm({
     confirmLabel = 'Confirm',
     cancelLabel = 'Cancel',
     danger = false,
+    tone = '',
     requireReason = false,
     reasonLabel = 'Reason (required)',
     reasonPlaceholder = 'Explain why this record is being removed...'
@@ -688,70 +689,89 @@ export function showPortalConfirm({
         const existing = document.getElementById('iguide-portal-confirm-modal');
         if (existing) existing.remove();
 
-        const overlay = document.createElement('div');
-        overlay.id = 'iguide-portal-confirm-modal';
-        overlay.style.cssText = 'position:fixed; inset:0; z-index:99999; background:rgba(2,6,23,0.78); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; padding:20px; animation:fadeIn 0.14s ease;';
+        const resolvedTone = tone || (danger ? 'warning' : 'emerald');
+        const iconSvg = resolvedTone === 'warning' || resolvedTone === 'danger'
+            ? `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>`
+            : `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></svg>`;
 
-        const isLight = document.body.dataset.theme === 'light';
-        const accentBorder = danger ? 'rgba(244,63,94,0.42)' : 'rgba(52,211,153,0.42)';
-        const accentBg = danger ? 'rgba(244,63,94,0.14)' : 'rgba(16,185,129,0.14)';
-        const accentColor = danger ? (isLight ? '#be123c' : '#fb7185') : (isLight ? '#047857' : '#34d399');
-        const cardBg = isLight ? '#ffffff' : 'linear-gradient(180deg, rgba(13,22,36,0.98) 0%, rgba(7,13,24,0.98) 100%)';
-        const titleColor = isLight ? '#0f172a' : '#f8fafc';
-        const msgColor = isLight ? '#334155' : '#cbd5e1';
-        const footerBg = isLight ? '#f8fafc' : 'rgba(2,6,23,0.42)';
-        const iconSvg = danger
-            ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>'
-            : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>';
+        const dialog = document.createElement('dialog');
+        dialog.id = 'iguide-portal-confirm-modal';
+        dialog.className = `portal-confirm-dialog tone-${resolvedTone}`;
+        dialog.setAttribute('aria-labelledby', 'ipc-title');
+        dialog.setAttribute('aria-describedby', 'ipc-message');
+        dialog.setAttribute('closedby', 'any');
 
         const reasonBlock = requireReason ? `
-            <div style="padding:0 20px 14px;">
-                <label for="ipc-reason-input" style="display:block; font-size:11.5px; font-weight:700; color:${titleColor}; margin-bottom:5px;">${escapeHtml(reasonLabel)}</label>
-                <textarea id="ipc-reason-input" class="form-control" rows="2" placeholder="${escapeHtml(reasonPlaceholder)}" style="width:100%; font-size:12.5px;"></textarea>
-                <div id="ipc-reason-err" style="display:none; margin-top:4px; font-size:11.5px; color:#f43f5e; font-weight:600;">Please enter a short reason (at least 3 characters).</div>
+            <div class="ipc-reason-wrap">
+                <label for="ipc-reason-input" class="ipc-reason-label">${escapeHtml(reasonLabel)}</label>
+                <textarea id="ipc-reason-input" class="form-control ipc-reason-textarea" rows="2" placeholder="${escapeHtml(reasonPlaceholder)}"></textarea>
+                <div id="ipc-reason-err" class="ipc-reason-err" role="alert">Please enter a short reason (at least 3 characters).</div>
             </div>
         ` : '';
 
-        overlay.innerHTML = `
-            <div style="width:100%; max-width:440px; background:${cardBg}; border:1px solid ${accentBorder}; border-radius:16px; box-shadow:0 28px 64px rgba(0,0,0,${isLight ? '0.18' : '0.75'}); overflow:hidden; color:${titleColor};">
-                <div style="padding:18px 20px 14px; display:flex; align-items:flex-start; gap:13px;">
-                    <div style="width:40px; height:40px; border-radius:11px; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:${accentBg}; border:1px solid ${accentBorder}; color:${accentColor};">
-                        ${iconSvg}
-                    </div>
-                    <div style="flex:1; min-width:0;">
-                        <div style="font-size:15px; font-weight:700; color:${titleColor}; line-height:1.25;">${escapeHtml(title)}</div>
-                        <div style="font-size:12.5px; color:${msgColor}; line-height:1.5; margin-top:6px;">${escapeHtml(message)}</div>
-                    </div>
+        dialog.innerHTML = `
+            <div class="ipc-card">
+                <button type="button" id="ipc-close-x" class="ipc-close-x" aria-label="Close dialog" title="Close">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                </button>
+                <div class="ipc-body">
+                    <div class="ipc-hero-icon">${iconSvg}</div>
+                    <h2 id="ipc-title" class="ipc-title">${escapeHtml(title)}</h2>
+                    <p id="ipc-message" class="ipc-message">${escapeHtml(message)}</p>
+                    ${reasonBlock}
                 </div>
-                ${reasonBlock}
-                <div style="padding:12px 20px 16px; display:flex; justify-content:flex-end; gap:10px; border-top:1px solid rgba(148,163,184,0.16); background:${footerBg};">
-                    <button type="button" id="ipc-cancel-btn" class="btn btn-secondary btn-sm" style="min-width:86px; justify-content:center;">${escapeHtml(cancelLabel)}</button>
-                    <button type="button" id="ipc-confirm-btn" class="btn ${danger ? 'btn-danger' : 'btn-emerald'} btn-sm" style="min-width:96px; justify-content:center;">${escapeHtml(confirmLabel)}</button>
+                <div class="ipc-footer">
+                    <button type="button" id="ipc-cancel-btn" class="ipc-btn ipc-btn-cancel" ${danger && !requireReason ? 'autofocus' : ''}>${escapeHtml(cancelLabel)}</button>
+                    <button type="button" id="ipc-confirm-btn" class="ipc-btn ipc-btn-confirm" ${!danger && !requireReason ? 'autofocus' : ''}>${escapeHtml(confirmLabel)}</button>
                 </div>
             </div>
         `;
 
+        let settled = false;
         const finish = (val) => {
-            document.removeEventListener('keydown', onKey);
-            overlay.remove();
+            if (settled) return;
+            settled = true;
+            if (dialog.open) {
+                try { dialog.close(); } catch (_) {}
+            }
+            const removeAfterTransition = () => {
+                if (dialog.parentNode) dialog.remove();
+            };
+            const anims = typeof dialog.getAnimations === 'function' ? dialog.getAnimations() : [];
+            if (anims.length > 0) {
+                Promise.allSettled(anims.map(a => a.finished)).then(removeAfterTransition);
+            } else {
+                setTimeout(removeAfterTransition, 200);
+            }
             resolve(val);
         };
-        const onKey = (e) => {
-            if (e.key === 'Escape') finish(requireReason ? { confirmed: false, reason: '' } : false);
-        };
-        document.addEventListener('keydown', onKey);
-        overlay.addEventListener('click', (e) => {
-            if (e.target === overlay) finish(requireReason ? { confirmed: false, reason: '' } : false);
+
+        dialog.addEventListener('cancel', (e) => {
+            e.preventDefault();
+            finish(requireReason ? { confirmed: false, reason: '' } : false);
         });
-        document.body.appendChild(overlay);
-        document.getElementById('ipc-cancel-btn')?.addEventListener('click', () => finish(requireReason ? { confirmed: false, reason: '' } : false));
-        document.getElementById('ipc-confirm-btn')?.addEventListener('click', () => {
+        dialog.addEventListener('click', (e) => {
+            if (e.target === dialog) {
+                finish(requireReason ? { confirmed: false, reason: '' } : false);
+            }
+        });
+
+        document.body.appendChild(dialog);
+        if (typeof dialog.showModal === 'function') {
+            dialog.showModal();
+        } else {
+            dialog.setAttribute('open', '');
+        }
+
+        dialog.querySelector('#ipc-close-x')?.addEventListener('click', () => finish(requireReason ? { confirmed: false, reason: '' } : false));
+        dialog.querySelector('#ipc-cancel-btn')?.addEventListener('click', () => finish(requireReason ? { confirmed: false, reason: '' } : false));
+        dialog.querySelector('#ipc-confirm-btn')?.addEventListener('click', () => {
             if (requireReason) {
-                const reasonVal = String(document.getElementById('ipc-reason-input')?.value || '').trim();
+                const reasonVal = String(dialog.querySelector('#ipc-reason-input')?.value || '').trim();
                 if (reasonVal.length < 3) {
-                    const errEl = document.getElementById('ipc-reason-err');
-                    if (errEl) errEl.style.display = 'block';
-                    document.getElementById('ipc-reason-input')?.focus();
+                    const errEl = dialog.querySelector('#ipc-reason-err');
+                    if (errEl) errEl.classList.add('is-visible');
+                    dialog.querySelector('#ipc-reason-input')?.focus();
                     return;
                 }
                 finish({ confirmed: true, reason: reasonVal });
@@ -759,10 +779,9 @@ export function showPortalConfirm({
             }
             finish(true);
         });
+
         if (requireReason) {
-            document.getElementById('ipc-reason-input')?.focus();
-        } else {
-            document.getElementById('ipc-confirm-btn')?.focus();
+            dialog.querySelector('#ipc-reason-input')?.focus();
         }
     });
 }
