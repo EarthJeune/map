@@ -20,6 +20,7 @@ import {
     fileToWebpDataUrl,
     showPortalConfirm,
     openVersionHistoryModal,
+    attachFormDraftAutosave,
     getSavedPortalPref,
     setSavedPortalPref
 } from './core.js';
@@ -1582,6 +1583,11 @@ window.openBuildingModal = async (bldgId) => {
             .catch(() => {});
     }
     updateResultButtonBadge();
+    const modalBodyEl = document.getElementById('bldg-modal-body');
+    const draftKey = `bldg_${PortalState.currentStation}_${cur.id || 'new'}`;
+    window._bldgDraftHandle = attachFormDraftAutosave(draftKey, modalBodyEl, [
+        'bm-name', 'bm-type', 'bm-desc', 'bm-landmark', 'bm-services', 'bm-num', 'bm-category', 'bm-fstatus'
+    ]);
     document.getElementById('building-modal').classList.add('open');
 };
 
@@ -1834,6 +1840,7 @@ window.submitBuildingModal = async (submitForReview = false, saveAsDraft = false
     } else {
         showToast(`Submitted "${payload.name}" (Request #${res.changeRequestId}) for Reviewer approval!`);
     }
+    window._bldgDraftHandle?.clear();
     window.closeBuildingModal();
     window.refreshCurrentTab();
 };

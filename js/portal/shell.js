@@ -13,19 +13,22 @@ import {
     escapeHtml,
     enableResizableColumns,
     initPersistentResizableTextareas,
+    attachGlobalModalKeyboardSupport,
+    getSavedPortalPref,
+    setSavedPortalPref,
     showPortalConfirm
 } from './core.js';
 import { initAuthModule, completeAuthSession, logoutPortal, switchAuthView } from './auth.js?v=370';
 import { initNotificationControls, startNotificationPolling, stopNotificationPolling, renderNotificationsTab, refreshNotifications, syncSidebarQueueBadges } from './notifications.js?v=373';
 import { initRoleSwitcher, syncRoleSwitcherUi } from './role-switcher.js?v=372';
 import { runRoleTransition } from './role-transition.js';
-import { renderDashboardTab } from './dashboard.js?v=375';
+import { renderDashboardTab } from './dashboard.js?v=376';
 import { renderPinTab } from './pin-station.js?v=375';
-import { renderBuildingsTab } from './buildings-crud.js?v=375';
+import { renderBuildingsTab } from './buildings-crud.js?v=376';
 import { renderOfficesTab } from './offices-crud.js?v=375';
 import { renderPlotsTab } from './plots-crud.js?v=375';
 import { renderUserAccountsTab, renderLoginLogsTab } from './users-governance.js?v=375';
-import { renderAdminReviewsTab, renderReviewQueueTab, renderReviewDirectoryTab } from './change-requests.js?v=375';
+import { renderAdminReviewsTab, renderReviewQueueTab, renderReviewDirectoryTab } from './change-requests.js?v=376';
 
 if (window.mapboxgl) {
     window.mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
@@ -367,6 +370,33 @@ export async function loadCurrentTab() {
     if (titleEl) titleEl.textContent = `${tMeta.title}`;
     if (iconEl) iconEl.innerHTML = SVG_ICONS[tMeta.icon] || SVG_ICONS.dashboard;
 
+    // 3.4 Update Breadcrumbs
+    const crumbEl = document.getElementById('portal-breadcrumbs');
+    if (crumbEl) {
+        const stLabel = STATION_NAMES[PortalState.currentStation] || `DA-${String(PortalState.currentStation || 'lares').toUpperCase()}`;
+        const groups = ROLE_NAV_GROUPS[PortalState.effectiveRole] || ROLE_NAV_GROUPS.gis_editor;
+        const foundGroup = groups.find(g => g.items.some(i => i.tab === tab));
+        const foundItem = foundGroup?.items.find(i => i.tab === tab);
+        crumbEl.innerHTML = `
+            <span>${escapeHtml(stLabel)}</span>
+            ${foundGroup ? `<span class="crumb-sep">/</span><span>${escapeHtml(foundGroup.label.replace(/^\d+\.\s*/, ''))}</span>` : ''}
+            <span class="crumb-sep">/</span>
+            <span class="crumb-current">${escapeHtml(foundItem?.label || tMeta.title)}</span>
+        `;
+    }
+
+    // 3.5 Show clean loading skeleton while tab fetches data
+    if (!tab.startsWith('editor-')) {
+        container.innerHTML = `
+            <div class="portal-skeleton-grid" aria-busy="true" aria-label="Loading section">
+                <div class="portal-skeleton"></div>
+                <div class="portal-skeleton"></div>
+                <div class="portal-skeleton"></div>
+                <div class="portal-skeleton"></div>
+            </div>
+        `;
+    }
+
     try {
         if (tab === 'dashboard') {
             await renderDashboardTab(container);
@@ -650,15 +680,119 @@ async function handleAuthenticatedEntry(options = {}) {
 })();
 
 
-// Auto-attach drag-to-resize column handles and persistent resizable textareas across tabs & modals
+// Auto-attach drag-to-resize column handles, persistent resizable textareas, keyboard focus traps,
+// collapsible desktop sidebar, and global portal search
 (function initGlobalResizableUI() {
     const attach = () => {
         try { enableResizableColumns(document); } catch (_) { }
         try { initPersistentResizableTextareas(document); } catch (_) { }
     };
     attach();
+    try { attachGlobalModalKeyboardSupport(); } catch (_) { }
     if (document.body && typeof MutationObserver !== 'undefined') {
         const obs = new MutationObserver(() => attach());
         obs.observe(document.body, { childList: true, subtree: true });
     }
+
+    // 3.4 Collapsible desktop sidebar (icons-only mode)
+    const collapseBtn = document.getElementById('sidebar-collapse-btn');
+    const applySidebarCollapsed = (collapsed) => {
+        document.body.classList.toggle('sidebar-collapsed', collapsed);
+        if (collapseBtn) collapseBtn.setAttribute('aria-pressed', collapsed ? 'true' : 'false');
+    };
+    if (getSavedPortalPref('iguide_sidebar_collapsed', '0') === '1') {
+        applySidebarCollapsed(true);
+    }
+    collapseBtn?.addEventListener('click', () => {
+        const next = !document.body.classList.contains('sidebar-collapsed');
+        applySidebarCollapsed(next);
+        setSavedPortalPref('iguide_sidebar_collapsed', next ? '1' : '0');
+    });
+
+    // 3.4 Global Search across buildings, offices, plots, and requests
+    const gsInput = document.getElementById('portal-global-search');
+    const gsResults = document.getElementById('portal-global-search-results');
+    let gsTimer = null;
+    const hideGs = () => { if (gsResults) gsResults.hidden = true; };
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === '/' && document.activeElement && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+            if (gsInput && gsInput.offsetParent !== null) {
+                e.preventDefault();
+                gsInput.focus();
+            }
+        } else if (e.key === 'Escape') {
+            hideGs();
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        const wrap = document.getElementById('portal-global-search-wrap');
+        if (wrap && !wrap.contains(e.target)) hideGs();
+    });
+
+    gsInput?.addEventListener('input', () => {
+        const q = String(gsInput.value || '').trim().toLowerCase();
+        if (!q || q.length < 2) {
+            hideGs();
+            return;
+        }
+        clearTimeout(gsTimer);
+        gsTimer = setTimeout(async () => {
+            if (!PortalState.token || !gsResults) return;
+            try {
+                const st = encodeURIComponent(PortalState.currentStation || 'lares');
+                const [bldgs, offices, plots, reqs] = await Promise.all([
+                    apiFetch(`/api/admin/buildings?station=${st}`).catch(() => []),
+                    apiFetch(`/api/admin/offices?station=${st}`).catch(() => []),
+                    apiFetch(`/api/admin/plots?station=${st}`).catch(() => []),
+                    apiFetch(`/api/admin/change-requests?station=${st}`).catch(() => [])
+                ]);
+                const canEdit = PortalState.effectiveRole === 'gis_editor' || PortalState.effectiveRole === 'super_admin';
+                const matches = [];
+                (Array.isArray(bldgs) ? bldgs : []).forEach(b => {
+                    if (`${b.name || ''} ${b.description || ''}`.toLowerCase().includes(q)) {
+                        matches.push({ label: b.name, type: 'Building', tab: canEdit ? 'buildings' : 'review-buildings' });
+                    }
+                });
+                (Array.isArray(offices) ? offices : []).forEach(o => {
+                    if (`${o.office_name || ''} ${o.building_name || ''}`.toLowerCase().includes(q)) {
+                        matches.push({ label: o.office_name, type: 'Office', tab: canEdit ? 'offices' : 'review-offices' });
+                    }
+                });
+                (Array.isArray(plots) ? plots : []).forEach(p => {
+                    if (`${p.zone_name || ''} ${p.current_crop || ''} ${p.plot_number || ''}`.toLowerCase().includes(q)) {
+                        matches.push({ label: p.zone_name || p.plot_number, type: 'Plot', tab: canEdit ? 'plots' : 'review-plots' });
+                    }
+                });
+                (Array.isArray(reqs) ? reqs : []).forEach(r => {
+                    if (`#${r.id} ${r.summary || ''}`.toLowerCase().includes(q)) {
+                        matches.push({ label: r.summary || `Request #${r.id}`, type: 'Request', tab: PortalState.effectiveRole === 'reviewer' ? 'review-queue' : 'admin-reviews' });
+                    }
+                });
+
+                const top = matches.slice(0, 10);
+                gsResults.hidden = false;
+                if (top.length === 0) {
+                    gsResults.innerHTML = `<div style="padding:14px; text-align:center; font-size:12.5px; color:var(--text-muted-aa);">No matching records for "${escapeHtml(q)}".</div>`;
+                    return;
+                }
+                gsResults.innerHTML = top.map(m => `
+                    <button type="button" class="gs-result-item" data-gs-tab="${escapeHtml(m.tab)}">
+                        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(m.label)}</span>
+                        <span class="gs-result-type">${escapeHtml(m.type)}</span>
+                    </button>
+                `).join('');
+                gsResults.querySelectorAll('[data-gs-tab]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        hideGs();
+                        gsInput.value = '';
+                        window.switchTab(btn.dataset.gsTab);
+                    });
+                });
+            } catch (_) {
+                hideGs();
+            }
+        }, 220);
+    });
 })();

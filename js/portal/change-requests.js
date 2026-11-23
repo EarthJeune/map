@@ -480,21 +480,28 @@ function computeWordDiff(pastText, newText) {
 }
 
 function renderCrStepper(cr) {
-    const revCount = Number(cr.revision_count || 0);
-    const step1 = `<span class="cr-step-node done">1. Draft${revCount > 0 ? ` (Rev #${revCount + 1})` : ''}</span>`;
-    let step2 = `<span class="cr-step-node active">2. Reviewer Pending</span>`;
-    let step3 = `<span class="cr-step-node">3. Publish</span>`;
+    const st = String(cr.status || 'pending').toLowerCase();
+    const steps = [
+        { id: 'draft', label: 'Draft' },
+        { id: 'pending', label: 'In review' },
+        { id: 'rejected', label: 'Needs revision' },
+        { id: 'approved', label: 'Approved' },
+        { id: 'published', label: 'Published' }
+    ];
+    const order = { draft: 0, pending: 1, rejected: 2, approved: 3, published: 4, undone: 4 };
+    const activeIdx = order[st] ?? 1;
 
-    if (cr.status === 'rejected') {
-        step2 = `<span class="cr-step-node denied">2. Revision Needed</span>`;
-    } else if (cr.status === 'approved') {
-        step2 = `<span class="cr-step-node done">2. Reviewer Approved</span>`;
-        step3 = `<span class="cr-step-node active">3. Ready to Publish</span>`;
-    } else if (cr.status === 'published') {
-        step2 = `<span class="cr-step-node done">2. Reviewer Approved</span>`;
-        step3 = `<span class="cr-step-node done">3. Published Live</span>`;
-    }
-    return `<div class="cr-stepper">${step1}<span style="color:#64748b;">→</span>${step2}<span style="color:#64748b;">→</span>${step3}</div>`;
+    return `<div class="cr-progress-strip" aria-label="Request progress">${steps.map((s, idx) => {
+        let cls = 'cr-progress-step';
+        if (st === 'rejected' && s.id === 'rejected') {
+            cls += ' is-revision';
+        } else if (s.id === st || (st === 'undone' && s.id === 'published')) {
+            cls += ' is-current';
+        } else if (idx < activeIdx && !(s.id === 'rejected' && st !== 'rejected')) {
+            cls += ' is-done';
+        }
+        return `<span class="${cls}">${s.label}</span>`;
+    }).join('')}</div>`;
 }
 
 function normalizeValueForDiff(key, rawVal) {

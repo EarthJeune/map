@@ -181,14 +181,116 @@ export function escapeHtml(str) {
         .replace(/'/g, '&#39;');
 }
 
-export function showToast(msg) {
+export function showToast(msg, options = {}) {
     const el = document.getElementById('admin-toast');
     const textEl = document.getElementById('admin-toast-text');
     if (!el || !textEl) return;
     textEl.textContent = msg;
+    el.querySelector('.toast-undo-btn')?.remove();
+    if (options && typeof options.onUndo === 'function') {
+        const undoBtn = document.createElement('button');
+        undoBtn.type = 'button';
+        undoBtn.className = 'btn btn-secondary btn-sm toast-undo-btn';
+        undoBtn.style.cssText = 'margin-left:8px; padding:2px 9px; font-size:11.5px;';
+        undoBtn.textContent = options.undoLabel || 'Undo';
+        undoBtn.addEventListener('click', () => {
+            el.style.display = 'none';
+            options.onUndo();
+        });
+        el.appendChild(undoBtn);
+    }
     el.style.display = 'inline-flex';
     clearTimeout(window._toastTimer);
-    window._toastTimer = setTimeout(() => { el.style.display = 'none'; }, 3000);
+    window._toastTimer = setTimeout(() => { el.style.display = 'none'; }, options.onUndo ? 6000 : 3200);
+}
+
+/**
+ * 3.5 & 3.6: Focus trap for modal overlays (Tab / Shift+Tab cycling + Escape close).
+ */
+export function attachGlobalModalKeyboardSupport() {
+    if (typeof document === 'undefined' || window._iguideModalKeyBound) return;
+    window._iguideModalKeyBound = true;
+    document.addEventListener('keydown', (e) => {
+        const openModals = Array.from(document.querySelectorAll('.modal-backdrop.open'));
+        const topModal = openModals[openModals.length - 1];
+        if (!topModal) return;
+
+        if (e.key === 'Escape') {
+            topModal.classList.remove('open');
+            return;
+        }
+        if (e.key === 'Tab') {
+            const focusables = Array.from(topModal.querySelectorAll('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'))
+                .filter(el => el.offsetParent !== null);
+            if (focusables.length === 0) return;
+            const first = focusables[0];
+            const last = focusables[focusables.length - 1];
+            if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
+        }
+    });
+}
+
+/**
+ * 3.5: LocalStorage form draft autosave with Discard Draft banner.
+ */
+export function attachFormDraftAutosave(draftKey, containerEl, fieldIds = []) {
+    if (!draftKey || !containerEl || typeof localStorage === 'undefined') return { clear() {} };
+    const storageKey = `iguide_autosave_${draftKey}`;
+    const clear = () => {
+        try { localStorage.removeItem(storageKey); } catch (_) { }
+        containerEl.querySelector('.autosave-draft-banner')?.remove();
+    };
+
+    try {
+        const raw = localStorage.getItem(storageKey);
+        if (raw) {
+            const saved = JSON.parse(raw);
+            let restoredAny = false;
+            for (const id of fieldIds) {
+                const el = document.getElementById(id);
+                if (el && saved[id] !== undefined && String(el.value) !== String(saved[id])) {
+                    el.value = saved[id];
+                    restoredAny = true;
+                }
+            }
+            if (restoredAny) {
+                const banner = document.createElement('div');
+                banner.className = 'autosave-draft-banner';
+                banner.style.cssText = 'display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 12px; margin-bottom:12px; border-radius:8px; background:rgba(14,165,233,0.12); border:1px solid rgba(56,189,248,0.35); font-size:12.5px; color:#e0f2fe;';
+                banner.innerHTML = `<span>Restored unsaved local draft from your last session.</span><button type="button" class="btn btn-secondary btn-sm" id="btn-discard-autosave">Discard draft</button>`;
+                containerEl.prepend(banner);
+                banner.querySelector('#btn-discard-autosave')?.addEventListener('click', () => {
+                    clear();
+                    showToast('Local draft discarded.');
+                });
+            }
+        }
+    } catch (_) { }
+
+    const saveNow = () => {
+        try {
+            const snap = {};
+            for (const id of fieldIds) {
+                const el = document.getElementById(id);
+                if (el) snap[id] = el.value;
+            }
+            localStorage.setItem(storageKey, JSON.stringify(snap));
+        } catch (_) { }
+    };
+
+    for (const id of fieldIds) {
+        const el = document.getElementById(id);
+        el?.addEventListener('input', saveNow);
+        el?.addEventListener('change', saveNow);
+    }
+
+    return { clear };
 }
 
 export function copyTextPill(text) {
