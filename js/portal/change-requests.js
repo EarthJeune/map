@@ -2604,10 +2604,8 @@ window.openCrDiffModal = async (crId, focusMode = '') => {
         if (checkedItems.length > 0) {
             comment = `Flagged for revision: [${checkedItems.join(', ')}]${rawNote ? ' — ' + rawNote : ''}`;
         }
-        if ((decision === 'rejected' || decision === 'denied') && !comment) {
-            showToast(decision === 'denied'
-                ? 'Please enter a short reason before denying and closing this request.'
-                : 'Please check at least one item or enter a review note explaining what to revise.');
+        if (decision === 'rejected' && !comment) {
+            showToast('Please check at least one item or enter a review note explaining what to revise.');
             cmtEl?.focus();
             return;
         }

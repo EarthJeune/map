@@ -2644,9 +2644,10 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
         }
         const cleanComment = String(comment || '').trim();
         const cleanOverride = String(override_reason || overrideReason || '').trim();
-        if ((decision === 'rejected' || decision === 'denied') && !cleanComment) {
-            return res.status(400).json({ error: 'A review comment explaining the reason is required when requesting revision or denying.' });
+        if (decision === 'rejected' && !cleanComment) {
+            return res.status(400).json({ error: 'A review comment explaining what to revise is required when requesting revision.' });
         }
+        const effectiveComment = cleanComment || (decision === 'denied' ? 'Denied without revision.' : '');
         try {
             const { cr, overrideNotes } = await runInTransaction(pool, async (txQuery) => {
                 const [lockedCr] = await txQuery(`SELECT * FROM change_requests WHERE id = ? FOR UPDATE`, [req.params.id]);
@@ -2707,7 +2708,7 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
                 const overrideText = collectedOverrides.length ? collectedOverrides.join(' | ') : null;
                 const upd = await txQuery(
                     `UPDATE change_requests SET status = ?, reviewer_comment = ?, reviewed_by_email = ?, reviewed_by_user_id = ?, reviewed_by_name = ?, override_reason = COALESCE(?, override_reason), reviewed_at = NOW() WHERE id = ? AND status = 'pending'`,
-                    [decision, cleanComment, revMeta.email, revMeta.userId, revMeta.displayName, overrideText, lockedCr.id]
+                    [decision, effectiveComment, revMeta.email, revMeta.userId, revMeta.displayName, overrideText, lockedCr.id]
                 );
                 if (!upd || Number(upd.affectedRows) !== 1) {
                     const err = new Error('Concurrent decision conflict: request already updated.');

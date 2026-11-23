@@ -931,7 +931,7 @@ function openFreeFormCropperModal(file) {
                         canvas.height = outH;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, sx, sy, sw, sh, 0, 0, outW, outH);
-                        const dataUrl = canvas.toDataURL('image/webp', 0.84);
+                        const dataUrl = canvas.toDataURL('image/webp', 0.76);
                         finish({ action: 'cropped', dataUrl });
                     } catch (err) {
                         finish({ action: 'skip' });
@@ -1050,7 +1050,7 @@ async function handleMultiPhotoFiles(fileList) {
             if (!cropRes || cropRes.action === 'cancel') continue;
             const webpDataUrl = (cropRes.action === 'cropped' && cropRes.dataUrl)
                 ? cropRes.dataUrl
-                : await fileToWebpDataUrl(file, 1440, 0.84);
+                : await fileToWebpDataUrl(file, 1200, 0.76);
             const rawStem = String(file.name || '').replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim();
             const defaultCaption = rawStem ? rawStem.slice(0, 48) : (workingPhotos.length === 0 ? 'Front Facade' : `Facility View ${workingPhotos.length + 1}`);
             // Strictly append after existing photos: 1st photo stays primary, newly uploaded becomes 2nd (or next)
