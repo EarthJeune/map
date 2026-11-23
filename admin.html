@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/portal.css?v=377">
+    <link rel="stylesheet" href="/css/portal.css?v=378">
 </head>
 <body data-role="super_admin">
     <script>
@@ -420,16 +420,10 @@
                     <span>Switch</span>
                 </button>
             </div>
-            <div class="sidebar-footer-map-row">
-                <a href="/" target="_blank" class="btn btn-emerald btn-sm" style="flex:1; justify-content:center;" title="Open Live 3D Campus Map">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
-                    <span>Live 3D Map</span>
-                </a>
-                <button type="button" class="btn btn-secondary btn-sm" id="sidebar-aerial-locator-btn" onclick="openAerialCampusLocatorModal()" style="flex:1; justify-content:center;" title="Open Aerial Campus Locator">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg>
-                    <span>Aerial Locator</span>
-                </button>
-            </div>
+            <a href="/" target="_blank" class="btn btn-emerald btn-sm" style="width:100%;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                <span>Open Live 3D Map</span>
+            </a>
             <button type="button" class="btn btn-ghost-logout btn-sm" onclick="logoutAdmin()" style="width:100%;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
                 <span>Log Out</span>
@@ -634,7 +628,7 @@
         <span id="admin-toast-text">Saved successfully!</span>
     </div>
 
-    <script type="module" src="/js/portal/shell.js?v=377"></script>
+    <script type="module" src="/js/portal/shell.js?v=378"></script>
 
     <!-- Super Admin 2x2 Role Switcher Modal -->
     <div id="overseer-role-modal" class="overseer-role-modal-backdrop" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="overseer-role-modal-title">

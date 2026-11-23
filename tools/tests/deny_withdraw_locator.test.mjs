@@ -38,20 +38,23 @@ test('Backend API: supports Deny (No Revision) and Withdraw Request', () => {
     assert.ok(api.includes("review_denied"), 'Deny (No Revision) must emit distinct notification type');
 });
 
-test('UI: Deny (No Revision), Withdraw, clean Facility Photos chip, and Aerial Campus Locator button', () => {
+test('UI: Deny (No Revision), Withdraw, clean Facility Photos chip, and Aerial Campus Locator toggle button in modals', () => {
     const html = fs.readFileSync(path.join(ROOT, 'admin.html'), 'utf8');
-    assert.ok(html.includes('sidebar-footer-map-row'), 'Sidebar footer must group Live 3D Map and Aerial Locator');
-    assert.ok(html.includes('id="sidebar-aerial-locator-btn"'), 'Sidebar must include Aerial Locator button');
-    assert.ok(html.includes('openAerialCampusLocatorModal()'), 'Aerial Locator button must invoke modal handler');
+    assert.ok(!html.includes('id="sidebar-aerial-locator-btn"'), 'Sidebar footer must stay clean without extra Aerial Locator button');
+    assert.ok(html.includes('Open Live 3D Map'), 'Sidebar footer keeps single Open Live 3D Map CTA');
 
     const cr = fs.readFileSync(path.join(ROOT, 'js', 'portal', 'change-requests.js'), 'utf8');
     assert.ok(cr.includes('cr-modal-deny-close-btn'), 'Reviewer modal must include Deny (No Revision) button');
     assert.ok(cr.includes('window.withdrawChangeRequestNow'), 'GIS Editors must have Withdraw Request handler');
-    assert.ok(cr.includes('window.openAerialCampusLocatorModal'), 'Aerial Campus Locator modal handler must be exposed');
+    assert.ok(cr.includes('id="cr-toggle-locator-btn"'), 'Visual Diff modal must have Aerial Campus Locator toggle button next to Open Live 3D Map');
+    assert.ok(cr.includes('id="cr-aerial-locator-panel" hidden'), 'Visual Diff modal must collapse Aerial Campus Locator by default');
+    assert.ok(cr.includes('id="ro-bldg-toggle-locator-btn"'), 'Building inspector modal must have Aerial Campus Locator toggle button');
+    assert.ok(cr.includes('id="ro-bldg-locator-panel" hidden'), 'Building inspector modal must collapse Aerial Campus Locator by default');
+    assert.ok(cr.includes('id="ro-plot-toggle-locator-btn"'), 'Plot inspector modal must have Aerial Campus Locator toggle button');
+    assert.ok(cr.includes('id="ro-plot-locator-panel" hidden'), 'Plot inspector modal must collapse Aerial Campus Locator by default');
     assert.ok(cr.includes("d.key === 'images'"), 'Facility Photos diff chip must format image deltas cleanly');
     assert.ok(cr.includes('Denied (Closed)'), 'Stepper must render Denied (Closed) terminal state');
 
     const css = fs.readFileSync(path.join(ROOT, 'css', 'portal.css'), 'utf8');
-    assert.ok(css.includes('.sidebar-footer-map-row'), 'CSS must style paired map/locator footer row');
     assert.ok(css.includes('overflow-wrap: anywhere'), 'CSS must wrap diff chips without mid-word clipping');
 });

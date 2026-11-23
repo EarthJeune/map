@@ -2131,27 +2131,6 @@ export async function renderReviewQueueTab(container) {
     await renderChangeRequestWorkspace(container, { isReviewerView: true });
 }
 
-window.openAerialCampusLocatorModal = async () => {
-    const st = PortalState.currentStation || 'lares';
-    try {
-        await ensureStationOverviewLoaded(st);
-        const mapHtml = renderSpatialContextMapHtml({
-            stageId: 'global-aerial-locator',
-            overview: lastOverviewData,
-            compact: false
-        });
-        openGovModal({
-            title: `Aerial Campus Locator — DA-${st.toUpperCase()}`,
-            maxWidth: '1080px',
-            bodyHtml: mapHtml,
-            footerHtml: `<button type="button" class="btn btn-secondary" onclick="closeGovModal()">Close</button>`
-        });
-        bindSpatialSvgPanZoom('global-aerial-locator');
-    } catch (err) {
-        showToast(err.message || 'Could not load Aerial Campus Locator.');
-    }
-};
-
 window.withdrawChangeRequestNow = async (id) => {
     const ok = await showPortalConfirm({
         title: `Withdraw Request #${id}?`,
@@ -2384,6 +2363,7 @@ window.openCrDiffModal = async (crId, focusMode = '') => {
             <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
                 ${renderCrStepper(cr)}
                 <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <button type="button" class="btn btn-secondary btn-sm" id="cr-toggle-locator-btn" aria-expanded="false">${SVG_ICONS.map} <span>Aerial Campus Locator</span></button>
                     <a href="/?station=${encodeURIComponent(cr.station_id || PortalState.currentStation)}" target="_blank" class="btn btn-secondary btn-sm">Open Live 3D Map ↗</a>
                     <button type="button" class="btn btn-secondary btn-sm" id="cr-toggle-all-fields-btn">Show All Fields (${diffRows.length})</button>
                 </div>
@@ -2396,7 +2376,7 @@ window.openCrDiffModal = async (crId, focusMode = '') => {
                 </div>
             ` : ''}
 
-            <div style="margin-bottom:14px;">
+            <div id="cr-aerial-locator-panel" hidden style="margin-bottom:14px;">
                 ${spatialMapHtml}
             </div>
 
@@ -2437,7 +2417,19 @@ window.openCrDiffModal = async (crId, focusMode = '') => {
         footerHtml
     });
 
-    bindSpatialSvgPanZoom('cr-modal-spatial');
+    let crLocatorBound = false;
+    document.getElementById('cr-toggle-locator-btn')?.addEventListener('click', (e) => {
+        const panel = document.getElementById('cr-aerial-locator-panel');
+        if (!panel) return;
+        const willShow = panel.hidden;
+        panel.hidden = !willShow;
+        e.currentTarget.setAttribute('aria-expanded', willShow ? 'true' : 'false');
+        e.currentTarget.innerHTML = `${SVG_ICONS.map} <span>${willShow ? 'Hide Aerial Locator' : 'Aerial Campus Locator'}</span>`;
+        if (willShow && !crLocatorBound) {
+            crLocatorBound = true;
+            bindSpatialSvgPanZoom('cr-modal-spatial');
+        }
+    });
 
     window.updateCrSplitSlider = (pctVal) => {
         const pct = Math.max(0, Math.min(100, Number(pctVal) || 0));
@@ -2801,7 +2793,11 @@ window.openReadOnlyBuildingModal = (buildingCode) => {
         title: `Map Card, Campus Footprint & Photo Gallery — ${b.name}`,
         maxWidth: '780px',
         bodyHtml: `
-            <div style="margin-bottom:12px;">
+            <div style="display:flex; align-items:center; justify-content:flex-end; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+                <button type="button" class="btn btn-secondary btn-sm" id="ro-bldg-toggle-locator-btn" aria-expanded="false">${SVG_ICONS.map} <span>Aerial Campus Locator</span></button>
+                <a href="/?station=${encodeURIComponent(PortalState.currentStation)}" target="_blank" class="btn btn-secondary btn-sm">Open Live 3D Map ↗</a>
+            </div>
+            <div id="ro-bldg-locator-panel" hidden style="margin-bottom:12px;">
                 ${locatorMapHtml}
             </div>
             <div class="bldg-live-preview-card">
@@ -2856,7 +2852,19 @@ window.openReadOnlyBuildingModal = (buildingCode) => {
         `
     });
 
-    bindSpatialSvgPanZoom('ro-bldg-modal-map');
+    let roBldgLocatorBound = false;
+    document.getElementById('ro-bldg-toggle-locator-btn')?.addEventListener('click', (e) => {
+        const panel = document.getElementById('ro-bldg-locator-panel');
+        if (!panel) return;
+        const willShow = panel.hidden;
+        panel.hidden = !willShow;
+        e.currentTarget.setAttribute('aria-expanded', willShow ? 'true' : 'false');
+        e.currentTarget.innerHTML = `${SVG_ICONS.map} <span>${willShow ? 'Hide Aerial Locator' : 'Aerial Campus Locator'}</span>`;
+        if (willShow && !roBldgLocatorBound) {
+            roBldgLocatorBound = true;
+            bindSpatialSvgPanZoom('ro-bldg-modal-map');
+        }
+    });
 
     const renderSlide = () => {
         const host = document.getElementById('ro-modal-slideshow-host');
@@ -2904,7 +2912,11 @@ window.openReadOnlyPlotModal = (plotId) => {
         title: `Agricultural Plot Card & Campus Polygon — ${p.zone_name}`,
         maxWidth: '760px',
         bodyHtml: `
-            <div style="margin-bottom:12px;">
+            <div style="display:flex; align-items:center; justify-content:flex-end; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+                <button type="button" class="btn btn-secondary btn-sm" id="ro-plot-toggle-locator-btn" aria-expanded="false">${SVG_ICONS.map} <span>Aerial Campus Locator</span></button>
+                <a href="/?station=${encodeURIComponent(PortalState.currentStation)}" target="_blank" class="btn btn-secondary btn-sm">Open Live 3D Map ↗</a>
+            </div>
+            <div id="ro-plot-locator-panel" hidden style="margin-bottom:12px;">
                 ${locatorMapHtml}
             </div>
             <div class="bldg-live-preview-card" style="border-color:${escapeHtml(plotColor)}66;">
@@ -2953,7 +2965,19 @@ window.openReadOnlyPlotModal = (plotId) => {
         `
     });
 
-    bindSpatialSvgPanZoom('ro-plot-modal-map');
+    let roPlotLocatorBound = false;
+    document.getElementById('ro-plot-toggle-locator-btn')?.addEventListener('click', (e) => {
+        const panel = document.getElementById('ro-plot-locator-panel');
+        if (!panel) return;
+        const willShow = panel.hidden;
+        panel.hidden = !willShow;
+        e.currentTarget.setAttribute('aria-expanded', willShow ? 'true' : 'false');
+        e.currentTarget.innerHTML = `${SVG_ICONS.map} <span>${willShow ? 'Hide Aerial Locator' : 'Aerial Campus Locator'}</span>`;
+        if (willShow && !roPlotLocatorBound) {
+            roPlotLocatorBound = true;
+            bindSpatialSvgPanZoom('ro-plot-modal-map');
+        }
+    });
 };
 
 // =========================================================================
