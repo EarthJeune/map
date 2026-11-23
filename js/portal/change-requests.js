@@ -24,7 +24,7 @@ import {
 } from './core.js';
 import { guardAsyncAction } from '../ui-guard.js';
 import { MAPBOX_ACCESS_TOKEN } from '../data/config.js';
-import { computeSnapshotBeforeAfter, hasGeometryActuallyChanged } from './diff-utils.js';
+import { computeSnapshotBeforeAfter, hasGeometryActuallyChanged, formatHumanRequestTitle, parseReviewerFeedback } from './diff-utils.js';
 
 const spatialAerialSpecs = new Map();
 const spatialAerialMaps = new Map();
@@ -1800,7 +1800,15 @@ function renderCrListTable() {
     }
 
     if (list.length === 0) {
-        host.innerHTML = `<div style="text-align:center; padding:32px; color:#94a3b8;">No change requests in this queue tab.</div>`;
+        const emptyByTab = {
+            draft: 'No drafts saved yet. Use "Save Changes (Draft)" when editing a record to group multiple edits.',
+            pending: 'Nothing waiting for your review.',
+            rejected: 'No revisions requested right now.',
+            approved: 'Nothing ready to publish right now.',
+            published: 'No published changes yet.',
+            all: 'No change requests recorded yet.'
+        };
+        host.innerHTML = `<div style="text-align:center; padding:32px; color:#94a3b8;">${escapeHtml(emptyByTab[activeCrSubTab] || 'No requests to show.')}</div>`;
         return;
     }
 
@@ -1826,27 +1834,32 @@ function renderCrListTable() {
             const entityLabel = ctx.building
                 ? `${ctx.building.building_num ? '#' + ctx.building.building_num + ' ' : ''}${ctx.building.name}`
                 : (ctx.plot ? `${ctx.plot.plot_number ? ctx.plot.plot_number + ' • ' : ''}${ctx.plot.zone_name}` : r.target_id);
+            const humanTitle = formatHumanRequestTitle(r, entityLabel);
+            const fb = parseReviewerFeedback(r.reviewer_comment || '');
             return `
                         <div class="cr-visual-card">
                             ${buildCrVisualCardThumbnail(r)}
                             <div class="cr-vc-body">
                                 <div>
                                     <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:5px;">
-                                        <span class="mono-id">#${r.id}</span>
-                                        <span class="mono-code">DA-${escapeHtml(String(r.station_id || '').toUpperCase())}</span>
                                         <span class="status-pill status-pill-blue" style="font-size:10.5px;">${escapeHtml(targetLabelMap[r.target_table] || r.target_table)}</span>
-                                        <span style="font-size:12px; color:#cbd5e1; font-weight:700;">• ${escapeHtml(entityLabel)}</span>
+                                        <span style="font-size:12px; color:#cbd5e1; font-weight:600;">DA-${escapeHtml(String(r.station_id || '').toUpperCase())}</span>
                                     </div>
-                                    <div style="font-size:14.5px; font-weight:700; color:#f8fafc; margin-bottom:7px;">${escapeHtml(r.summary)}</div>
+                                    <div style="font-size:14.5px; font-weight:700; color:#f8fafc; margin-bottom:7px;">${escapeHtml(humanTitle)}</div>
                                     <div class="cr-vc-pills" style="margin-bottom:8px;">
                                         ${renderCrDiffSummaryChips(r)}
                                     </div>
+                                    <details class="tech-details-box" style="margin-bottom:8px; font-size:11.5px; color:#94a3b8;">
+                                        <summary style="cursor:pointer; user-select:none; color:#94a3b8;">Technical details</summary>
+                                        <div style="margin-top:5px; padding:6px 8px; border-radius:6px; background:rgba(15,23,42,0.55); font-family:var(--font-mono); font-size:11px; line-height:1.5;">
+                                            Request #${r.id} • Table: ${escapeHtml(r.target_table)} • Target: ${escapeHtml(r.target_id)} • Action: ${escapeHtml(r.action || 'UPDATE')} • Base v${Number(r.base_version || 1)}
+                                        </div>
+                                    </details>
                                 </div>
                                 <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
                                     ${renderCrStepper(r)}
                                     <div style="font-size:11.5px; color:#94a3b8;">
                                         Submitted by <strong style="color:#e2e8f0;">${escapeHtml(r.submitted_by_name || r.submitted_by_email || 'Editor')}</strong>
-                                        ${r.base_version ? `<span style="margin-left:6px; opacity:0.8;">• Base v${Number(r.base_version)}</span>` : ''}
                                     </div>
                                 </div>
                                 ${(Array.isArray(r.conflicts) && r.conflicts.length > 0) || r.is_stale_base ? `
@@ -1861,8 +1874,10 @@ function renderCrListTable() {
                                     </div>
                                 ` : ''}
                                 ${r.reviewer_comment ? `
-                                    <div style="padding:6px 10px; border-radius:8px; font-size:11.5px; ${r.status === 'rejected' ? 'background:rgba(244,63,94,0.12); color:#fda4af; border:1px solid rgba(244,63,94,0.3);' : 'background:rgba(16,185,129,0.10); color:#6ee7b7;'}">
-                                        <strong>Reviewer Note:</strong> "${escapeHtml(r.reviewer_comment)}"
+                                    <div style="padding:7px 10px; border-radius:8px; font-size:11.5px; ${r.status === 'rejected' ? 'background:rgba(244,63,94,0.12); color:#fda4af; border:1px solid rgba(244,63,94,0.3);' : 'background:rgba(16,185,129,0.10); color:#6ee7b7;'}">
+                                        <strong>Reviewer Feedback:</strong>
+                                        ${fb.items.length > 0 ? `<ul style="margin:4px 0 0 18px; padding:0;">${fb.items.map(it => `<li>${escapeHtml(it)}</li>`).join('')}</ul>` : ''}
+                                        ${fb.note ? `<div style="margin-top:3px;">${escapeHtml(fb.note)}</div>` : ''}
                                     </div>
                                 ` : ''}
                             </div>
@@ -2822,7 +2837,7 @@ window.openReadOnlyPlotModal = (plotId) => {
                         <div><span style="color:#94a3b8;">Current Planted Crop:</span><br><strong style="color:#4ade80;">${escapeHtml(p.current_crop || '—')}</strong></div>
                         <div><span style="color:#94a3b8;">Cropping Cycle:</span><br><strong style="color:#f8fafc;">${escapeHtml(p.cycle_months || p.cropping_cycle || 'Perennial')}</strong></div>
                         <div><span style="color:#94a3b8;">Growth / Field Stage:</span><br><strong style="color:#38bdf8;">${escapeHtml(p.status || 'Active')}</strong></div>
-                        <div><span style="color:#94a3b8;">Count / Area:</span><br><strong style="color:#f8fafc;">${p.tree_or_plant_count !== null && p.tree_or_plant_count !== undefined ? `${Number(p.tree_or_plant_count).toLocaleString()} plants` : 'Count unset'}${p.area_hectares ? ` • ${p.area_hectares} ha` : ''}</strong></div>
+                        <div><span style="color:#94a3b8;">Count / Area:</span><br><strong style="color:#f8fafc;">${p.tree_or_plant_count !== null && p.tree_or_plant_count !== undefined ? `${Number(p.tree_or_plant_count).toLocaleString()} plants` : 'Not entered'}${p.area_hectares ? ` • ${p.area_hectares} ha` : ''}</strong></div>
                     </div>
 
                     <div class="blp-wf-card visual">
@@ -3086,7 +3101,7 @@ export async function renderReviewDirectoryTab(container, viewMode = 'review-ove
                 <div class="stat-card" style="cursor:pointer;" onclick="switchTab('review-offices')"><div class="stat-label">Internal Offices</div><div class="stat-value">${c.offices || 0}</div><span class="stat-table-pill">Floor-by-floor stacks</span></div>
                 <div class="stat-card" style="cursor:pointer;" onclick="switchTab('review-plots')"><div class="stat-label">Agricultural Plots</div><div class="stat-value">${c.plots || 0}</div><span class="stat-table-pill">${c.subplots || 0} sub-plots</span></div>
                 <div class="stat-card"><div class="stat-label">3D Trees</div><div class="stat-value">${c.trees || 0}</div><span class="stat-table-pill">Read-only</span></div>
-                <div class="stat-card"><div class="stat-label">Road Nodes</div><div class="stat-value">${c.roads || 0}</div><span class="stat-table-pill">Read-only</span></div>
+                <div class="stat-card"><div class="stat-label">Walkway Points</div><div class="stat-value">${c.roads || 0}</div><span class="stat-table-pill">Read-only</span></div>
             </div>
 
             <div class="panel-card">

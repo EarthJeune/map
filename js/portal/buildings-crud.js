@@ -578,17 +578,17 @@ function renderBuildingsCollection() {
                                 ${b.building_num ? `<span class="mono-code" style="background:rgba(2,6,23,0.85); color:#fff;">#${b.building_num}</span>` : ''}
                                 ${renderFacilityStatusBadge(fStatus)}
                             </div>
-                            <span class="mono-code" style="position:absolute; bottom:8px; right:8px; background:rgba(2,6,23,0.82);">${b.images.length} .webp</span>
+                            <span class="mono-code" style="position:absolute; bottom:8px; right:8px; background:rgba(2,6,23,0.82);">${b.images.length} photo${b.images.length === 1 ? '' : 's'}</span>
                         </div>
                         <div class="bldg-card-body">
                             <div>
                                 <div style="font-weight:700; color:#f8fafc; font-size:14px;">${escapeHtml(b.name)}</div>
-                                <div class="help-tip" style="margin-top:2px;">${escapeHtml(CATEGORY_LABELS[b.category] || b.category)} • <span class="mono-id">${escapeHtml(b.building_code)}</span></div>
+                                <div class="help-tip" style="margin-top:2px;">${escapeHtml(CATEGORY_LABELS[b.category] || b.category)}</div>
                             </div>
                             <div style="display:flex; flex-wrap:wrap; gap:6px;">
-                                <span class="mono-code">${b.offices.length === 0 ? 'Standalone (0 Offices)' : `${b.offices.length} Internal Office(s)`}</span>
-                                <span class="mono-code" style="color:${b.model_exists ? '#34d399' : '#94a3b8'};">${b.model_exists ? '3D GLB Ready' : 'Procedural Box'}</span>
-                                ${!hasBldgGeometry(b) ? `<span class="mono-code" style="color:#fbbf24; border-color:rgba(245,158,11,0.4); background:rgba(245,158,11,0.12); display:inline-flex; align-items:center; gap:4px;">${SVG_ICONS.alertTriangle} <span>Unmapped Draft</span></span>` : ''}
+                                <span class="mono-code">${b.offices.length === 0 ? 'No offices' : `${b.offices.length} office${b.offices.length === 1 ? '' : 's'}`}</span>
+                                <span class="mono-code" style="color:${b.model_exists ? '#34d399' : '#94a3b8'};">${b.model_exists ? '3D model ready' : 'Standard 3D shape'}</span>
+                                ${!hasBldgGeometry(b) ? `<span class="mono-code" style="color:#fbbf24; border-color:rgba(245,158,11,0.4); background:rgba(245,158,11,0.12); display:inline-flex; align-items:center; gap:4px;">${SVG_ICONS.alertTriangle} <span>Outline not drawn</span></span>` : ''}
                             </div>
                         </div>
                         <div class="bldg-card-footer">
@@ -622,8 +622,8 @@ function renderBuildingsCollection() {
                                 <div style="margin-top:4px;">${renderFacilityStatusBadge(b.facility_status || 'Existing')}</div>
                                 ${!hasBldgGeometry(b) ? `<div style="margin-top:4px;"><span class="status-pill" style="background:rgba(245,158,11,0.16); color:#fbbf24; border:1px solid rgba(245,158,11,0.35); font-size:10.5px;">Unmapped Draft (Hidden)</span></div>` : ''}
                             </td>
-                            <td><span class="mono-code">${b.offices.length === 0 ? '0 (Standalone)' : `${b.offices.length} Office(s)`}</span></td>
-                            <td>${b.model_exists ? `<span style="color:#34d399; font-size:12px; display:inline-flex; align-items:center; gap:4px;">${SVG_ICONS.check} <span>GLB Ready</span></span>` : `<span style="color:#94a3b8; font-size:12px;">Procedural</span>`}</td>
+                            <td><span class="mono-code">${b.offices.length === 0 ? 'No offices' : `${b.offices.length} office${b.offices.length === 1 ? '' : 's'}`}</span></td>
+                            <td>${b.model_exists ? `<span style="color:#34d399; font-size:12px; display:inline-flex; align-items:center; gap:4px;">${SVG_ICONS.check} <span>3D model ready</span></span>` : `<span style="color:#94a3b8; font-size:12px;">Standard 3D shape</span>`}</td>
                             <td>
                                 <div class="action-cell">
                                     <button class="btn btn-blue btn-sm" onclick="openBuildingModal(${b.id})">${SVG_ICONS.edit} <span>Edit</span></button>
@@ -1286,7 +1286,7 @@ window.openBuildingModal = async (bldgId) => {
         const cleanVal = String(val || '').split('?')[0].trim().replace(/^\/+/, '');
         if (!cleanVal) return `<span class="status-pill status-pill-blue">Procedural 3D Extruded Box</span>`;
         const found = models.find(m => m.url === cleanVal);
-        if (found) return `<span class="status-pill status-pill-live"><span class="status-dot-live"></span><span>Verified on Disk (${found.sizeKb} KB)</span></span>`;
+        if (found) return `<span class="status-pill status-pill-live"><span class="status-dot-live"></span><span>File found (${found.sizeKb} KB)</span></span>`;
         return `<span class="status-pill status-pill-rose">${SVG_ICONS.alertTriangle} <span>Model file not found in /models</span></span>`;
     };
 
@@ -1320,23 +1320,18 @@ window.openBuildingModal = async (bldgId) => {
                 </div>
             </div>
 
-            <div class="form-grid-3">
+            <div class="form-grid-2">
                 <div class="form-group" style="margin-bottom:0;">
                     <label>Building Number (#)</label>
                     <input type="number" id="bm-num" class="form-control" style="font-family:var(--font-mono);" value="${cur.building_num ?? ''}" placeholder="Blank for utilities">
-                    <div class="help-tip">Number inside the floating 3D map pin circle.</div>
-                </div>
-                <div class="form-group" style="margin-bottom:0;">
-                    <label>Unique Code</label>
-                    <input type="text" id="bm-code" class="form-control" style="font-family:var(--font-mono);" value="${escapeHtml(cur.building_code || '')}" ${cur.id ? 'readonly' : ''} placeholder="e.g. tanco_hall_building">
-                    <div class="help-tip">${cur.id ? 'Locked ID linking 3D model, roads & QR.' : 'Auto-generated if left blank.'}</div>
+                    <div class="help-tip">Number shown inside the map marker.</div>
                 </div>
                 <div class="form-group" style="margin-bottom:0;">
                     <label>Directory Category</label>
                     <select id="bm-category" class="form-control">
                         ${Object.entries(CATEGORY_LABELS).map(([k, lbl]) => `<option value="${k}" ${cur.category === k ? 'selected' : ''}>${escapeHtml(lbl)}</option>`).join('')}
                     </select>
-                    <div class="help-tip">Controls the campus filter dropdown group.</div>
+                    <div class="help-tip">Controls which filter group this building appears under.</div>
                 </div>
             </div>
         </div>
@@ -1425,51 +1420,61 @@ window.openBuildingModal = async (bldgId) => {
             </div>
         </div>
 
-        <!-- 5. 3D ARCHITECTURAL MODEL & SPATIAL FOOTPRINT -->
+        <!-- 5. BUILDING OUTLINE & ADVANCED TECHNICAL SETTINGS -->
         <div class="bldg-editor-section" style="margin-bottom:0;">
             <div class="bldg-section-heading">
-                <span>4. Spatial Footprint & 3D Architectural Model</span>
-                <span class="help-tip" style="margin-top:0;">Footprint geometry & GLB placement on campus</span>
+                <span>4. Building Outline & Advanced Settings</span>
+                <span class="help-tip" style="margin-top:0;">Map location and optional 3D model settings</span>
             </div>
 
             <div class="alert-revision-card" style="margin-bottom:12px; background:${hasGeo ? 'rgba(16,185,129,0.08)' : 'rgba(245,158,11,0.10)'}; border-color:${hasGeo ? 'rgba(16,185,129,0.28)' : 'rgba(245,158,11,0.38)'}; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
                 <div>
                     <strong style="color:${hasGeo ? '#34d399' : '#fbbf24'}; font-size:12.5px; display:inline-flex; align-items:center; gap:6px;">
-                        ${hasGeo ? `${SVG_ICONS.check} <span>Footprint & Coordinates Mapped — Ready to Publish Live</span>` : `${SVG_ICONS.alertTriangle} <span>Unmapped Record — Missing Polygon / Coordinates</span>`}
+                        ${hasGeo ? `${SVG_ICONS.check} <span>Building outline mapped — ready to publish</span>` : `${SVG_ICONS.alertTriangle} <span>Building outline not drawn yet</span>`}
                     </strong>
                     <div class="help-tip" style="margin-top:3px; color:#cbd5e1;">
                         ${hasGeo
-                            ? 'This building has verified spatial geometry and can be published safely to the public 3D map.'
-                            : 'Save & Publish Live is locked until a footprint is drawn in draw.html so unmapped records cannot spawn fallback boxes.'}
+                            ? 'This building has a verified outline on the campus map and can be published safely.'
+                            : 'Draw this building outline on the map before publishing it live.'}
                     </div>
                 </div>
-                <a href="${drawLink}" target="_blank" class="btn btn-blue btn-sm">${hasGeo ? 'Edit Footprint in draw.html →' : 'Draw Footprint in draw.html →'}</a>
+                <a href="${drawLink}" target="_blank" class="btn btn-blue btn-sm">${hasGeo ? 'Edit building outline' : 'Draw building outline'}</a>
             </div>
 
-            <div class="form-group">
-                <label>3D Architectural Model (.glb) & File Check</label>
-                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                    <select id="bm-model" class="form-control" style="flex:1; font-family:var(--font-mono);">
-                        <option value="">— None (Use Procedural 3D Box) —</option>
-                        ${cleanModelVal && !models.some(m => m.url === cleanModelVal)
-                            ? `<option value="${escapeHtml(cur.model_glb_url)}" selected>${escapeHtml(cur.model_glb_url)} (Missing on disk)</option>` : ''}
-                        ${models.map(m => `<option value="${escapeHtml(m.url)}" ${cleanModelVal === m.url ? 'selected' : ''}>${escapeHtml(m.filename)} (${m.sizeKb} KB)</option>`).join('')}
-                    </select>
-                    <span id="bm-model-status-pill">${renderModelStatusPill(cur.model_glb_url)}</span>
+            <details class="advanced-section" style="border:1px solid rgba(148,163,184,0.2); border-radius:10px; padding:10px 12px; background:rgba(15,23,42,0.4);">
+                <summary style="cursor:pointer; font-size:12.5px; font-weight:700; color:#cbd5e1; user-select:none;">Advanced (Internal code & 3D model settings)</summary>
+                <div style="margin-top:12px;">
+                    <div class="form-group">
+                        <label>Internal Record Code</label>
+                        <input type="text" id="bm-code" class="form-control" style="font-family:var(--font-mono);" value="${escapeHtml(cur.building_code || '')}" ${cur.id ? 'readonly' : ''} placeholder="e.g. tanco_hall_building">
+                        <div class="help-tip">${cur.id ? 'Locked identifier linking this building to map geometry and QR codes.' : 'Auto-generated from the building name if left blank.'}</div>
+                    </div>
+                    <div class="form-group">
+                        <label>3D Model File & Availability</label>
+                        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                            <select id="bm-model" class="form-control" style="flex:1; font-family:var(--font-mono);">
+                                <option value="">— None (Use standard 3D shape) —</option>
+                                ${cleanModelVal && !models.some(m => m.url === cleanModelVal)
+                                    ? `<option value="${escapeHtml(cur.model_glb_url)}" selected>${escapeHtml(cur.model_glb_url)} (File missing)</option>` : ''}
+                                ${models.map(m => `<option value="${escapeHtml(m.url)}" ${cleanModelVal === m.url ? 'selected' : ''}>${escapeHtml(m.filename)} (${m.sizeKb} KB)</option>`).join('')}
+                            </select>
+                            <span id="bm-model-status-pill">${renderModelStatusPill(cur.model_glb_url)}</span>
+                        </div>
+                    </div>
+                    <div class="form-grid-2">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>3D Rotation (°)</label>
+                            <input type="number" step="0.1" id="bm-model-rot" class="form-control" style="font-family:var(--font-mono);" value="${escapeHtml(cur.model_rotation ?? '')}" placeholder="Blank = use default">
+                            <div class="help-tip">Optional 0–360° compass angle for the 3D model.</div>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>3D Model Scale</label>
+                            <input type="text" id="bm-model-scale" class="form-control" style="font-family:var(--font-mono);" value="${escapeHtml(cur.model_scale ?? '')}" placeholder="e.g. 1 or [1,1,1]">
+                            <div class="help-tip">Uniform size factor (e.g. <code>1</code>) or axis scale <code>[1,1,1]</code>.</div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div class="form-grid-2">
-                <div class="form-group" style="margin-bottom:0;">
-                    <label>3D Bearing Rotation (°)</label>
-                    <input type="number" step="0.1" id="bm-model-rot" class="form-control" style="font-family:var(--font-mono);" value="${escapeHtml(cur.model_rotation ?? '')}" placeholder="Blank = use calibrated default">
-                    <div class="help-tip">Optional 0–360° compass bearing when spawning new DB <code>.glb</code> models.</div>
-                </div>
-                <div class="form-group" style="margin-bottom:0;">
-                    <label>3D Model Scale</label>
-                    <input type="text" id="bm-model-scale" class="form-control" style="font-family:var(--font-mono);" value="${escapeHtml(cur.model_scale ?? '')}" placeholder="e.g. 1 or [1,1,1]">
-                    <div class="help-tip">Uniform factor (e.g. <code>1</code>) or axis array <code>[1,1,1]</code>.</div>
-                </div>
-            </div>
+            </details>
         </div>
     `;
 

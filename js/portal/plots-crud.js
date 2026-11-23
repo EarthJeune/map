@@ -304,7 +304,7 @@ function renderPlotsTable() {
                         </td>
                         <td style="color:var(--role-accent-light); font-weight:600;">${escapeHtml(p.current_crop || '—')}</td>
                         <td>
-                            <div>${p.tree_or_plant_count !== null ? `<strong>${Number(p.tree_or_plant_count).toLocaleString()}</strong> plants` : '<span style="color:#64748b;">Count unset</span>'}</div>
+                            <div>${p.tree_or_plant_count !== null ? `<strong>${Number(p.tree_or_plant_count).toLocaleString()}</strong> plants` : '<span style="color:#94a3b8;">Not entered</span>'}</div>
                             <div class="help-tip">${p.area_hectares ? `${p.area_hectares} ha` : ''}</div>
                         </td>
                         <td>
@@ -319,7 +319,7 @@ function renderPlotsTable() {
                             <div class="action-cell">
                                 <button type="button" class="btn btn-blue btn-sm" onclick="openPlotModal(${p.id})" title="${spCount > 0 ? 'Update plot crop & individual screenhouse contents' : 'Update planted crop, count, cycle & stage'}">${SVG_ICONS.edit} <span>${spCount > 0 ? 'Edit Crop & Screenhouses' : 'Edit Crop'}</span></button>
                                 ${canSplitMerge && isMultiPlotRange ? `<button type="button" class="btn btn-secondary btn-sm" onclick="openSplitPlotWizard(${p.id})" title="Split individual calibrated plots (e.g. Plots 6–8 vs. Plots 9–12) using their drawn polygons">${SVG_ICONS.scissors} <span>Split Range</span></button>` : ''}
-                                <button type="button" class="btn btn-secondary btn-sm" onclick="togglePlotHistoryRow('${escapeHtml(p.plot_code)}')" title="View crop rotation & split/merge history">${SVG_ICONS.history} <span>${histCount}</span></button>
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="togglePlotHistoryRow('${escapeHtml(p.plot_code)}')" title="View planting, harvest, and split history for this plot" aria-label="View planting and crop history">${SVG_ICONS.history} <span>${histCount}</span></button>
                                 <button type="button" class="btn btn-danger btn-sm" onclick="deletePlotRow(${p.id})" title="Delete plot">${SVG_ICONS.trash}</button>
                             </div>
                         </td>
@@ -341,7 +341,7 @@ function renderPlotsTable() {
                                             </div>
                                         `).join('')}
                                     </div>
-                                ` : `<div class="help-tip">No crop rotation, split, or merge updates recorded in plot_history yet.</div>`}
+                                ` : `<div class="help-tip">No planting or crop history recorded for this plot yet.</div>`}
                             </div>
                         </td>
                     </tr>` : ''}

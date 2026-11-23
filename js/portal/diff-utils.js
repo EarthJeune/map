@@ -182,3 +182,135 @@ export function countRealBuildingChanges(originalSnap = {}, currentForm = {}, or
     }
     return count;
 }
+
+const FRIENDLY_FIELD_NAMES = {
+    name: 'name',
+    zone_name: 'name',
+    office_name: 'name',
+    description: 'description',
+    visual_landmark: 'visual landmark',
+    key_services: 'services',
+    facility_status: 'status',
+    pin_color: 'pin color',
+    color: 'color',
+    category: 'category',
+    type_label: 'facility type',
+    current_crop: 'planted crop',
+    tree_or_plant_count: 'plant count',
+    cycle_months: 'cropping cycle',
+    floor_or_room: 'floor',
+    room_number: 'room number',
+    kiosk_pin_lng: 'kiosk location',
+    kiosk_pin_lat: 'kiosk location',
+    footprint_geojson: 'building outline',
+    polygon_geojson: 'plot boundary',
+    model_glb_url: '3D model'
+};
+
+/**
+ * 2.1: Generate plain, human-readable request titles from change type and entity name
+ * (e.g. "Added a photo to Guard House B", "Updated description of Admin Building").
+ */
+export function formatHumanRequestTitle(cr = {}, entityName = '') {
+    const prev = parseJsonSafe(cr.previous_json);
+    const next = parseJsonSafe(cr.payload_json);
+    const table = String(cr.target_table || '').toLowerCase();
+    const action = String(cr.action || 'UPDATE').toUpperCase();
+    const cleanName = String(
+        entityName
+        || next.name
+        || next.zone_name
+        || next.office_name
+        || prev.name
+        || prev.zone_name
+        || prev.office_name
+        || cr.target_id
+        || 'record'
+    ).trim();
+
+    if (table === 'building_images') {
+        if (action === 'CREATE') return `Added a photo to ${cleanName}`;
+        if (action === 'DELETE') return `Removed 1 photo from ${cleanName}`;
+        return `Updated photos of ${cleanName}`;
+    }
+
+    if (table === 'stations') {
+        return `Updated station settings for ${cleanName}`;
+    }
+
+    if (table === 'map_geometry') {
+        return `Updated map layout for ${cleanName}`;
+    }
+
+    const typeWord = table === 'building_offices'
+        ? 'office'
+        : (table === 'agricultural_plots' || table === 'plot_subplots' ? 'plot' : 'building');
+
+    if (action === 'CREATE') return `Added ${typeWord} ${cleanName}`;
+    if (action === 'DELETE') return `Removed ${typeWord} ${cleanName}`;
+    if (action === 'SPLIT') return `Split plot from ${cleanName}`;
+    if (action === 'MERGE') return `Merged plots into ${cleanName}`;
+
+    // Check photo delta on building UPDATEs
+    const beforeImgs = normalizeImageList(prev.images);
+    const afterImgs = Array.isArray(next.images) ? normalizeImageList(next.images) : beforeImgs;
+    const beforeUrls = new Set(beforeImgs.map(i => i.image_webp_url.toLowerCase()));
+    const afterUrls = new Set(afterImgs.map(i => i.image_webp_url.toLowerCase()));
+    const addedPhotos = afterImgs.filter(i => !beforeUrls.has(i.image_webp_url.toLowerCase())).length;
+    const removedPhotos = beforeImgs.filter(i => !afterUrls.has(i.image_webp_url.toLowerCase())).length;
+
+    const changedFriendly = [];
+    for (const [k, label] of Object.entries(FRIENDLY_FIELD_NAMES)) {
+        if (next[k] === undefined) continue;
+        const a = String(prev[k] ?? '').trim();
+        const b = String(next[k] ?? '').trim();
+        if (a !== b && !changedFriendly.includes(label)) {
+            changedFriendly.push(label);
+        }
+    }
+
+    if (changedFriendly.length === 0) {
+        if (addedPhotos > 0 && removedPhotos === 0) {
+            return addedPhotos === 1 ? `Added a photo to ${cleanName}` : `Added ${addedPhotos} photos to ${cleanName}`;
+        }
+        if (removedPhotos > 0 && addedPhotos === 0) {
+            return `Removed ${removedPhotos} photo${removedPhotos === 1 ? '' : 's'} from ${cleanName}`;
+        }
+        if (addedPhotos > 0 || removedPhotos > 0) {
+            return `Updated photos of ${cleanName}`;
+        }
+    }
+
+    if (changedFriendly.length === 1) {
+        return `Updated ${changedFriendly[0]} of ${cleanName}`;
+    }
+    if (changedFriendly.length === 2) {
+        return `Updated ${changedFriendly[0]} and ${changedFriendly[1]} of ${cleanName}`;
+    }
+    return `Updated ${cleanName}`;
+}
+
+/**
+ * 2.3: Parse reviewer revision comments into structured checked parts + plain note
+ * so GIS Editors see a readable list.
+ */
+export function parseReviewerFeedback(comment = '') {
+    const raw = String(comment || '').trim();
+    if (!raw) return { items: [], note: '' };
+
+    const flaggedMatch = raw.match(/^Flagged for revision:\s*\[([^\]]+)\]\s*(?:[—\-:]\s*(.*))?$/i);
+    if (flaggedMatch) {
+        const items = flaggedMatch[1].split(',').map(s => s.trim()).filter(Boolean);
+        const note = (flaggedMatch[2] || '').trim();
+        return { items, note };
+    }
+
+    const suggestMatch = raw.match(/^\[Reviewer Suggestion\s*[—\-]\s*([^\]]+)\]\s*:?\s*(.*)$/i);
+    if (suggestMatch) {
+        const items = suggestMatch[1].split(',').map(s => s.trim()).filter(Boolean);
+        const note = (suggestMatch[2] || '').trim();
+        return { items, note };
+    }
+
+    return { items: [], note: raw };
+}

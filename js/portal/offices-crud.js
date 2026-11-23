@@ -332,8 +332,8 @@ function renderOfficeGroupsList() {
                         <strong style="color:#f8fafc; font-size:14px;">${escapeHtml(b.name)}</strong>
                         <span class="mono-code">${escapeHtml(b.building_code)}</span>
                         ${isStandalone
-                            ? `<span class="status-pill" style="background:rgba(100,116,139,0.16); border:1px solid rgba(148,163,184,0.28); color:#cbd5e1;">Standalone Facility (0 Offices)</span>`
-                            : `<span class="status-pill status-pill-live">${list.length === 1 ? '1 Office (Singular)' : `${list.length} Offices`}</span>`}
+                            ? `<span class="status-pill" style="background:rgba(100,116,139,0.16); border:1px solid rgba(148,163,184,0.28); color:#cbd5e1;">No offices</span>`
+                            : `<span class="status-pill status-pill-live">${list.length === 1 ? '1 Office' : `${list.length} Offices`}</span>`}
                     </div>
                     <div style="display:flex; align-items:center; gap:8px;" onclick="event.stopPropagation()">
                         <button type="button" class="btn btn-blue btn-sm" onclick="openOfficeModal(null, '${escapeHtml(b.building_code)}')">${SVG_ICONS.plus} <span>Add Office</span></button>
@@ -342,7 +342,7 @@ function renderOfficeGroupsList() {
                 <div class="office-group-body">
                     ${isStandalone ? `
                         <div class="help-tip" style="margin-top:10px;">
-                            <strong>AGENTS Rule 6 Indicator:</strong> Standalone facilities have 0 assigned offices and never display an invented office header on the public map. Only add verified offices from official DA assignments.
+                            No offices are currently listed in this building.
                         </div>
                     ` : list.map((o, idx) => {
                         const { floor, room } = splitLegacyFloorAndRoom(o.floor_or_room, o.room_number);
@@ -351,7 +351,7 @@ function renderOfficeGroupsList() {
                             <div style="min-width:220px; flex:1;">
                                 <div style="font-weight:700; color:var(--role-accent-light); font-size:13.5px;">${escapeHtml(o.office_name)}</div>
                                 <div style="display:flex; gap:8px; align-items:center; margin-top:4px; flex-wrap:wrap;">
-                                    <span class="status-pill status-pill-blue" style="font-size:10.5px;">${escapeHtml(floor || 'General Floor')}</span>
+                                    <span class="status-pill status-pill-blue" style="font-size:10.5px;">${escapeHtml(floor || 'Not set')}</span>
                                     ${room ? `<span class="status-pill status-pill-live" style="font-size:10.5px;">${escapeHtml(room)}</span>` : ''}
                                     <span class="mono-id" style="font-size:11px;">Order #${o.display_order || (idx + 1)}</span>
                                     ${o.office_desc ? `<span style="font-size:11.5px; color:#94a3b8;">${escapeHtml(o.office_desc)}</span>` : ''}
@@ -390,7 +390,7 @@ export async function renderOfficesTab(container) {
                         <div class="help-tip">Click any building card header to expand/collapse its internal units. Standalone buildings cleanly show 0 offices.</div>
                     </div>
                 </div>
-                <button type="button" class="btn btn-emerald" onclick="openOfficeModal(null)">${SVG_ICONS.plus} <span>Add Verified Office</span></button>
+                <button type="button" class="btn btn-emerald" onclick="openOfficeModal(null)">${SVG_ICONS.plus} <span>Add Office</span></button>
             </div>
 
             <div class="portal-filter-grid-2" style="display:grid; grid-template-columns:1.5fr 1fr; gap:10px; margin-bottom:16px;">
@@ -502,7 +502,7 @@ window.openOfficeModal = (officeId, presetBldgCode = null) => {
             <div class="form-group">
                 <label>Floor Level</label>
                 <select id="om-floor-select" class="form-control">
-                    <option value="" ${selectValue === '' ? 'selected' : ''}>— Not Specified / General —</option>
+                    <option value="" ${selectValue === '' ? 'selected' : ''}>Not set</option>
                     <option value="Basement" ${selectValue === 'Basement' ? 'selected' : ''}>Basement</option>
                     <option value="Ground Floor" ${selectValue === 'Ground Floor' ? 'selected' : ''}>Ground Floor</option>
                     <option value="Second Floor" ${selectValue === 'Second Floor' ? 'selected' : ''}>Second Floor</option>

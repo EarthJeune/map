@@ -15,6 +15,7 @@ import {
     getSavedPortalPref,
     setSavedPortalPref
 } from './core.js';
+import { parseReviewerFeedback } from './diff-utils.js';
 
 let auditSearch = '';
 let auditShowTest = false;
@@ -115,17 +116,19 @@ export async function renderDashboardTab(container) {
                 <button class="btn btn-danger btn-sm" onclick="switchTab('admin-reviews')">Open Revision Queue →</button>
             </div>
             <div style="display:grid; gap:8px;">
-                ${needsRev.slice(0, 4).map(r => `
+                ${needsRev.slice(0, 4).map(r => {
+                    const fb = parseReviewerFeedback(r.reviewer_comment || 'Changes requested.');
+                    return `
                     <div style="padding:9px 12px; border-radius:9px; background:rgba(15,23,42,0.72); border:1px solid rgba(244,63,94,0.24); display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
                         <div>
-                            <span class="mono-id">#${r.id}</span>
-                            <span class="mono-code">${escapeHtml(r.target_table)}</span>
-                            <strong style="color:#fff; font-size:12.5px; margin-left:4px;">${escapeHtml(r.summary)}</strong>
-                            <div style="font-size:12px; color:#fda4af; margin-top:4px;"><strong>Reviewer Feedback:</strong> "${escapeHtml(r.reviewer_comment || 'Changes requested.')}"</div>
+                            <strong style="color:#fff; font-size:13px;">${escapeHtml(r.summary)}</strong>
+                            ${fb.items.length > 0 ? `<ul style="margin:5px 0 0 18px; padding:0; font-size:12px; color:#fecdd3;">${fb.items.map(it => `<li>${escapeHtml(it)}</li>`).join('')}</ul>` : ''}
+                            ${fb.note ? `<div style="font-size:12px; color:#fda4af; margin-top:4px;"><strong>Reviewer note:</strong> ${escapeHtml(fb.note)}</div>` : ''}
                         </div>
                         <button class="btn btn-secondary btn-sm" onclick="switchTab('admin-reviews')">Revise Request</button>
                     </div>
-                `).join('')}
+                `;
+                }).join('')}
             </div>
         </div>
         ` : ''}
@@ -133,10 +136,9 @@ export async function renderDashboardTab(container) {
         <div class="panel-card dash-station-hero-card" style="display:flex; align-items:center; justify-content:space-between; gap:20px; padding:20px 24px; margin-bottom:20px; border-color:var(--role-accent-border);">
             <div>
                 <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px; flex-wrap:wrap;">
-                    <span class="dash-hero-kicker" style="font-size:11px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--role-accent-light);">Fact-Checked Station Workspace</span>
+                    <h2 style="font-size:20px; font-weight:700; color:#f8fafc; margin:0;">${escapeHtml(activeSt.name)}</h2>
                     <span id="dash-active-status-pill">${renderStationStatusPillHtml(activeSt.status)}</span>
                 </div>
-                <h2 style="font-size:20px; font-weight:700; color:#f8fafc; margin:0 0 4px;">${escapeHtml(activeSt.name)}</h2>
                 <div style="font-size:12.5px; color:#94a3b8;">${escapeHtml(activeSt.subtitle || '')} ${activeSt.province ? '• ' + escapeHtml(activeSt.province) : ''}</div>
             </div>
             <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
@@ -167,11 +169,11 @@ export async function renderDashboardTab(container) {
 
             <div class="stat-card">
                 <div class="stat-card-top">
-                    <div class="stat-label">Facility WebP Photos</div>
+                    <div class="stat-label">Photos</div>
                     <div class="stat-icon-badge">${SVG_ICONS.image}</div>
                 </div>
                 <div class="stat-value" data-count-to="${c.images || 0}">0</div>
-                <span class="stat-table-pill">${c.diskWebpCount ?? 0} on disk ${photoDelta > 0 ? `(+${photoDelta} unseeded)` : ''}</span>
+                <span class="stat-table-pill">${c.diskWebpCount ?? 0} image files${photoDelta > 0 ? ` (${photoDelta} new to sync)` : ''}</span>
             </div>
 
             <div class="stat-card">
@@ -180,7 +182,7 @@ export async function renderDashboardTab(container) {
                     <div class="stat-icon-badge">${SVG_ICONS.folder}</div>
                 </div>
                 <div class="stat-value" data-count-to="${c.offices || 0}">0</div>
-                <span class="stat-table-pill">Verified unit assignments</span>
+                <span class="stat-table-pill">Listed inside station buildings</span>
             </div>
 
             <div class="stat-card">
@@ -190,26 +192,44 @@ export async function renderDashboardTab(container) {
                 </div>
                 <div class="stat-value" data-count-to="${c.plots || 0}">0</div>
                 <span class="stat-table-pill">${PortalState.currentStation === 'lares'
-                    ? `${c.plots || 23} planted zones • ${c.totalPhysicalPlots || 45} total plots • ${c.subplots || 0} sub-plots`
+                    ? `${c.plots || 23} planted zones • ${c.totalPhysicalPlots || 45} total plots`
                     : `${c.subplots || 0} screenhouse sub-plots`}</span>
             </div>
 
             <div class="stat-card">
                 <div class="stat-card-top">
-                    <div class="stat-label">Road & Entrances</div>
+                    <div class="stat-label">Walkways & Entrances</div>
                     <div class="stat-icon-badge">${SVG_ICONS.route}</div>
                 </div>
                 <div class="stat-value" data-count-to="${c.entrances || 0}">0</div>
-                <span class="stat-table-pill">${c.roads || 0} road nodes • ${c.customGlbCount || 0} GLB models</span>
+                <span class="stat-table-pill">${c.roads || 0} walkway points • ${c.customGlbCount || 0} 3D models</span>
             </div>
 
             <div class="stat-card">
                 <div class="stat-card-top">
-                    <div class="stat-label">Governance Queue</div>
+                    <div class="stat-label">Sign-ups waiting</div>
+                    <div class="stat-icon-badge">${SVG_ICONS.users}</div>
+                </div>
+                <div class="stat-value" data-count-to="${gov.pendingSignups || 0}">0</div>
+                <span class="stat-table-pill">${(gov.pendingSignups || 0) === 0 ? 'All caught up' : 'Pending account approval'}</span>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-card-top">
+                    <div class="stat-label">Awaiting review</div>
+                    <div class="stat-icon-badge">${SVG_ICONS.clock}</div>
+                </div>
+                <div class="stat-value" data-count-to="${gov.pendingReviews || 0}">0</div>
+                <span class="stat-table-pill">${(gov.pendingReviews || 0) === 0 ? 'Nothing waiting for review' : 'Waiting on Station Reviewer'}</span>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-card-top">
+                    <div class="stat-label">Ready to publish</div>
                     <div class="stat-icon-badge">${SVG_ICONS.checkSquare}</div>
                 </div>
-                <div class="stat-value" data-count-to="${(gov.pendingReviews || 0) + (gov.readyToPublish || 0) + (gov.pendingSignups || 0)}">0</div>
-                <span class="stat-table-pill">${gov.pendingSignups || 0} sign-ups • ${gov.pendingReviews || 0} reviews • ${gov.readyToPublish || 0} publish</span>
+                <div class="stat-value" data-count-to="${gov.readyToPublish || 0}">0</div>
+                <span class="stat-table-pill">${(gov.readyToPublish || 0) === 0 ? 'Nothing ready to publish' : 'Approved and ready to go live'}</span>
             </div>
         </div>
 

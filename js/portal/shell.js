@@ -19,13 +19,13 @@ import { initAuthModule, completeAuthSession, logoutPortal, switchAuthView } fro
 import { initNotificationControls, startNotificationPolling, stopNotificationPolling, renderNotificationsTab, refreshNotifications, syncSidebarQueueBadges } from './notifications.js?v=373';
 import { initRoleSwitcher, syncRoleSwitcherUi } from './role-switcher.js?v=372';
 import { runRoleTransition } from './role-transition.js';
-import { renderDashboardTab } from './dashboard.js?v=374';
-import { renderPinTab } from './pin-station.js?v=374';
-import { renderBuildingsTab } from './buildings-crud.js?v=374';
-import { renderOfficesTab } from './offices-crud.js?v=374';
-import { renderPlotsTab } from './plots-crud.js?v=374';
-import { renderUserAccountsTab, renderLoginLogsTab } from './users-governance.js?v=374';
-import { renderAdminReviewsTab, renderReviewQueueTab, renderReviewDirectoryTab } from './change-requests.js?v=374';
+import { renderDashboardTab } from './dashboard.js?v=375';
+import { renderPinTab } from './pin-station.js?v=375';
+import { renderBuildingsTab } from './buildings-crud.js?v=375';
+import { renderOfficesTab } from './offices-crud.js?v=375';
+import { renderPlotsTab } from './plots-crud.js?v=375';
+import { renderUserAccountsTab, renderLoginLogsTab } from './users-governance.js?v=375';
+import { renderAdminReviewsTab, renderReviewQueueTab, renderReviewDirectoryTab } from './change-requests.js?v=375';
 
 if (window.mapboxgl) {
     window.mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
@@ -52,10 +52,10 @@ const ROLE_NAV_GROUPS = {
         },
         {
             id: 'sa-crud',
-            label: '3. Database CRUD Modules',
+            label: '3. Edit Records',
             items: [
                 { tab: 'pin', label: '"You Are Here" Pin & Station', icon: 'pin' },
-                { tab: 'buildings', label: 'Buildings & Multi-Photos', icon: 'building' },
+                { tab: 'buildings', label: 'Buildings & Photos', icon: 'building' },
                 { tab: 'offices', label: 'Internal Offices', icon: 'folder' },
                 { tab: 'plots', label: 'Agricultural Plots & Crops', icon: 'sprout' }
             ]
@@ -112,10 +112,10 @@ const ROLE_NAV_GROUPS = {
         },
         {
             id: 'gis-crud',
-            label: 'Database CRUD Modules',
+            label: 'Edit Records',
             items: [
                 { tab: 'pin', label: '"You Are Here" Pin & Station', icon: 'pin' },
-                { tab: 'buildings', label: 'Buildings & Multi-Photos', icon: 'building' },
+                { tab: 'buildings', label: 'Buildings & Photos', icon: 'building' },
                 { tab: 'offices', label: 'Internal Offices', icon: 'folder' },
                 { tab: 'plots', label: 'Agricultural Plots & Crops', icon: 'sprout' }
             ]
@@ -158,9 +158,9 @@ const TAB_META = {
     dashboard: { title: 'Dashboard & Multi-Station Overview', icon: 'dashboard' },
     notifications: { title: 'Activity Notifications & Updates', icon: 'bell' },
     pin: { title: 'Station Settings & "You Are Here" Kiosk Pin', icon: 'pin' },
-    buildings: { title: 'Buildings, Status & Multi-Photo Gallery CRUD', icon: 'building' },
-    offices: { title: 'Internal Building Offices CRUD', icon: 'folder' },
-    plots: { title: 'Agricultural Plots, Crops & History CRUD', icon: 'sprout' },
+    buildings: { title: 'Buildings, Status & Photo Gallery', icon: 'building' },
+    offices: { title: 'Internal Building Offices', icon: 'folder' },
+    plots: { title: 'Agricultural Plots, Crops & History', icon: 'sprout' },
     'admin-reviews': { title: 'Change Requests, Revisions & Publish Queue', icon: 'checkSquare' },
     'admin-reviewers': { title: 'User Approvals & Role Assignments', icon: 'users' },
     'admin-login-logs': { title: 'Sign-In Audit Logs & Security Trail', icon: 'shield' },
@@ -441,7 +441,7 @@ export async function loadCurrentTab() {
             });
         }
     } catch (err) {
-        container.innerHTML = `<div class="panel-card" style="color:#fda4af; border-color:rgba(244,63,94,0.35);"><h3>Could not load section</h3><p style="margin-top:8px; color:#94a3b8;">${escapeHtml(err.message)}</p></div>`;
+        container.innerHTML = `<div class="panel-card" style="color:#fda4af; border-color:rgba(244,63,94,0.35);"><h3>We couldn't load this section</h3><p style="margin-top:8px; color:#94a3b8;">Please try refreshing the page or switching tabs. (${escapeHtml(err.message || 'Connection issue')})</p></div>`;
     }
 }
 
