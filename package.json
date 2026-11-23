@@ -4,10 +4,11 @@
   "main": "index.js",
   "scripts": {
     "stress-test": "node tools/stress_test.mjs",
+    "db:schema-backup": "node database/migrations/schema_snapshot.mjs",
     "migrate": "node database/migrations/migrate.mjs up",
     "migrate:rollback": "node database/migrations/migrate.mjs down",
     "migrate:status": "node database/migrations/migrate.mjs status",
-    "test": "node --test tools/tests/*.test.mjs"
+    "test": "node tools/run_tests.mjs"
   },
   "keywords": [],
   "author": "",
