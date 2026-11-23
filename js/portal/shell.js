@@ -429,18 +429,40 @@ export async function loadCurrentTab() {
             const targetUrl = `${guide.url}?station=${encodeURIComponent(targetStation)}`;
             const stBadge = `DA-${targetStation.toUpperCase()}${lockedSt ? ' (Locked)' : ''}`;
 
+            const isMobileViewport = window.matchMedia && window.matchMedia('(max-width: 900px)').matches;
+            const mobileFallbackTab = tab === 'editor-plot' ? 'plots' : 'buildings';
+            const mobileFallbackLabel = tab === 'editor-plot' ? 'Edit Agricultural Plots & Crops' : 'Edit Buildings & Photos';
+
             container.innerHTML = `
                 <div class="editor-frame-shell">
-                    <div class="editor-guide-bar" id="editor-guide-bar">
-                        <div class="editor-guide-left">
-                            <span class="editor-guide-station" id="editor-guide-station-badge">${escapeHtml(stBadge)}</span>
-                            <div class="editor-guide-text">
-                                <strong>${escapeHtml(guide.lead)}</strong> ${escapeHtml(guide.tips)}
+                    <div class="editor-mobile-guard" id="editor-mobile-guard">
+                        <div class="editor-mobile-guard-card">
+                            <div class="editor-mobile-guard-icon">${SVG_ICONS.alertTriangle}</div>
+                            <h3>Desktop Required for Precision Map Editing</h3>
+                            <p>
+                                <strong>${escapeHtml(tMeta.title)}</strong> is disabled on mobile screens to prevent inaccurate building footprints, plot boundaries, and road routing vertices.
+                            </p>
+                            <p class="editor-mobile-guard-sub">
+                                Please open this visual editor on a desktop or laptop browser. You can still upload field photos, edit facility details, and review requests from your phone.
+                            </p>
+                            <div class="editor-mobile-guard-actions">
+                                <button type="button" class="btn btn-emerald" onclick="switchAdminTab('${mobileFallbackTab}')">${mobileFallbackLabel}</button>
+                                <button type="button" class="btn btn-secondary" onclick="switchAdminTab('dashboard')">Back to Dashboard</button>
                             </div>
                         </div>
-                        <a href="${escapeHtml(targetUrl)}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm" id="editor-open-standalone-btn" style="text-decoration:none; white-space:nowrap;">Open Standalone ↗</a>
                     </div>
-                    <iframe id="portal-visual-editor-iframe" class="editor-guide-iframe" src="${escapeHtml(targetUrl)}"></iframe>
+                    <div class="editor-desktop-wrap">
+                        <div class="editor-guide-bar" id="editor-guide-bar">
+                            <div class="editor-guide-left">
+                                <span class="editor-guide-station" id="editor-guide-station-badge">${escapeHtml(stBadge)}</span>
+                                <div class="editor-guide-text">
+                                    <strong>${escapeHtml(guide.lead)}</strong> ${escapeHtml(guide.tips)}
+                                </div>
+                            </div>
+                            <a href="${escapeHtml(targetUrl)}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm" id="editor-open-standalone-btn" style="text-decoration:none; white-space:nowrap;">Open Standalone ↗</a>
+                        </div>
+                        ${isMobileViewport ? '' : `<iframe id="portal-visual-editor-iframe" class="editor-guide-iframe" src="${escapeHtml(targetUrl)}"></iframe>`}
+                    </div>
                 </div>
             `;
 

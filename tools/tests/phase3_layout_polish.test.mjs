@@ -16,7 +16,7 @@ test('3.2 & 3.5 CSS design tokens, contrast parity, reduced-motion, and brace ba
         else if (ch === '}') bal--;
     }
     assert.equal(bal, 0, 'css/portal.css must have balanced braces');
-    for (const token of ['--sp-2: 8px', '--fs-body: 14px', '--fs-xs: 12px', '--motion-fast: 150ms', 'prefers-reduced-motion', ':focus-visible', 'overscroll-behavior: contain', '.kpi-card-modern', '.portal-skeleton', 'body[data-theme="light"] #login-overlay']) {
+    for (const token of ['--sp-2: 8px', '--fs-body: 14px', '--fs-xs: 12px', '--motion-fast: 150ms', 'prefers-reduced-motion', ':focus-visible', 'overscroll-behavior: contain', '.kpi-card-modern', '.portal-skeleton', 'body[data-theme="light"] #login-overlay', '.editor-mobile-guard']) {
         assert.ok(css.includes(token), `portal.css should define ${token}`);
     }
 });
