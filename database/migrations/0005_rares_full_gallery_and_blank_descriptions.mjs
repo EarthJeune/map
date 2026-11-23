@@ -25,7 +25,7 @@ export async function up(conn) {
             await conn.query(
                 `INSERT INTO building_images (station_id, building_code, image_webp_url, caption, display_order, is_primary)
                  VALUES ('rares', ?, ?, ?, ?, ?)`,
-                [code, item.image_webp_url, item.caption || '', Number(item.display_order || 1), item.is_primary ? 1 : 0]
+                [code, item.image_webp_url, '', Number(item.display_order || 1), item.is_primary ? 1 : 0]
             );
         }
     }

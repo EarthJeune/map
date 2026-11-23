@@ -379,7 +379,7 @@ export function showBuildingPanel(buildingId, targetOffice = '') {
             ? building.images
                 .map((im, i) => ({
                     src: im.src || im.image_webp_url || '',
-                    label: im.label || im.caption || `Photo ${i + 1}`
+                    label: im.label || im.caption || ''
                 }))
                 .filter(v => Boolean(v.src))
             : [{ src: fallbackSrc, label: building.isGate ? 'Access Gate' : 'Facade' }];
@@ -1542,15 +1542,17 @@ export function setDrawerHeroImage({ src, title = '', subtitle = '', badgeDotCol
             expandHintEl.onclick = (e) => {
                 e.stopPropagation();
                 if (typeof window.openPhotoLightbox === 'function') {
-                    const activeView = currentHeroViews[currentHeroActiveIdx] || { src: imgEl.src, label: 'Main View' };
-                    window.openPhotoLightbox(activeView.src, `${currentHeroTitle} — ${activeView.label}`);
+                    const activeView = currentHeroViews[currentHeroActiveIdx] || { src: imgEl.src, label: '' };
+                    const lbTitle = activeView.label ? `${currentHeroTitle} — ${activeView.label}` : currentHeroTitle;
+                    window.openPhotoLightbox(activeView.src, lbTitle);
                 }
             };
         }
         imgEl.onclick = () => {
             if (typeof window.openPhotoLightbox === 'function') {
-                const activeView = currentHeroViews[currentHeroActiveIdx] || { src: imgEl.src, label: 'Main View' };
-                window.openPhotoLightbox(activeView.src, `${currentHeroTitle} — ${activeView.label}`);
+                const activeView = currentHeroViews[currentHeroActiveIdx] || { src: imgEl.src, label: '' };
+                const lbTitle = activeView.label ? `${currentHeroTitle} — ${activeView.label}` : currentHeroTitle;
+                window.openPhotoLightbox(activeView.src, lbTitle);
             }
         };
 
@@ -1592,7 +1594,8 @@ export function setDrawerHeroImage({ src, title = '', subtitle = '', badgeDotCol
         }
 
         if (viewsBarEl) {
-            if (hasMulti) {
+            const hasNamedViews = currentHeroViews.some(v => v.label && String(v.label).trim().length > 0);
+            if (hasMulti && hasNamedViews) {
                 let chipsHtml = '';
                 currentHeroViews.forEach((v, idx) => {
                     const isActive = idx === currentHeroActiveIdx;

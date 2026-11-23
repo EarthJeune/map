@@ -77,12 +77,7 @@ def sort_key(p: Path):
     return (pri, p.name.lower())
 
 def clean_caption(stem: str, idx: int) -> str:
-    if idx == 1:
-        return "Primary Facility View"
-    s = re.sub(r"[_]+", " ", stem).strip()
-    if re.match(r"^(IMG|DJI|PXL|Screenshot)\b", s, re.I):
-        return f"Facility View {idx}"
-    return s[:80]
+    return ""
 
 def convert_to_webp(src: Path, dst: Path):
     with Image.open(src) as im:

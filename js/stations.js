@@ -1958,7 +1958,7 @@ export function loadRARESData() {
                             p.image = dbBldg.images[0].image_webp_url;
                             p.images = dbBldg.images.map(img => ({
                                 src: img.image_webp_url,
-                                label: img.caption || 'Facility View'
+                                label: img.caption || ''
                             }));
                         }
                     }
