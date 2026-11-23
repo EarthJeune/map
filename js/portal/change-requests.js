@@ -2282,6 +2282,7 @@ async function renderChangeRequestWorkspace(container, { isReviewerView = false 
         draft: cachedRequests.filter(r => r.status === 'draft').length,
         pending: cachedRequests.filter(r => r.status === 'pending').length,
         rejected: cachedRequests.filter(r => r.status === 'rejected').length,
+        denied: cachedRequests.filter(r => r.status === 'denied').length,
         approved: cachedRequests.filter(r => r.status === 'approved').length,
         published: cachedRequests.filter(r => r.status === 'published').length,
         all: cachedRequests.length
@@ -2297,13 +2298,15 @@ async function renderChangeRequestWorkspace(container, { isReviewerView = false 
         }
     }
 
+    const roleSlug = PortalState.effectiveRole || 'super_admin';
     const subtabs = [
-        ...(counts.draft > 0 || !isReviewerView ? [{ id: 'draft', label: 'Drafts', count: counts.draft }] : []),
-        { id: 'pending', label: 'Pending Review', count: counts.pending },
-        { id: 'rejected', label: 'Needs Revision (Denied)', count: counts.rejected },
-        { id: 'approved', label: 'Approved (Ready to Publish)', count: counts.approved },
-        { id: 'published', label: 'Published', count: counts.published },
-        { id: 'all', label: 'All History', count: counts.all }
+        ...(counts.draft > 0 || !isReviewerView ? [{ id: 'draft', label: 'Drafts', count: counts.draft, urgent: false }] : []),
+        { id: 'pending', label: 'Pending Review', count: counts.pending, urgent: counts.pending > 0 && ['reviewer', 'super_admin', 'administrator'].includes(roleSlug) },
+        { id: 'rejected', label: 'Needs Revision', count: counts.rejected, urgent: counts.rejected > 0 },
+        ...(counts.denied > 0 ? [{ id: 'denied', label: 'Denied (Closed)', count: counts.denied, urgent: false }] : []),
+        { id: 'approved', label: 'Approved (Ready to Publish)', count: counts.approved, urgent: counts.approved > 0 && hasPermission('changes:publish') },
+        { id: 'published', label: 'Published', count: counts.published, urgent: false },
+        { id: 'all', label: 'All History', count: counts.all, urgent: false }
     ];
 
     container.innerHTML = `
@@ -2324,7 +2327,7 @@ async function renderChangeRequestWorkspace(container, { isReviewerView = false 
 
             <div class="subtabs-strip" id="cr-subtabs">
                 ${subtabs.map(t => `
-                    <button type="button" class="subtab-pill ${activeCrSubTab === t.id ? 'active' : ''}" data-cr-tab="${t.id}">
+                    <button type="button" class="subtab-pill ${activeCrSubTab === t.id ? 'active' : ''} ${t.urgent ? 'is-urgent' : ''}" data-cr-tab="${t.id}">
                         <span>${escapeHtml(t.label)}</span>
                         <span class="subtab-count">${t.count}</span>
                     </button>

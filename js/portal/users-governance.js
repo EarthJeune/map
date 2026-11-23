@@ -218,10 +218,10 @@ export async function renderUserAccountsTab(container, initialSubTab = null) {
     };
 
     const tabs = [
-        { id: 'pending', label: 'Pending Sign-Ups', count: counts.pending },
-        { id: 'approved', label: 'Approved (Active)', count: counts.approved },
-        { id: 'not_approved', label: 'Not Approved', count: counts.not_approved },
-        { id: 'disabled', label: 'Disabled', count: counts.disabled }
+        { id: 'pending', label: 'Pending Sign-Ups', count: counts.pending, urgent: counts.pending > 0 },
+        { id: 'approved', label: 'Approved (Active)', count: counts.approved, urgent: false },
+        { id: 'not_approved', label: 'Not Approved', count: counts.not_approved, urgent: false },
+        { id: 'disabled', label: 'Disabled', count: counts.disabled, urgent: false }
     ];
 
     container.innerHTML = `
@@ -238,7 +238,7 @@ export async function renderUserAccountsTab(container, initialSubTab = null) {
 
             <div class="subtabs-strip" id="ug-subtabs">
                 ${tabs.map(t => `
-                    <button type="button" class="subtab-pill ${activeUserSubTab === t.id ? 'active' : ''}" data-ug-tab="${t.id}">
+                    <button type="button" class="subtab-pill ${activeUserSubTab === t.id ? 'active' : ''} ${t.urgent ? 'is-urgent' : ''}" data-ug-tab="${t.id}">
                         <span>${escapeHtml(t.label)}</span>
                         <span class="subtab-count">${t.count}</span>
                     </button>

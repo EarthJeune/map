@@ -2466,6 +2466,49 @@ table.crud-table tbody tr:hover td { background: rgba(255, 255, 255, 0.025); }
     color: #020617;
     font-weight: 800;
 }
+.subtab-pill.is-urgent,
+.notif-filter-chip.is-urgent {
+    border-color: rgba(239, 68, 68, 0.55) !important;
+    background: rgba(239, 68, 68, 0.12) !important;
+    color: #fca5a5 !important;
+}
+.subtab-pill.is-urgent:hover,
+.notif-filter-chip.is-urgent:hover {
+    border-color: #ef4444 !important;
+    background: rgba(239, 68, 68, 0.18) !important;
+}
+.subtab-pill.is-urgent .subtab-count,
+.notif-filter-chip.is-urgent .subtab-count {
+    background: #ef4444 !important;
+    color: #ffffff !important;
+    font-weight: 800;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.38);
+}
+.subtab-pill.is-urgent.active,
+.notif-filter-chip.is-urgent.active {
+    border-color: #ef4444 !important;
+    background: rgba(239, 68, 68, 0.22) !important;
+    color: #fecaca !important;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.22);
+}
+body[data-theme="light"] .subtab-pill.is-urgent,
+body[data-theme="light"] .notif-filter-chip.is-urgent {
+    border-color: rgba(220, 38, 38, 0.45) !important;
+    background: #fef2f2 !important;
+    color: #991b1b !important;
+}
+body[data-theme="light"] .subtab-pill.is-urgent:hover,
+body[data-theme="light"] .notif-filter-chip.is-urgent:hover {
+    border-color: #dc2626 !important;
+    background: #fee2e2 !important;
+}
+body[data-theme="light"] .subtab-pill.is-urgent.active,
+body[data-theme="light"] .notif-filter-chip.is-urgent.active {
+    border-color: #dc2626 !important;
+    background: #fee2e2 !important;
+    color: #7f1d1d !important;
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.18);
+}
 
 .role-selector-grid {
     display: grid;

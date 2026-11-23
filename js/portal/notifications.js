@@ -197,18 +197,18 @@ export function syncSidebarQueueBadges() {
     const role = PortalState.effectiveRole || 'super_admin';
 
     setSidebarTabBadge('admin-reviewers', pendingUsers, {
-        tone: 'badge-amber',
+        tone: pendingUsers > 0 ? '' : 'badge-amber',
         title: pendingUsers > 0 ? `${pendingUsers} account${pendingUsers === 1 ? '' : 's'} awaiting approval` : ''
     });
 
     setSidebarTabBadge('review-queue', pendingReviews, {
-        tone: 'badge-amber',
+        tone: pendingReviews > 0 ? '' : 'badge-amber',
         title: pendingReviews > 0 ? `${pendingReviews} change request${pendingReviews === 1 ? '' : 's'} pending review` : ''
     });
 
     if (role === 'administrator') {
         setSidebarTabBadge('admin-reviews', approvedPublish, {
-            tone: 'badge-emerald',
+            tone: approvedPublish > 0 ? '' : 'badge-emerald',
             title: approvedPublish > 0 ? `${approvedPublish} approved edit${approvedPublish === 1 ? '' : 's'} ready to publish` : ''
         });
     } else if (role === 'gis_editor') {
@@ -225,11 +225,8 @@ export function syncSidebarQueueBadges() {
         }
     } else {
         const saTotal = pendingReviews + approvedPublish + needsRevision;
-        const saTone = needsRevision > 0 && (pendingReviews + approvedPublish) === 0
-            ? ''
-            : (approvedPublish > 0 && pendingReviews === 0 ? 'badge-emerald' : 'badge-amber');
         setSidebarTabBadge('admin-reviews', saTotal, {
-            tone: saTone,
+            tone: saTotal > 0 ? '' : 'badge-amber',
             title: saTotal > 0 ? `${pendingReviews} pending review • ${approvedPublish} ready to publish • ${needsRevision} needs revision` : ''
         });
     }

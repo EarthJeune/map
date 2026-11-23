@@ -19,7 +19,7 @@ import {
     showPortalConfirm
 } from './core.js';
 import { initAuthModule, completeAuthSession, logoutPortal, switchAuthView } from './auth.js?v=370';
-import { initNotificationControls, startNotificationPolling, stopNotificationPolling, renderNotificationsTab, refreshNotifications, syncSidebarQueueBadges } from './notifications.js?v=373';
+import { initNotificationControls, startNotificationPolling, stopNotificationPolling, renderNotificationsTab, refreshNotifications, syncSidebarQueueBadges } from './notifications.js?v=374';
 import { initRoleSwitcher, syncRoleSwitcherUi } from './role-switcher.js?v=372';
 import { runRoleTransition } from './role-transition.js';
 import { renderDashboardTab } from './dashboard.js?v=376';
@@ -27,8 +27,8 @@ import { renderPinTab } from './pin-station.js?v=376';
 import { renderBuildingsTab } from './buildings-crud.js?v=382';
 import { renderOfficesTab } from './offices-crud.js?v=375';
 import { renderPlotsTab } from './plots-crud.js?v=376';
-import { renderUserAccountsTab, renderLoginLogsTab } from './users-governance.js?v=375';
-import { renderAdminReviewsTab, renderReviewQueueTab, renderReviewDirectoryTab } from './change-requests.js?v=381';
+import { renderUserAccountsTab, renderLoginLogsTab } from './users-governance.js?v=376';
+import { renderAdminReviewsTab, renderReviewQueueTab, renderReviewDirectoryTab } from './change-requests.js?v=382';
 
 if (window.mapboxgl) {
     window.mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
