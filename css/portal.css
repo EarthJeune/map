@@ -5328,6 +5328,7 @@ mark.diff-word-add {
    PORTAL SHELL LIGHT MODE THEME (Toggled via Lucide Sun/Moon next to Bell)
    ========================================================================== */
 body[data-theme="light"] {
+    color-scheme: light;
     --bg-canvas: #f1f5f9;
     --bg-sidebar: #ffffff;
     --bg-surface: rgba(255, 255, 255, 0.96);
@@ -5362,10 +5363,14 @@ body[data-theme="light"] .modal-title,
 body[data-theme="light"] .sidebar-user-name,
 body[data-theme="light"] .bldg-card-title,
 body[data-theme="light"] .cr-vc-title,
-body[data-theme="light"] .admin-shell h1,
-body[data-theme="light"] .admin-shell h2,
-body[data-theme="light"] .admin-shell h3,
-body[data-theme="light"] .admin-shell h4,
+body[data-theme="light"] .admin-sidebar h1,
+body[data-theme="light"] .admin-sidebar h2,
+body[data-theme="light"] .admin-sidebar h3,
+body[data-theme="light"] .admin-sidebar h4,
+body[data-theme="light"] .admin-main h1,
+body[data-theme="light"] .admin-main h2,
+body[data-theme="light"] .admin-main h3,
+body[data-theme="light"] .admin-main h4,
 body[data-theme="light"] .modal-box h1,
 body[data-theme="light"] .modal-box h2,
 body[data-theme="light"] .modal-box h3,
@@ -5651,7 +5656,8 @@ body[data-theme="light"] .status-pill-rose { background: rgba(244, 63, 94, 0.14)
 body[data-theme="light"] .status-pill-violet { background: rgba(168, 85, 247, 0.14); border-color: rgba(168, 85, 247, 0.35); color: #6d28d9; }
 
 body[data-theme="light"] .notif-bell-btn,
-body[data-theme="light"] .admin-shell .btn-secondary,
+body[data-theme="light"] .admin-sidebar .btn-secondary,
+body[data-theme="light"] .admin-main .btn-secondary,
 body[data-theme="light"] .modal-box .btn-secondary,
 body[data-theme="light"] .btn-ghost-logout,
 body[data-theme="light"] .log-page-btn {
@@ -5660,21 +5666,31 @@ body[data-theme="light"] .log-page-btn {
     color: #1e293b;
 }
 body[data-theme="light"] .notif-bell-btn:hover,
-body[data-theme="light"] .admin-shell .btn-secondary:hover,
+body[data-theme="light"] .admin-sidebar .btn-secondary:hover,
+body[data-theme="light"] .admin-main .btn-secondary:hover,
 body[data-theme="light"] .modal-box .btn-secondary:hover,
 body[data-theme="light"] .log-page-btn:hover:not(:disabled) {
     background: #e2e8f0;
     color: #0f172a;
 }
 
-body[data-theme="light"] .admin-shell .form-control,
-body[data-theme="light"] .admin-shell select.form-control,
-body[data-theme="light"] .admin-shell textarea.form-control,
+body[data-theme="light"] .admin-sidebar .form-control,
+body[data-theme="light"] .admin-sidebar select.form-control,
+body[data-theme="light"] .admin-sidebar textarea.form-control,
+body[data-theme="light"] .admin-main .form-control,
+body[data-theme="light"] .admin-main select.form-control,
+body[data-theme="light"] .admin-main textarea.form-control,
 body[data-theme="light"] .modal-box .form-control,
 body[data-theme="light"] .modal-box select.form-control,
 body[data-theme="light"] .modal-box textarea.form-control {
     background: #ffffff;
     border-color: rgba(15, 23, 42, 0.18);
+    color: #0f172a;
+}
+
+body[data-theme="light"] .admin-main select option,
+body[data-theme="light"] .modal-box select option {
+    background: #ffffff;
     color: #0f172a;
 }
 
