@@ -6645,9 +6645,9 @@ export const CUSTOM_3D_BUILDINGS = {
 
     'rares_building_13': {
 
-        modelId: 'rares_gh_hydro_v1',
+        modelId: 'rares_gh_hydro_v2',
 
-        modelUrl: 'models/rares_gh_hydro.glb?v=1',
+        modelUrl: 'models/rares_gh_hydro.glb?v=2',
 
         coords: [121.340648, 14.57559411],
 

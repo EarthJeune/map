@@ -178,6 +178,111 @@ for idx, ru in enumerate((-1.55, 1.55)):
             create_box_uv(f"GHH_NFT_{idx}_{tier}_{sgn}", tu, RACK_CV, tz, 0.14, RACK_LEN, 0.08, mat_pvc)
             create_box_uv(f"GHH_Lettuce_{idx}_{tier}_{sgn}", tu, RACK_CV, tz + 0.09, 0.18, RACK_LEN - 0.2, 0.11, mat_lettuce)
 
+# 6. ELEVATED BLUE POLYETHYLENE WATER TANK ON TAPERED ANGLE-IRON STAND (Back with the Water.HEIC)
+# Exact centroid of rares_building_13.1 relative to model origin: (-0.187, -11.221)
+mat_tank_blue  = create_mat("GHH_TankBlue",   "#0B5B9A", roughness=0.38, metallic=0.05)
+mat_tank_lid   = create_mat("GHH_TankLid",    "#084475", roughness=0.42, metallic=0.05)
+mat_pipe_blue  = create_mat("GHH_PipeBlue",   "#1E78C8", roughness=0.35, metallic=0.05)
+mat_stand_iron = create_mat("GHH_StandIron",  "#7F8480", roughness=0.62, metallic=0.45)
+mat_deck_wood  = create_mat("GHH_StandDeck",  "#8A7961", roughness=0.88, metallic=0.0)
+mat_valve_blk  = create_mat("GHH_ValveBlack", "#1D2022", roughness=0.55, metallic=0.2)
+
+TANK_WX, TANK_WY = -0.187, -11.221
+# Convert world (TANK_WX, TANK_WY) into greenhouse (u, v) basis so stand aligns cleanly with greenhouse
+du_t = (TANK_WX - OX) * ux + (TANK_WY - OY) * uy
+dv_t = (TANK_WX - OX) * vx + (TANK_WY - OY) * vy
+
+def add_strut(name, p1, p2, thick, mat):
+    dx, dy, dz = p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]
+    length = math.sqrt(dx * dx + dy * dy + dz * dz)
+    if length < 1e-4:
+        return
+    mx, my, mz = (p1[0] + p2[0]) * 0.5, (p1[1] + p2[1]) * 0.5, (p1[2] + p2[2]) * 0.5
+    bpy.ops.mesh.primitive_cube_add(location=(mx, my, mz))
+    obj = bpy.context.active_object
+    obj.name = name
+    obj.scale = (thick * 0.5, thick * 0.5, length * 0.5)
+    # Orient local +Z along (p2 - p1)
+    from mathutils import Vector
+    vec = Vector((dx, dy, dz)).normalized()
+    quat = vec.to_track_quat('Z', 'Y')
+    obj.rotation_euler = quat.to_euler()
+    bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+    obj.data.materials.append(mat)
+
+STAND_H = 1.38
+HB = 0.72   # Half-width at base (1.44m x 1.44m)
+HT = 0.60   # Half-width at top  (1.20m x 1.20m)
+b_corners = [
+    to_world(du_t - HB, dv_t - HB, 0.0),
+    to_world(du_t + HB, dv_t - HB, 0.0),
+    to_world(du_t + HB, dv_t + HB, 0.0),
+    to_world(du_t - HB, dv_t + HB, 0.0),
+]
+t_corners = [
+    to_world(du_t - HT, dv_t - HT, STAND_H),
+    to_world(du_t + HT, dv_t - HT, STAND_H),
+    to_world(du_t + HT, dv_t + HT, STAND_H),
+    to_world(du_t - HT, dv_t + HT, STAND_H),
+]
+for i in range(4):
+    j = (i + 1) % 4
+    # Sloped corner leg
+    add_strut(f"GHH_TankLeg_{i}", b_corners[i], t_corners[i], 0.065, mat_stand_iron)
+    # Top perimeter rail
+    add_strut(f"GHH_TankTopRail_{i}", t_corners[i], t_corners[j], 0.06, mat_stand_iron)
+    # Lower perimeter rail (0.18m above ground)
+    p_bi = (b_corners[i][0], b_corners[i][1], 0.18)
+    p_bj = (b_corners[j][0], b_corners[j][1], 0.18)
+    add_strut(f"GHH_TankLowRail_{i}", p_bi, p_bj, 0.05, mat_stand_iron)
+    # X-bracing diagonals on each side
+    add_strut(f"GHH_TankBraceA_{i}", p_bi, t_corners[j], 0.04, mat_stand_iron)
+    add_strut(f"GHH_TankBraceB_{i}", p_bj, t_corners[i], 0.04, mat_stand_iron)
+
+# Top deck platform
+create_box_uv("GHH_TankDeck", du_t, dv_t, STAND_H + 0.025, HT * 2.04, HT * 2.04, 0.05, mat_deck_wood)
+
+# Blue cylindrical polyethylene water tank (18-seg smooth low-poly cylinder + 3 rib bands + top rim + lid)
+TANK_Z0 = STAND_H + 0.05
+TANK_H  = 1.32
+TANK_R  = 0.54
+bpy.ops.mesh.primitive_cylinder_add(vertices=18, radius=TANK_R, depth=TANK_H, location=(TANK_WX, TANK_WY, TANK_Z0 + TANK_H * 0.5))
+tank_body = bpy.context.active_object
+tank_body.name = "GHH_WaterTankBody"
+tank_body.data.materials.append(mat_tank_blue)
+
+# Horizontal reinforcement ribs + flared top rim
+for r_idx, rz_frac in enumerate((0.28, 0.55, 0.80)):
+    bpy.ops.mesh.primitive_cylinder_add(vertices=18, radius=TANK_R + 0.025, depth=0.045, location=(TANK_WX, TANK_WY, TANK_Z0 + TANK_H * rz_frac))
+    rib = bpy.context.active_object
+    rib.name = f"GHH_TankRib_{r_idx}"
+    rib.data.materials.append(mat_tank_blue)
+
+bpy.ops.mesh.primitive_cylinder_add(vertices=18, radius=TANK_R + 0.055, depth=0.055, location=(TANK_WX, TANK_WY, TANK_Z0 + TANK_H - 0.02))
+rim = bpy.context.active_object
+rim.name = "GHH_TankTopRim"
+rim.data.materials.append(mat_tank_blue)
+
+# Domed/stepped center lid
+bpy.ops.mesh.primitive_cylinder_add(vertices=16, radius=0.26, depth=0.10, location=(TANK_WX, TANK_WY, TANK_Z0 + TANK_H + 0.05))
+lid = bpy.context.active_object
+lid.name = "GHH_TankLid"
+lid.data.materials.append(mat_tank_lid)
+
+# Vertical blue PVC inlet/riser pipe running along outer edge of stand & tank + top elbow
+pipe_base = to_world(du_t + 0.02, dv_t + TANK_R + 0.07, 0.0)
+pipe_top  = to_world(du_t + 0.02, dv_t + TANK_R + 0.07, TANK_Z0 + TANK_H - 0.06)
+pipe_in   = to_world(du_t + 0.02, dv_t + TANK_R - 0.08, TANK_Z0 + TANK_H - 0.06)
+add_strut("GHH_TankRiserPipe", pipe_base, pipe_top, 0.045, mat_pipe_blue)
+add_strut("GHH_TankTopElbow",  pipe_top,  pipe_in,  0.045, mat_pipe_blue)
+
+# Lower outlet valve & pipe toward greenhouse
+out_tank = to_world(du_t + TANK_R - 0.02, dv_t - 0.12, TANK_Z0 + 0.10)
+out_edge = to_world(du_t + TANK_R + 0.18, dv_t - 0.12, TANK_Z0 + 0.10)
+out_drop = to_world(du_t + TANK_R + 0.18, dv_t - 0.12, 0.12)
+add_strut("GHH_TankOutPipeH", out_tank, out_edge, 0.038, mat_valve_blk)
+add_strut("GHH_TankOutPipeV", out_edge, out_drop, 0.038, mat_valve_blk)
+
 # Export GLB strictly under 300 KB
 os.makedirs("models", exist_ok=True)
 out_path = os.path.abspath("models/rares_gh_hydro.glb")
