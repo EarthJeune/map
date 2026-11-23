@@ -339,18 +339,20 @@
         const msg = event.data;
         if (!msg || msg.type !== 'IGUIDE_PORTAL_CONTEXT') return;
 
+        const shouldForce = Boolean(state.lockedStation) || msg.forceStation === true || !new URLSearchParams(global.location.search).get('station');
         if (msg.token && msg.token !== state.token) {
             state.token = msg.token;
             try { sessionStorage.setItem(TOKEN_KEY, msg.token); } catch (_) {}
             verifyCurrentToken().then(() => {
-                if (msg.currentStation && !state.lockedStation && typeof state.onForceStation === 'function') {
+                const forceAfter = Boolean(state.lockedStation) || msg.forceStation === true || !new URLSearchParams(global.location.search).get('station');
+                if (msg.currentStation && forceAfter && !state.lockedStation && typeof state.onForceStation === 'function') {
                     state.onForceStation(msg.currentStation);
                 }
             });
             return;
         }
 
-        if (msg.currentStation && !state.lockedStation && typeof state.onForceStation === 'function') {
+        if (msg.currentStation && shouldForce && !state.lockedStation && typeof state.onForceStation === 'function') {
             state.onForceStation(msg.currentStation);
         }
     });

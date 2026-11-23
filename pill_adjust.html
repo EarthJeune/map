@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="https://api.mapbox.com/mapbox-gl-js/v3.1.2/mapbox-gl.css" rel="stylesheet">
   <script src="https://api.mapbox.com/mapbox-gl-js/v3.1.2/mapbox-gl.js"></script>
-  <script src="/js/portal/editor-bridge.js?v=304"></script>
+  <script src="/js/portal/editor-bridge.js?v=305"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body, html {
@@ -489,7 +489,10 @@
 
     function loadStationLayers() {
       const cfg = STATIONS[currentStation];
-      if (cfg && cfg.tileUrl && !map.getSource('drone-source')) {
+      if (map.getLayer('drone-layer')) map.removeLayer('drone-layer');
+      if (map.getSource('drone-source')) map.removeSource('drone-source');
+      if (cfg && cfg.tileUrl) {
+        const beforeLayer = map.getLayer('bldg-footprints-fill') ? 'bldg-footprints-fill' : undefined;
         map.addSource('drone-source', {
           type: 'raster',
           tiles: [cfg.tileUrl],
@@ -502,7 +505,7 @@
           type: 'raster',
           source: 'drone-source',
           paint: { 'raster-opacity': 1.0 }
-        });
+        }, beforeLayer);
       }
     }
 
@@ -515,8 +518,15 @@
 
       const cfg = STATIONS[currentStation];
       if (!cfg.endpoint) {
+        currentBuildingsData = null;
+        if (map.getSource('bldg-footprints-source')) {
+          map.getSource('bldg-footprints-source').setData({ type: 'FeatureCollection', features: [] });
+        }
         document.getElementById('pillCountChip').textContent = 'Pending Survey';
         document.getElementById('pillQuickJump').innerHTML = '<option value="">🌴 Pending Field Survey</option>';
+        document.getElementById('inspName').textContent = 'DA-CARES (Pending Field Survey)';
+        document.getElementById('inspNum').textContent = '🌴';
+        document.getElementById('inspCoords').textContent = 'No building footprints yet — awaiting field survey.';
         showToast('ℹ️ DA-CARES is pending field survey — no building footprints yet.');
         return;
       }
@@ -828,7 +838,30 @@
         const ok = confirm(`You have ${dirtyKeys.size} unsaved pill edit(s) in ${STATIONS[currentStation].name}. Discard and switch station?`);
         if (!ok) return;
       }
-      window.location.search = '?station=' + encodeURIComponent(stationId);
+      currentStation = stationId;
+      try {
+        const nextUrl = new URL(window.location.href);
+        nextUrl.searchParams.set('station', stationId);
+        window.history.replaceState({}, '', nextUrl.toString());
+      } catch (_) {}
+      try {
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({ type: 'IGUIDE_EDITOR_STATION_CHANGED', station: stationId }, window.location.origin);
+        }
+      } catch (_) {}
+      syncPillStationUi();
+      const cfg = STATIONS[currentStation];
+      if (map && map.isStyleLoaded()) {
+        map.jumpTo({ center: cfg.center, zoom: cfg.zoom, pitch: 0, bearing: 0 });
+        loadStationLayers();
+        loadBuildings();
+      } else if (map) {
+        map.once('load', () => {
+          map.jumpTo({ center: cfg.center, zoom: cfg.zoom, pitch: 0, bearing: 0 });
+          loadStationLayers();
+          loadBuildings();
+        });
+      }
     }
 
     function showToast(msg) {

@@ -481,13 +481,24 @@ export async function loadCurrentTab() {
             }).catch(() => {});
             frame?.addEventListener('load', () => {
                 try {
+                    let frameStation = lockedSt || PortalState.currentStation || targetStation;
+                    if (!lockedSt) {
+                        try {
+                            const fUrl = new URL(frame.contentWindow.location.href);
+                            const qSt = (fUrl.searchParams.get('station') || '').trim().toLowerCase();
+                            if (['lares', 'qares', 'rares', 'cares'].includes(qSt)) {
+                                frameStation = qSt;
+                            }
+                        } catch (_) {}
+                    }
                     frame.contentWindow?.postMessage({
                         type: 'IGUIDE_PORTAL_CONTEXT',
                         token: PortalState.token,
                         baseRole: PortalState.baseRole,
                         effectiveRole: PortalState.effectiveRole,
                         stationScope: PortalState.stationScope,
-                        currentStation: targetStation
+                        currentStation: frameStation,
+                        forceStation: Boolean(lockedSt)
                     }, window.location.origin);
                 } catch (_) {}
             });
@@ -522,6 +533,31 @@ window.switchTab = function(tabId) {
 };
 
 window.refreshCurrentTab = () => loadCurrentTab();
+
+// Sync portal station selector & guide badge when an embedded visual editor switches stations in-place
+if (!window._iguideEditorStationSyncBound) {
+    window._iguideEditorStationSyncBound = true;
+    window.addEventListener('message', (event) => {
+        if (event.origin !== window.location.origin) return;
+        const msg = event.data;
+        if (!msg || msg.type !== 'IGUIDE_EDITOR_STATION_CHANGED') return;
+        const st = String(msg.station || '').trim().toLowerCase();
+        if (!['lares', 'qares', 'rares', 'cares'].includes(st)) return;
+        if (PortalState.stationScope !== 'all' && st !== PortalState.stationScope) return;
+        PortalState.currentStation = st;
+        sessionStorage.setItem('iguide_active_station', st);
+        try { localStorage.setItem('iguide_active_station', st); } catch (_) {}
+        syncStationSelectorUi();
+        const badgeEl = document.getElementById('editor-guide-station-badge');
+        if (badgeEl) badgeEl.textContent = `DA-${st.toUpperCase()}`;
+        const openBtn = document.getElementById('editor-open-standalone-btn');
+        if (openBtn) {
+            const tab = PortalState.currentTab || '';
+            const guide = EDITOR_GUIDES[tab];
+            if (guide) openBtn.href = `${guide.url}?station=${encodeURIComponent(st)}`;
+        }
+    });
+}
 
 window.logoutAdmin = async () => {
     const ok = await showPortalConfirm({
