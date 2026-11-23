@@ -77,3 +77,25 @@ test('Privacy: Role-Only Anonymous Review + Super Admin ****@domain masking & pa
     assert.ok(!cr.includes('r.submitted_by_email'), 'UI must not read raw r.submitted_by_email');
     assert.ok(!cr.includes('cr.reviewed_by_email'), 'UI must not read raw cr.reviewed_by_email');
 });
+
+test('Migration 0003: merged annex rows removed so DA-LARES has 100% 3D model coverage', async () => {
+    const conn = await mysql.createConnection({
+        host: process.env.DB_HOST || 'localhost',
+        user: process.env.DB_USER || 'root',
+        password: process.env.DB_PASSWORD || '',
+        database: process.env.DB_NAME || 'kiosk',
+        port: Number(process.env.DB_PORT || 3306)
+    });
+    try {
+        const [annexRows] = await conn.query(
+            "SELECT building_code FROM buildings WHERE station_id='lares' AND building_code IN ('plot18_screenhouse_9_headhouse', 'warehouse_7_annex')"
+        );
+        assert.equal(annexRows.length, 0, 'Merged annex rows should not appear in buildings table');
+        const [unmodeled] = await conn.query(
+            "SELECT COUNT(*) AS cnt FROM buildings WHERE station_id='lares' AND (model_glb_url IS NULL OR model_glb_url = '')"
+        );
+        assert.equal(Number(unmodeled[0].cnt), 0, 'DA-LARES should have 0 unmodeled building rows (100% 3D coverage)');
+    } finally {
+        await conn.end();
+    }
+});
