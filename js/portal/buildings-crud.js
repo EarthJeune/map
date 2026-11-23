@@ -1218,22 +1218,54 @@ function renderHeroGallerySection() {
         }
     });
 
+    const dropTargets = [
+        document.getElementById('bldg-hero-stage'),
+        document.getElementById('bldg-hero-gallery-host')
+    ].filter(Boolean);
     const stage = document.getElementById('bldg-hero-stage');
-    if (stage) {
-        stage.addEventListener('dragover', (e) => {
+    const hostEl = document.getElementById('bldg-hero-gallery-host');
+    if (hostEl && !hostEl.dataset.dndBound) {
+        hostEl.dataset.dndBound = '1';
+        const setDrag = (on) => {
+            const st = document.getElementById('bldg-hero-stage');
+            if (st) st.classList.toggle('dragover', on);
+        };
+        hostEl.addEventListener('dragenter', (e) => {
             e.preventDefault();
-            stage.classList.add('dragover');
+            e.stopPropagation();
+            if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+            setDrag(true);
         });
-        stage.addEventListener('dragleave', () => stage.classList.remove('dragover'));
-        stage.addEventListener('drop', (e) => {
+        hostEl.addEventListener('dragover', (e) => {
             e.preventDefault();
-            stage.classList.remove('dragover');
+            e.stopPropagation();
+            if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+            setDrag(true);
+        });
+        hostEl.addEventListener('dragleave', (e) => {
+            if (!hostEl.contains(e.relatedTarget)) setDrag(false);
+        });
+        hostEl.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setDrag(false);
             if (e.dataTransfer?.files?.length) {
                 handleMultiPhotoFiles(e.dataTransfer.files);
             }
         });
     }
-    heroStageDropBound = true;
+    const bldgModal = document.getElementById('building-modal');
+    if (bldgModal && !bldgModal.dataset.dndGuard) {
+        bldgModal.dataset.dndGuard = '1';
+        bldgModal.addEventListener('dragover', (e) => { e.preventDefault(); });
+        bldgModal.addEventListener('drop', (e) => {
+            e.preventDefault();
+            if (e.dataTransfer?.files?.length) {
+                handleMultiPhotoFiles(e.dataTransfer.files);
+            }
+        });
+    }
+    heroStageDropBound = Boolean(stage || dropTargets.length);
 }
 
 window.stepEditorSlide = (delta) => {

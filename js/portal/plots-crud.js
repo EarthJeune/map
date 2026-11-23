@@ -514,9 +514,9 @@ window.openPlotModal = (plotId) => {
         </div>
 
         <div class="form-group">
-            <label>Plot Cover Photo (Automatically Converted to WebP)</label>
-            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                <div id="pm-img-preview-box" style="width:92px; height:60px; border-radius:9px; overflow:hidden; border:1px solid rgba(148,163,184,0.25); background:rgba(2,6,23,0.7); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <label>Plot Cover Photo (Drag &amp; Drop or Upload — Auto WebP)</label>
+            <div id="pm-img-dropzone" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding:10px; border-radius:11px; border:1.5px dashed var(--border-default, rgba(148,163,184,0.32)); transition:border-color 150ms ease, background 150ms ease;">
+                <div id="pm-img-preview-box" style="width:92px; height:60px; border-radius:9px; overflow:hidden; border:1px solid rgba(148,163,184,0.25); background:var(--bg-elevated, rgba(2,6,23,0.7)); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
                     ${cur.image_webp_url
                         ? `<img src="/${escapeHtml(String(cur.image_webp_url).replace(/^\/+/, ''))}" alt="Plot photo" style="width:100%; height:100%; object-fit:cover;">`
                         : `<span style="color:#64748b; font-size:11px;">No Photo</span>`}
@@ -524,10 +524,10 @@ window.openPlotModal = (plotId) => {
                 <div style="flex:1; min-width:180px; display:flex; flex-direction:column; gap:6px;">
                     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                         <input type="file" id="pm-img-file" accept="image/*" style="display:none;">
-                        <button type="button" class="btn btn-emerald btn-sm" id="pm-img-upload-btn">${SVG_ICONS.upload} Upload Photo (.jpg/.png → .webp)</button>
+                        <button type="button" class="btn btn-emerald btn-sm" id="pm-img-upload-btn">${SVG_ICONS.upload} Upload or Drop Photo</button>
                         <button type="button" class="btn btn-danger btn-sm" id="pm-img-clear-btn" style="${cur.image_webp_url ? '' : 'display:none;'}">Remove</button>
                     </div>
-                    <input type="text" id="pm-img" class="form-control" style="font-family:var(--font-mono); font-size:11.5px; height:30px;" value="${escapeHtml(cur.image_webp_url || '')}" placeholder="Automatically filled when you upload a photo">
+                    <input type="text" id="pm-img" class="form-control" style="font-family:var(--font-mono); font-size:11.5px; height:30px;" value="${escapeHtml(cur.image_webp_url || '')}" placeholder="Drag & drop an image here or click Upload">
                 </div>
             </div>
         </div>
@@ -554,24 +554,22 @@ window.openPlotModal = (plotId) => {
         if (tip) tip.textContent = (FACILITY_STATUS_META[e.target.value] || FACILITY_STATUS_META.Existing).help;
     });
 
-    // Friendly Auto-WebP Plot Photo Uploader
+    // Friendly Auto-WebP Plot Photo Uploader (Click + Drag & Drop + Instant Preview)
     const pmImgInput = document.getElementById('pm-img');
     const pmImgFile = document.getElementById('pm-img-file');
     const pmImgPreview = document.getElementById('pm-img-preview-box');
     const pmImgClear = document.getElementById('pm-img-clear-btn');
-    document.getElementById('pm-img-upload-btn')?.addEventListener('click', () => pmImgFile?.click());
-    pmImgClear?.addEventListener('click', () => {
-        if (pmImgInput) pmImgInput.value = '';
-        if (pmImgPreview) pmImgPreview.innerHTML = `<span style="color:#64748b; font-size:11px;">No Photo</span>`;
-        if (pmImgClear) pmImgClear.style.display = 'none';
-    });
-    pmImgFile?.addEventListener('change', async (e) => {
-        const file = e.target.files && e.target.files[0];
-        e.target.value = '';
-        if (!file) return;
+    const pmDropzone = document.getElementById('pm-img-dropzone');
+    const handlePlotPhotoFile = async (file) => {
+        if (!file || !String(file.type || '').startsWith('image/')) {
+            showToast('Please drop or select a valid image file (.webp, .jpg, or .png).');
+            return;
+        }
         try {
-            showToast('Converting photo to WebP...');
-            const webpDataUrl = await fileToWebpDataUrl(file, 1440, 0.84);
+            const webpDataUrl = await fileToWebpDataUrl(file, 1200, 0.76);
+            // Instant optimistic preview while uploading
+            if (pmImgPreview) pmImgPreview.innerHTML = `<img src="${escapeHtml(webpDataUrl)}" alt="Plot photo" style="width:100%; height:100%; object-fit:cover;">`;
+            if (pmImgClear) pmImgClear.style.display = '';
             const up = await apiFetch('/api/admin/upload-webp', {
                 method: 'POST',
                 body: JSON.stringify({
@@ -581,13 +579,38 @@ window.openPlotModal = (plotId) => {
                 })
             });
             if (pmImgInput) pmImgInput.value = up.image_webp_url || '';
-            if (pmImgPreview) pmImgPreview.innerHTML = `<img src="${escapeHtml(webpDataUrl)}" alt="Plot photo" style="width:100%; height:100%; object-fit:cover;">`;
-            if (pmImgClear) pmImgClear.style.display = '';
             showToast('Photo converted to WebP & attached! Click Submit/Save to apply.');
         } catch (err) {
             showToast(`Photo upload failed: ${err.message}`);
         }
+    };
+    document.getElementById('pm-img-upload-btn')?.addEventListener('click', () => pmImgFile?.click());
+    pmImgClear?.addEventListener('click', () => {
+        if (pmImgInput) pmImgInput.value = '';
+        if (pmImgPreview) pmImgPreview.innerHTML = `<span style="color:#64748b; font-size:11px;">No Photo</span>`;
+        if (pmImgClear) pmImgClear.style.display = 'none';
     });
+    pmImgFile?.addEventListener('change', async (e) => {
+        const file = e.target.files && e.target.files[0];
+        e.target.value = '';
+        if (file) await handlePlotPhotoFile(file);
+    });
+    if (pmDropzone) {
+        const setDzActive = (on) => {
+            pmDropzone.style.borderColor = on ? '#10b981' : '';
+            pmDropzone.style.background = on ? 'rgba(16,185,129,0.08)' : '';
+        };
+        pmDropzone.addEventListener('dragenter', (e) => { e.preventDefault(); e.stopPropagation(); setDzActive(true); });
+        pmDropzone.addEventListener('dragover', (e) => { e.preventDefault(); e.stopPropagation(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'; setDzActive(true); });
+        pmDropzone.addEventListener('dragleave', (e) => { if (!pmDropzone.contains(e.relatedTarget)) setDzActive(false); });
+        pmDropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setDzActive(false);
+            const f = e.dataTransfer?.files?.[0];
+            if (f) handlePlotPhotoFile(f);
+        });
+    }
 
     const cp = document.getElementById('pm-color-picker');
     const ct = document.getElementById('pm-color');
