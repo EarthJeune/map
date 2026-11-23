@@ -2013,7 +2013,7 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
                 return res.status(403).json({ error: 'You can only submit your own draft.' });
             }
             const nextSummary = req.body?.summary ? String(req.body.summary).trim() : cr.summary;
-            await query(`UPDATE change_requests SET status = 'pending', summary = ?, updated_at = NOW() WHERE id = ?`, [nextSummary, id]);
+            await query(`UPDATE change_requests SET status = 'pending', summary = ? WHERE id = ?`, [nextSummary, id]);
             const reviewers = await rbac.findConcernedUsers({ roles: ['reviewer', 'super_admin'], stationId: cr.station_id });
             for (const rev of reviewers) {
                 const crTargetName = extractCrTargetName(nextSummary, cr.payload_json, id);
@@ -2045,7 +2045,7 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
             if (req.adminUser.baseRole !== 'super_admin' && Number(cr.submitted_by_user_id) !== Number(req.adminUser.userId)) {
                 return res.status(403).json({ error: 'You can only withdraw your own submission.' });
             }
-            await query(`UPDATE change_requests SET status = 'withdrawn', updated_at = NOW() WHERE id = ?`, [id]);
+            await query(`UPDATE change_requests SET status = 'withdrawn' WHERE id = ?`, [id]);
             await logAudit('WITHDRAW_CHANGE_REQUEST', 'change_requests', id, `Withdrew Request #${id}: ${cr.summary}`, req.adminUser);
             res.json({ success: true, id, status: 'withdrawn' });
         } catch (err) {
@@ -2125,7 +2125,7 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
                 return res.status(404).json({ error: 'Live target record no longer exists; cannot rebase.' });
             }
             await query(
-                `UPDATE change_requests SET previous_json = ?, base_version = ?, updated_at = NOW() WHERE id = ?`,
+                `UPDATE change_requests SET previous_json = ?, base_version = ? WHERE id = ?`,
                 [JSON.stringify(captured.snapshot), captured.version, id]
             );
             await logAudit('REBASE_CHANGE_REQUEST', 'change_requests', id, `Rebased Request #${id} onto live version v${captured.version}`, req.adminUser);
