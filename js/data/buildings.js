@@ -5621,8 +5621,8 @@ export function getBuildingById(buildingId) {
                 type: p.type || 'Research Facility',
                 category: p.category || p.filter_type || 'Buildings',
                 facility_status: p.facility_status || 'Existing',
-                image: '', // Strictly clean: no images
-                images: [],
+                image: p.image || '',
+                images: Array.isArray(p.images) ? p.images : [],
                 compactTag: '',
                 visualLandmark: '',
                 keyServices: '',
@@ -5689,8 +5689,8 @@ export function getBuildingById(buildingId) {
                 type: p.type || 'Facility',
                 category: p.category || 'infrastructure',
                 facility_status: p.facility_status || 'Existing',
-                image: '', // Strictly clean: no images
-                images: [],
+                image: p.image || '',
+                images: Array.isArray(p.images) ? p.images : [],
                 compactTag: '',
                 visualLandmark: '',
                 keyServices: '',

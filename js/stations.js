@@ -1492,11 +1492,17 @@ export function getGroupedRARESFacilities(data) {
                 category: props.category || 'Buildings',
                 facility_status: props.facility_status || 'Existing',
                 description: props.description || '',
+                image: props.image || null,
+                images: Array.isArray(props.images) ? props.images : [],
                 features: [],
                 allCoordinates: []
             });
         }
         const group = groups.get(key);
+        if (!group.image && props.image) group.image = props.image;
+        if ((!group.images || group.images.length === 0) && Array.isArray(props.images) && props.images.length > 0) {
+            group.images = props.images;
+        }
         group.features.push(f);
         if (f.geometry && f.geometry.type === 'Polygon' && f.geometry.coordinates && f.geometry.coordinates[0]) {
             f.geometry.coordinates[0].forEach(coord => {
@@ -1532,6 +1538,8 @@ export function getGroupedRARESFacilities(data) {
             category: g.category,
             facility_status: g.facility_status || 'Existing',
             description: g.description,
+            image: g.image || null,
+            images: Array.isArray(g.images) ? g.images : [],
             coords: centerCoords,
             structureCount: g.features.length,
             features: g.features

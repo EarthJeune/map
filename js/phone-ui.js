@@ -2106,9 +2106,10 @@ export function showPhoneBuildingDetails(buildingId, targetOffice = '') {
 
 
 
-    // Render Google Maps photo mosaic / gallery form
+    // Render Google Maps photo mosaic / gallery form (show for LARES and any RARES/QARES facility with photos)
     const galContainer = document.getElementById('phone-bldg-gallery-container');
-    if (isUnderDevStation) {
+    const hasPhonePhotos = Boolean((Array.isArray(building.images) && building.images.length > 0) || building.image || building.isRARES);
+    if (isUnderDevStation && !hasPhonePhotos) {
         if (galContainer) galContainer.style.display = 'none';
     } else {
         if (galContainer) galContainer.style.display = '';

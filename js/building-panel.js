@@ -366,9 +366,10 @@ export function showBuildingPanel(buildingId, targetOffice = '') {
 
 
 
-    // Load Image with unified Hero Controller (suppressed for QARES/RARES clean menu)
+    // Load Image with unified Hero Controller (show for LARES and any RARES/QARES facility with photos)
     const imgArea = document.getElementById('bp-image-area');
-    if (isUnderDevStation) {
+    const hasBuildingPhotos = Boolean((Array.isArray(building.images) && building.images.length > 0) || building.image || building.isRARES);
+    if (isUnderDevStation && !hasBuildingPhotos) {
         if (imgArea) imgArea.style.display = 'none';
     } else {
         if (imgArea) imgArea.style.display = 'block';
