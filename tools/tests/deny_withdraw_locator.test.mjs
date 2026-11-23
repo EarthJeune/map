@@ -121,7 +121,7 @@ test('Migration 0004: RARES merged sub-parts removed (39 singular buildings) and
     assert.ok(glbStats.size < 300 * 1024, `models/rares_gh_hydro.glb must stay under 300 KB (got ${Math.round(glbStats.size / 1024)} KB)`);
 });
 
-test('Migration 0005 & Landscape Banner: RARES full WebP gallery (212 photos), blank descriptions, and bottom landscape dev banner', async () => {
+test('Migration 0006 & Landscape Banner: RARES 1 primary WebP photo per building (39 total), blank descriptions, and bottom landscape dev banner', async () => {
     const css = fs.readFileSync(path.join(ROOT, 'css', 'main.css'), 'utf8');
     assert.ok(css.includes('@media (orientation: landscape)') && css.includes('bottom: 18px !important;'), 'main.css must anchor Under Development banner at bottom in landscape mode');
 
@@ -134,8 +134,8 @@ test('Migration 0005 & Landscape Banner: RARES full WebP gallery (212 photos), b
     });
     try {
         const [imgAgg] = await conn.query("SELECT COUNT(*) AS total, COUNT(DISTINCT building_code) AS bldgs FROM building_images WHERE station_id='rares'");
-        assert.equal(Number(imgAgg[0].bldgs), 39, 'All 39 RARES buildings must have photos');
-        assert.ok(Number(imgAgg[0].total) >= 200, `Expected full RARES photo gallery (>=200), got ${imgAgg[0].total}`);
+        assert.equal(Number(imgAgg[0].bldgs), 39, 'All 39 RARES buildings must have a primary photo');
+        assert.equal(Number(imgAgg[0].total), 39, 'DA-RARES must have strictly 1 primary photo per building (39 total)');
         const [nonBlank] = await conn.query("SELECT COUNT(*) AS cnt FROM buildings WHERE station_id='rares' AND (TRIM(COALESCE(description, '')) <> '' OR TRIM(COALESCE(visual_landmark, '')) <> '' OR TRIM(COALESCE(key_services, '')) <> '')");
         assert.equal(Number(nonBlank[0].cnt), 0, 'All RARES building descriptions must be blank');
     } finally {
