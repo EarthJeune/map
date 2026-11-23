@@ -1,0 +1,1352 @@
+{
+  "rares_building_1": [
+    {
+      "image_webp_url": "images/rares_building_1.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_1_2.webp",
+      "caption": "Front",
+      "display_order": 2,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_1_3.webp",
+      "caption": "Right Side",
+      "display_order": 3,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_1_4.webp",
+      "caption": "Right Side",
+      "display_order": 4,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_1_5.webp",
+      "caption": "Back",
+      "display_order": 5,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_1_6.webp",
+      "caption": "Back",
+      "display_order": 6,
+      "is_primary": 0
+    }
+  ],
+  "rares_building_2": [
+    {
+      "image_webp_url": "images/rares_building_2.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_2_2.webp",
+      "caption": "Front Far",
+      "display_order": 2,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_2_3.webp",
+      "caption": "Front Left Side",
+      "display_order": 3,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_2_4.webp",
+      "caption": "Front",
+      "display_order": 4,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_2_5.webp",
+      "caption": "Left side of the picture is the front Right Side with Left Back side",
+      "display_order": 5,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_2_6.webp",
+      "caption": "Back Left Side",
+      "display_order": 6,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_2_7.webp",
+      "caption": "Back Right Side from Left Side",
+      "display_order": 7,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_2_8.webp",
+      "caption": "Middle Side Back",
+      "display_order": 8,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_2_9.webp",
+      "caption": "Right Side Back",
+      "display_order": 9,
+      "is_primary": 0
+    }
+  ],
+  "rares_building_3": [
+    {
+      "image_webp_url": "images/rares_building_3.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_3_2.webp",
+      "caption": "Front Near",
+      "display_order": 2,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_3_3.webp",
+      "caption": "Left angle of the Front",
+      "display_order": 3,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_3_4.webp",
+      "caption": "the left part of the picture is the back of the building, the right part of the ",
+      "display_order": 4,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_3_5.webp",
+      "caption": "Left is the Chemical Storage, The Right is the Seed Storage",
+      "display_order": 5,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_3_6.webp",
+      "caption": "Right part of the building",
+      "display_order": 6,
+      "is_primary": 0
+    }
+  ],
+  "rares_building_4": [
+    {
+      "image_webp_url": "images/rares_building_4.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_4_2.webp",
+      "caption": "Front Far",
+      "display_order": 2,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_4_3.webp",
+      "caption": "Left Side angle",
+      "display_order": 3,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_4_4.webp",
+      "caption": "Left part is the Flatbed while the right part is the Chemical Storage Left part",
+      "display_order": 4,
+      "is_primary": 0
+    }
+  ],
+  "rares_building_5": [
+    {
+      "image_webp_url": "images/rares_building_5.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_5_2.webp",
+      "caption": "Close Front",
+      "display_order": 2,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_5_3.webp",
+      "caption": "Front",
+      "display_order": 3,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_5_4.webp",
+      "caption": "Front",
+      "display_order": 4,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_5_5.webp",
+      "caption": "Left Side is the Flatbed Dryer, Right side is the Chemical Storage",
+      "display_order": 5,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_5_6.webp",
+      "caption": "Left Side is the Flatbed Dryer, Right side is the Chemical Storage",
+      "display_order": 6,
+      "is_primary": 0
+    }
+  ],
+  "rares_building_6": [
+    {
+      "image_webp_url": "images/rares_building_6.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_6_2.webp",
+      "caption": "Left Side Front with entrance",
+      "display_order": 2,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_6_3.webp",
+      "caption": "Middle Front",
+      "display_order": 3,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_6_4.webp",
+      "caption": "Right Side Front",
+      "display_order": 4,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_6_5.webp",
+      "caption": "Inside View 1",
+      "display_order": 5,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_6_6.webp",
+      "caption": "Inside View 2",
+      "display_order": 6,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_6_7.webp",
+      "caption": "Right part of the Nursery",
+      "display_order": 7,
+      "is_primary": 0
+    }
+  ],
+  "rares_building_7": [
+    {
+      "image_webp_url": "images/rares_building_7.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_7_2.webp",
+      "caption": "Facility View 2",
+      "display_order": 2,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_7_3.webp",
+      "caption": "Facility View 3",
+      "display_order": 3,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_7_4.webp",
+      "caption": "Facility View 4",
+      "display_order": 4,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_7_5.webp",
+      "caption": "Facility View 5",
+      "display_order": 5,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_7_6.webp",
+      "caption": "Facility View 6",
+      "display_order": 6,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_7_7.webp",
+      "caption": "Facility View 7",
+      "display_order": 7,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_7_8.webp",
+      "caption": "Facility View 8",
+      "display_order": 8,
+      "is_primary": 0
+    }
+  ],
+  "rares_building_8": [
+    {
+      "image_webp_url": "images/rares_building_8.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_8_2.webp",
+      "caption": "Front",
+      "display_order": 2,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_8_3.webp",
+      "caption": "Close Left SIde View",
+      "display_order": 3,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_8_4.webp",
+      "caption": "Left Side View",
+      "display_order": 4,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_8_5.webp",
+      "caption": "Back View Close",
+      "display_order": 5,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_8_6.webp",
+      "caption": "Back",
+      "display_order": 6,
+      "is_primary": 0
+    }
+  ],
+  "rares_building_9": [
+    {
+      "image_webp_url": "images/rares_building_9.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_9_2.webp",
+      "caption": "Actually the left Side of the building and you can see the door at the left most",
+      "display_order": 2,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_9_3.webp",
+      "caption": "Inside",
+      "display_order": 3,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_9_4.webp",
+      "caption": "Back",
+      "display_order": 4,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_9_5.webp",
+      "caption": "Facility View 5",
+      "display_order": 5,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_9_6.webp",
+      "caption": "Facility View 6",
+      "display_order": 6,
+      "is_primary": 0
+    }
+  ],
+  "rares_building_10": [
+    {
+      "image_webp_url": "images/rares_building_10.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_10_2.webp",
+      "caption": "Left Side Front Close up",
+      "display_order": 2,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_10_3.webp",
+      "caption": "Left Side Front",
+      "display_order": 3,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_10_4.webp",
+      "caption": "Right Side Front",
+      "display_order": 4,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_10_5.webp",
+      "caption": "Left SIde of the Building",
+      "display_order": 5,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_10_6.webp",
+      "caption": "Right Side of the Building",
+      "display_order": 6,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_10_7.webp",
+      "caption": "Facility View 7",
+      "display_order": 7,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_10_8.webp",
+      "caption": "Facility View 8",
+      "display_order": 8,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_10_9.webp",
+      "caption": "Facility View 9",
+      "display_order": 9,
+      "is_primary": 0
+    }
+  ],
+  "rares_building_11": [
+    {
+      "image_webp_url": "images/rares_building_11.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_11_2.webp",
+      "caption": "Front inside (2)",
+      "display_order": 2,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_11_3.webp",
+      "caption": "Front inside",
+      "display_order": 3,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_11_4.webp",
+      "caption": "Front",
+      "display_order": 4,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_11_5.webp",
+      "caption": "Back",
+      "display_order": 5,
+      "is_primary": 0
+    }
+  ],
+  "rares_building_12": [
+    {
+      "image_webp_url": "images/rares_building_12.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_12_2.webp",
+      "caption": "Inside",
+      "display_order": 2,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_12_3.webp",
+      "caption": "Side View",
+      "display_order": 3,
+      "is_primary": 0
+    }
+  ],
+  "rares_building_13": [
+    {
+      "image_webp_url": "images/rares_building_13.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_13_2.webp",
+      "caption": "Inside View (2)",
+      "display_order": 2,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_13_3.webp",
+      "caption": "Inside View (3)",
+      "display_order": 3,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_13_4.webp",
+      "caption": "Inside View",
+      "display_order": 4,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_13_5.webp",
+      "caption": "Side View",
+      "display_order": 5,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_13_6.webp",
+      "caption": "Back with the Water",
+      "display_order": 6,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_13_7.webp",
+      "caption": "Facility View 7",
+      "display_order": 7,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_13_8.webp",
+      "caption": "Facility View 8",
+      "display_order": 8,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_13_9.webp",
+      "caption": "Facility View 9",
+      "display_order": 9,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_13_10.webp",
+      "caption": "Facility View 10",
+      "display_order": 10,
+      "is_primary": 0
+    }
+  ],
+  "rares_building_14": [
+    {
+      "image_webp_url": "images/rares_building_14.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_14_2.webp",
+      "caption": "Front",
+      "display_order": 2,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_14_3.webp",
+      "caption": "Inside VIew (2)",
+      "display_order": 3,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_14_4.webp",
+      "caption": "Inside View",
+      "display_order": 4,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_14_5.webp",
+      "caption": "Facility View 5",
+      "display_order": 5,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_14_6.webp",
+      "caption": "Facility View 6",
+      "display_order": 6,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_14_7.webp",
+      "caption": "Facility View 7",
+      "display_order": 7,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_14_8.webp",
+      "caption": "Facility View 8",
+      "display_order": 8,
+      "is_primary": 0
+    }
+  ],
+  "rares_building_15": [
+    {
+      "image_webp_url": "images/rares_building_15.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_15_2.webp",
+      "caption": "Front",
+      "display_order": 2,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_15_3.webp",
+      "caption": "Back Side View from Left Side",
+      "display_order": 3,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_15_4.webp",
+      "caption": "Back Side View from Right Side",
+      "display_order": 4,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_15_5.webp",
+      "caption": "Right Side of Building",
+      "display_order": 5,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_15_6.webp",
+      "caption": "Right Side View",
+      "display_order": 6,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_15_7.webp",
+      "caption": "Dront Close up",
+      "display_order": 7,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_15_8.webp",
+      "caption": "Roof design",
+      "display_order": 8,
+      "is_primary": 0
+    }
+  ],
+  "rares_building_16": [
+    {
+      "image_webp_url": "images/rares_building_16.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_16_2.webp",
+      "caption": "Front",
+      "display_order": 2,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_16_3.webp",
+      "caption": "Back",
+      "display_order": 3,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_16_4.webp",
+      "caption": "Gap between Staff House A and SGPP Storage",
+      "display_order": 4,
+      "is_primary": 0
+    }
+  ],
+  "rares_building_17": [
+    {
+      "image_webp_url": "images/rares_building_17.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_17_2.webp",
+      "caption": "Front View Close Up",
+      "display_order": 2,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_17_3.webp",
+      "caption": "Front View",
+      "display_order": 3,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_17_4.webp",
+      "caption": "Right Side of Front has bottom balcony",
+      "display_order": 4,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_17_5.webp",
+      "caption": "Right Side of the building",
+      "display_order": 5,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_17_6.webp",
+      "caption": "Back close up",
+      "display_order": 6,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_17_7.webp",
+      "caption": "Back view other angle",
+      "display_order": 7,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_17_8.webp",
+      "caption": "Back",
+      "display_order": 8,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_17_9.webp",
+      "caption": "Doorway View",
+      "display_order": 9,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_17_10.webp",
+      "caption": "Facility View 10",
+      "display_order": 10,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_17_11.webp",
+      "caption": "Sloped Stairs far",
+      "display_order": 11,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_17_12.webp",
+      "caption": "Sloped Stairs view",
+      "display_order": 12,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_17_13.webp",
+      "caption": "Top View Layout",
+      "display_order": 13,
+      "is_primary": 0
+    }
+  ],
+  "rares_building_18": [
+    {
+      "image_webp_url": "images/rares_building_18.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_18_2.webp",
+      "caption": "Facility View 2",
+      "display_order": 2,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_18_3.webp",
+      "caption": "Facility View 3",
+      "display_order": 3,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_18_4.webp",
+      "caption": "Facility View 4",
+      "display_order": 4,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_18_5.webp",
+      "caption": "This is near the truck if you can see in the map",
+      "display_order": 5,
+      "is_primary": 0
+    }
+  ],
+  "rares_building_19": [
+    {
+      "image_webp_url": "images/rares_building_19.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_19_2.webp",
+      "caption": "Front View",
+      "display_order": 2,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_19_3.webp",
+      "caption": "Facility View 3",
+      "display_order": 3,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_19_4.webp",
+      "caption": "Facility View 4",
+      "display_order": 4,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_19_5.webp",
+      "caption": "Facility View 5",
+      "display_order": 5,
+      "is_primary": 0
+    }
+  ],
+  "rares_building_20": [
+    {
+      "image_webp_url": "images/rares_building_20.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_20_2.webp",
+      "caption": "Near Angle of Front",
+      "display_order": 2,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_20_3.webp",
+      "caption": "Right Angle of Front",
+      "display_order": 3,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_20_4.webp",
+      "caption": "Right Side View Far",
+      "display_order": 4,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_20_5.webp",
+      "caption": "Right Side View",
+      "display_order": 5,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_20_6.webp",
+      "caption": "Right Side",
+      "display_order": 6,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_20_7.webp",
+      "caption": "Back",
+      "display_order": 7,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_20_8.webp",
+      "caption": "Facility View 8",
+      "display_order": 8,
+      "is_primary": 0
+    }
+  ],
+  "rares_building_21": [
+    {
+      "image_webp_url": "images/rares_building_21.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_21_2.webp",
+      "caption": "Right SIde Angle Close Up",
+      "display_order": 2,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_21_3.webp",
+      "caption": "Right Side Angle",
+      "display_order": 3,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_21_4.webp",
+      "caption": "Back",
+      "display_order": 4,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_21_5.webp",
+      "caption": "Facility View 5",
+      "display_order": 5,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_21_6.webp",
+      "caption": "Staff House B",
+      "display_order": 6,
+      "is_primary": 0
+    }
+  ],
+  "rares_building_22": [
+    {
+      "image_webp_url": "images/rares_building_22.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_22_2.webp",
+      "caption": "Front View",
+      "display_order": 2,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_22_3.webp",
+      "caption": "Left Side View",
+      "display_order": 3,
+      "is_primary": 0
+    }
+  ],
+  "rares_building_23": [
+    {
+      "image_webp_url": "images/rares_building_23.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_23_2.webp",
+      "caption": "Front",
+      "display_order": 2,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_23_3.webp",
+      "caption": "Left Side of the Building",
+      "display_order": 3,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_23_4.webp",
+      "caption": "Back",
+      "display_order": 4,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_23_5.webp",
+      "caption": "Facility View 5",
+      "display_order": 5,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_23_6.webp",
+      "caption": "Right angle of back",
+      "display_order": 6,
+      "is_primary": 0
+    }
+  ],
+  "rares_building_24": [
+    {
+      "image_webp_url": "images/rares_building_24.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_24_2.webp",
+      "caption": "Front",
+      "display_order": 2,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_24_3.webp",
+      "caption": "Left Side of the building",
+      "display_order": 3,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_24_4.webp",
+      "caption": "Right Side of the Building",
+      "display_order": 4,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_24_5.webp",
+      "caption": "Back angle of the building with CR close up",
+      "display_order": 5,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_24_6.webp",
+      "caption": "Back angle of the building with the CR",
+      "display_order": 6,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_24_7.webp",
+      "caption": "CR",
+      "display_order": 7,
+      "is_primary": 0
+    }
+  ],
+  "rares_building_25": [
+    {
+      "image_webp_url": "images/rares_building_25.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_25_2.webp",
+      "caption": "Facility View 2",
+      "display_order": 2,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_25_3.webp",
+      "caption": "Facility View 3",
+      "display_order": 3,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_25_4.webp",
+      "caption": "Facility View 4",
+      "display_order": 4,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_25_5.webp",
+      "caption": "Facility View 5",
+      "display_order": 5,
+      "is_primary": 0
+    }
+  ],
+  "rares_building_26": [
+    {
+      "image_webp_url": "images/rares_building_26.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_26_2.webp",
+      "caption": "Facility View 2",
+      "display_order": 2,
+      "is_primary": 0
+    }
+  ],
+  "rares_building_27": [
+    {
+      "image_webp_url": "images/rares_building_27.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    }
+  ],
+  "rares_building_28": [
+    {
+      "image_webp_url": "images/rares_building_28.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_28_2.webp",
+      "caption": "Facility View 2",
+      "display_order": 2,
+      "is_primary": 0
+    }
+  ],
+  "rares_building_29": [
+    {
+      "image_webp_url": "images/rares_building_29.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_29_2.webp",
+      "caption": "Facility View 2",
+      "display_order": 2,
+      "is_primary": 0
+    }
+  ],
+  "rares_building_30": [
+    {
+      "image_webp_url": "images/rares_building_30.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    }
+  ],
+  "rares_building_31": [
+    {
+      "image_webp_url": "images/rares_building_31.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    }
+  ],
+  "rares_building_32": [
+    {
+      "image_webp_url": "images/rares_building_32.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_32_2.webp",
+      "caption": "Back",
+      "display_order": 2,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_32_3.webp",
+      "caption": "Facility View 3",
+      "display_order": 3,
+      "is_primary": 0
+    }
+  ],
+  "rares_building_33": [
+    {
+      "image_webp_url": "images/rares_building_33.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_33_2.webp",
+      "caption": "Facility View 2",
+      "display_order": 2,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_33_3.webp",
+      "caption": "Facility View 3",
+      "display_order": 3,
+      "is_primary": 0
+    }
+  ],
+  "rares_building_34": [
+    {
+      "image_webp_url": "images/rares_building_34.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    }
+  ],
+  "rares_building_35": [
+    {
+      "image_webp_url": "images/rares_building_35.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_35_2.webp",
+      "caption": "Facility View 2",
+      "display_order": 2,
+      "is_primary": 0
+    }
+  ],
+  "rares_building_36": [
+    {
+      "image_webp_url": "images/rares_building_36.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_36_2.webp",
+      "caption": "Front Gate Entrance 3",
+      "display_order": 2,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_36_3.webp",
+      "caption": "Front Gate Entrance",
+      "display_order": 3,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_36_4.webp",
+      "caption": "Front",
+      "display_order": 4,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_36_5.webp",
+      "caption": "Left Side Front Angle",
+      "display_order": 5,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_36_6.webp",
+      "caption": "Right Side Front Angle",
+      "display_order": 6,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_36_7.webp",
+      "caption": "Inside of the Combined Greenhouse again",
+      "display_order": 7,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_36_8.webp",
+      "caption": "Inside of the Combined Greenhouse",
+      "display_order": 8,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_36_9.webp",
+      "caption": "AWS in SGPP",
+      "display_order": 9,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_36_10.webp",
+      "caption": "Back",
+      "display_order": 10,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_36_11.webp",
+      "caption": "The AWS in SGPP",
+      "display_order": 11,
+      "is_primary": 0
+    }
+  ],
+  "rares_building_37": [
+    {
+      "image_webp_url": "images/rares_building_37.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_37_2.webp",
+      "caption": "Facility View 2",
+      "display_order": 2,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_37_3.webp",
+      "caption": "Facility View 3",
+      "display_order": 3,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_37_4.webp",
+      "caption": "Facility View 4",
+      "display_order": 4,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_37_5.webp",
+      "caption": "Facility View 5",
+      "display_order": 5,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_37_6.webp",
+      "caption": "Facility View 6",
+      "display_order": 6,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_37_7.webp",
+      "caption": "Facility View 7",
+      "display_order": 7,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_37_8.webp",
+      "caption": "Facility View 8",
+      "display_order": 8,
+      "is_primary": 0
+    }
+  ],
+  "rares_building_38": [
+    {
+      "image_webp_url": "images/rares_building_38.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_38_2.webp",
+      "caption": "Facility View 2",
+      "display_order": 2,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_38_3.webp",
+      "caption": "Facility View 3",
+      "display_order": 3,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_38_4.webp",
+      "caption": "Facility View 4",
+      "display_order": 4,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_38_5.webp",
+      "caption": "Facility View 5",
+      "display_order": 5,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_38_6.webp",
+      "caption": "Facility View 6",
+      "display_order": 6,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_38_7.webp",
+      "caption": "Facility View 7",
+      "display_order": 7,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_38_8.webp",
+      "caption": "Facility View 8",
+      "display_order": 8,
+      "is_primary": 0
+    }
+  ],
+  "rares_building_39": [
+    {
+      "image_webp_url": "images/rares_building_39.webp",
+      "caption": "Primary Facility View",
+      "display_order": 1,
+      "is_primary": 1
+    },
+    {
+      "image_webp_url": "images/rares_building_39_2.webp",
+      "caption": "Facility View 2",
+      "display_order": 2,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_39_3.webp",
+      "caption": "Facility View 3",
+      "display_order": 3,
+      "is_primary": 0
+    },
+    {
+      "image_webp_url": "images/rares_building_39_4.webp",
+      "caption": "Facility View 4",
+      "display_order": 4,
+      "is_primary": 0
+    }
+  ]
+}

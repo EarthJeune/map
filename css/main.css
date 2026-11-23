@@ -6182,3 +6182,15 @@ body.route-active .station-dev-warning-banner {
     pointer-events: none !important;
     transform: translateX(-50%) translateY(-18px) !important;
 }
+
+/* Landscape-only: anchor Under Development banner at the bottom so top-right building menu is never blocked */
+@media (orientation: landscape) {
+    .station-dev-warning-banner {
+        top: auto !important;
+        bottom: 18px !important;
+    }
+    body.has-active-route .station-dev-warning-banner,
+    body.route-active .station-dev-warning-banner {
+        transform: translateX(-50%) translateY(18px) !important;
+    }
+}
