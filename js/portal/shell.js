@@ -23,7 +23,7 @@ import { initNotificationControls, startNotificationPolling, stopNotificationPol
 import { initRoleSwitcher, syncRoleSwitcherUi } from './role-switcher.js?v=372';
 import { runRoleTransition } from './role-transition.js';
 import { renderDashboardTab } from './dashboard.js?v=376';
-import { renderPinTab } from './pin-station.js?v=375';
+import { renderPinTab } from './pin-station.js?v=376';
 import { renderBuildingsTab } from './buildings-crud.js?v=382';
 import { renderOfficesTab } from './offices-crud.js?v=375';
 import { renderPlotsTab } from './plots-crud.js?v=376';

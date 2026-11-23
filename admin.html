@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
     <title>iGUIDE Portal — Interactive Geospatial Unified Information Directory and Explorer</title>
@@ -10,9 +11,12 @@
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.31.0/mapbox-gl.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="/css/portal.css?v=383">
 </head>
+
 <body data-role="super_admin">
     <script>
         (function () {
@@ -24,7 +28,7 @@
                     : (localStorage.getItem('iguide_login_theme') || 'dark');
                 var mode = saved === 'light' ? 'light' : 'dark';
                 document.body.dataset.theme = mode;
-            } catch (_) {}
+            } catch (_) { }
         })();
     </script>
 
@@ -32,7 +36,8 @@
     <div id="login-overlay">
         <!-- Preserved Animated Intro Splash -->
         <div id="admin-splash-screen" class="admin-splash-screen" title="Click anywhere to skip intro">
-            <img src="/Main Icon/iGUIDE_Wordmark_Botanical_Animated.svg?v=290" alt="iGUIDE Logo" class="admin-splash-logo">
+            <img src="/Main Icon/iGUIDE_Wordmark_Botanical_Animated.svg?v=290" alt="iGUIDE Logo"
+                class="admin-splash-logo">
             <div class="admin-splash-title" id="admin-splash-title">iGUIDE PORTAL</div>
             <div class="admin-splash-sub">Interactive Geospatial Unified Information Directory and Explorer</div>
         </div>
@@ -44,7 +49,8 @@
                 <div class="login-orb login-orb-2"></div>
 
                 <!-- Official Top-Left Agency Seals -->
-                <div class="cipims-seals-header" aria-label="Republic of the Philippines, Department of Agriculture, and MIS Seals">
+                <div class="cipims-seals-header"
+                    aria-label="Republic of the Philippines, Department of Agriculture, and MIS Seals">
                     <img src="/Main Icon/bagong-pilipinas.webp" alt="Bagong Pilipinas">
                     <span class="cipims-seal-divider"></span>
                     <img src="/Main Icon/da-logo.webp" alt="Department of Agriculture">
@@ -54,14 +60,19 @@
 
                 <div class="login-brand-content">
                     <div class="login-brand-kicker" id="login-brand-kicker">Welcome to</div>
-                    <img src="/Main Icon/iGUIDE_Wordmark_Botanical_Animated.svg?v=290" alt="iGUIDE" class="login-brand-wordmark" id="login-brand-wordmark">
-                    <h2 class="login-brand-title" id="login-brand-portal-title">Interactive Geospatial Unified Information Directory and Explorer</h2>
+                    <img src="/Main Icon/iGUIDE_Wordmark_Botanical_Animated.svg?v=290" alt="iGUIDE"
+                        class="login-brand-wordmark" id="login-brand-wordmark">
+                    <h2 class="login-brand-title" id="login-brand-portal-title">Interactive Geospatial Unified
+                        Information Directory and Explorer</h2>
                     <div class="login-brand-typewriter">
-                        <span id="login-typewriter-text">Unified 3D Geospatial Directory across DA-CALABARZON Stations</span>
+                        <span id="login-typewriter-text">Unified 3D Geospatial Directory across DA-CALABARZON
+                            Stations</span>
                         <span class="typewriter-cursor"></span>
                     </div>
                     <p class="login-brand-sub" id="login-brand-portal-sub">
-                        Manage research station 3D buildings, facility WebP galleries, internal office directories, agricultural trial plots, and verified change workflows across DA-LARES, QARES, RARES, and CARES.
+                        Manage research station 3D buildings, facility WebP galleries, internal office directories,
+                        agricultural trial plots, and verified change workflows across DA-LARES, QARES, RARES, and
+                        CARES.
                     </p>
                 </div>
 
@@ -86,11 +97,15 @@
                     <!-- VIEW 1: SIGN IN -->
                     <form class="auth-view" id="auth-view-signin">
                         <span class="login-badge">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                            </svg>
                             DA-CALABARZON • iGUIDE PORTAL
                         </span>
                         <h1>Welcome Back</h1>
-                        <p class="login-card-sub">Sign in with your approved DA-CALABARZON iGUIDE email and password.</p>
+                        <p class="login-card-sub">Sign in with your approved DA-CALABARZON iGUIDE email and password.
+                        </p>
 
                         <div id="signin-banner" class="auth-status-banner"></div>
 
@@ -98,9 +113,14 @@
                             <label for="login-user">Email Address</label>
                             <div class="login-input-wrap">
                                 <span class="login-input-icon">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect width="20" height="16" x="2" y="4" rx="2" />
+                                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                                    </svg>
                                 </span>
-                                <input type="text" id="login-user" class="form-control" placeholder="name@gmail.com" autocomplete="username" required>
+                                <input type="text" id="login-user" class="form-control" placeholder="name@gmail.com"
+                                    autocomplete="username" required>
                             </div>
                         </div>
 
@@ -108,11 +128,21 @@
                             <label for="login-pass">Password</label>
                             <div class="login-input-wrap">
                                 <span class="login-input-icon">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                    </svg>
                                 </span>
-                                <input type="password" id="login-pass" class="form-control" placeholder="Enter your password" autocomplete="current-password" required>
-                                <button type="button" class="login-eye-btn" data-toggle-pw="login-pass" title="Show/Hide Password" aria-label="Toggle Password Visibility">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                <input type="password" id="login-pass" class="form-control"
+                                    placeholder="Enter your password" autocomplete="current-password" required>
+                                <button type="button" class="login-eye-btn" data-toggle-pw="login-pass"
+                                    title="Show/Hide Password" aria-label="Toggle Password Visibility">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                                        <circle cx="12" cy="12" r="3" />
+                                    </svg>
                                 </button>
                             </div>
                             <div id="login-caps-pill" class="capslock-pill">▲ Caps Lock is ON</div>
@@ -122,20 +152,29 @@
                             <label class="iguide-check-label">
                                 <input type="checkbox" id="remember-email-check" class="iguide-check-input">
                                 <span class="iguide-check-box">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+                                        stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
                                 </span>
                                 <span>Remember me</span>
                             </label>
                             <button type="button" id="goto-forgot-btn" class="auth-text-link">Forgot Password?</button>
                         </div>
 
-                        <button type="submit" id="login-submit-btn" class="btn btn-emerald" style="width:100%; height:42px;">
+                        <button type="submit" id="login-submit-btn" class="btn btn-emerald"
+                            style="width:100%; height:42px;">
                             <span>Sign In</span>
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M5 12h14" />
+                                <path d="m12 5 7 7-7 7" />
+                            </svg>
                         </button>
 
                         <div class="auth-switch-footer">
-                            Don't have an account? <button type="button" id="goto-signup-btn" class="auth-text-link">Create an account</button>
+                            Don't have an account? <button type="button" id="goto-signup-btn"
+                                class="auth-text-link">Create an account</button>
                         </div>
                     </form>
 
@@ -143,27 +182,34 @@
                     <form class="auth-view" id="auth-view-signup" hidden>
                         <span class="login-badge">NEW STAFF REGISTRATION</span>
                         <h1>Request iGUIDE Access</h1>
-                        <p class="login-card-sub">Submit your profile for Administrator approval and role assignment.</p>
+                        <p class="login-card-sub">Submit your profile for Administrator approval and role assignment.
+                        </p>
 
                         <div id="signup-banner" class="auth-status-banner"></div>
 
                         <div class="signup-grid-2">
-                            <div class="form-group"><label for="su-first">First Name *</label><input type="text" id="su-first" class="form-control" placeholder="Juan" required></div>
-                            <div class="form-group"><label for="su-last">Last Name *</label><input type="text" id="su-last" class="form-control" placeholder="Dela Cruz" required></div>
+                            <div class="form-group"><label for="su-first">First Name *</label><input type="text"
+                                    id="su-first" class="form-control" placeholder="Juan" required></div>
+                            <div class="form-group"><label for="su-last">Last Name *</label><input type="text"
+                                    id="su-last" class="form-control" placeholder="Dela Cruz" required></div>
                         </div>
 
                         <div class="form-group">
                             <label for="su-position">Position *</label>
-                            <input type="text" id="su-position" class="form-control" placeholder="e.g. Computer Programmer I" required>
+                            <input type="text" id="su-position" class="form-control"
+                                placeholder="e.g. Computer Programmer I" required>
                         </div>
 
                         <div class="form-group">
                             <label for="su-email">Email Address *</label>
-                            <input type="email" id="su-email" class="form-control" placeholder="you@gmail.com" autocomplete="email" required>
+                            <input type="email" id="su-email" class="form-control" placeholder="you@gmail.com"
+                                autocomplete="email" required>
                             <div class="email-hint-row">
                                 <div class="email-domain-chips">
-                                    <button type="button" class="email-domain-chip" data-email-domain="@gmail.com">@gmail.com</button>
-                                    <button type="button" class="email-domain-chip" data-email-domain="@calabarzon.da.gov.ph">@calabarzon.da.gov.ph</button>
+                                    <button type="button" class="email-domain-chip"
+                                        data-email-domain="@gmail.com">@gmail.com</button>
+                                    <button type="button" class="email-domain-chip"
+                                        data-email-domain="@calabarzon.da.gov.ph">@calabarzon.da.gov.ph</button>
                                 </div>
                                 <div id="su-email-hint" class="field-status-hint"></div>
                             </div>
@@ -173,13 +219,19 @@
                             <label for="su-division-trigger">Division *</label>
                             <input type="hidden" id="su-division" required>
                             <div class="iguide-combo-wrap" id="su-division-wrap">
-                                <button type="button" class="iguide-combo-trigger" id="su-division-trigger" aria-haspopup="listbox" aria-expanded="false">
-                                    <span class="iguide-combo-trigger-text placeholder" id="su-division-label">Select Division</span>
-                                    <svg class="iguide-combo-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                                <button type="button" class="iguide-combo-trigger" id="su-division-trigger"
+                                    aria-haspopup="listbox" aria-expanded="false">
+                                    <span class="iguide-combo-trigger-text placeholder" id="su-division-label">Select
+                                        Division</span>
+                                    <svg class="iguide-combo-chevron" width="14" height="14" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="m6 9 6 6 6-6" />
+                                    </svg>
                                 </button>
                                 <div class="iguide-combo-menu" id="su-division-menu" role="listbox">
                                     <div class="iguide-combo-search-wrap">
-                                        <input type="text" class="iguide-combo-search" id="su-division-search" placeholder="Search..." autocomplete="off">
+                                        <input type="text" class="iguide-combo-search" id="su-division-search"
+                                            placeholder="Search..." autocomplete="off">
                                     </div>
                                     <div class="iguide-combo-list" id="su-division-list"></div>
                                 </div>
@@ -191,13 +243,19 @@
                             <input type="hidden" id="su-office" required>
                             <input type="hidden" id="su-station" value="lares">
                             <div class="iguide-combo-wrap" id="su-office-wrap">
-                                <button type="button" class="iguide-combo-trigger" id="su-office-trigger" aria-haspopup="listbox" aria-expanded="false" disabled>
-                                    <span class="iguide-combo-trigger-text placeholder" id="su-office-label">Select Office</span>
-                                    <svg class="iguide-combo-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                                <button type="button" class="iguide-combo-trigger" id="su-office-trigger"
+                                    aria-haspopup="listbox" aria-expanded="false" disabled>
+                                    <span class="iguide-combo-trigger-text placeholder" id="su-office-label">Select
+                                        Office</span>
+                                    <svg class="iguide-combo-chevron" width="14" height="14" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="m6 9 6 6 6-6" />
+                                    </svg>
                                 </button>
                                 <div class="iguide-combo-menu" id="su-office-menu" role="listbox">
                                     <div class="iguide-combo-search-wrap">
-                                        <input type="text" class="iguide-combo-search" id="su-office-search" placeholder="Search..." autocomplete="off">
+                                        <input type="text" class="iguide-combo-search" id="su-office-search"
+                                            placeholder="Search..." autocomplete="off">
                                     </div>
                                     <div class="iguide-combo-list" id="su-office-list"></div>
                                 </div>
@@ -208,16 +266,28 @@
                             <div class="form-group" style="margin-bottom:0;">
                                 <label for="su-pass">Password *</label>
                                 <div class="login-input-wrap">
-                                    <input type="password" id="su-pass" class="form-control" style="padding-left:12px;" placeholder="Unique password (10+ chars)" required>
-                                    <button type="button" class="login-eye-btn" data-toggle-pw="su-pass" title="Show/Hide Password"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                                    <input type="password" id="su-pass" class="form-control" style="padding-left:12px;"
+                                        placeholder="Unique password (10+ chars)" required>
+                                    <button type="button" class="login-eye-btn" data-toggle-pw="su-pass"
+                                        title="Show/Hide Password"><svg width="15" height="15" viewBox="0 0 24 24"
+                                            fill="none" stroke="currentColor" stroke-width="1.75">
+                                            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                                            <circle cx="12" cy="12" r="3" />
+                                        </svg></button>
                                 </div>
                                 <div id="su-pw-hint" class="field-status-hint"></div>
                             </div>
                             <div class="form-group" style="margin-bottom:0;">
                                 <label for="su-confirm">Confirm Password *</label>
                                 <div class="login-input-wrap">
-                                    <input type="password" id="su-confirm" class="form-control" style="padding-left:12px;" placeholder="Re-enter password" required>
-                                    <button type="button" class="login-eye-btn" data-toggle-pw="su-confirm" title="Show/Hide Password"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                                    <input type="password" id="su-confirm" class="form-control"
+                                        style="padding-left:12px;" placeholder="Re-enter password" required>
+                                    <button type="button" class="login-eye-btn" data-toggle-pw="su-confirm"
+                                        title="Show/Hide Password"><svg width="15" height="15" viewBox="0 0 24 24"
+                                            fill="none" stroke="currentColor" stroke-width="1.75">
+                                            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                                            <circle cx="12" cy="12" r="3" />
+                                        </svg></button>
                                 </div>
                                 <div id="su-match-hint" class="field-status-hint"></div>
                             </div>
@@ -234,20 +304,26 @@
                                     <div class="pw-bar-seg" id="su-bar-4"></div>
                                 </div>
                                 <div class="pw-rules-list">
-                                    <div class="pw-rule-item" id="su-rule-uppercase"><span class="pw-rule-dot">✓</span><span>1 Uppercase letter</span></div>
-                                    <div class="pw-rule-item" id="su-rule-special"><span class="pw-rule-dot">✓</span><span>1 Special (@$!%*?&)</span></div>
-                                    <div class="pw-rule-item" id="su-rule-number"><span class="pw-rule-dot">✓</span><span>1 Number</span></div>
-                                    <div class="pw-rule-item" id="su-rule-minLength"><span class="pw-rule-dot">✓</span><span>10 or more characters</span></div>
+                                    <div class="pw-rule-item" id="su-rule-uppercase"><span
+                                            class="pw-rule-dot">✓</span><span>1 Uppercase letter</span></div>
+                                    <div class="pw-rule-item" id="su-rule-special"><span
+                                            class="pw-rule-dot">✓</span><span>1 Special (@$!%*?&)</span></div>
+                                    <div class="pw-rule-item" id="su-rule-number"><span
+                                            class="pw-rule-dot">✓</span><span>1 Number</span></div>
+                                    <div class="pw-rule-item" id="su-rule-minLength"><span
+                                            class="pw-rule-dot">✓</span><span>10 or more characters</span></div>
                                 </div>
                             </div>
                         </div>
 
-                        <button type="submit" id="signup-submit-btn" class="btn btn-emerald" style="width:100%; height:42px; margin-top:14px;" disabled>
+                        <button type="submit" id="signup-submit-btn" class="btn btn-emerald"
+                            style="width:100%; height:42px; margin-top:14px;" disabled>
                             <span>Submit Access Request</span>
                         </button>
 
                         <div class="auth-switch-footer">
-                            Already approved? <button type="button" class="auth-text-link" data-back-signin>← Back to Sign In</button>
+                            Already approved? <button type="button" class="auth-text-link" data-back-signin>← Back to
+                                Sign In</button>
                         </div>
                     </form>
 
@@ -256,47 +332,61 @@
                         <span class="login-badge">REQUEST SUBMITTED</span>
                         <h1>Awaiting Approval</h1>
                         <p class="login-card-sub">
-                            Your registration for <strong id="pending-confirm-email" style="color:#f8fafc;">your email</strong> has been queued for the MIS Administrator. You will receive a Gmail notification with a direct sign-in link once your role and station are assigned.
+                            Your registration for <strong id="pending-confirm-email" style="color:#f8fafc;">your
+                                email</strong> has been queued for the MIS Administrator. You will receive a Gmail
+                            notification with a direct sign-in link once your role and station are assigned.
                         </p>
-                        <button type="button" class="btn btn-emerald" style="width:100%; height:42px;" data-back-signin>← Back to Sign In</button>
+                        <button type="button" class="btn btn-emerald" style="width:100%; height:42px;"
+                            data-back-signin>← Back to Sign In</button>
                     </div>
 
                     <!-- VIEW 4: FORGOT PASSWORD -->
                     <div class="auth-view" id="auth-view-forgot" hidden>
                         <span class="login-badge">PASSWORD RECOVERY</span>
                         <h1>Reset Your Password</h1>
-                        <p class="login-card-sub">Receive a 6-digit verification code on your approved Gmail account.</p>
+                        <p class="login-card-sub">Receive a 6-digit verification code on your approved Gmail account.
+                        </p>
 
                         <div id="forgot-banner" class="auth-status-banner"></div>
 
                         <form id="forgot-step-email">
                             <div class="form-group">
                                 <label for="fp-email">Registered Email Address</label>
-                                <input type="email" id="fp-email" class="form-control" placeholder="you@gmail.com" required>
+                                <input type="email" id="fp-email" class="form-control" placeholder="you@gmail.com"
+                                    required>
                             </div>
-                            <button type="submit" id="fp-send-btn" class="btn btn-emerald" style="width:100%; height:42px;">Send Reset Code</button>
+                            <button type="submit" id="fp-send-btn" class="btn btn-emerald"
+                                style="width:100%; height:42px;">Send Reset Code</button>
                         </form>
 
                         <form id="forgot-step-reset" hidden>
                             <div class="form-group">
                                 <label>6-Digit Reset Code</label>
                                 <div class="otp-digits-row" id="otp-boxes-reset">
-                                    <input type="text" class="otp-digit-box" maxlength="1" inputmode="numeric" aria-label="Reset OTP digit 1">
-                                    <input type="text" class="otp-digit-box" maxlength="1" inputmode="numeric" aria-label="Reset OTP digit 2">
-                                    <input type="text" class="otp-digit-box" maxlength="1" inputmode="numeric" aria-label="Reset OTP digit 3">
-                                    <input type="text" class="otp-digit-box" maxlength="1" inputmode="numeric" aria-label="Reset OTP digit 4">
-                                    <input type="text" class="otp-digit-box" maxlength="1" inputmode="numeric" aria-label="Reset OTP digit 5">
-                                    <input type="text" class="otp-digit-box" maxlength="1" inputmode="numeric" aria-label="Reset OTP digit 6">
+                                    <input type="text" class="otp-digit-box" maxlength="1" inputmode="numeric"
+                                        aria-label="Reset OTP digit 1">
+                                    <input type="text" class="otp-digit-box" maxlength="1" inputmode="numeric"
+                                        aria-label="Reset OTP digit 2">
+                                    <input type="text" class="otp-digit-box" maxlength="1" inputmode="numeric"
+                                        aria-label="Reset OTP digit 3">
+                                    <input type="text" class="otp-digit-box" maxlength="1" inputmode="numeric"
+                                        aria-label="Reset OTP digit 4">
+                                    <input type="text" class="otp-digit-box" maxlength="1" inputmode="numeric"
+                                        aria-label="Reset OTP digit 5">
+                                    <input type="text" class="otp-digit-box" maxlength="1" inputmode="numeric"
+                                        aria-label="Reset OTP digit 6">
                                 </div>
                             </div>
                             <div class="signup-grid-2">
                                 <div class="form-group" style="margin-bottom:0;">
                                     <label for="fp-new-pass">New Password</label>
-                                    <input type="password" id="fp-new-pass" class="form-control" placeholder="Min 10 chars" required>
+                                    <input type="password" id="fp-new-pass" class="form-control"
+                                        placeholder="Min 10 chars" required>
                                 </div>
                                 <div class="form-group" style="margin-bottom:0;">
                                     <label for="fp-confirm-pass">Confirm New Password</label>
-                                    <input type="password" id="fp-confirm-pass" class="form-control" placeholder="Repeat password" required>
+                                    <input type="password" id="fp-confirm-pass" class="form-control"
+                                        placeholder="Repeat password" required>
                                     <div id="fp-match-hint" class="field-status-hint"></div>
                                 </div>
                             </div>
@@ -311,19 +401,25 @@
                                         <div class="pw-bar-seg" id="fp-bar-4"></div>
                                     </div>
                                     <div class="pw-rules-list">
-                                        <div class="pw-rule-item" id="fp-rule-uppercase"><span class="pw-rule-dot">✓</span><span>1 Uppercase letter</span></div>
-                                        <div class="pw-rule-item" id="fp-rule-special"><span class="pw-rule-dot">✓</span><span>1 Special (@$!%*?&)</span></div>
-                                        <div class="pw-rule-item" id="fp-rule-number"><span class="pw-rule-dot">✓</span><span>1 Number</span></div>
-                                        <div class="pw-rule-item" id="fp-rule-minLength"><span class="pw-rule-dot">✓</span><span>10 or more characters</span></div>
+                                        <div class="pw-rule-item" id="fp-rule-uppercase"><span
+                                                class="pw-rule-dot">✓</span><span>1 Uppercase letter</span></div>
+                                        <div class="pw-rule-item" id="fp-rule-special"><span
+                                                class="pw-rule-dot">✓</span><span>1 Special (@$!%*?&)</span></div>
+                                        <div class="pw-rule-item" id="fp-rule-number"><span
+                                                class="pw-rule-dot">✓</span><span>1 Number</span></div>
+                                        <div class="pw-rule-item" id="fp-rule-minLength"><span
+                                                class="pw-rule-dot">✓</span><span>10 or more characters</span></div>
                                     </div>
                                 </div>
                             </div>
 
-                            <button type="submit" id="fp-reset-submit-btn" class="btn btn-emerald" style="width:100%; height:42px; margin-top:14px;" disabled>Reset Password</button>
+                            <button type="submit" id="fp-reset-submit-btn" class="btn btn-emerald"
+                                style="width:100%; height:42px; margin-top:14px;" disabled>Reset Password</button>
                         </form>
 
                         <div class="auth-switch-footer">
-                            Remembered it? <button type="button" class="auth-text-link" data-back-signin>← Back to Sign In</button>
+                            Remembered it? <button type="button" class="auth-text-link" data-back-signin>← Back to Sign
+                                In</button>
                         </div>
                     </div>
 
@@ -331,27 +427,37 @@
                     <form class="auth-view" id="auth-view-otp" hidden>
                         <span class="login-badge">2-STEP VERIFICATION</span>
                         <h1>Enter Gmail OTP</h1>
-                        <p class="login-card-sub" id="otp-sent-msg">We sent a 6-digit verification code to your registered Gmail.</p>
+                        <p class="login-card-sub" id="otp-sent-msg">We sent a 6-digit verification code to your
+                            registered Gmail.</p>
 
                         <div id="otp-banner" class="auth-status-banner"></div>
 
                         <div class="form-group">
                             <label>6-Digit Verification Code</label>
                             <div class="otp-digits-row" id="otp-boxes-login">
-                                <input type="text" class="otp-digit-box" maxlength="1" inputmode="numeric" aria-label="OTP digit 1">
-                                <input type="text" class="otp-digit-box" maxlength="1" inputmode="numeric" aria-label="OTP digit 2">
-                                <input type="text" class="otp-digit-box" maxlength="1" inputmode="numeric" aria-label="OTP digit 3">
-                                <input type="text" class="otp-digit-box" maxlength="1" inputmode="numeric" aria-label="OTP digit 4">
-                                <input type="text" class="otp-digit-box" maxlength="1" inputmode="numeric" aria-label="OTP digit 5">
-                                <input type="text" class="otp-digit-box" maxlength="1" inputmode="numeric" aria-label="OTP digit 6">
+                                <input type="text" class="otp-digit-box" maxlength="1" inputmode="numeric"
+                                    aria-label="OTP digit 1">
+                                <input type="text" class="otp-digit-box" maxlength="1" inputmode="numeric"
+                                    aria-label="OTP digit 2">
+                                <input type="text" class="otp-digit-box" maxlength="1" inputmode="numeric"
+                                    aria-label="OTP digit 3">
+                                <input type="text" class="otp-digit-box" maxlength="1" inputmode="numeric"
+                                    aria-label="OTP digit 4">
+                                <input type="text" class="otp-digit-box" maxlength="1" inputmode="numeric"
+                                    aria-label="OTP digit 5">
+                                <input type="text" class="otp-digit-box" maxlength="1" inputmode="numeric"
+                                    aria-label="OTP digit 6">
                             </div>
                         </div>
 
-                        <button type="submit" id="otp-submit-btn" class="btn btn-emerald" style="width:100%; height:42px;">Verify & Enter Portal</button>
+                        <button type="submit" id="otp-submit-btn" class="btn btn-emerald"
+                            style="width:100%; height:42px;">Verify & Enter Portal</button>
 
                         <div style="display:flex; justify-content:space-between; margin-top:14px;">
-                            <button type="button" class="btn btn-secondary btn-sm" data-back-signin>← Back to Sign In</button>
-                            <button type="button" id="otp-resend-btn" class="btn btn-secondary btn-sm">Resend Code</button>
+                            <button type="button" class="btn btn-secondary btn-sm" data-back-signin>← Back to Sign
+                                In</button>
+                            <button type="button" id="otp-resend-btn" class="btn btn-secondary btn-sm">Resend
+                                Code</button>
                         </div>
                     </form>
                 </div>
@@ -369,7 +475,8 @@
         <div class="sidebar-brand">
             <div class="sidebar-brand-left">
                 <div class="brand-logo-box">
-                    <img src="/Main Icon/iGUIDE_Icon_iG_Animated.svg?v=289" alt="iGUIDE Logo" style="width:100%; height:100%; object-fit:contain;">
+                    <img src="/Main Icon/iGUIDE_Icon_iG_Animated.svg?v=289" alt="iGUIDE Logo"
+                        style="width:100%; height:100%; object-fit:contain;">
                 </div>
                 <div style="min-width:0;">
                     <div class="sidebar-brand-tag" id="sidebar-brand-tag">OVERSEER COMMAND</div>
@@ -377,33 +484,49 @@
                 </div>
             </div>
             <button type="button" class="sidebar-close-mobile" id="sidebar-close-btn" aria-label="Close Sidebar">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round">
+                    <path d="M18 6 6 18" />
+                    <path d="m6 6 12 12" />
+                </svg>
             </button>
         </div>
 
         <!-- Station Selector (All Stations for Admins/Super Admin; Locked for Single-Station Roles) -->
         <div class="station-picker-box" id="station-combo-wrap">
             <span class="station-picker-label">Active Research Station</span>
-            <button type="button" class="station-combo-trigger" id="station-combo-btn" onclick="toggleStationCombobox(event)">
+            <button type="button" class="station-combo-trigger" id="station-combo-btn"
+                onclick="toggleStationCombobox(event)">
                 <span class="station-combo-left">
                     <span class="station-combo-icon">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.75">
+                            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                            <circle cx="12" cy="10" r="3" />
+                        </svg>
                     </span>
                     <span id="station-combo-label">DA-LARES (Lipa City)</span>
                 </span>
-                <svg id="station-combo-chevron" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.75"><path d="m6 9 6 6 6-6"/></svg>
+                <svg id="station-combo-chevron" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8"
+                    stroke-width="1.75">
+                    <path d="m6 9 6 6 6-6" />
+                </svg>
             </button>
             <div class="station-combo-menu" id="station-combo-menu">
-                <button type="button" class="station-combo-option active" data-station="lares" onclick="selectStationCombo('lares')">
+                <button type="button" class="station-combo-option active" data-station="lares"
+                    onclick="selectStationCombo('lares')">
                     <span>DA-LARES (Lipa City)</span><span class="mono-id" style="font-size:10.5px;">Batangas</span>
                 </button>
-                <button type="button" class="station-combo-option" data-station="qares" onclick="selectStationCombo('qares')">
+                <button type="button" class="station-combo-option" data-station="qares"
+                    onclick="selectStationCombo('qares')">
                     <span>DA-QARES (Tiaong)</span><span class="mono-id" style="font-size:10.5px;">Quezon</span>
                 </button>
-                <button type="button" class="station-combo-option" data-station="rares" onclick="selectStationCombo('rares')">
+                <button type="button" class="station-combo-option" data-station="rares"
+                    onclick="selectStationCombo('rares')">
                     <span>DA-RARES (Tanay)</span><span class="mono-id" style="font-size:10.5px;">Rizal</span>
                 </button>
-                <button type="button" class="station-combo-option" data-station="cares" onclick="selectStationCombo('cares')">
+                <button type="button" class="station-combo-option" data-station="cares"
+                    onclick="selectStationCombo('cares')">
                     <span>DA-CARES (Naic)</span><span class="mono-id" style="font-size:10.5px;">Cavite</span>
                 </button>
             </div>
@@ -415,17 +538,32 @@
         <div class="sidebar-footer">
             <div class="sidebar-footer-role-bar" id="sidebar-footer-role-bar" style="display:none;">
                 <span class="sidebar-footer-role-pill" id="sidebar-footer-role-pill">Super Admin</span>
-                <button type="button" class="sidebar-footer-switch-btn" id="sidebar-footer-switch-btn" title="Switch active portal role">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+                <button type="button" class="sidebar-footer-switch-btn" id="sidebar-footer-switch-btn"
+                    title="Switch active portal role">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m16 3 4 4-4 4" />
+                        <path d="M20 7H4" />
+                        <path d="m8 21-4-4 4-4" />
+                        <path d="M4 17h16" />
+                    </svg>
                     <span>Switch</span>
                 </button>
             </div>
             <a href="/" target="_blank" class="btn btn-emerald btn-sm" style="width:100%;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+                    <path d="M2 12h20" />
+                </svg>
                 <span>Open Live 3D Map</span>
             </a>
             <button type="button" class="btn btn-ghost-logout btn-sm" onclick="logoutAdmin()" style="width:100%;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" x2="9" y1="12" y2="12" />
+                </svg>
                 <span>Log Out</span>
             </button>
 
@@ -436,7 +574,8 @@
                     <div class="sidebar-user-meta">
                         <div class="sidebar-user-name" id="sidebar-user-name">Loading...</div>
                         <div class="sidebar-user-title" id="sidebar-user-title"></div>
-                        <span class="sidebar-base-role-pill" id="sidebar-base-role-pill" style="display:none;">Super Admin</span>
+                        <span class="sidebar-base-role-pill" id="sidebar-base-role-pill" style="display:none;">Super
+                            Admin</span>
                     </div>
                 </div>
             </div>
@@ -447,17 +586,30 @@
     <main class="admin-main">
         <!-- Sticky Morph Banner for Super Admin Role Preview -->
         <div id="role-morph-banner" class="role-morph-banner">
-            <span class="role-morph-text"><strong id="role-morph-identity">Super Admin (Earth Jeune Layola — Computer Programmer I):</strong> Viewing as <span id="role-morph-active-name" class="role-morph-pill">GIS Editor</span> <span class="role-morph-scope">• All Stations Unlocked</span></span>
-            <button type="button" id="role-morph-return-btn" class="btn btn-secondary btn-sm">Return to Super Admin</button>
+            <span class="role-morph-text"><strong id="role-morph-identity">Super Admin (Earth Jeune Layola — Computer
+                    Programmer I):</strong> Viewing as <span id="role-morph-active-name" class="role-morph-pill">GIS
+                    Editor</span> <span class="role-morph-scope">• All Stations Unlocked</span></span>
+            <button type="button" id="role-morph-return-btn" class="btn btn-secondary btn-sm">Return to Super
+                Admin</button>
         </div>
 
         <header class="admin-topbar">
             <div class="topbar-title-wrap">
                 <button type="button" class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Open Navigation Drawer">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round">
+                        <line x1="3" y1="6" x2="21" y2="6" />
+                        <line x1="3" y1="12" x2="21" y2="12" />
+                        <line x1="3" y1="18" x2="21" y2="18" />
+                    </svg>
                 </button>
-                <button type="button" class="sidebar-collapse-btn" id="sidebar-collapse-btn" title="Collapse or expand sidebar" aria-label="Collapse or expand sidebar" aria-pressed="false">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>
+                <button type="button" class="sidebar-collapse-btn" id="sidebar-collapse-btn"
+                    title="Collapse or expand sidebar" aria-label="Collapse or expand sidebar" aria-pressed="false">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect width="18" height="18" x="3" y="3" rx="2" />
+                        <path d="M9 3v18" />
+                    </svg>
                 </button>
                 <div class="topbar-icon-badge" id="topbar-icon"></div>
                 <div class="topbar-title-stack">
@@ -469,9 +621,17 @@
             <div class="topbar-right">
                 <!-- Global Portal Search (Buildings, Offices, Plots, Requests) -->
                 <div class="portal-global-search-wrap" id="portal-global-search-wrap">
-                    <svg class="portal-global-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                    <input type="search" id="portal-global-search" class="portal-global-search-input" placeholder="Search buildings, offices, plots, requests…" aria-label="Search portal records" autocomplete="off">
-                    <div class="portal-global-search-results" id="portal-global-search-results" role="listbox" hidden></div>
+                    <svg class="portal-global-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
+                        <circle cx="11" cy="11" r="8" />
+                        <path d="m21 21-4.3-4.3" />
+                    </svg>
+                    <input type="search" id="portal-global-search" class="portal-global-search-input"
+                        placeholder="Search buildings, offices, plots, requests…" aria-label="Search portal records"
+                        autocomplete="off">
+                    <div class="portal-global-search-results" id="portal-global-search-results" role="listbox" hidden>
+                    </div>
                 </div>
                 <!-- Super Admin Live Morphing Role Switcher -->
                 <div class="role-switcher-wrap" id="role-switcher-wrap" style="display:none;">
@@ -479,39 +639,77 @@
                         <span class="role-dot"></span>
                         <span class="role-switcher-label-extra" id="role-switcher-prefix">Role:</span>
                         <span id="role-switcher-label">Super Admin</span>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="m6 9 6 6 6-6" />
+                        </svg>
                     </button>
                     <div class="role-switcher-menu" id="role-switcher-menu">
                         <div class="role-switcher-menu-header">
                             <div class="role-switcher-menu-name" id="role-switcher-menu-name">Earth Jeune Layola</div>
-                            <div class="role-switcher-menu-sub" id="role-switcher-menu-sub">Computer Programmer I • Super Admin</div>
+                            <div class="role-switcher-menu-sub" id="role-switcher-menu-sub">Computer Programmer I •
+                                Super Admin</div>
                         </div>
-                        <button type="button" class="role-switcher-item" data-target-role="super_admin"><span>Super Admin (Your Account)</span><span class="role-item-meta"><span class="role-item-check">Active</span><span class="role-swatch" style="background:#a855f7;"></span></span></button>
-                        <button type="button" class="role-switcher-item" data-target-role="administrator"><span>Administrator (MIS Supt.)</span><span class="role-item-meta"><span class="role-item-check">Active</span><span class="role-swatch" style="background:#10b981;"></span></span></button>
-                        <button type="button" class="role-switcher-item" data-target-role="gis_editor"><span>GIS Editor (All Stations)</span><span class="role-item-meta"><span class="role-item-check">Active</span><span class="role-swatch" style="background:#0ea5e9;"></span></span></button>
-                        <button type="button" class="role-switcher-item" data-target-role="reviewer"><span>Station Reviewer (All Stations)</span><span class="role-item-meta"><span class="role-item-check">Active</span><span class="role-swatch" style="background:#f59e0b;"></span></span></button>
+                        <button type="button" class="role-switcher-item" data-target-role="super_admin"><span>Super
+                                Admin (Your Account)</span><span class="role-item-meta"><span
+                                    class="role-item-check">Active</span><span class="role-swatch"
+                                    style="background:#a855f7;"></span></span></button>
+                        <button type="button" class="role-switcher-item"
+                            data-target-role="administrator"><span>Administrator (MIS Supt.)</span><span
+                                class="role-item-meta"><span class="role-item-check">Active</span><span
+                                    class="role-swatch" style="background:#10b981;"></span></span></button>
+                        <button type="button" class="role-switcher-item" data-target-role="gis_editor"><span>GIS Editor
+                                (All Stations)</span><span class="role-item-meta"><span
+                                    class="role-item-check">Active</span><span class="role-swatch"
+                                    style="background:#0ea5e9;"></span></span></button>
+                        <button type="button" class="role-switcher-item" data-target-role="reviewer"><span>Station
+                                Reviewer (All Stations)</span><span class="role-item-meta"><span
+                                    class="role-item-check">Active</span><span class="role-swatch"
+                                    style="background:#f59e0b;"></span></span></button>
                     </div>
                 </div>
 
                 <!-- Light / Dark Mode Toggle (Lucide Sun / Moon) -->
-                <button type="button" class="notif-bell-btn portal-theme-btn" id="portal-theme-toggle-btn" title="Switch to Light Mode" aria-label="Toggle Light or Dark Mode">
-                    <svg class="theme-icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
-                    <svg class="theme-icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                <button type="button" class="notif-bell-btn portal-theme-btn" id="portal-theme-toggle-btn"
+                    title="Switch to Light Mode" aria-label="Toggle Light or Dark Mode">
+                    <svg class="theme-icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="4" />
+                        <path d="M12 2v2" />
+                        <path d="M12 20v2" />
+                        <path d="m4.93 4.93 1.41 1.41" />
+                        <path d="m17.66 17.66 1.41 1.41" />
+                        <path d="M2 12h2" />
+                        <path d="M20 12h2" />
+                        <path d="m6.34 17.66-1.41 1.41" />
+                        <path d="m19.07 4.93-1.41 1.41" />
+                    </svg>
+                    <svg class="theme-icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"
+                        style="display:none;">
+                        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+                    </svg>
                 </button>
 
                 <!-- Live Notification Bell (30s Polling) -->
                 <div class="notif-wrap" id="notif-wrap">
                     <button type="button" class="notif-bell-btn" id="notif-bell-btn" aria-label="Notifications">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                            <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                        </svg>
                         <span class="notif-badge-count" id="notif-badge-count">0</span>
                     </button>
                     <div class="notif-popover" id="notif-popover">
                         <div class="notif-popover-header">
                             <strong>Notifications</strong>
-                            <button type="button" id="notif-mark-all-btn" class="auth-text-link" style="font-size:11.5px;">Mark all read</button>
+                            <button type="button" id="notif-mark-all-btn" class="auth-text-link"
+                                style="font-size:11.5px;">Mark all read</button>
                         </div>
                         <div class="notif-list" id="notif-list">
-                            <div style="padding:20px; text-align:center; color:#64748b; font-size:12px;">Loading notifications...</div>
+                            <div style="padding:20px; text-align:center; color:#64748b; font-size:12px;">Loading
+                                notifications...</div>
                         </div>
                     </div>
                 </div>
@@ -521,8 +719,15 @@
                     <span id="active-station-badge-text">DA-LARES</span>
                 </span>
 
-                <button type="button" class="btn btn-secondary btn-sm" onclick="refreshCurrentTab()" title="Refresh Current View">
-                    <svg width="13.5" height="13.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="refreshCurrentTab()"
+                    title="Refresh Current View">
+                    <svg width="13.5" height="13.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.5">
+                        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+                        <path d="M21 3v5h-5" />
+                        <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+                        <path d="M8 16H3v5" />
+                    </svg>
                     <span class="btn-refresh-label">Refresh</span>
                 </button>
             </div>
@@ -534,7 +739,15 @@
     <!-- MODALS -->
     <div class="modal-backdrop" id="building-modal" role="dialog" aria-modal="true" aria-labelledby="bldg-modal-title">
         <div class="modal-box" style="max-width:920px;">
-            <div class="modal-header"><h3 id="bldg-modal-title">Edit Building & Photos</h3><button class="btn btn-secondary btn-sm" onclick="closeBuildingModal()" aria-label="Close"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div>
+            <div class="modal-header">
+                <h3 id="bldg-modal-title">Edit Building & Photos</h3><button class="btn btn-secondary btn-sm"
+                    onclick="closeBuildingModal()" aria-label="Close"><svg width="15" height="15" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M18 6 6 18" />
+                        <path d="m6 6 12 12" />
+                    </svg></button>
+            </div>
             <div class="modal-body" id="bldg-modal-body"></div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeBuildingModal()">Cancel</button>
@@ -550,7 +763,12 @@
                     <h3 id="bldg-preview-title">View Result & Changes</h3>
                     <span class="status-pill status-pill-blue" id="bldg-preview-count-pill">0 changes</span>
                 </div>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="closeBuildingResultPreview()" aria-label="Close"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="closeBuildingResultPreview()"
+                    aria-label="Close"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 6 6 18" />
+                        <path d="m6 6 12 12" />
+                    </svg></button>
             </div>
             <div class="modal-body" id="bldg-preview-body"></div>
             <div class="modal-footer" id="bldg-preview-footer"></div>
@@ -559,7 +777,15 @@
 
     <div class="modal-backdrop" id="office-modal">
         <div class="modal-box" style="max-width:600px;">
-            <div class="modal-header"><h3 id="office-modal-title">Add / Edit Internal Office</h3><button class="btn btn-secondary btn-sm" onclick="closeOfficeModal()" aria-label="Close"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div>
+            <div class="modal-header">
+                <h3 id="office-modal-title">Add / Edit Internal Office</h3><button class="btn btn-secondary btn-sm"
+                    onclick="closeOfficeModal()" aria-label="Close"><svg width="15" height="15" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M18 6 6 18" />
+                        <path d="m6 6 12 12" />
+                    </svg></button>
+            </div>
             <div class="modal-body" id="office-modal-body"></div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeOfficeModal()">Cancel</button>
@@ -570,7 +796,15 @@
 
     <div class="modal-backdrop" id="plot-modal">
         <div class="modal-box">
-            <div class="modal-header"><h3 id="plot-modal-title">Edit Agricultural Plot</h3><button class="btn btn-secondary btn-sm" onclick="closePlotModal()" aria-label="Close"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div>
+            <div class="modal-header">
+                <h3 id="plot-modal-title">Edit Agricultural Plot</h3><button class="btn btn-secondary btn-sm"
+                    onclick="closePlotModal()" aria-label="Close"><svg width="15" height="15" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M18 6 6 18" />
+                        <path d="m6 6 12 12" />
+                    </svg></button>
+            </div>
             <div class="modal-body" id="plot-modal-body"></div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closePlotModal()">Cancel</button>
@@ -581,14 +815,23 @@
 
     <div class="modal-backdrop" id="gov-modal">
         <div class="modal-box" id="gov-modal-box">
-            <div class="modal-header"><h3 id="gov-modal-title">Governance Detail</h3><button type="button" class="btn btn-secondary btn-sm" id="gov-modal-close-x" aria-label="Close"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div>
+            <div class="modal-header">
+                <h3 id="gov-modal-title">Governance Detail</h3><button type="button" class="btn btn-secondary btn-sm"
+                    id="gov-modal-close-x" aria-label="Close"><svg width="15" height="15" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M18 6 6 18" />
+                        <path d="m6 6 12 12" />
+                    </svg></button>
+            </div>
             <div class="modal-body" id="gov-modal-body"></div>
             <div class="modal-footer" id="gov-modal-footer"></div>
         </div>
     </div>
 
     <!-- ROLE-THEMED LOGIN & SWITCH TRANSITION OVERLAY -->
-    <div id="role-transition-overlay" class="role-transition-overlay" data-role="super_admin" aria-hidden="true" role="status" aria-live="polite">
+    <div id="role-transition-overlay" class="role-transition-overlay" data-role="super_admin" aria-hidden="true"
+        role="status" aria-live="polite">
         <div class="rt-ambient-orb rt-ambient-orb-1"></div>
         <div class="rt-ambient-orb rt-ambient-orb-2"></div>
         <div class="rt-grid-bg"></div>
@@ -624,58 +867,95 @@
     </div>
 
     <div class="toast" id="admin-toast">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 6 9 17l-5-5" />
+        </svg>
         <span id="admin-toast-text">Saved successfully!</span>
     </div>
 
-    <script type="module" src="/js/portal/shell.js?v=388"></script>
+    <script type="module" src="/js/portal/shell.js?v=389"></script>
 
     <!-- Super Admin 2x2 Role Switcher Modal -->
-    <div id="overseer-role-modal" class="overseer-role-modal-backdrop" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="overseer-role-modal-title">
+    <div id="overseer-role-modal" class="overseer-role-modal-backdrop" style="display:none;" role="dialog"
+        aria-modal="true" aria-labelledby="overseer-role-modal-title">
         <div class="overseer-role-modal-card">
             <div class="overseer-role-modal-header">
                 <div style="display:flex; align-items:center; gap:9px;">
                     <span class="overseer-role-modal-hicon">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                            <circle cx="9" cy="7" r="4" />
+                            <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                        </svg>
                     </span>
                     <div>
-                        <h3 id="overseer-role-modal-title" style="margin:0; font-size:16px; font-weight:800; color:#f8fafc;">Switch Portal Role</h3>
-                        <div id="overseer-role-modal-sub" style="font-size:11.5px; color:#94a3b8; margin-top:1px;">Select an active portal workspace perspective</div>
+                        <h3 id="overseer-role-modal-title"
+                            style="margin:0; font-size:16px; font-weight:800; color:#f8fafc;">Switch Portal Role</h3>
+                        <div id="overseer-role-modal-sub" style="font-size:11.5px; color:#94a3b8; margin-top:1px;">
+                            Select an active portal workspace perspective</div>
                     </div>
                 </div>
                 <button type="button" id="overseer-role-modal-close" class="overseer-role-modal-x" aria-label="Close">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 6 6 18" />
+                        <path d="m6 6 12 12" />
+                    </svg>
                 </button>
             </div>
             <div class="overseer-role-grid" id="overseer-role-grid">
-                <button type="button" class="overseer-role-tile" data-target-role="super_admin" style="--tile-accent:#a855f7;">
+                <button type="button" class="overseer-role-tile" data-target-role="super_admin"
+                    style="--tile-accent:#a855f7;">
                     <span class="overseer-tile-active-pill">ACTIVE</span>
                     <div class="overseer-tile-icon">
-                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></svg>
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
+                            <path d="m9 12 2 2 4-4" />
+                        </svg>
                     </div>
                     <div class="overseer-tile-name">Super Admin</div>
                     <div class="overseer-tile-desc">Full Overseer • All Stations</div>
                 </button>
-                <button type="button" class="overseer-role-tile" data-target-role="administrator" style="--tile-accent:#10b981;">
+                <button type="button" class="overseer-role-tile" data-target-role="administrator"
+                    style="--tile-accent:#10b981;">
                     <span class="overseer-tile-active-pill">ACTIVE</span>
                     <div class="overseer-tile-icon">
-                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                            <rect width="20" height="14" x="2" y="3" rx="2" />
+                            <line x1="8" x2="16" y1="21" y2="21" />
+                            <line x1="12" x2="12" y1="17" y2="21" />
+                        </svg>
                     </div>
                     <div class="overseer-tile-name">Administrator (MIS)</div>
                     <div class="overseer-tile-desc">Approvals & Live Publishing</div>
                 </button>
-                <button type="button" class="overseer-role-tile" data-target-role="gis_editor" style="--tile-accent:#0ea5e9;">
+                <button type="button" class="overseer-role-tile" data-target-role="gis_editor"
+                    style="--tile-accent:#0ea5e9;">
                     <span class="overseer-tile-active-pill">ACTIVE</span>
                     <div class="overseer-tile-icon">
-                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg>
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21" />
+                            <line x1="9" x2="9" y1="3" y2="18" />
+                            <line x1="15" x2="15" y1="6" y2="21" />
+                        </svg>
                     </div>
                     <div class="overseer-tile-name">GIS Editor</div>
                     <div class="overseer-tile-desc">Spatial CRUD & Map Editors</div>
                 </button>
-                <button type="button" class="overseer-role-tile" data-target-role="reviewer" style="--tile-accent:#f59e0b;">
+                <button type="button" class="overseer-role-tile" data-target-role="reviewer"
+                    style="--tile-accent:#f59e0b;">
                     <span class="overseer-tile-active-pill">ACTIVE</span>
                     <div class="overseer-tile-icon">
-                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 11l3 3L22 4" />
+                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                        </svg>
                     </div>
                     <div class="overseer-tile-name">Station Reviewer</div>
                     <div class="overseer-tile-desc">Visual Diff & Suggestions</div>
@@ -685,4 +965,5 @@
     </div>
 
 </body>
+
 </html>
