@@ -1949,13 +1949,13 @@ export function showPhoneBuildingDetails(buildingId, targetOffice = '') {
 
 
 
-    // Reset inline action buttons and kiosk origin row
+    // Reset inline action buttons and kiosk origin row (enabled for buildings AND entrance/exit gates)
 
     const actionsInline = document.getElementById('phone-bldg-actions-inline');
 
     if (actionsInline) {
 
-        actionsInline.style.display = isGate ? 'none' : 'flex';
+        actionsInline.style.display = 'flex';
 
     }
 
@@ -1965,7 +1965,7 @@ export function showPhoneBuildingDetails(buildingId, targetOffice = '') {
 
     if (kioskOriginRow) {
 
-        kioskOriginRow.style.display = isGate ? 'none' : 'flex';
+        kioskOriginRow.style.display = 'flex';
 
     }
 
