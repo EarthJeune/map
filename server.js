@@ -1753,7 +1753,9 @@ function startCloudflareTunnel() {
         clearTimeout(tunnelStartTimer);
         tunnelStartTimer = null;
     }
-    if (process.env.NO_TUNNEL || process.argv.includes('--no-tunnel')) {
+    const noTunnelVal = String(process.env.NO_TUNNEL || '').trim().toLowerCase();
+    const tunnelDisabled = ['1', 'true', 'yes'].includes(noTunnelVal) || process.argv.includes('--no-tunnel');
+    if (tunnelDisabled) {
         console.log('[Cloudflare] Tunnel disabled via configuration (--no-tunnel or NO_TUNNEL=1).');
         return;
     }
