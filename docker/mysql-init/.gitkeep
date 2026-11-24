@@ -1,0 +1,2 @@
+# Place kiosk_backup.sql in this folder before the very first `docker compose up -d`
+# so MySQL 8.4 automatically imports the full iGUIDE `kiosk` database on first boot.

@@ -1,0 +1,113 @@
+name: iguide
+
+services:
+  iguide-db:
+    image: mysql:8.4
+    container_name: iguide-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-kiosk}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-}
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      TZ: Asia/Manila
+    ports:
+      # Conflict-free local admin port (3307-3310 already used on target server PC)
+      - "127.0.0.1:3311:3306"
+    volumes:
+      - iguide_mysql_data:/var/lib/mysql
+      - ./docker/mysql-init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - iguide_net
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root $${MYSQL_ROOT_PASSWORD:+-p$$MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 25s
+
+  iguide-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: iguide-app
+    restart: unless-stopped
+    depends_on:
+      iguide-db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      PORT: "4321"
+      DB_HOST: iguide-db
+      DB_PORT: "3306"
+      NO_TUNNEL: "1"
+      TZ: Asia/Manila
+    ports:
+      # Conflict-free host port (never 8080, which is used by issp_reverb)
+      - "127.0.0.1:4321:4321"
+    volumes:
+      # Persistent uploaded facility photos (survives container rebuilds & git pull)
+      - ./images:/app/images
+      # Offline high-resolution drone orthomosaic tiles (read-only)
+      - ./LARES v1.mbtiles:/app/LARES v1.mbtiles:ro
+      - ./QARES v1.mbtiles:/app/QARES v1.mbtiles:ro
+      - ./RARES v1.mbtiles:/app/RARES v1.mbtiles:ro
+      # Persistent GeoJSON & station config files written by Visual Map Editors
+      - ./buildings.json:/app/buildings.json
+      - ./roads.json:/app/roads.json
+      - ./trees.json:/app/trees.json
+      - ./colors.json:/app/colors.json
+      - ./pin.json:/app/pin.json
+      - ./drone_offset.json:/app/drone_offset.json
+      - ./qares_buildings.json:/app/qares_buildings.json
+      - ./qares_roads.json:/app/qares_roads.json
+      - ./qares_boundary.json:/app/qares_boundary.json
+      - ./qares_pin.json:/app/qares_pin.json
+      - ./rares_buildings.json:/app/rares_buildings.json
+      - ./rares_roads.json:/app/rares_roads.json
+      - ./rares_plots.json:/app/rares_plots.json
+      - ./rares_boundary.json:/app/rares_boundary.json
+      - ./rares_pin.json:/app/rares_pin.json
+    networks:
+      - iguide_net
+
+  # Production Cloudflare Named Tunnel (internal-only, zero host ports)
+  # Start ONLY during Phase 5 Cutover via: docker compose --profile production up -d
+  iguide-tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: iguide-tunnel
+    restart: unless-stopped
+    profiles: ["production"]
+    depends_on:
+      iguide-app:
+        condition: service_healthy
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    networks:
+      - iguide_net
+
+  # Optional phpMyAdmin UI (start with: docker compose --profile tools up -d)
+  iguide-phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: iguide-phpmyadmin
+    restart: unless-stopped
+    profiles: ["tools"]
+    depends_on:
+      iguide-db:
+        condition: service_healthy
+    environment:
+      PMA_HOST: iguide-db
+      PMA_PORT: "3306"
+    ports:
+      # Conflict-free port (8885 already used by kiosk-phpmyadmin-1)
+      - "127.0.0.1:8886:80"
+    networks:
+      - iguide_net
+
+volumes:
+  iguide_mysql_data:
+    name: iguide_mysql_data
+
+networks:
+  iguide_net:
+    name: iguide_net
+    driver: bridge

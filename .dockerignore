@@ -1,0 +1,36 @@
+# Dependencies & Git
+node_modules/
+.git/
+.gitignore
+
+# Secrets & Local Env (passed via env_file at runtime, NEVER baked into image)
+.env
+.env.*
+!.env.example
+
+# Large Offline Drone Orthomosaics (bind-mounted read-only at runtime)
+*.mbtiles
+
+# Windows Tunnel Binary (Linux cloudflared runs in iguide-tunnel container)
+cloudflared.exe
+
+# Raw Blender Reference Photos, Renders, Archives & Scratch
+Building Images/
+Building Images RARES/
+renders/
+archive/
+scratch/
+backups/
+docker/
+.agents/
+.vscode/
+
+# SQL Dumps & Temp Files
+*.sql
+*.log
+*.tmp
+*.bak
+*.blend
+*.blend1
+*.baseline.*
+__pycache__/
