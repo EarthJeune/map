@@ -1,6 +1,6 @@
 // DA-LARES Wayfinding — Mobile-Only Turn-by-Turn Voice Guidance (Web Speech API)
 import { lucideIcon } from './data/icons.js';
-import { isKioskMode } from './mode.js';
+import { detectAppMode } from './mode.js';
 
 const STORAGE_KEY = 'iguide_voice_muted';
 
@@ -17,11 +17,13 @@ try {
 
 export function isMobileVoiceDevice() {
     if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
-    if (typeof isKioskMode === 'function' && isKioskMode()) return false;
+    // Use detectAppMode() directly so it works accurately at module load time before applyAppModeToDOM() runs
+    if (typeof detectAppMode === 'function') {
+        return detectAppMode() === 'phone';
+    }
     const isMobileUA = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|Mobile/i.test(navigator.userAgent);
     const hasPhoneParam = (new URLSearchParams(window.location.search).get('mode') || '').toLowerCase() === 'phone';
-    const isNarrowViewport = window.innerWidth <= 768;
-    return isMobileUA || hasPhoneParam || isNarrowViewport;
+    return isMobileUA || hasPhoneParam || window.innerWidth <= 768;
 }
 
 export function isVoiceMuted() {

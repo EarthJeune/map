@@ -1704,8 +1704,9 @@
         display: none !important;
     }
 
-    /* 2. Style Orbit and Fullscreen to match 44x44px ergonomic botanical touch controls */
+    /* 2. Style Orbit, Voice Mute/Unmute, and Fullscreen to match 44x44px ergonomic botanical touch controls */
     .ctrl-orbit-group,
+    .ctrl-voice-group,
     .mapboxgl-ctrl-group:has(.mapboxgl-ctrl-fullscreen) {
         width: 44px !important;
         height: 44px !important;
@@ -1721,6 +1722,7 @@
     }
 
     .ctrl-orbit-btn,
+    .ctrl-voice-btn,
     .mapboxgl-ctrl-fullscreen {
         width: 44px !important;
         height: 44px !important;
@@ -2256,6 +2258,7 @@ body.mode-phone .mapboxgl-ctrl-compass {
 }
 
 body.mode-phone .ctrl-orbit-group,
+body.mode-phone .ctrl-voice-group,
 body.mode-phone .mapboxgl-ctrl-group:has(.mapboxgl-ctrl-fullscreen) {
     width: 44px !important;
     height: 44px !important;
@@ -2271,6 +2274,7 @@ body.mode-phone .mapboxgl-ctrl-group:has(.mapboxgl-ctrl-fullscreen) {
 }
 
 body.mode-phone .ctrl-orbit-btn,
+body.mode-phone .ctrl-voice-btn,
 body.mode-phone .mapboxgl-ctrl-fullscreen {
     width: 44px !important;
     height: 44px !important;
