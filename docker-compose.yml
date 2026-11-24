@@ -71,7 +71,7 @@ services:
     networks:
       - iguide_net
 
-  # Production Cloudflare Named Tunnel (internal-only, zero host ports)
+  # Production Cloudflare Named Tunnel (shares iguide-app's localhost:4321 namespace so zero Cloudflare Dashboard edits are needed!)
   # Start ONLY during Phase 5 Cutover via: docker compose --profile production up -d
   iguide-tunnel:
     image: cloudflare/cloudflared:latest
@@ -81,9 +81,8 @@ services:
     depends_on:
       iguide-app:
         condition: service_healthy
+    network_mode: "service:iguide-app"
     command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
-    networks:
-      - iguide_net
 
   # Optional phpMyAdmin UI (start with: docker compose --profile tools up -d)
   iguide-phpmyadmin:
