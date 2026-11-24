@@ -2724,10 +2724,16 @@ export async function renderAdminReviewsTab(container) {
 }
 
 export async function renderReviewQueueTab(container) {
-    if (PortalState.effectiveRole === 'reviewer' && activeCrSubTab === 'approved') {
+    if (PortalState.effectiveRole === 'reviewer' && (activeCrSubTab === 'approved' || activeCrSubTab === 'published')) {
         activeCrSubTab = 'pending';
     }
     await renderChangeRequestWorkspace(container, { isReviewerView: true });
+}
+
+if (typeof window !== 'undefined') {
+    window.setCrSubTab = (subTab) => {
+        if (subTab) activeCrSubTab = String(subTab);
+    };
 }
 
 window.withdrawChangeRequestNow = async (id) => {

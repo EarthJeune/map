@@ -699,36 +699,42 @@ async function maybeQueueVisualEditorForReview(req, res, { editorType, stationId
         geojson: cleanNext
     };
 
+    const actor = phase1.formatActorAuditMeta(user);
     const ins = await query(
         `INSERT INTO change_requests (
             station_id, target_table, target_id, action, summary,
-            previous_json, payload_json, status, submitted_by, submitted_by_email, submitted_by_role
-        ) VALUES (?, 'map_geometry', ?, 'UPDATE', ?, ?, ?, 'pending', ?, ?, ?)`,
+            previous_json, payload_json, status,
+            submitted_by_email, submitted_by_user_id, submitted_by_name,
+            actor_base_role, actor_effective_role
+        ) VALUES (?, 'map_geometry', ?, 'UPDATE', ?, ?, ?, 'pending', ?, ?, ?, ?, ?)`,
         [
             stationId,
             targetId,
             summary,
             JSON.stringify(previousPayload),
             JSON.stringify(nextPayload),
-            user.fullName || user.email || 'GIS Editor',
-            user.email || 'editor',
-            effectiveRole || 'gis_editor'
+            actor.email || user.email || 'editor',
+            actor.userId || user.userId || null,
+            actor.displayName || user.fullName || user.email || 'GIS Editor',
+            actor.baseRole || user.baseRole || 'gis_editor',
+            effectiveRole || actor.effectiveRole || 'gis_editor'
         ]
     );
     const crId = ins.insertId;
 
-    // Notify assigned Station Reviewers & Super Admins in-app
+    // Notify assigned Station Reviewers & Super Admins in-app (include Super Admin self when role-switching for testing)
     try {
         const recipients = await query(
-            `SELECT id FROM admin_users WHERE is_active = 1 AND approval_status = 'approved'
+            `SELECT id, role FROM admin_users WHERE is_active = 1 AND approval_status = 'approved'
              AND (role = 'super_admin' OR (role = 'reviewer' AND (station_id = ? OR station_id = 'all')))`,
             [stationId]
         );
+        const submitterUid = Number(user.userId || user.id || 0);
         for (const r of recipients) {
-            if (user.id && Number(r.id) === Number(user.id)) continue;
+            if (submitterUid && Number(r.id) === submitterUid && String(r.role || '').toLowerCase() !== 'super_admin') continue;
             await query(
                 `INSERT INTO notifications (recipient_user_id, station_id, type, title, message, link_tab, target_table, target_id)
-                 VALUES (?, ?, 'change_request', ?, ?, 'review-queue', 'map_geometry', ?)`,
+                 VALUES (?, ?, 'change_request', ?, ?, 'review-queue', 'change_requests', ?)`,
                 [
                     r.id,
                     stationId,

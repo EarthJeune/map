@@ -607,14 +607,18 @@ function startPortalRuntime() {
             syncStationSelectorUi();
         }
         if (tabId) {
+            // When opening a pending review notification, ensure the Review Queue lands on Pending (not stale Published)
+            if (type === 'change_request' && typeof window.setCrSubTab === 'function') {
+                window.setCrSubTab('pending');
+            }
             window.switchTab(tabId);
             // Deep-link redirection to the exact concern
-            if (targetTable === 'change_requests' && targetId) {
+            if ((targetTable === 'change_requests' || targetTable === 'map_geometry') && targetId) {
                 setTimeout(() => {
                     if (typeof window.openCrDiffModal === 'function') {
-                        window.openCrDiffModal(Number(targetId));
+                        window.openCrDiffModal(Number(targetId), type === 'change_request' ? 'review' : undefined);
                     }
-                }, 350);
+                }, 400);
             } else if (targetTable === 'admin_users' && targetId) {
                 setTimeout(() => {
                     if (typeof window.openUserApprovalModal === 'function') {
