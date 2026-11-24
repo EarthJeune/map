@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ override: true });
 const express = require('express');
 const cors = require('cors');
 const mysql = require('mysql2');
@@ -1777,14 +1777,40 @@ function startCloudflareTunnel() {
         execSync('taskkill /F /IM cloudflared.exe 2>NUL', { stdio: 'ignore' });
     } catch (e) {}
 
-    console.log('[Cloudflare] Launching Cloudflare Tunnel for port ' + port + '...');
+    const namedToken = String(process.env.CLOUDFLARE_TUNNEL_TOKEN || '').trim();
+    const publicNamedUrl = String(process.env.PUBLIC_BASE_URL || '').trim().replace(/\/+$/, '');
+    let namedBannerPrinted = false;
+
+    console.log(namedToken
+        ? `[Cloudflare] Launching Named Tunnel for port ${port}${publicNamedUrl ? ` (${publicNamedUrl})` : ''}...`
+        : `[Cloudflare] Launching Cloudflare Tunnel for port ${port}...`);
     lastTunnelError = '';
     try {
-        const spawnedProc = spawn(cloudflaredExe, ['tunnel', '--url', `http://localhost:${port}`]);
+        const cfArgs = namedToken
+            ? ['tunnel', 'run', '--token', namedToken]
+            : ['tunnel', '--url', `http://localhost:${port}`];
+        const spawnedProc = spawn(cloudflaredExe, cfArgs);
         tunnelProcess = spawnedProc;
 
         const parseTunnelOutput = (data) => {
             const str = data.toString();
+
+            if (namedToken && !namedBannerPrinted && /Registered tunnel connection/i.test(str)) {
+                namedBannerPrinted = true;
+                currentTunnelUrl = publicNamedUrl || 'https://iguide.daivcalabarzon.site';
+                tunnelRetryDelay = 5000;
+                consecutive429Count = 0;
+                console.log('\n======================================================');
+                console.log('[Cloudflare Named Tunnel Active]');
+                console.log(`Public URL: ${currentTunnelUrl}`);
+                console.log(`Portal URL: ${currentTunnelUrl}/login`);
+                console.log(`Local Host: http://localhost:${port}`);
+                console.log('======================================================\n');
+                query(
+                    "INSERT INTO settings (`key`, `value`) VALUES ('tunnel_url', ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)",
+                    [currentTunnelUrl]
+                ).catch(e => console.error('[Cloudflare] Failed to save tunnel URL to DB:', e.message));
+            }
 
             if (str.includes('429')) {
                 lastTunnelError = 'Cloudflare free quick tunnel rate limit reached (HTTP 429 Too Many Requests).';
