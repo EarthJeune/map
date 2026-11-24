@@ -391,10 +391,12 @@ export function performStationSwitch(stationId) {
     const urlParams = (typeof window !== 'undefined') ? new URLSearchParams(window.location.search) : null;
     const isDevOverride = Boolean(state.isAdmin || (urlParams && urlParams.get('dev') === '1'));
 
-    // Safety guard: CARES is strictly inaccessible to visitors
-    if (stationId === 'cares' && !isDevOverride) {
-        console.warn('[StationSwitch] CARES is not accessible to visitors yet.');
-        showStationDevModal('cares');
+    // Safety guard: Block public visitors from Closed (maintenance) stations or unfinished CARES
+    const isClosedMaintenance = targetStation && targetStation.status === 'maintenance';
+    const isLockedCares = stationId === 'cares' && (!targetStation || targetStation.status !== 'live');
+    if ((isClosedMaintenance || isLockedCares) && !isDevOverride) {
+        console.warn(`[StationSwitch] ${stationId} is closed (${targetStation?.status || 'under_development'}).`);
+        showStationDevModal(stationId);
         return;
     }
 

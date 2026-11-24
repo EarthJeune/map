@@ -1837,6 +1837,21 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
         const st = String(stationId || 'lares').toLowerCase();
         const act = String(action || 'UPDATE').toUpperCase();
         const tbl = String(targetTable || 'buildings');
+
+        // Enforce Super Admin station editing lock (blocks non-Super-Admin edits on locked stations like CARES)
+        const effRole = String(req?.adminUser?.switchedRole || req?.adminUser?.role || '').toLowerCase();
+        if (effRole !== 'super_admin') {
+            try {
+                const [stRow] = await query(`SELECT name, editing_locked, status FROM stations WHERE station_id = ? LIMIT 1`, [st]);
+                if (stRow && Number(stRow.editing_locked || 0) === 1) {
+                    const err = new Error(`Editing is currently locked for ${stRow.name || ('DA-' + st.toUpperCase())} by the Super Administrator.`);
+                    err.statusCode = 403;
+                    throw err;
+                }
+            } catch (lockErr) {
+                if (lockErr.statusCode === 403) throw lockErr;
+            }
+        }
         const tId = String(targetId || 'general');
         const actor = phase1.formatActorAuditMeta(req.adminUser);
 
@@ -3129,15 +3144,24 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
         const sId = req.params.stationId.toLowerCase();
         const b = req.body || {};
         try {
-            if (b.status !== undefined && b.status !== 'live' && b.status !== 'under_development') {
-                return res.status(400).json({ error: 'Invalid station status. Must be "live" or "under_development".' });
+            if (b.status !== undefined && !['live', 'under_development', 'maintenance'].includes(b.status)) {
+                return res.status(400).json({ error: 'Invalid station status. Must be "live", "under_development", or "maintenance".' });
             }
             const [prev] = await query(`SELECT * FROM stations WHERE station_id = ? LIMIT 1`, [sId]);
             const statusChanged = b.status !== undefined && (!prev || b.status !== prev.status);
             if (statusChanged) {
                 if (!(req.adminUser.permissions || []).includes('station:toggle_status')) {
-                    return res.status(403).json({ error: 'Only Super Admin can toggle live deployment status.' });
+                    return res.status(403).json({ error: 'Only Super Admin can open, close, or change station deployment status.' });
                 }
+            }
+            if (b.editing_locked !== undefined) {
+                if (!(req.adminUser.permissions || []).includes('station:toggle_status')) {
+                    return res.status(403).json({ error: 'Only Super Admin can lock or unlock staff editing for a station.' });
+                }
+                await query(
+                    `UPDATE stations SET editing_locked = ? WHERE station_id = ?`,
+                    [b.editing_locked ? 1 : 0, sId]
+                );
             }
             if (b.require_publish_for_map_editors !== undefined) {
                 if (!(req.adminUser.permissions || []).includes('changes:publish')) {

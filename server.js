@@ -662,6 +662,20 @@ function readLaresBuildingsGeoSafe() {
 async function maybeQueueVisualEditorForReview(req, res, { editorType, stationId, relFilePath, prevGeo, nextGeo }) {
     const user = req.adminUser || {};
     const effectiveRole = String(user.switchedRole || user.role || user.baseRole || '').toLowerCase();
+
+    // Enforce Super Admin station editing lock on all 5 Visual Map Editing Tools
+    if (effectiveRole !== 'super_admin') {
+        try {
+            const [stLock] = await query(`SELECT name, editing_locked FROM stations WHERE station_id = ? LIMIT 1`, [stationId]);
+            if (stLock && Number(stLock.editing_locked || 0) === 1) {
+                res.status(403).json({
+                    error: `Editing is currently locked for ${stLock.name || ('DA-' + stationId.toUpperCase())} by the Super Administrator.`
+                });
+                return true;
+            }
+        } catch (_) { }
+    }
+
     const explicitReview = req.headers['x-submit-for-review'] === '1' || req.body?._submitForReview === true;
     // Role-aware governance: GIS Editor (including Super Admin acting as GIS Editor via Role Switcher)
     // ALWAYS submits to Station Reviewer (status = 'pending') to Approve, Request Revision, or Deny.

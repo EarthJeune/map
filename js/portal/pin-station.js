@@ -193,27 +193,39 @@ export async function renderPinTab(container) {
                     <div class="form-grid-2" style="align-items:stretch;">
                         <div class="form-group" style="padding:12px; border-radius:10px; border:1px solid var(--border-default);">
                             <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
-                                <div>
-                                    <label style="margin-bottom:4px;">Public Deployment Visibility</label>
-                                    <input type="hidden" id="st-status" value="${escapeHtml(st.status || 'under_development')}">
-                                    <div id="st-status-pill-wrap">
-                                        ${st.status === 'live'
-                                            ? `<span class="status-pill status-pill-live"><span class="status-dot-live"></span><span>Live on Public Map</span></span>`
-                                            : `<span class="status-pill status-pill-dev"><span class="status-dot-dev"></span><span>Under Development (Notice Modal)</span></span>`}
-                                    </div>
+                                <div style="flex:1; min-width:180px;">
+                                    <label style="margin-bottom:6px;">Public Map Access (Open / Close Station)</label>
+                                    ${canToggleStatus ? `
+                                        <select id="st-status" class="form-control" style="height:36px; font-weight:600;">
+                                            <option value="live" ${st.status === 'live' ? 'selected' : ''}>🟢 Live (Open to Public)</option>
+                                            <option value="under_development" ${st.status === 'under_development' ? 'selected' : ''}>🟡 Under Development (Preview Banner)</option>
+                                            <option value="maintenance" ${st.status === 'maintenance' ? 'selected' : ''}>🔴 Closed (For Fixing / Maintenance)</option>
+                                        </select>
+                                    ` : `
+                                        <input type="hidden" id="st-status" value="${escapeHtml(st.status || 'under_development')}">
+                                        <div id="st-status-pill-wrap">
+                                            ${st.status === 'live'
+                                                ? `<span class="status-pill status-pill-live"><span class="status-dot-live"></span><span>Live on Public Map</span></span>`
+                                                : (st.status === 'maintenance'
+                                                    ? `<span class="status-pill status-pill-dev" style="background:rgba(244,63,94,0.16); color:#fda4af; border-color:rgba(244,63,94,0.4);"><span>Closed (Maintenance)</span></span>`
+                                                    : `<span class="status-pill status-pill-dev"><span class="status-dot-dev"></span><span>Under Development</span></span>`)}
+                                        </div>
+                                        <div class="help-tip" style="margin-top:4px;">Super Admin only</div>
+                                    `}
                                 </div>
-                                ${canToggleStatus
-                                    ? `<button type="button" id="st-toggle-status-btn" class="btn btn-secondary btn-sm">Switch to ${st.status === 'live' ? 'Under Dev' : 'Live'}…</button>`
-                                    : `<span class="mono-code">Super Admin Only</span>`}
                             </div>
                         </div>
 
                         <div class="form-group" style="padding:12px; border-radius:10px; border:1px solid var(--border-default);">
-                            <label style="display:flex; align-items:center; gap:9px; cursor:pointer; margin:0; text-transform:none; letter-spacing:0; font-size:12.5px;">
-                                <input type="checkbox" id="st-req-pub-editors" ${Number(st.require_publish_for_map_editors || 0) === 1 ? 'checked' : ''} style="width:15px; height:15px; accent-color:#10b981;">
-                                <span>Require Administrator publish for map-editor changes</span>
+                            <label style="display:flex; align-items:center; gap:9px; cursor:${canToggleStatus ? 'pointer' : 'not-allowed'}; margin:0; text-transform:none; letter-spacing:0; font-size:12.5px; font-weight:700;">
+                                <input type="checkbox" id="st-editing-locked" ${Number(st.editing_locked || 0) === 1 ? 'checked' : ''} ${canToggleStatus ? '' : 'disabled'} style="width:16px; height:16px; accent-color:#f43f5e;">
+                                <span>🔒 Lock Staff Editing (Super Admin Only)</span>
                             </label>
-                            <div class="help-tip" style="margin-top:4px;">When unchecked (default), map editor saves apply directly and still log version history & audit trail.</div>
+                            <div class="help-tip" style="margin-top:5px;">
+                                ${Number(st.editing_locked || 0) === 1
+                                    ? `<strong>Locked:</strong> GIS Editors & Reviewers cannot submit or save edits for ${escapeHtml(st.name || st.station_id.toUpperCase())}. Only Super Admin can edit.`
+                                    : `<strong>Open:</strong> GIS Editors can submit updates for Reviewer approval. Check this box to temporarily lock editing while fixing or preparing a station (e.g., DA-CARES).`}
+                            </div>
                         </div>
                     </div>
 
@@ -390,7 +402,7 @@ export async function renderPinTab(container) {
             welcome_tags: welcomeTags,
             quick_tags: quickTags,
             filter_descriptions: filterDescriptions,
-            ...(adminDirect ? { require_publish_for_map_editors: Boolean(document.getElementById('st-req-pub-editors')?.checked) } : {}),
+            ...(canToggleStatus ? { editing_locked: Boolean(document.getElementById('st-editing-locked')?.checked) } : {}),
             submitForReview: Boolean(submitForReview)
         };
 
