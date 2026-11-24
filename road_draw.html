@@ -8,7 +8,7 @@
 <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
 <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.js"></script>
 <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.css" type="text/css">
-<script src="/js/portal/editor-bridge.js?v=304"></script>
+<script src="/js/portal/editor-bridge.js?v=306"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; }
@@ -1368,8 +1368,16 @@ async function saveDirectlyToMap() {
     })
     .then(res => {
         if (res && res.success) {
-            btn.textContent = `✅ Saved ${res.count} features to ${targetFile}!`;
-            btn.style.background = "#10b981";
+            if (res.noChanges) {
+                btn.textContent = 'ℹ️ No Changes Detected';
+                btn.style.background = '#475569';
+            } else if (res.queued) {
+                btn.textContent = `✅ Queued for Review (#${res.changeRequestId})`;
+                btn.style.background = '#0ea5e9';
+            } else {
+                btn.textContent = `✅ Saved ${res.count} features to ${targetFile}!`;
+                btn.style.background = "#10b981";
+            }
             setTimeout(() => {
                 btn.textContent = `💾 Save Directly to Map (${targetFile})`;
                 btn.style.background = "linear-gradient(135deg, #10b981, #059669)";

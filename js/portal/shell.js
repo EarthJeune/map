@@ -28,7 +28,7 @@ import { renderBuildingsTab } from './buildings-crud.js?v=382';
 import { renderOfficesTab } from './offices-crud.js?v=375';
 import { renderPlotsTab } from './plots-crud.js?v=376';
 import { renderUserAccountsTab, renderLoginLogsTab } from './users-governance.js?v=376';
-import { renderAdminReviewsTab, renderReviewQueueTab, renderReviewDirectoryTab } from './change-requests.js?v=382';
+import { renderAdminReviewsTab, renderReviewQueueTab, renderReviewDirectoryTab } from './change-requests.js?v=383';
 
 if (window.mapboxgl) {
     window.mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;

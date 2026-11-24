@@ -28,6 +28,317 @@ import { computeSnapshotBeforeAfter, hasGeometryActuallyChanged, formatHumanRequ
 
 const spatialAerialSpecs = new Map();
 const spatialAerialMaps = new Map();
+let activeGeomDiffMap = null;
+
+function destroyActiveGeomDiffMap() {
+    if (activeGeomDiffMap) {
+        try { activeGeomDiffMap.remove(); } catch (_) { }
+        activeGeomDiffMap = null;
+    }
+}
+
+const MAP_EDITOR_META = {
+    buildings: { label: 'Building Footprints', tab: 'editor-draw', color: '#38bdf8' },
+    pills: { label: 'Pill Label Offsets', tab: 'editor-pill', color: '#f59e0b' },
+    roads: { label: 'Roads & Entrances', tab: 'editor-road', color: '#a855f7' },
+    plots: { label: 'Agricultural Plots', tab: 'editor-plot', color: '#10b981' },
+    trees: { label: '3D Tree Placement', tab: 'editor-tree', color: '#22c55e' }
+};
+
+function formatGeomItemDelta(item) {
+    if (!item) return '';
+    if (item.changeKind === 'pill_moved') {
+        return `moved ${item.shiftM ?? 0} m${item.direction ? ' ' + item.direction : ''}`;
+    }
+    if (item.changeKind === 'added') {
+        if (item.areaM2 > 0) return `+${Math.round(item.areaM2).toLocaleString()} m²`;
+        if (item.lengthM > 0) return `+${item.lengthM} m`;
+        return 'New feature';
+    }
+    if (item.changeKind === 'removed') {
+        if (item.areaM2 > 0) return `−${Math.round(item.areaM2).toLocaleString()} m²`;
+        if (item.lengthM > 0) return `−${item.lengthM} m`;
+        return 'Removed';
+    }
+    const bits = [];
+    if (item.areaDeltaM2) bits.push(`${item.areaDeltaM2 > 0 ? '+' : ''}${Math.round(item.areaDeltaM2).toLocaleString()} m²`);
+    if (item.lengthDeltaM) bits.push(`${item.lengthDeltaM > 0 ? '+' : ''}${item.lengthDeltaM} m`);
+    if (item.shiftM >= 0.5) bits.push(`shifted ${item.shiftM} m${item.direction ? ' ' + item.direction : ''}`);
+    return bits.length ? bits.join(' • ') : 'Geometry edited';
+}
+
+function getGeomDiffSummary(cr) {
+    const next = parseJsonSafe(cr?.payload_json);
+    const prev = parseJsonSafe(cr?.previous_json);
+    const ds = next?.diff_summary || {};
+    const editorType = ds.editorType || next?.editor_type || prev?.editor_type || 'buildings';
+    const meta = MAP_EDITOR_META[editorType] || MAP_EDITOR_META.buildings;
+    return {
+        editorType,
+        editorTitle: ds.editorTitle || meta.label,
+        editorTab: meta.tab,
+        accentColor: meta.color,
+        filePath: next?.file_path || prev?.file_path || '',
+        summaryText: ds.summaryText || cr?.summary || meta.label,
+        added: Array.isArray(ds.added) ? ds.added : [],
+        modified: Array.isArray(ds.modified) ? ds.modified : [],
+        removed: Array.isArray(ds.removed) ? ds.removed : [],
+        addedCount: Number(ds.addedCount ?? (Array.isArray(ds.added) ? ds.added.length : 0)),
+        modifiedCount: Number(ds.modifiedCount ?? (Array.isArray(ds.modified) ? ds.modified.length : 0)),
+        removedCount: Number(ds.removedCount ?? (Array.isArray(ds.removed) ? ds.removed.length : 0)),
+        bbox: Array.isArray(ds.bbox) && ds.bbox.length === 4 ? ds.bbox : null,
+        prevGeo: prev?.geojson || null,
+        nextGeo: next?.geojson || null
+    };
+}
+
+function renderMapGeomVisualDiffHtml(cr) {
+    const g = getGeomDiffSummary(cr);
+    const allItems = [
+        ...g.added.map((it, i) => ({ ...it, _group: 'added', _idx: `a_${i}` })),
+        ...g.modified.map((it, i) => ({ ...it, _group: 'modified', _idx: `m_${i}` })),
+        ...g.removed.map((it, i) => ({ ...it, _group: 'removed', _idx: `r_${i}` }))
+    ];
+    const total = g.addedCount + g.modifiedCount + g.removedCount;
+    const isLight = document.body.dataset.theme === 'light';
+    const panelBg = isLight ? '#f8fafc' : 'rgba(9,16,28,0.88)';
+    const borderCol = isLight ? 'rgba(15,23,42,0.12)' : 'rgba(148,163,184,0.20)';
+    const textMain = isLight ? '#0f172a' : '#f8fafc';
+    const textMuted = isLight ? '#475569' : '#94a3b8';
+
+    const badgeFor = (it) => {
+        if (it.changeKind === 'added') return `<span style="padding:2px 7px; border-radius:999px; font-size:10px; font-weight:800; background:rgba(16,185,129,0.18); color:#10b981; border:1px solid rgba(16,185,129,0.38);">+ ADDED</span>`;
+        if (it.changeKind === 'removed') return `<span style="padding:2px 7px; border-radius:999px; font-size:10px; font-weight:800; background:rgba(244,63,94,0.16); color:#f43f5e; border:1px solid rgba(244,63,94,0.38);">− REMOVED</span>`;
+        if (it.changeKind === 'pill_moved') return `<span style="padding:2px 7px; border-radius:999px; font-size:10px; font-weight:800; background:rgba(245,158,11,0.18); color:#f59e0b; border:1px solid rgba(245,158,11,0.40);">→ MOVED</span>`;
+        return `<span style="padding:2px 7px; border-radius:999px; font-size:10px; font-weight:800; background:rgba(56,189,248,0.18); color:#38bdf8; border:1px solid rgba(56,189,248,0.38);">~ EDITED</span>`;
+    };
+
+    return `
+        <div style="border:1px solid ${borderCol}; border-radius:14px; overflow:hidden; background:${panelBg}; margin-bottom:14px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; padding:10px 14px; border-bottom:1px solid ${borderCol};">
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <span class="status-pill status-pill-live" style="font-size:11px;">${escapeHtml(g.editorTitle)}</span>
+                    <span style="font-size:12px; font-weight:700; color:${textMain};">${escapeHtml(g.summaryText)}</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                    <div class="cr-preview-mode-tabs" id="cr-geom-mode-tabs">
+                        <button type="button" class="cr-preview-mode-btn active" data-geom-mode="overlay">Overlay Diff</button>
+                        <button type="button" class="cr-preview-mode-btn" data-geom-mode="before">Before (Live)</button>
+                        <button type="button" class="cr-preview-mode-btn" data-geom-mode="after">After (Proposed)</button>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-sm" id="cr-geom-fit-btn" style="padding:5px 10px; font-size:11.5px;">Fit All Changes</button>
+                </div>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding:7px 14px; font-size:11.5px; color:${textMuted}; border-bottom:1px solid ${borderCol};">
+                <span style="display:inline-flex; align-items:center; gap:5px;"><span style="width:12px; height:3px; border-top:2px dashed #f43f5e; display:inline-block;"></span> Before (Live)</span>
+                <span style="display:inline-flex; align-items:center; gap:5px;"><span style="width:12px; height:3px; background:#10b981; display:inline-block; border-radius:2px;"></span> After (Proposed)</span>
+                <span style="display:inline-flex; align-items:center; gap:5px;"><span style="width:12px; height:3px; border-top:2px dashed #f59e0b; display:inline-block;"></span> Pill / Point Shift Vector</span>
+            </div>
+
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(290px, 1fr));">
+                <div style="position:relative; min-height:400px; background:#0b1322; border-right:1px solid ${borderCol};">
+                    <div id="cr-geom-diff-map" style="width:100%; height:400px;"></div>
+                </div>
+                <div style="max-height:400px; overflow-y:auto; padding:10px 12px; display:flex; flex-direction:column; gap:7px;">
+                    <div style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.05em; color:${textMuted}; padding:2px 2px 4px;">
+                        Changed Features (${total}) — Click to Zoom
+                    </div>
+                    ${allItems.length === 0 ? `<div style="font-size:12.5px; color:${textMuted}; padding:16px 4px;">No feature-level differences recorded.</div>` : allItems.map(it => {
+        const c = Array.isArray(it.center) && it.center.length >= 2 ? it.center : null;
+        const delta = formatGeomItemDelta(it);
+        return `
+                            <button type="button" class="cr-geom-item-btn" data-lng="${c ? c[0] : ''}" data-lat="${c ? c[1] : ''}" style="text-align:left; width:100%; padding:9px 10px; border-radius:10px; border:1px solid ${borderCol}; background:${isLight ? '#ffffff' : 'rgba(15,23,42,0.72)'}; color:${textMain}; cursor:pointer; display:flex; flex-direction:column; gap:4px; transition:border-color 0.15s, transform 0.12s;">
+                                <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:wrap;">
+                                    <strong style="font-size:12.5px; line-height:1.25;">${escapeHtml(it.label || it.key)}</strong>
+                                    ${badgeFor(it)}
+                                </div>
+                                <div style="font-size:11.5px; color:${textMuted}; display:flex; align-items:center; justify-content:space-between; gap:6px;">
+                                    <span>${escapeHtml(delta)}</span>
+                                    ${c ? `<span style="color:#10b981; font-weight:700; font-size:11px;">Zoom →</span>` : ''}
+                                </div>
+                            </button>
+                        `;
+    }).join('')}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function mountMapGeomVisualDiffMap(cr) {
+    destroyActiveGeomDiffMap();
+    const container = document.getElementById('cr-geom-diff-map');
+    if (!container || !window.mapboxgl) return;
+
+    const g = getGeomDiffSummary(cr);
+    const stationId = String(cr.station_id || PortalState.currentStation || 'lares').toLowerCase();
+    const tilePath = stationId === 'lares' ? '/api/tiles/{z}/{x}/{y}.png' : `/api/tiles/${stationId}/{z}/{x}/{y}.png`;
+    const defaultCenters = {
+        lares: [121.1665, 13.9585],
+        qares: [121.3713, 13.9432],
+        rares: [121.3393, 14.5750],
+        cares: [120.7850, 14.3150]
+    };
+    const fallbackCenter = defaultCenters[stationId] || defaultCenters.lares;
+    const initCenter = g.bbox
+        ? [(g.bbox[0] + g.bbox[2]) / 2, (g.bbox[1] + g.bbox[3]) / 2]
+        : fallbackCenter;
+
+    const map = new window.mapboxgl.Map({
+        container,
+        style: {
+            version: 8,
+            sources: {
+                'google-sat': { type: 'raster', tiles: ['https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'], tileSize: 256, maxzoom: 20 },
+                ...(stationId !== 'cares' ? {
+                    'station-drone': { type: 'raster', tiles: [tilePath], tileSize: 256, minzoom: 14, maxzoom: 21 }
+                } : {})
+            },
+            layers: [
+                { id: 'sat', type: 'raster', source: 'google-sat' },
+                ...(stationId !== 'cares' ? [{ id: 'drone', type: 'raster', source: 'station-drone' }] : [])
+            ]
+        },
+        center: initCenter,
+        zoom: 18.5
+    });
+    activeGeomDiffMap = map;
+    map.addControl(new window.mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
+
+    const beforeFeats = [];
+    const afterFeats = [];
+    const arrowFeats = [];
+    const beforePts = [];
+    const afterPts = [];
+
+    g.added.forEach(it => {
+        if (it.afterGeometry) {
+            afterFeats.push({ type: 'Feature', properties: { label: it.label }, geometry: it.afterGeometry });
+        }
+        if (it.afterGeometry?.type === 'Point' && Array.isArray(it.center)) {
+            afterPts.push({ type: 'Feature', properties: { label: it.label }, geometry: { type: 'Point', coordinates: it.center } });
+        }
+    });
+    g.removed.forEach(it => {
+        if (it.beforeGeometry) {
+            beforeFeats.push({ type: 'Feature', properties: { label: it.label }, geometry: it.beforeGeometry });
+        }
+        if (it.beforeGeometry?.type === 'Point' && Array.isArray(it.center)) {
+            beforePts.push({ type: 'Feature', properties: { label: it.label }, geometry: { type: 'Point', coordinates: it.center } });
+        }
+    });
+    g.modified.forEach(it => {
+        if (it.changeKind === 'pill_moved') {
+            if (Array.isArray(it.fromCoord)) {
+                beforePts.push({ type: 'Feature', properties: { label: it.label }, geometry: { type: 'Point', coordinates: it.fromCoord } });
+            }
+            if (Array.isArray(it.toCoord)) {
+                afterPts.push({ type: 'Feature', properties: { label: it.label }, geometry: { type: 'Point', coordinates: it.toCoord } });
+            }
+            if (Array.isArray(it.fromCoord) && Array.isArray(it.toCoord)) {
+                arrowFeats.push({
+                    type: 'Feature',
+                    properties: { label: it.label },
+                    geometry: { type: 'LineString', coordinates: [it.fromCoord, it.toCoord] }
+                });
+            }
+            if (it.afterGeometry) {
+                afterFeats.push({ type: 'Feature', properties: { label: it.label }, geometry: it.afterGeometry });
+            }
+        } else {
+            if (it.beforeGeometry) beforeFeats.push({ type: 'Feature', properties: { label: it.label }, geometry: it.beforeGeometry });
+            if (it.afterGeometry) afterFeats.push({ type: 'Feature', properties: { label: it.label }, geometry: it.afterGeometry });
+            if (Array.isArray(it.fromCoord) && Array.isArray(it.toCoord) && it.shiftM >= 0.5) {
+                arrowFeats.push({
+                    type: 'Feature',
+                    properties: { label: it.label },
+                    geometry: { type: 'LineString', coordinates: [it.fromCoord, it.toCoord] }
+                });
+            }
+            if (it.beforeGeometry?.type === 'Point' && Array.isArray(it.fromCoord)) {
+                beforePts.push({ type: 'Feature', properties: { label: it.label }, geometry: { type: 'Point', coordinates: it.fromCoord } });
+            }
+            if (it.afterGeometry?.type === 'Point' && Array.isArray(it.toCoord)) {
+                afterPts.push({ type: 'Feature', properties: { label: it.label }, geometry: { type: 'Point', coordinates: it.toCoord } });
+            }
+        }
+    });
+
+    const fitAll = () => {
+        if (!g.bbox) return;
+        const [minX, minY, maxX, maxY] = g.bbox;
+        if (Math.abs(maxX - minX) < 0.00015 && Math.abs(maxY - minY) < 0.00015) {
+            map.flyTo({ center: [(minX + maxX) / 2, (minY + maxY) / 2], zoom: 19.4, duration: 400 });
+        } else {
+            map.fitBounds([[minX, minY], [maxX, maxY]], { padding: 56, maxZoom: 19.6, duration: 450 });
+        }
+    };
+
+    map.on('load', () => {
+        if (g.prevGeo && Array.isArray(g.prevGeo.features) && g.prevGeo.features.length > 0) {
+            map.addSource('diff-context', { type: 'geojson', data: g.prevGeo });
+            map.addLayer({
+                id: 'diff-context-line',
+                type: 'line',
+                source: 'diff-context',
+                paint: { 'line-color': '#cbd5e1', 'line-width': 1, 'line-opacity': 0.35 }
+            });
+        }
+
+        map.addSource('diff-before', { type: 'geojson', data: { type: 'FeatureCollection', features: beforeFeats } });
+        map.addSource('diff-after', { type: 'geojson', data: { type: 'FeatureCollection', features: afterFeats } });
+        map.addSource('diff-arrows', { type: 'geojson', data: { type: 'FeatureCollection', features: arrowFeats } });
+        map.addSource('diff-before-pts', { type: 'geojson', data: { type: 'FeatureCollection', features: beforePts } });
+        map.addSource('diff-after-pts', { type: 'geojson', data: { type: 'FeatureCollection', features: afterPts } });
+
+        // Before (Red Dashed)
+        map.addLayer({ id: 'diff-before-fill', type: 'fill', source: 'diff-before', filter: ['==', ['geometry-type'], 'Polygon'], paint: { 'fill-color': '#f43f5e', 'fill-opacity': 0.22 } });
+        map.addLayer({ id: 'diff-before-line', type: 'line', source: 'diff-before', paint: { 'line-color': '#f43f5e', 'line-width': 3, 'line-dasharray': [2, 1.5] } });
+        map.addLayer({ id: 'diff-before-pt', type: 'circle', source: 'diff-before-pts', paint: { 'circle-radius': 7, 'circle-color': '#f43f5e', 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2 } });
+
+        // After (Bright Emerald)
+        map.addLayer({ id: 'diff-after-fill', type: 'fill', source: 'diff-after', filter: ['==', ['geometry-type'], 'Polygon'], paint: { 'fill-color': '#10b981', 'fill-opacity': 0.28 } });
+        map.addLayer({ id: 'diff-after-line', type: 'line', source: 'diff-after', paint: { 'line-color': '#10b981', 'line-width': 3.5 } });
+        map.addLayer({ id: 'diff-after-pt', type: 'circle', source: 'diff-after-pts', paint: { 'circle-radius': 8, 'circle-color': '#10b981', 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2.5 } });
+
+        // Shift Vectors (Amber Dashed)
+        map.addLayer({ id: 'diff-arrow-line', type: 'line', source: 'diff-arrows', paint: { 'line-color': '#f59e0b', 'line-width': 3, 'line-dasharray': [2, 1.2] } });
+
+        fitAll();
+    });
+
+    const setLayerVis = (ids, visible) => {
+        const v = visible ? 'visible' : 'none';
+        ids.forEach(id => {
+            if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', v);
+        });
+    };
+
+    document.querySelectorAll('#cr-geom-mode-tabs [data-geom-mode]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const mode = btn.dataset.geomMode;
+            document.querySelectorAll('#cr-geom-mode-tabs [data-geom-mode]').forEach(b => b.classList.toggle('active', b.dataset.geomMode === mode));
+            setLayerVis(['diff-before-fill', 'diff-before-line', 'diff-before-pt'], mode === 'overlay' || mode === 'before');
+            setLayerVis(['diff-after-fill', 'diff-after-line', 'diff-after-pt'], mode === 'overlay' || mode === 'after');
+            setLayerVis(['diff-arrow-line'], mode === 'overlay');
+        });
+    });
+
+    document.getElementById('cr-geom-fit-btn')?.addEventListener('click', fitAll);
+
+    document.querySelectorAll('.cr-geom-item-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const lng = Number(btn.dataset.lng);
+            const lat = Number(btn.dataset.lat);
+            if (Number.isFinite(lng) && Number.isFinite(lat) && (lng !== 0 || lat !== 0)) {
+                map.flyTo({ center: [lng, lat], zoom: 19.7, duration: 500 });
+            }
+            document.querySelectorAll('.cr-geom-item-btn').forEach(b => { b.style.borderColor = ''; });
+            btn.style.borderColor = '#10b981';
+        });
+    });
+}
 
 const STATION_TILE_BOUNDS = {
     lares: [121.165052, 13.956537, 121.173221, 13.963038],
@@ -683,6 +994,20 @@ const TECHNICAL_SKIP_KEYS = new Set([
 ]);
 
 function buildDiffRows(cr) {
+    if (String(cr?.target_table || '').toLowerCase() === 'map_geometry') {
+        const g = getGeomDiffSummary(cr);
+        const fmtList = (arr) => arr.length
+            ? arr.slice(0, 6).map(it => `${it.label || it.key} (${formatGeomItemDelta(it)})`).join(', ') + (arr.length > 6 ? ` +${arr.length - 6} more` : '')
+            : '(None)';
+        const rows = [
+            { key: 'editor_type', label: 'Visual Map Editor', beforeVal: g.editorTitle, afterVal: g.editorTitle, changed: false }
+        ];
+        if (g.addedCount > 0) rows.push({ key: 'added', label: `Added Features (${g.addedCount})`, beforeVal: '(Not on live map)', afterVal: fmtList(g.added), changed: true });
+        if (g.modifiedCount > 0) rows.push({ key: 'modified', label: g.editorType === 'pills' ? `Moved Pill Labels (${g.modifiedCount})` : `Modified Features (${g.modifiedCount})`, beforeVal: 'Previous live coordinates', afterVal: fmtList(g.modified), changed: true });
+        if (g.removedCount > 0) rows.push({ key: 'removed', label: `Removed Features (${g.removedCount})`, beforeVal: fmtList(g.removed), afterVal: '(Scheduled for removal)', changed: true });
+        return rows;
+    }
+
     const prev = parseJsonSafe(cr.previous_json);
     const next = parseJsonSafe(cr.payload_json);
     const keys = Array.from(new Set([...Object.keys(prev), ...Object.keys(next)]))
@@ -1924,10 +2249,26 @@ function renderCrVisualPreviewHtml(cr, previewMode = 'side', changedKeys = null)
 // VISUAL CHANGE REQUEST QUEUE (CARDS + TABLE TOGGLE)
 // =========================================================================
 function buildCrVisualCardThumbnail(cr) {
+    const table = String(cr.target_table || '').toLowerCase();
+    if (table === 'map_geometry') {
+        const g = getGeomDiffSummary(cr);
+        return `
+            <div class="cr-vc-hero" onclick="openCrDiffModal(${cr.id})" title="Click to open Interactive Aerial Visual Diff Map" style="background:linear-gradient(135deg, rgba(15,23,42,0.92), rgba(6,78,59,0.55));">
+                <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; padding:10px; text-align:center;">
+                    <div style="width:38px; height:38px; border-radius:11px; background:${g.accentColor}22; border:1px solid ${g.accentColor}66; color:${g.accentColor}; display:flex; align-items:center; justify-content:center;">
+                        ${SVG_ICONS.map}
+                    </div>
+                    <span style="font-size:11px; font-weight:800; color:#f8fafc; line-height:1.2;">${escapeHtml(g.editorTitle)}</span>
+                    <span style="font-size:10px; color:#94a3b8; font-weight:600;">Aerial Visual Diff Ready</span>
+                </div>
+                <span class="cr-vc-action-pill" style="border-color:${g.accentColor}88; color:${g.accentColor};">MAP EDIT</span>
+            </div>
+        `;
+    }
+
     const prev = parseJsonSafe(cr.previous_json);
     const next = parseJsonSafe(cr.payload_json);
     const m = { ...prev, ...next };
-    const table = String(cr.target_table || '').toLowerCase();
     const ctx = findContextEntityForCr(cr, lastOverviewData);
 
     const imgCandidate = m.image_webp_url
@@ -1982,6 +2323,20 @@ function buildCrVisualCardThumbnail(cr) {
 }
 
 function renderCrDiffSummaryChips(cr) {
+    if (String(cr?.target_table || '').toLowerCase() === 'map_geometry') {
+        const g = getGeomDiffSummary(cr);
+        const chips = [];
+        if (g.addedCount > 0) chips.push(`<span class="cr-diff-chip geom">+${g.addedCount} Added</span>`);
+        if (g.modifiedCount > 0) chips.push(`<span class="cr-diff-chip geom">${g.editorType === 'pills' ? `${g.modifiedCount} Pill${g.modifiedCount === 1 ? '' : 's'} Moved` : `~${g.modifiedCount} Modified`}</span>`);
+        if (g.removedCount > 0) chips.push(`<span class="cr-diff-chip" style="border-color:rgba(244,63,94,0.45); color:#fb7185;">−${g.removedCount} Removed</span>`);
+        const highlights = [...g.modified, ...g.added, ...g.removed].slice(0, 2);
+        highlights.forEach(it => {
+            const lbl = `${it.label || it.key}: ${formatGeomItemDelta(it)}`;
+            chips.push(`<span class="cr-diff-chip" title="${escapeHtml(lbl)}">${escapeHtml(lbl.length > 48 ? lbl.slice(0, 46) + '…' : lbl)}</span>`);
+        });
+        return chips.length ? chips.join('') : `<span class="cr-diff-chip geom">${escapeHtml(g.editorTitle)}</span>`;
+    }
+
     const diffRows = buildDiffRows(cr).filter(r => r.changed);
     if (!diffRows.length) {
         return `<span class="cr-diff-chip">Record Submission</span>`;
@@ -2084,7 +2439,8 @@ function renderCrListTable() {
         building_offices: 'Internal Office',
         agricultural_plots: 'Agricultural Plot',
         plot_subplots: 'Screenhouse Sub-Plot',
-        stations: 'Station Pin & Settings'
+        stations: 'Station Pin & Settings',
+        map_geometry: 'Visual Map Editor'
     };
 
     if (crQueueViewMode === 'cards') {
@@ -2532,10 +2888,22 @@ window.openCrDiffModal = async (crId, focusMode = '') => {
         return renderVisualDiffCardsHtml(rowsToShow, cr.action);
     };
 
-    const editableKeys = Object.keys(payloadObj)
+    const crTableLower = String(cr.target_table || '').toLowerCase();
+    const isMapGeometry = crTableLower === 'map_geometry';
+    const geomInfo = isMapGeometry ? getGeomDiffSummary(cr) : null;
+
+    const editableKeys = isMapGeometry ? [] : Object.keys(payloadObj)
         .filter(k => !TECHNICAL_SKIP_KEYS.has(k) && !['footprint_geojson', 'polygon_geojson', 'coordinates_json', 'split_polygon_geojson', 'updated_parent_polygon_geojson'].includes(k))
         .sort((a, b) => Number(changedKeysSet.has(b)) - Number(changedKeysSet.has(a)));
-    const reviseSectionHtml = canRevise ? `
+    const reviseSectionHtml = canRevise ? (isMapGeometry ? `
+        <div style="margin-top:18px; padding:14px 16px; border-radius:12px; background:rgba(14,165,233,0.08); border:1px solid rgba(56,189,248,0.30); display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+            <div>
+                <h4 style="color:#38bdf8; font-size:13.5px; margin:0 0 4px;">Revise Geometry in Visual Map Editor</h4>
+                <div class="help-tip" style="margin:0;">Open <strong>${escapeHtml(geomInfo.editorTitle)}</strong>, adjust the flagged features based on your Reviewer's feedback, and click Save to submit an updated request.</div>
+            </div>
+            <button type="button" class="btn btn-blue btn-sm" id="cr-open-geom-editor-btn">Open ${escapeHtml(geomInfo.editorTitle)} →</button>
+        </div>
+    ` : `
         <div style="margin-top:18px; padding:14px 16px; border-radius:12px; background:rgba(14,165,233,0.08); border:1px solid rgba(56,189,248,0.30);">
             <h4 style="color:#38bdf8; font-size:13.5px; margin-bottom:6px;">Revise & Resubmit Payload (Pre-Filled)</h4>
             <div class="help-tip" style="margin-bottom:12px;">Update the flagged fields below based on your Station Reviewer's feedback and send back to Pending Review.</div>
@@ -2554,14 +2922,15 @@ window.openCrDiffModal = async (crId, focusMode = '') => {
     }).join('')}
             </div>
         </div>
-    ` : '';
+    `) : '';
 
-    const crTableLower = String(cr.target_table || '').toLowerCase();
-    const reviewChecklistOptions = crTableLower === 'agricultural_plots' || crTableLower === 'plot_subplots'
-        ? ['Plot / Zone Name', 'Planted Crop', 'Cropping Cycle', 'Growth Stage', 'Tree / Plant Count', 'Plot Description', 'Polygon Shape']
-        : (crTableLower === 'building_offices'
-            ? ['Office Name', 'Floor / Level', 'Room Number', 'Office Description']
-            : ['Photo / Crop', 'Photo Order (#1/#2)', 'Photo Caption', 'Building Name', 'Directory Description', 'How to Spot It', "What's Inside & Services", 'Facility Status', 'Map Position']);
+    const reviewChecklistOptions = isMapGeometry
+        ? ['Building / Plot Alignment', 'Pill Label Placement', 'Road / Entrance Connection', 'Tree Placement / Scale', 'Missing or Extra Feature', 'Boundary Overlap']
+        : (crTableLower === 'agricultural_plots' || crTableLower === 'plot_subplots'
+            ? ['Plot / Zone Name', 'Planted Crop', 'Cropping Cycle', 'Growth Stage', 'Tree / Plant Count', 'Plot Description', 'Polygon Shape']
+            : (crTableLower === 'building_offices'
+                ? ['Office Name', 'Floor / Level', 'Room Number', 'Office Description']
+                : ['Photo / Crop', 'Photo Order (#1/#2)', 'Photo Caption', 'Building Name', 'Directory Description', 'How to Spot It', "What's Inside & Services", 'Facility Status', 'Map Position']));
 
     const reviewDecisionHtml = canDecide ? `
         <div style="margin-top:18px; padding:14px 16px; border-radius:12px; background:rgba(245,158,11,0.08); border:1px solid rgba(251,191,36,0.32);">
@@ -2592,12 +2961,14 @@ window.openCrDiffModal = async (crId, focusMode = '') => {
             <button type="button" class="btn btn-emerald" id="cr-modal-approve-btn">Approve for Publishing</button>
         `;
     }
-    if (canRevise) {
+    if (canRevise && !isMapGeometry) {
         footerHtml += `<button type="button" class="btn btn-emerald" id="cr-modal-resubmit-btn">Revise & Resubmit to Reviewer →</button>`;
     }
     if (canPublishNow) {
         footerHtml += `<button type="button" class="btn btn-emerald" onclick="publishChangeRequestNow(${cr.id})">Publish Live to Map & Database</button>`;
     }
+
+    destroyActiveGeomDiffMap();
 
     openGovModal({
         title: `Visual Diff & Map Inspector — ${cr.summary} (Request #${cr.id})`,
@@ -2606,9 +2977,9 @@ window.openCrDiffModal = async (crId, focusMode = '') => {
             <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
                 ${renderCrStepper(cr)}
                 <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                    <button type="button" class="btn btn-secondary btn-sm" id="cr-toggle-locator-btn" aria-expanded="false">${SVG_ICONS.map} <span>Aerial Campus Locator</span></button>
+                    ${!isMapGeometry ? `<button type="button" class="btn btn-secondary btn-sm" id="cr-toggle-locator-btn" aria-expanded="false">${SVG_ICONS.map} <span>Aerial Campus Locator</span></button>` : ''}
                     <a href="/?station=${encodeURIComponent(cr.station_id || PortalState.currentStation)}" target="_blank" class="btn btn-secondary btn-sm">Open Live 3D Map ↗</a>
-                    <button type="button" class="btn btn-secondary btn-sm" id="cr-toggle-all-fields-btn">Show All Fields (${diffRows.length})</button>
+                    ${!isMapGeometry ? `<button type="button" class="btn btn-secondary btn-sm" id="cr-toggle-all-fields-btn">Show All Fields (${diffRows.length})</button>` : ''}
                 </div>
             </div>
 
@@ -2619,33 +2990,37 @@ window.openCrDiffModal = async (crId, focusMode = '') => {
                 </div>
             ` : ''}
 
-            <div id="cr-aerial-locator-panel" hidden style="margin-bottom:14px;">
-                ${spatialMapHtml}
-            </div>
-
-            <div class="cr-change-summary-bar">
-                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-                    <span class="status-pill status-pill-live">${changedRows.length} ${changedRows.length === 1 ? 'Field' : 'Fields'} Updated</span>
-                    <span style="font-size:12.5px; color:#e2e8f0; font-weight:600;">${escapeHtml(changedLabelsSummary)}</span>
+            ${isMapGeometry ? `
+                ${renderMapGeomVisualDiffHtml(cr)}
+            ` : `
+                <div id="cr-aerial-locator-panel" hidden style="margin-bottom:14px;">
+                    ${spatialMapHtml}
                 </div>
-                <div class="cr-preview-mode-tabs" id="cr-card-mode-tabs">
-                    <button type="button" class="cr-preview-mode-btn active" data-card-mode="side">Side-by-Side</button>
-                    <button type="button" class="cr-preview-mode-btn" data-card-mode="slider" title="Interactive Before / After Split Slider">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px; margin-right:3px;"><path d="m18 8 4 4-4 4"/><path d="M2 12h20"/><path d="m6 8-4 4 4 4"/></svg>Split Slider
-                    </button>
-                    <button type="button" class="cr-preview-mode-btn" data-card-mode="after">After Only</button>
-                    <button type="button" class="cr-preview-mode-btn" data-card-mode="before">Before Only</button>
-                </div>
-            </div>
 
-            <div id="cr-visitor-card-host" style="margin-bottom:14px;">
-                ${renderCrVisualPreviewHtml(cr, cardPreviewMode, changedKeysSet)}
-            </div>
+                <div class="cr-change-summary-bar">
+                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                        <span class="status-pill status-pill-live">${changedRows.length} ${changedRows.length === 1 ? 'Field' : 'Fields'} Updated</span>
+                        <span style="font-size:12.5px; color:#e2e8f0; font-weight:600;">${escapeHtml(changedLabelsSummary)}</span>
+                    </div>
+                    <div class="cr-preview-mode-tabs" id="cr-card-mode-tabs">
+                        <button type="button" class="cr-preview-mode-btn active" data-card-mode="side">Side-by-Side</button>
+                        <button type="button" class="cr-preview-mode-btn" data-card-mode="slider" title="Interactive Before / After Split Slider">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px; margin-right:3px;"><path d="m18 8 4 4-4 4"/><path d="M2 12h20"/><path d="m6 8-4 4 4 4"/></svg>Split Slider
+                        </button>
+                        <button type="button" class="cr-preview-mode-btn" data-card-mode="after">After Only</button>
+                        <button type="button" class="cr-preview-mode-btn" data-card-mode="before">Before Only</button>
+                    </div>
+                </div>
+
+                <div id="cr-visitor-card-host" style="margin-bottom:14px;">
+                    ${renderCrVisualPreviewHtml(cr, cardPreviewMode, changedKeysSet)}
+                </div>
+            `}
 
             <details class="cr-tech-diff-details">
                 <summary class="cr-tech-diff-summary">
-                    <span>Field-by-Field Breakdown (${changedRows.length} changed)</span>
-                    <span style="font-size:11px; color:#94a3b8; font-weight:500;">Click to expand raw field comparison</span>
+                    <span>${isMapGeometry ? `Geometry Summary Breakdown (${changedRows.length} groups)` : `Field-by-Field Breakdown (${changedRows.length} changed)`}</span>
+                    <span style="font-size:11px; color:#94a3b8; font-weight:500;">Click to expand summary comparison</span>
                 </summary>
                 <div style="padding-top:12px;">
                     <div id="cr-diff-cards-host" style="display:flex; flex-direction:column; gap:10px;">
@@ -2659,6 +3034,16 @@ window.openCrDiffModal = async (crId, focusMode = '') => {
         `,
         footerHtml
     });
+
+    if (isMapGeometry) {
+        setTimeout(() => mountMapGeomVisualDiffMap(cr), 45);
+        document.getElementById('cr-open-geom-editor-btn')?.addEventListener('click', () => {
+            destroyActiveGeomDiffMap();
+            closeGovModal();
+            const navBtn = document.querySelector(`[data-tab="${geomInfo.editorTab}"]`);
+            if (navBtn) navBtn.click();
+        });
+    }
 
     let crLocatorBound = false;
     document.getElementById('cr-toggle-locator-btn')?.addEventListener('click', (e) => {

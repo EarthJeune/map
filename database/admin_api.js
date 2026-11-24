@@ -2524,7 +2524,7 @@ module.exports = function createAdminApiRouter(pool, rootDir) {
                 }
 
                 let applyResult = null;
-                if (parsedPayload && Object.keys(parsedPayload).length > 0 && ['stations', 'buildings', 'building_images', 'building_offices', 'agricultural_plots', 'plot_subplots'].includes(lockedCr.target_table)) {
+                if (parsedPayload && Object.keys(parsedPayload).length > 0 && ['stations', 'buildings', 'building_images', 'building_offices', 'agricultural_plots', 'plot_subplots', 'map_geometry'].includes(lockedCr.target_table)) {
                     applyResult = await applyCrudOperation(txQuery, rootDir, {
                         stationId: lockedCr.station_id,
                         targetTable: lockedCr.target_table,

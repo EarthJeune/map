@@ -717,6 +717,63 @@ async function applyCrudOperation(execQuery, rootDir, { stationId, targetTable, 
             b.tree_or_plant_count !== '' && b.tree_or_plant_count !== null && b.tree_or_plant_count !== undefined ? Number(b.tree_or_plant_count) : null,
             b.cropping_cycle || null, b.description || '', b.image_webp_url || null, Number(targetId)
         ]);
+    } else if (targetTable === 'map_geometry') {
+        const rootDir = path.resolve(__dirname, '..');
+        const geo = b.geojson && Array.isArray(b.geojson.features) ? b.geojson : null;
+        const editorType = String(b.editor_type || 'buildings').toLowerCase();
+        const relFile = String(b.file_path || '').replace(/^\/+/, '');
+        if (!geo || !relFile || relFile.includes('..')) {
+            throw new Error('Invalid map_geometry publish payload');
+        }
+        const absFile = path.join(rootDir, relFile);
+        const bDir = path.join(rootDir, 'archive', 'backups');
+        try {
+            if (fs.existsSync(absFile)) {
+                if (!fs.existsSync(bDir)) fs.mkdirSync(bDir, { recursive: true });
+                const ts = new Date().toISOString().replace(/[:.]/g, '-');
+                const base = path.basename(relFile, path.extname(relFile));
+                fs.copyFileSync(absFile, path.join(bDir, `${base}_backup_${ts}.json`));
+            }
+        } catch (_) {}
+
+        fs.writeFileSync(absFile, JSON.stringify(geo, null, 2), 'utf8');
+
+        // For DA-LARES buildings/pills, also update LARES_DRAWINGS inside js/data/buildings.js
+        if (st === 'lares' && (editorType === 'buildings' || editorType === 'pills') && relFile === 'buildings.json') {
+            const bJsPath = path.join(rootDir, 'js', 'data', 'buildings.js');
+            if (fs.existsSync(bJsPath)) {
+                const content = fs.readFileSync(bJsPath, 'utf8');
+                const startMarker = 'export const LARES_DRAWINGS = ';
+                const endMarker = 'export const KNOWN_BUILDING_NAMES';
+                const startIndex = content.indexOf(startMarker);
+                const nextIndex = content.indexOf(endMarker, startIndex);
+                if (startIndex !== -1 && nextIndex !== -1) {
+                    const endSemi = content.lastIndexOf(';', nextIndex);
+                    const updated = content.slice(0, startIndex + startMarker.length) + JSON.stringify(geo, null, 2) + content.slice(endSemi);
+                    fs.writeFileSync(bJsPath, updated, 'utf8');
+                }
+            }
+        }
+
+        // Sync updated building footprints & marker_coords to MySQL buildings table
+        if (editorType === 'buildings' || editorType === 'pills') {
+            for (const f of geo.features) {
+                const p = (f && f.properties) || {};
+                const code = String(p.building_code || p.id || '').trim();
+                if (!code || !hasValidGeoGeometry(f.geometry)) continue;
+                const hasMc = Array.isArray(p.marker_coords) && p.marker_coords.length >= 2 && hasFiniteLngLat(p.marker_coords[0], p.marker_coords[1]);
+                const mc = hasMc
+                    ? [Number(Number(p.marker_coords[0]).toFixed(8)), Number(Number(p.marker_coords[1]).toFixed(8))]
+                    : computeGeoCentroid(f.geometry);
+                if (!mc) continue;
+                await execQuery(
+                    `UPDATE buildings SET marker_lng = ?, marker_lat = ?, footprint_geojson = ? WHERE station_id = ? AND building_code = ?`,
+                    [mc[0], mc[1], JSON.stringify(f.geometry), st, code]
+                );
+            }
+        }
+        resultMeta.filePath = relFile;
+        resultMeta.featureCount = geo.features.length;
     }
 
     const version = await bumpDataVersion(execQuery);

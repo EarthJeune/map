@@ -8,7 +8,7 @@
 <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
 <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.js"></script>
 <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.css" type="text/css">
-<script src="/js/portal/editor-bridge.js?v=304"></script>
+<script src="/js/portal/editor-bridge.js?v=306"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -2204,15 +2204,25 @@ window.saveDirectlyToMap = async function() {
     })
     .then(res => {
         if (res && res.success) {
-            const dbCreated = Array.isArray(res.createdCodes) ? res.createdCodes.length : 0;
-            btn.textContent = dbCreated > 0
-                ? `✅ Saved ${res.count} (+${dbCreated} synced to MySQL!)`
-                : `✅ Saved ${res.count} buildings!`;
-            btn.style.background = "#10b981";
-            showToast(dbCreated > 0
-                ? `✅ Saved ${res.count} ${currentStation.toUpperCase()} footprints & auto-created ${dbCreated} MySQL record(s)!`
-                : `✅ Successfully saved ${res.count} ${currentStation.toUpperCase()} footprints & synced MySQL!`);
-            syncMysqlBuildingDirectory(currentStation);
+            if (res.noChanges) {
+                btn.textContent = 'ℹ️ No Changes Detected';
+                btn.style.background = '#475569';
+                showToast(IGuideEditorBridge.formatSaveResultMessage(res, ''));
+            } else if (res.queued) {
+                btn.textContent = `✅ Queued for Review (#${res.changeRequestId})`;
+                btn.style.background = '#0ea5e9';
+                showToast(IGuideEditorBridge.formatSaveResultMessage(res, ''));
+            } else {
+                const dbCreated = Array.isArray(res.createdCodes) ? res.createdCodes.length : 0;
+                btn.textContent = dbCreated > 0
+                    ? `✅ Saved ${res.count} (+${dbCreated} synced to MySQL!)`
+                    : `✅ Saved ${res.count} buildings!`;
+                btn.style.background = "#10b981";
+                showToast(dbCreated > 0
+                    ? `✅ Saved ${res.count} ${currentStation.toUpperCase()} footprints & auto-created ${dbCreated} MySQL record(s)!`
+                    : `✅ Successfully saved ${res.count} ${currentStation.toUpperCase()} footprints & synced MySQL!`);
+                syncMysqlBuildingDirectory(currentStation);
+            }
             try {
                 const bc = new BroadcastChannel('iguide_db_sync');
                 bc.postMessage({ type: 'db_synced', station: currentStation, at: Date.now() });

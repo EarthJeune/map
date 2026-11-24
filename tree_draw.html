@@ -7,7 +7,7 @@
     <!-- Mapbox GL JS v3.31.0 -->
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.31.0/mapbox-gl.css" rel="stylesheet">
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.31.0/mapbox-gl.js"></script>
-    <script src="/js/portal/editor-bridge.js?v=304"></script>
+    <script src="/js/portal/editor-bridge.js?v=306"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -848,8 +848,16 @@
                     method: 'POST',
                     body: JSON.stringify(payload)
                 });
-                btn.textContent = `✅ Saved ${res.count} Trees to ${cfg.treesFile}!`;
-                btn.style.background = '#10b981';
+                if (res && res.noChanges) {
+                    btn.textContent = 'ℹ️ No Changes Detected';
+                    btn.style.background = '#475569';
+                } else if (res && res.queued) {
+                    btn.textContent = `✅ Queued for Review (#${res.changeRequestId})`;
+                    btn.style.background = '#0ea5e9';
+                } else {
+                    btn.textContent = `✅ Saved ${res.count} Trees to ${cfg.treesFile}!`;
+                    btn.style.background = '#10b981';
+                }
                 setTimeout(() => {
                     btn.textContent = `💾 Save Directly to Map (${cfg.treesFile})`;
                     btn.style.background = '#22c55e';

@@ -29,7 +29,8 @@
         validStations: STATION_ORDER.slice(),
         stationButtonIds: {},
         onForceStation: null,
-        onContextReady: null
+        onContextReady: null,
+        nextSubmitForReview: false
     };
 
     try {
@@ -293,6 +294,11 @@
         if (state.token && !hdrs.has('X-Admin-Token')) {
             hdrs.set('X-Admin-Token', state.token);
         }
+        const method = String(options.method || 'GET').toUpperCase();
+        if (method !== 'GET' && state.nextSubmitForReview) {
+            hdrs.set('X-Submit-For-Review', '1');
+            state.nextSubmitForReview = false;
+        }
         if (options.body && !hdrs.has('Content-Type')) {
             hdrs.set('Content-Type', 'application/json');
         }
@@ -368,8 +374,25 @@
             .replace(/'/g, '&#39;');
     }
 
+    function isDirectPublisher() {
+        return state.effectiveRole === 'super_admin';
+    }
+
+    function formatSaveResultMessage(res, liveFallbackMsg) {
+        if (res && res.noChanges) {
+            return 'ℹ️ No geometry changes detected compared to the live map.';
+        }
+        if (res && res.queued) {
+            const idPart = res.changeRequestId ? ` (Request #${res.changeRequestId})` : '';
+            const sumPart = res.diffSummary ? ` — ${res.diffSummary}` : '';
+            return `✅ Submitted for Station Reviewer Approval${idPart}${sumPart}`;
+        }
+        return liveFallbackMsg;
+    }
+
     /**
      * Branded iGUIDE confirmation popup shared across all 5 visual map editing tools.
+     * Role-aware: GIS Editors submit for Station Reviewer approval; Super Admins can choose Submit for Review or Publish Live.
      * Returns Promise<boolean>.
      */
     function confirmSave({
@@ -383,47 +406,57 @@
             const existing = document.getElementById('iguide-editor-confirm-modal');
             if (existing) existing.remove();
 
+            const directPub = isDirectPublisher();
+            const resolvedTitle = directPub ? title : title.replace(/^Save\b/i, 'Submit');
+            const resolvedMsg = directPub
+                ? message
+                : `${message} Your changes will be queued for your Station Reviewer with a visual Before vs. After aerial diff before going live.`;
+            const resolvedConfirmLabel = directPub ? confirmLabel : 'Submit for Review →';
+
             const overlay = document.createElement('div');
             overlay.id = 'iguide-editor-confirm-modal';
             overlay.style.cssText = 'position:fixed; inset:0; z-index:99999; background:rgba(2,6,23,0.78); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; padding:20px; font-family:Inter,system-ui,-apple-system,sans-serif;';
 
-            const accentBorder = danger ? 'rgba(244,63,94,0.45)' : 'rgba(52,211,153,0.45)';
-            const accentBg = danger ? 'rgba(244,63,94,0.14)' : 'rgba(16,185,129,0.14)';
-            const accentColor = danger ? '#fb7185' : '#34d399';
+            const accentBorder = danger ? 'rgba(244,63,94,0.45)' : (directPub ? 'rgba(52,211,153,0.45)' : 'rgba(56,189,248,0.45)');
+            const accentBg = danger ? 'rgba(244,63,94,0.14)' : (directPub ? 'rgba(16,185,129,0.14)' : 'rgba(14,165,233,0.14)');
+            const accentColor = danger ? '#fb7185' : (directPub ? '#34d399' : '#38bdf8');
             const btnBg = danger ? 'linear-gradient(135deg,#e11d48,#be123c)' : 'linear-gradient(135deg,#10b981,#059669)';
             const iconSvg = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>';
 
             overlay.innerHTML = `
-                <div style="width:100%; max-width:420px; background:linear-gradient(180deg, rgba(13,22,36,0.98) 0%, rgba(7,13,24,0.98) 100%); border:1px solid ${accentBorder}; border-radius:16px; box-shadow:0 28px 64px rgba(0,0,0,0.75); overflow:hidden; color:#f8fafc;">
+                <div style="width:100%; max-width:460px; background:linear-gradient(180deg, rgba(13,22,36,0.98) 0%, rgba(7,13,24,0.98) 100%); border:1px solid ${accentBorder}; border-radius:16px; box-shadow:0 28px 64px rgba(0,0,0,0.75); overflow:hidden; color:#f8fafc;">
                     <div style="padding:18px 20px 14px; display:flex; align-items:flex-start; gap:13px;">
                         <div style="width:40px; height:40px; border-radius:11px; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:${accentBg}; border:1px solid ${accentBorder}; color:${accentColor};">
                             ${iconSvg}
                         </div>
                         <div style="flex:1; min-width:0;">
-                            <div style="font-size:15px; font-weight:700; color:#f8fafc; line-height:1.25;">${escapeHtml(title)}</div>
-                            <div style="font-size:12.5px; color:#cbd5e1; line-height:1.5; margin-top:6px;">${escapeHtml(message)}</div>
+                            <div style="font-size:15px; font-weight:700; color:#f8fafc; line-height:1.25;">${escapeHtml(resolvedTitle)}</div>
+                            <div style="font-size:12.5px; color:#cbd5e1; line-height:1.5; margin-top:6px;">${escapeHtml(resolvedMsg)}</div>
                         </div>
                     </div>
-                    <div style="padding:12px 20px 16px; display:flex; justify-content:flex-end; gap:10px; border-top:1px solid rgba(148,163,184,0.16); background:rgba(2,6,23,0.42);">
+                    <div style="padding:12px 20px 16px; display:flex; justify-content:flex-end; gap:8px; flex-wrap:wrap; border-top:1px solid rgba(148,163,184,0.16); background:rgba(2,6,23,0.42);">
                         <button type="button" id="iec-cancel-btn" style="padding:7px 14px; border-radius:8px; border:1px solid rgba(148,163,184,0.28); background:rgba(30,41,59,0.8); color:#e2e8f0; font-size:12.5px; font-weight:600; cursor:pointer;">${escapeHtml(cancelLabel)}</button>
-                        <button type="button" id="iec-confirm-btn" style="padding:7px 16px; border-radius:8px; border:none; background:${btnBg}; color:#fff; font-size:12.5px; font-weight:700; cursor:pointer; box-shadow:0 4px 12px rgba(16,185,129,0.28);">${escapeHtml(confirmLabel)}</button>
+                        ${directPub ? `<button type="button" id="iec-review-btn" style="padding:7px 14px; border-radius:8px; border:1px solid rgba(56,189,248,0.45); background:rgba(14,165,233,0.16); color:#7dd3fc; font-size:12.5px; font-weight:700; cursor:pointer;">Submit for Review</button>` : ''}
+                        <button type="button" id="iec-confirm-btn" style="padding:7px 16px; border-radius:8px; border:none; background:${btnBg}; color:#fff; font-size:12.5px; font-weight:700; cursor:pointer; box-shadow:0 4px 12px rgba(16,185,129,0.28);">${escapeHtml(resolvedConfirmLabel)}</button>
                     </div>
                 </div>
             `;
 
-            const finish = (val) => {
+            const finish = (val, submitForReview = false) => {
+                state.nextSubmitForReview = Boolean(val && submitForReview);
                 document.removeEventListener('keydown', onKey);
                 overlay.remove();
                 resolve(val);
             };
             const onKey = (e) => {
-                if (e.key === 'Escape') finish(false);
+                if (e.key === 'Escape') finish(false, false);
             };
             document.addEventListener('keydown', onKey);
-            overlay.addEventListener('click', (e) => { if (e.target === overlay) finish(false); });
+            overlay.addEventListener('click', (e) => { if (e.target === overlay) finish(false, false); });
             document.body.appendChild(overlay);
-            document.getElementById('iec-cancel-btn')?.addEventListener('click', () => finish(false));
-            document.getElementById('iec-confirm-btn')?.addEventListener('click', () => finish(true));
+            document.getElementById('iec-cancel-btn')?.addEventListener('click', () => finish(false, false));
+            document.getElementById('iec-review-btn')?.addEventListener('click', () => finish(true, true));
+            document.getElementById('iec-confirm-btn')?.addEventListener('click', () => finish(true, !directPub));
             document.getElementById('iec-confirm-btn')?.focus();
         });
     }
@@ -432,6 +465,8 @@
         getState() {
             return { ...state };
         },
+        isDirectPublisher,
+        formatSaveResultMessage,
         ready() {
             return readinessPromise;
         },

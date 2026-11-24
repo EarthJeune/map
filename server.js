@@ -9,6 +9,7 @@ const fs = require('fs');
 const os = require('os');
 const zlib = require('zlib');
 const phase1 = require('./database/phase1_safety');
+const { computeGeometryDiff } = require('./database/geometry_diff');
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -667,13 +668,135 @@ app.post('/api/colors', ...requireVisualEditor(), async (req, res) => {
     }
 });
 
+function readJsonFileSafe(absPath, fallback = { type: 'FeatureCollection', features: [] }) {
+    try {
+        if (fs.existsSync(absPath)) return JSON.parse(fs.readFileSync(absPath, 'utf8'));
+    } catch (_) {}
+    return fallback;
+}
+
+function readLaresBuildingsGeoSafe() {
+    try {
+        const filePath = path.join(__dirname, 'js', 'data', 'buildings.js');
+        const content = fs.readFileSync(filePath, 'utf8');
+        const startMarker = 'export const LARES_DRAWINGS = ';
+        const endMarker = 'export const KNOWN_BUILDING_NAMES';
+        const startIndex = content.indexOf(startMarker);
+        const nextIndex = content.indexOf(endMarker, startIndex);
+        if (startIndex !== -1 && nextIndex !== -1) {
+            const jsonPart = content.substring(startIndex + startMarker.length, content.lastIndexOf(';', nextIndex)).trim();
+            return JSON.parse(jsonPart);
+        }
+    } catch (_) {}
+    return readJsonFileSafe(path.join(__dirname, 'buildings.json'));
+}
+
+/**
+ * Intercepts visual map editor saves for GIS Editors (or Super Admin requesting review)
+ * and queues a feature-level diff Change Request for Station Reviewer approval.
+ * Returns true if the request was handled (queued or no-op), false to proceed with direct write.
+ */
+async function maybeQueueVisualEditorForReview(req, res, { editorType, stationId, relFilePath, prevGeo, nextGeo }) {
+    const user = req.adminUser || {};
+    const effectiveRole = String(user.role || user.baseRole || '').toLowerCase();
+    const explicitReview = req.headers['x-submit-for-review'] === '1' || req.body?._submitForReview === true;
+    const mustQueue = effectiveRole !== 'super_admin' || explicitReview;
+    if (!mustQueue) return false;
+
+    const cleanNext = {
+        type: 'FeatureCollection',
+        ...(nextGeo.station ? { station: nextGeo.station } : {}),
+        ...(nextGeo.name ? { name: nextGeo.name } : {}),
+        features: Array.isArray(nextGeo.features) ? nextGeo.features : []
+    };
+    const diff = computeGeometryDiff(editorType, prevGeo, cleanNext);
+    if (diff.totalChanges === 0) {
+        res.json({ success: true, noChanges: true, queued: false, message: 'No geometry changes detected to submit.' });
+        return true;
+    }
+
+    const targetId = `${diff.editorType}:${stationId}`;
+    const summary = `${diff.summaryText} (DA-${stationId.toUpperCase()})`;
+    const previousPayload = {
+        editor_type: diff.editorType,
+        station_id: stationId,
+        file_path: relFilePath,
+        feature_count: Array.isArray(prevGeo?.features) ? prevGeo.features.length : 0,
+        geojson: prevGeo
+    };
+    const nextPayload = {
+        editor_type: diff.editorType,
+        station_id: stationId,
+        file_path: relFilePath,
+        feature_count: cleanNext.features.length,
+        diff_summary: diff,
+        geojson: cleanNext
+    };
+
+    const ins = await query(
+        `INSERT INTO change_requests (
+            station_id, target_table, target_id, action, summary,
+            previous_json, payload_json, status, submitted_by, submitted_by_email, submitted_by_role
+        ) VALUES (?, 'map_geometry', ?, 'UPDATE', ?, ?, ?, 'pending', ?, ?, ?)`,
+        [
+            stationId,
+            targetId,
+            summary,
+            JSON.stringify(previousPayload),
+            JSON.stringify(nextPayload),
+            user.fullName || user.email || 'GIS Editor',
+            user.email || 'editor',
+            effectiveRole || 'gis_editor'
+        ]
+    );
+    const crId = ins.insertId;
+
+    // Notify assigned Station Reviewers & Super Admins in-app
+    try {
+        const recipients = await query(
+            `SELECT id FROM admin_users WHERE is_active = 1 AND approval_status = 'approved'
+             AND (role = 'super_admin' OR (role = 'reviewer' AND (station_id = ? OR station_id = 'all')))`,
+            [stationId]
+        );
+        for (const r of recipients) {
+            if (user.id && Number(r.id) === Number(user.id)) continue;
+            await query(
+                `INSERT INTO notifications (recipient_user_id, station_id, type, title, message, link_tab, target_table, target_id)
+                 VALUES (?, ?, 'change_request', ?, ?, 'review-queue', 'map_geometry', ?)`,
+                [
+                    r.id,
+                    stationId,
+                    `Map Edit Pending Review — ${diff.editorTitle}`,
+                    `${summary} (Request #${crId}) is ready for visual diff review.`,
+                    String(crId)
+                ]
+            );
+        }
+    } catch (nErr) {
+        console.warn('[MapGeometryQueue] Notification skipped:', nErr.message);
+    }
+
+    res.json({
+        success: true,
+        queued: true,
+        published: false,
+        changeRequestId: crId,
+        editorType: diff.editorType,
+        diffSummary: diff.summaryText,
+        totalChanges: diff.totalChanges
+    });
+    return true;
+}
+
 // API endpoint to save updated roads.json directly from road drawer tool
-app.post('/api/roads', ...requireDiskGeometryWrite('lares'), (req, res) => {
+app.post('/api/roads', ...requireDiskGeometryWrite('lares'), async (req, res) => {
     try {
         const data = req.body;
         if (!data || !data.features) {
             return res.status(400).json({ error: 'Invalid GeoJSON: features array expected' });
         }
+        const prevGeo = readJsonFileSafe(path.join(__dirname, 'roads.json'));
+        if (await maybeQueueVisualEditorForReview(req, res, { editorType: 'roads', stationId: 'lares', relFilePath: 'roads.json', prevGeo, nextGeo: data })) return;
         if (fs.existsSync('roads.json')) {
             fs.copyFileSync('roads.json', 'roads.backup.json');
             try {
@@ -709,13 +832,15 @@ app.get('/api/qares/roads', (req, res) => {
     }
 });
 
-app.post('/api/qares/roads', ...requireDiskGeometryWrite('qares'), (req, res) => {
+app.post('/api/qares/roads', ...requireDiskGeometryWrite('qares'), async (req, res) => {
     try {
         const data = req.body;
         if (!data || !data.features) {
             return res.status(400).json({ error: 'Invalid GeoJSON: features array expected' });
         }
         const filePath = path.join(__dirname, 'qares_roads.json');
+        const prevGeo = readJsonFileSafe(filePath);
+        if (await maybeQueueVisualEditorForReview(req, res, { editorType: 'roads', stationId: 'qares', relFilePath: 'qares_roads.json', prevGeo, nextGeo: data })) return;
         if (fs.existsSync(filePath)) {
             try {
                 const bDir = path.join(__dirname, 'archive', 'backups');
@@ -754,6 +879,8 @@ app.post('/api/qares/buildings', ...requireDiskGeometryWrite('qares'), async (re
             return res.status(400).json({ error: 'Invalid GeoJSON: features array expected' });
         }
         const filePath = path.join(__dirname, 'qares_buildings.json');
+        const prevGeo = readJsonFileSafe(filePath);
+        if (await maybeQueueVisualEditorForReview(req, res, { editorType: 'buildings', stationId: 'qares', relFilePath: 'qares_buildings.json', prevGeo, nextGeo: data })) return;
         if (fs.existsSync(filePath)) {
             try {
                 const bDir = path.join(__dirname, 'archive', 'backups');
@@ -925,6 +1052,8 @@ app.post('/api/rares/buildings', ...requireDiskGeometryWrite('rares'), async (re
             return res.status(400).json({ error: 'Invalid GeoJSON: features array expected' });
         }
         const filePath = path.join(__dirname, 'rares_buildings.json');
+        const prevGeo = readJsonFileSafe(filePath);
+        if (await maybeQueueVisualEditorForReview(req, res, { editorType: 'buildings', stationId: 'rares', relFilePath: 'rares_buildings.json', prevGeo, nextGeo: data })) return;
         if (fs.existsSync(filePath)) {
             try {
                 const bDir = path.join(__dirname, 'archive', 'backups');
@@ -999,13 +1128,15 @@ app.get('/api/rares/roads', (req, res) => {
     }
 });
 
-app.post('/api/rares/roads', ...requireDiskGeometryWrite('rares'), (req, res) => {
+app.post('/api/rares/roads', ...requireDiskGeometryWrite('rares'), async (req, res) => {
     try {
         const data = req.body;
         if (!data || !data.features) {
             return res.status(400).json({ error: 'Invalid GeoJSON: features array expected' });
         }
         const filePath = path.join(__dirname, 'rares_roads.json');
+        const prevGeo = readJsonFileSafe(filePath);
+        if (await maybeQueueVisualEditorForReview(req, res, { editorType: 'roads', stationId: 'rares', relFilePath: 'rares_roads.json', prevGeo, nextGeo: data })) return;
         if (fs.existsSync(filePath)) {
             try {
                 const bDir = path.join(__dirname, 'archive', 'backups');
@@ -1037,13 +1168,15 @@ app.get('/api/rares/plots', (req, res) => {
     }
 });
 
-app.post('/api/rares/plots', ...requireDiskGeometryWrite('rares'), (req, res) => {
+app.post('/api/rares/plots', ...requireDiskGeometryWrite('rares'), async (req, res) => {
     try {
         const data = req.body;
         if (!data || !data.features) {
             return res.status(400).json({ error: 'Invalid GeoJSON: features array expected' });
         }
         const filePath = path.join(__dirname, 'rares_plots.json');
+        const prevGeo = readJsonFileSafe(filePath);
+        if (await maybeQueueVisualEditorForReview(req, res, { editorType: 'plots', stationId: 'rares', relFilePath: 'rares_plots.json', prevGeo, nextGeo: data })) return;
         if (fs.existsSync(filePath)) {
             try {
                 const bDir = path.join(__dirname, 'archive', 'backups');
@@ -1130,7 +1263,7 @@ app.get('/api/trees', (req, res) => {
 });
 
 // API endpoint to save station-scoped trees GeoJSON (RBAC + station-locked)
-app.post('/api/trees', ...requireDiskGeometryWrite(null, 'lares'), (req, res) => {
+app.post('/api/trees', ...requireDiskGeometryWrite(null, 'lares'), async (req, res) => {
     try {
         const rawStation = String(req.body?.station_id || req.body?.station || req.query?.station || 'lares').trim().toLowerCase();
         if (!['lares', 'qares', 'rares', 'cares'].includes(rawStation)) {
@@ -1141,6 +1274,9 @@ app.post('/api/trees', ...requireDiskGeometryWrite(null, 'lares'), (req, res) =>
             return res.status(400).json({ error: 'Invalid GeoJSON: features array expected' });
         }
         const { station, file, backup } = getTreesPathForStation(rawStation);
+        const relFile = path.relative(__dirname, file).replace(/\\/g, '/');
+        const prevGeo = readJsonFileSafe(file);
+        if (await maybeQueueVisualEditorForReview(req, res, { editorType: 'trees', stationId: station, relFilePath: relFile, prevGeo, nextGeo: data })) return;
         if (fs.existsSync(file)) {
             fs.copyFileSync(file, backup);
         }
@@ -1182,6 +1318,8 @@ app.post('/api/buildings', ...requireDiskGeometryWrite('lares'), async (req, res
         if (!data || !data.features) {
             return res.status(400).json({ error: 'Invalid GeoJSON: features array expected' });
         }
+        const prevGeo = readLaresBuildingsGeoSafe();
+        if (await maybeQueueVisualEditorForReview(req, res, { editorType: 'buildings', stationId: 'lares', relFilePath: 'buildings.json', prevGeo, nextGeo: data })) return;
         
         // Automatically preserve has_3d_model: true for all bespoke 3D buildings
         const BUILDINGS_WITH_3D = new Set([

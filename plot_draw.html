@@ -8,7 +8,7 @@
 <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
 <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.js"></script>
 <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.css" type="text/css">
-<script src="/js/portal/editor-bridge.js?v=304"></script>
+<script src="/js/portal/editor-bridge.js?v=306"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; }
@@ -2790,16 +2790,25 @@ window.manualSaveLayout = async function() {
         })
         .then(res => {
             if (btn) {
-                btn.innerHTML = '<span>✅</span> Saved to Map File!';
-                btn.style.background = '#059669';
+                btn.innerHTML = res?.noChanges
+                    ? '<span>ℹ️</span> No Changes Detected'
+                    : (res?.queued ? `<span>✅</span> Queued for Review (#${res.changeRequestId})` : '<span>✅</span> Saved to Map File!');
+                btn.style.background = res?.queued ? '#0ea5e9' : (res?.noChanges ? '#475569' : '#059669');
                 setTimeout(() => {
                     btn.innerHTML = originalHtml;
                     btn.style.background = '';
-                }, 2000);
+                }, 2500);
             }
-            showToast(`💾 Saved ${geojson.features.length} plots directly to rares_plots.json!`, '#059669');
+            showToast(IGuideEditorBridge.formatSaveResultMessage(
+                res,
+                `💾 Saved ${geojson.features.length} plots directly to rares_plots.json!`
+            ), res?.queued ? '#0ea5e9' : '#059669');
             const statusText = document.getElementById('save-status-text');
-            if (statusText) statusText.textContent = `All ${geojson.features.length} plots saved • Syncs with rares_plots.json`;
+            if (statusText) {
+                statusText.textContent = res?.queued
+                    ? `Submitted Request #${res.changeRequestId} for Station Reviewer approval`
+                    : `All ${geojson.features.length} plots saved • Syncs with rares_plots.json`;
+            }
         })
         .catch(err => {
             console.error('Server save error:', err);
