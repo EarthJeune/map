@@ -561,17 +561,19 @@ let tunnelProcess = null;
 app.get('/api/tunnel', async (req, res) => {
     const localIp = getLocalIpAddress();
     const localUrl = `http://${localIp}:${port}`;
+    const configuredPublicUrl = String(process.env.PUBLIC_BASE_URL || '').trim().replace(/\/+$/, '');
+    const resolvedPublicUrl = currentTunnelUrl || (configuredPublicUrl.startsWith('https://') ? configuredPublicUrl : '');
 
-    if (currentTunnelUrl) {
+    if (resolvedPublicUrl) {
         return res.json({ 
-            url: currentTunnelUrl, 
-            tunnelUrl: currentTunnelUrl, 
+            url: resolvedPublicUrl, 
+            tunnelUrl: resolvedPublicUrl, 
             localUrl: localUrl, 
             localIp: localIp 
         });
     }
 
-    // Never return stale DB URLs if the tunnel is restarting; fallback to reliable local LAN URL
+    // Fallback to local LAN URL when no public HTTPS base URL is configured
     res.json({ 
         url: localUrl, 
         tunnelUrl: null, 
