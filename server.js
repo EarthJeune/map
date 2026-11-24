@@ -1797,7 +1797,9 @@ app.use(express.static(__dirname, {
         if (/\.(webp|png|jpg|jpeg|svg|woff2|ico)$/i.test(filePath)) {
             res.set('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
         } else {
-            res.set('Cache-Control', 'no-cache, must-revalidate');
+            res.set('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+            res.set('CDN-Cache-Control', 'no-store');
+            res.set('Cloudflare-CDN-Cache-Control', 'no-store');
         }
     }
 }));

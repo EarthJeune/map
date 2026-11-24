@@ -28,7 +28,7 @@
     <link rel="stylesheet" href="css/kiosk.css?v=311">
     <link rel="stylesheet" href="css/building-panel.css?v=318">
     <link rel="stylesheet" href="css/navigation.css?v=308">
-    <link rel="stylesheet" href="css/phone.css?v=333">
+    <link rel="stylesheet" href="css/phone.css?v=334">
     <link rel="stylesheet" href="css/admin.css?v=308">
     <link rel="stylesheet" href="css/main.css?v=345">
     <script>
@@ -1432,7 +1432,7 @@
             const box = document.getElementById('welcome-qr-box');
             if (!box || typeof QRCode === 'undefined') return;
             const draw = function (baseOrigin) {
-                const targetUrl = (baseOrigin || window.location.origin).replace(/\/$/, '') + '/index.html?mode=phone&view=google&v=73';
+                const targetUrl = (baseOrigin || window.location.origin).replace(/\/$/, '') + '/index.html?mode=phone&view=google&v=74';
                 box.innerHTML = '';
                 try {
                     new QRCode(box, {
@@ -1460,7 +1460,7 @@
         setTimeout(function () {
             const s = document.createElement('script');
             s.type = 'module';
-            s.src = 'js/app.js?v=357';
+            s.src = 'js/app.js?v=358';
             document.body.appendChild(s);
         }, 4350);
     </script>

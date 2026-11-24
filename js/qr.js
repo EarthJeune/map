@@ -93,7 +93,7 @@ export function getMobileNavigationUrl(buildingId) {
     const currentMode = state.currentMapStyleMode || 'google';
     const viewMode = (currentMode === 'mapbox') ? 'mapbox' : 'google';
     const destParam = (buildingId && buildingId !== '1') ? `dest=${encodeURIComponent(buildingId)}&` : '';
-    return `${baseOrigin}${path}?${destParam}mode=phone&view=${viewMode}&v=73`;
+    return `${baseOrigin}${path}?${destParam}mode=phone&view=${viewMode}&v=74`;
 }
 
 export function updateBuildingQR(buildingId) {
