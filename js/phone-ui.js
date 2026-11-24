@@ -2012,6 +2012,9 @@ export function showPhoneBuildingDetails(buildingId, targetOffice = '') {
 
 
     const isUnderDevStation = Boolean(building.isQARES || building.isRARES);
+    const dbCompactTag = String(building.compact_tag || building.compactTag || '').trim();
+    const dbVisualLandmark = String(building.visual_landmark || building.visualLandmark || '').trim();
+    const dbKeyServices = String(building.key_services || building.keyServices || '').trim();
 
     // Set titles
     const titleEl = document.getElementById('phone-bldg-title');
@@ -2020,24 +2023,31 @@ export function showPhoneBuildingDetails(buildingId, targetOffice = '') {
     if (descEl) {
         descEl.textContent = isGate
             ? (building.desc || 'Campus Access Gate')
-            : (isUnderDevStation ? (building.category || 'Facility') : (wfInfo.compactTag || building.desc || 'Research Facility'));
+            : (isUnderDevStation ? (dbCompactTag || building.category || 'Facility') : (wfInfo.compactTag || building.desc || 'Research Facility'));
     }
     const pStatusEl = document.getElementById('phone-bldg-status-pill');
     if (pStatusEl) pStatusEl.innerHTML = isGate ? '' : renderFacilityStatusBadgeHtml(building.facility_status);
 
-    // Populate Visual Landmark & Key Services
+    // Populate Visual Landmark & Key Services (data-driven for QARES/RARES: show whenever published info exists)
     const visualEl = document.getElementById('phone-bldg-visual');
     const servicesEl = document.getElementById('phone-bldg-services');
-    const visualCard = visualEl ? visualEl.closest('.pbi-card') : null;
-    const servicesCard = servicesEl ? servicesEl.closest('.pbi-card') : null;
+    const visualCard = visualEl ? (visualEl.closest('.pbi-card') || visualEl.closest('.phone-bldg-info-row')) : null;
+    const servicesCard = servicesEl ? (servicesEl.closest('.pbi-card') || servicesEl.closest('.phone-bldg-info-row')) : null;
     const activePhoneQuery = (document.getElementById('phone-search-input')?.value || document.getElementById('search-input')?.value || '').trim();
     activePhonePlotContext = null;
 
     if (isUnderDevStation) {
-        if (visualCard) visualCard.style.display = 'none';
-        if (servicesCard) servicesCard.style.display = 'none';
-        if (visualEl) { visualEl.dataset.rawText = ''; visualEl.textContent = ''; }
-        if (servicesEl) { servicesEl.dataset.rawText = ''; servicesEl.textContent = ''; }
+        if (visualCard) visualCard.style.display = dbVisualLandmark ? '' : 'none';
+        if (servicesCard) servicesCard.style.display = dbKeyServices ? '' : 'none';
+        if (visualEl) {
+            visualEl.dataset.rawText = dbVisualLandmark;
+            visualEl.innerHTML = dbVisualLandmark ? highlightSearchTermsHtml(dbVisualLandmark, activePhoneQuery) : '';
+        }
+        if (servicesEl) {
+            delete servicesEl.dataset.isGate;
+            servicesEl.dataset.rawText = dbKeyServices;
+            servicesEl.innerHTML = dbKeyServices ? highlightSearchTermsHtml(dbKeyServices, activePhoneQuery) : '';
+        }
     } else {
         if (visualCard) visualCard.style.display = '';
         if (servicesCard) servicesCard.style.display = '';
@@ -2099,7 +2109,7 @@ export function showPhoneBuildingDetails(buildingId, targetOffice = '') {
 
     if (officesContainer) {
 
-        if (building.isQARES || isGate) {
+        if (isGate) {
 
             officesContainer.innerHTML = '';
 

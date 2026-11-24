@@ -208,28 +208,45 @@ export function showBuildingPanel(buildingId, targetOffice = '') {
 
 
     const isUnderDevStation = Boolean(building.isQARES || building.isRARES);
+    const dbCompactTag = String(building.compact_tag || building.compactTag || '').trim();
+    const dbVisualLandmark = String(building.visual_landmark || building.visualLandmark || '').trim();
+    const dbKeyServices = String(building.key_services || building.keyServices || '').trim();
 
     if (subEl) {
         subEl.textContent = isUnderDevStation
-            ? (building.category || 'Facility')
+            ? (dbCompactTag || building.category || 'Facility')
             : (wfInfo.compactTag || building.desc || 'Research Facility');
     }
 
     const statusPillEl = document.getElementById('bp-status-pill');
     if (statusPillEl) statusPillEl.innerHTML = building.isGate ? '' : renderFacilityStatusBadgeHtml(building.facility_status);
 
-    // Populate Visual Landmark & Key Services wayfinding cards (suppressed cleanly for QARES/RARES)
+    // Populate Visual Landmark & Key Services wayfinding cards
+    // Data-driven for QARES/RARES: hide when blank, auto-appear as soon as published info exists
     const wfBlock = panel.querySelector('.bp-wayfinding-block');
     const visEl = document.getElementById('bp-visual-landmark');
     const srvEl = document.getElementById('bp-key-services');
+    const visRow = visEl ? visEl.closest('.bp-wf-card, .bp-wf-row') : null;
+    const srvRow = srvEl ? srvEl.closest('.bp-wf-card, .bp-wf-row') : null;
     const activeSearchQuery = (document.getElementById('search-input')?.value || document.getElementById('phone-search-input')?.value || '').trim();
 
     if (isUnderDevStation) {
-        if (wfBlock) wfBlock.style.display = 'none';
-        if (visEl) { visEl.dataset.rawText = ''; visEl.textContent = ''; }
-        if (srvEl) { srvEl.dataset.rawText = ''; srvEl.textContent = ''; }
+        const hasAnyInfo = Boolean(dbVisualLandmark || dbKeyServices);
+        if (wfBlock) wfBlock.style.display = hasAnyInfo ? '' : 'none';
+        if (visRow) visRow.style.display = dbVisualLandmark ? '' : 'none';
+        if (srvRow) srvRow.style.display = dbKeyServices ? '' : 'none';
+        if (visEl) {
+            visEl.dataset.rawText = dbVisualLandmark;
+            visEl.innerHTML = dbVisualLandmark ? highlightSearchTermsHtml(dbVisualLandmark, activeSearchQuery) : '';
+        }
+        if (srvEl) {
+            srvEl.dataset.rawText = dbKeyServices;
+            srvEl.innerHTML = dbKeyServices ? highlightSearchTermsHtml(dbKeyServices, activeSearchQuery) : '';
+        }
     } else {
         if (wfBlock) wfBlock.style.display = '';
+        if (visRow) visRow.style.display = '';
+        if (srvRow) srvRow.style.display = '';
         if (visEl) {
             const rawVis = wfInfo.visualLandmark || '';
             visEl.dataset.rawText = rawVis;
@@ -304,31 +321,11 @@ export function showBuildingPanel(buildingId, targetOffice = '') {
         if (building.isGate) {
             officesContainer.innerHTML = '';
             if (officesCard) officesCard.style.display = 'none';
-        } else if (building.isQARES) {
-            if (officesCard) officesCard.style.display = '';
-
-
-
-            // Strictly Ground-Truth: QARES has no internal offices assigned yet
-
-
-
-            officesContainer.innerHTML = '';
-
-
-
         } else {
-            if (officesCard) officesCard.style.display = '';
-
-
-
             const query = targetOffice || state.activeSearchedOffice || document.getElementById('search-input')?.value || '';
-
-
-
-            officesContainer.innerHTML = renderBuildingOfficesHTML(buildingId, query);
-
-
+            const officesHtml = renderBuildingOfficesHTML(buildingId, query);
+            officesContainer.innerHTML = officesHtml;
+            if (officesCard) officesCard.style.display = officesHtml ? '' : 'none';
 
             const highlightedPill = officesContainer.querySelector('.office-pill.highlighted');
 
