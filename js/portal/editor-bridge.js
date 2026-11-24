@@ -375,7 +375,9 @@
     }
 
     function isDirectPublisher() {
-        return state.effectiveRole === 'super_admin';
+        // Strict Governance: Visual Map Editors ALWAYS submit to Station Reviewer (Approve / Request Revision / Deny)
+        // before Administrator Publish Live — never bypass straight to published.
+        return false;
     }
 
     function formatSaveResultMessage(res, liveFallbackMsg) {

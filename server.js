@@ -699,8 +699,9 @@ function readLaresBuildingsGeoSafe() {
 async function maybeQueueVisualEditorForReview(req, res, { editorType, stationId, relFilePath, prevGeo, nextGeo }) {
     const user = req.adminUser || {};
     const effectiveRole = String(user.role || user.baseRole || '').toLowerCase();
-    const explicitReview = req.headers['x-submit-for-review'] === '1' || req.body?._submitForReview === true;
-    const mustQueue = effectiveRole !== 'super_admin' || explicitReview;
+    // STRICT GOVERNANCE: Every save from the 5 Visual Map Editing Tools MUST go to the Station Reviewer
+    // (Approve / Request Revision / Deny) before an Administrator can Publish Live — never bypass straight to published.
+    const mustQueue = true;
     if (!mustQueue) return false;
 
     const cleanNext = {
