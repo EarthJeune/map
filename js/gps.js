@@ -29,6 +29,11 @@ import {
 import { updateOcclusion, resetOcclusion } from './occlusion.js';
 import { isPhoneMode, isKioskMode } from './mode.js';
 import { withCooldown } from './ui-guard.js';
+import {
+    unlockVoiceNavigation,
+    resetVoiceNavigationState,
+    speakNavInstruction
+} from './voice-nav.js';
 
 // ============================================================
 // SENSOR FUSION & JITTER FILTER ENGINE
@@ -182,7 +187,7 @@ let headingAnimFrame = null;
 let lastHeadingFrameTime = 0;
 
 let activeTouchCount = 0;
-const CAMPUS_GATE_BUFFER_METERS = 35;
+const CAMPUS_GATE_BUFFER_METERS = 20;
 let isOffCampusFallbackActive = false;
 let userDismissedOffCampusPrompt = false;
 let lastOffCampusStationId = null;
@@ -431,14 +436,20 @@ function snapCoordToRoadOrRoute(rawCoord, accuracy = 10) {
     try {
         const pt = turf.point(rawCoord);
 
-        // Priority 1: Active navigation route corridor
+        // Priority 1: Active navigation route corridor (tighter radius prevents premature corner jumping)
         if (state.isMobileGPSActive && Array.isArray(state.activeFullRouteCoords) && state.activeFullRouteCoords.length >= 2) {
             const routeLine = turf.lineString(state.activeFullRouteCoords);
-            const nearest = turf.nearestPointOnLine(routeLine, pt);
+            const nearest = turf.nearestPointOnLine(routeLine, pt, { units: 'meters' });
             const dist = turf.distance(pt, nearest, { units: 'meters' });
-            const routeSnapRadius = Math.min(14, Math.max(8, (accuracy || 10) * 0.85));
+            const routeSnapRadius = Math.min(8, Math.max(5, (accuracy || 10) * 0.55));
             if (dist <= routeSnapRadius) {
-                return { coord: nearest.geometry.coordinates, snapped: true, source: 'route', dist };
+                return {
+                    coord: nearest.geometry.coordinates,
+                    snapped: true,
+                    source: 'route',
+                    dist,
+                    routeDistM: typeof nearest.properties?.location === 'number' ? nearest.properties.location : null
+                };
             }
         }
 
@@ -447,7 +458,7 @@ function snapCoordToRoadOrRoute(rawCoord, accuracy = 10) {
             ? window.ROAD_NETWORK
             : null;
         if (roadNet) {
-            const roadSnapRadius = Math.min(12, Math.max(7, (accuracy || 10) * 0.75));
+            const roadSnapRadius = Math.min(7, Math.max(4.5, (accuracy || 10) * 0.5));
             let bestCoord = null;
             let bestDist = Infinity;
             for (let i = 0; i < roadNet.features.length; i++) {
@@ -557,6 +568,8 @@ export function startPhoneLiveGPS(buildingId) {
         state.selectedBuildingId = buildingId;
         state.lastNavType = 'gps';
         state.lastArrivalWasGps = false;
+        resetVoiceNavigationState();
+        unlockVoiceNavigation();
         gpsNavigationStartTime = Date.now();
         gpsFilter.reset();
         headingFilter.reset();
@@ -676,8 +689,8 @@ export function startContinuousTracking(buildingId) {
     );
 }
 
-// 60fps Marker Gliding with dynamic duration based on fix interval
-export function animateMarkerTo(targetLngLat, duration = 450) {
+// 60fps Marker Gliding with corner-following polyline interpolation along active route
+export function animateMarkerTo(targetLngLat, duration = 450, followRoute = false) {
     if (!state.userGPSMarker) return;
     if (!markerCurrentLngLat) {
         markerCurrentLngLat = targetLngLat;
@@ -688,6 +701,28 @@ export function animateMarkerTo(targetLngLat, duration = 450) {
     markerTargetLngLat = targetLngLat;
     markerLerpStartTime = performance.now();
     markerLerpDuration = duration;
+
+    // When snapped to active route, glide along the green route polyline so corners are followed cleanly
+    let routeLine = null;
+    let routeStartDistM = null;
+    let routeEndDistM = null;
+    if (followRoute && typeof turf !== 'undefined' && Array.isArray(state.activeFullRouteCoords) && state.activeFullRouteCoords.length >= 2) {
+        try {
+            routeLine = turf.lineString(state.activeFullRouteCoords);
+            const startSnap = turf.nearestPointOnLine(routeLine, turf.point(startLngLat), { units: 'meters' });
+            const endSnap = turf.nearestPointOnLine(routeLine, turf.point(targetLngLat), { units: 'meters' });
+            const startOff = turf.distance(turf.point(startLngLat), startSnap, { units: 'meters' });
+            const endOff = turf.distance(turf.point(targetLngLat), endSnap, { units: 'meters' });
+            const sLoc = startSnap?.properties?.location;
+            const eLoc = endSnap?.properties?.location;
+            if (typeof sLoc === 'number' && typeof eLoc === 'number' && startOff <= 6 && endOff <= 6 && Math.abs(eLoc - sLoc) <= 35) {
+                routeStartDistM = sLoc;
+                routeEndDistM = eLoc;
+            }
+        } catch (_) {
+            routeLine = null;
+        }
+    }
 
     if (markerAnimFrame) cancelAnimationFrame(markerAnimFrame);
 
@@ -700,9 +735,22 @@ export function animateMarkerTo(targetLngLat, duration = 450) {
         const progress = Math.min(1, elapsed / markerLerpDuration);
         const ease = 1 - Math.pow(1 - progress, 2);
 
-        const currentLng = startLngLat[0] + (markerTargetLngLat[0] - startLngLat[0]) * ease;
-        const currentLat = startLngLat[1] + (markerTargetLngLat[1] - startLngLat[1]) * ease;
-        markerCurrentLngLat = [currentLng, currentLat];
+        if (routeLine && routeStartDistM !== null && routeEndDistM !== null) {
+            try {
+                const alongDist = routeStartDistM + (routeEndDistM - routeStartDistM) * ease;
+                const ptOnRoute = turf.along(routeLine, Math.max(0, alongDist), { units: 'meters' });
+                markerCurrentLngLat = ptOnRoute.geometry.coordinates;
+            } catch (_) {
+                markerCurrentLngLat = [
+                    startLngLat[0] + (markerTargetLngLat[0] - startLngLat[0]) * ease,
+                    startLngLat[1] + (markerTargetLngLat[1] - startLngLat[1]) * ease
+                ];
+            }
+        } else {
+            const currentLng = startLngLat[0] + (markerTargetLngLat[0] - startLngLat[0]) * ease;
+            const currentLat = startLngLat[1] + (markerTargetLngLat[1] - startLngLat[1]) * ease;
+            markerCurrentLngLat = [currentLng, currentLat];
+        }
 
         if (state.userGPSMarker) {
             state.userGPSMarker.setLngLat(markerCurrentLngLat);
@@ -743,6 +791,7 @@ export function updateSmoothCameraFollow(targetLngLat, distFromCompoundMeters) {
 export function stopPhoneLiveGPS() {
     releaseWakeLock();
     resetOcclusion();
+    resetVoiceNavigationState();
     if (state.gpsWatchId) {
         navigator.geolocation.clearWatch(state.gpsWatchId);
         state.gpsWatchId = null;
@@ -950,14 +999,23 @@ export function computeAndDrawRouteFromGPS(startCoord, buildingId) {
         targetBuildingId = ENTRANCE_OVERRIDES[targetBuildingId];
     }
 
+    // Never route straight through the compound perimeter wall:
+    // If startCoord is outside the actual surveyed polygon, anchor route start to the station's Main Entrance gate!
+    const strictStartPerim = evaluateCampusPerimeter(startCoord, 0);
+    const activeMeta = getActiveStationGpsMeta();
+    const isOutsideActualWall = strictStartPerim.distanceOutsideMeters > 0;
+    const effectiveStart = (isOutsideActualWall && Array.isArray(activeMeta.gateCoords) && activeMeta.gateCoords.length >= 2)
+        ? activeMeta.gateCoords
+        : startCoord;
+
     const entrances = buildingEntrances[targetBuildingId] || [building.coords];
     let bestPath = null;
     let minDistance = Infinity;
 
     entrances.forEach(ent => {
-        const p = findShortestPath(startCoord, ent, roadGraph);
+        const p = findShortestPath(effectiveStart, ent, roadGraph);
         if (p && p.length > 0) {
-            const full = [startCoord, ...p, ent];
+            const full = [effectiveStart, ...p, ent];
             const d = turf.length(turf.lineString(full), { units: 'meters' });
             if (d < minDistance) {
                 minDistance = d;
@@ -966,7 +1024,7 @@ export function computeAndDrawRouteFromGPS(startCoord, buildingId) {
         }
     });
 
-    const routeCoords = cleanRouteCoords(bestPath || [startCoord, building.coords]);
+    const routeCoords = cleanRouteCoords(bestPath || [effectiveStart, building.coords]);
     state.activeFullRouteCoords = routeCoords;
     state.activeRouteCoords = routeCoords;
     lastTrimmedCoord = null;
@@ -1101,8 +1159,11 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
 
     state.lastKnownGPSCoords = userCoord;
 
-    // 3. Smooth 60fps Marker Gliding with Map-Matching (snaps onto active route / campus road within drift radius)
-    const snapRes = snapCoordToRoadOrRoute(userCoord, accuracy);
+    // 3. Smooth 60fps Marker Gliding with Map-Matching (never snap across perimeter wall when outside polygon)
+    const isStrictlyInsidePolygon = perimStatus.distanceOutsideMeters === 0;
+    const snapRes = isStrictlyInsidePolygon
+        ? snapCoordToRoadOrRoute(userCoord, accuracy)
+        : { coord: userCoord, snapped: false, source: 'outside-wall', dist: Infinity };
     const displayCoord = snapRes.coord || userCoord;
     const lerpDuration = filterResult.isStationary ? 300 : Math.min(600, Math.max(350, 1000 / (filterResult.speed + 1)));
     if (!state.userGPSMarker) {
@@ -1119,7 +1180,7 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
             state.userGPSMarker.setPitchAlignment('map');
             state.userGPSMarker.setRotationAlignment('map');
         }
-        animateMarkerTo(displayCoord, lerpDuration);
+        animateMarkerTo(displayCoord, lerpDuration, snapRes.source === 'route');
     }
 
     // 4. Clean GPS accuracy layers (omits oversized polygon radar circle)
@@ -1197,14 +1258,15 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
 
             const shouldTriggerReroute = isFarOffRoute || (state.offRouteCounter >= 2) || (isWalkingAway && state.offRouteCounter >= 2);
 
-            if (shouldTriggerReroute && perimStatus.inside) {
+            if (shouldTriggerReroute && isStrictlyInsidePolygon) {
                 if (nowTime - (state.lastRecalcTime || 0) > 2500) {
                     state.lastRecalcTime = nowTime;
                     state.offRouteCounter = 0;
-    state.arrivalConfirmCounter = 0;
+                    state.arrivalConfirmCounter = 0;
                     state.minDestDistance = actualDistToDest;
                     triggerHapticRecalculate();
                     showMobileToast('🔄 Rerouting path from your location…', 2000);
+                    speakNavInstruction('Rerouting path.', { key: 'reroute', priority: true });
                     computeAndDrawRouteFromGPS(userCoord, targetBuildingId);
                     return;
                 }

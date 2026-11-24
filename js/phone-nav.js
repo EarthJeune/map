@@ -14,7 +14,8 @@ import {
     setPhoneSheetSnap, 
     setPhoneSheetView, 
     showMobileToast, 
-    renderPhoneDirectory 
+    renderPhoneDirectory,
+    showPhoneBuildingDetails
 } from './phone-ui.js';
 import { 
     stopPhoneLiveGPS, 
@@ -23,6 +24,9 @@ import {
 } from './gps.js';
 import { stopOrbit } from './idle.js';
 import { withCooldown } from './ui-guard.js';
+import { speakNavInstruction, resetVoiceNavigationState } from './voice-nav.js';
+
+let lastArrivedBuildingId = null;
 
 // --- Phone Active Route & Steps ---
 export function updatePhoneRouteUI(coords) {
@@ -124,6 +128,17 @@ export function updatePhoneLiveNavUI(currentDist, totalDist, nextStep, remaining
                 ptnhSec.textContent = `Approaching destination`;
             }
         }
+
+        // Mobile Live GPS Voice Guidance (speaks upcoming turn & immediate turn once per step)
+        if (state.isMobileGPSActive && nextStep.text) {
+            const stepKey = `${Math.round(nextStep.at || 0)}:${nextStep.text}`;
+            if (remaining <= 10) {
+                speakNavInstruction(nextStep.text, { key: `now:${stepKey}`, priority: true });
+            } else if (remaining <= 28 && remaining >= 14) {
+                const spokenMeters = Math.max(15, Math.round(remaining / 5) * 5);
+                speakNavInstruction(`In ${spokenMeters} meters, ${nextStep.text}`, { key: `prep:${stepKey}` });
+            }
+        }
     }
 
     // Highlight step in phone list
@@ -201,6 +216,7 @@ export function replayPhoneRoute() {
 }
 
 function _replayPhoneRouteImpl() {
+    document.body.classList.remove('phone-arrival-open');
     clearArrivedCountdown();
     clearRoute();
     if (state.selectedBuildingId) {
@@ -240,6 +256,14 @@ export function showPhoneArrival(buildingOrId, source = null) {
     if (state.walkAnimFrame) cancelAnimationFrame(state.walkAnimFrame);
     state.activeFullRouteCoords = null;
 
+    // Immediately clear any leftover green route tail / dashed connector so nothing sticks out on arrival
+    try {
+        const emptyFC = { type: 'FeatureCollection', features: [] };
+        if (map && map.getSource('route-source')) map.getSource('route-source').setData(emptyFC);
+        if (map && map.getSource('route-traveled-source')) map.getSource('route-traveled-source').setData(emptyFC);
+        if (map && map.getSource('gps-connector-source')) map.getSource('gps-connector-source').setData(emptyFC);
+    } catch (_) { }
+
     const topHud = document.getElementById('phone-top-nav-hud');
     if (topHud) topHud.classList.remove('active');
     const fcc = document.getElementById('floating-camera-controls');
@@ -250,28 +274,39 @@ export function showPhoneArrival(buildingOrId, source = null) {
         building = getBuildingById(buildingOrId) || BUILDING_DIRECTORY.find(b => b.id === buildingOrId);
     }
     const name = building ? building.name : 'Destination';
+    lastArrivedBuildingId = building?.id || (typeof buildingOrId === 'string' ? buildingOrId : state.selectedBuildingId) || null;
 
-    // Show Centered Pop-up Modal
+    // Announce arrival via mobile voice guidance
+    if (isGps) {
+        speakNavInstruction(`You have arrived at ${name}.`, { key: `arrived:${lastArrivedBuildingId || name}`, priority: true });
+    }
+
+    // Show Clean Bottom-Docked Arrival Card (hides overlapping directory sheet behind it)
     const modal = document.getElementById('phone-arrived-modal');
     const titleEl = document.getElementById('pam-title');
     const descEl = document.getElementById('pam-desc');
     const repeatBtn = modal ? (document.getElementById('pam-repeat-btn') || modal.querySelector('.pam-btn-repeat')) : null;
+    const infoBtn = modal ? document.getElementById('pam-info-btn') : null;
     const actionsEl = modal ? (document.getElementById('pam-actions') || modal.querySelector('.pam-actions')) : null;
 
-    if (titleEl) titleEl.textContent = `Arrived at ${name}!`;
+    if (titleEl) titleEl.textContent = name;
     if (descEl) {
         descEl.textContent = isGps
-            ? 'You have reached your destination via live GPS guidance.'
-            : 'You have reached your destination.';
+            ? 'You have arrived at your destination.'
+            : 'Simulated walking route completed.';
     }
 
-    // Strictly suppress Repeat button during Live GPS navigation
+    // Strictly suppress Repeat button during Live GPS navigation; show View Info instead
     if (repeatBtn) {
         repeatBtn.style.display = isGps ? 'none' : 'inline-flex';
     }
-    if (actionsEl) {
-        actionsEl.classList.toggle('is-gps-mode', isGps);
+    if (infoBtn) {
+        infoBtn.style.display = (isGps && lastArrivedBuildingId) ? 'inline-flex' : 'none';
     }
+    if (actionsEl) {
+        actionsEl.classList.toggle('is-gps-mode', isGps && !lastArrivedBuildingId);
+    }
+    document.body.classList.add('phone-arrival-open');
     if (modal) {
         modal.style.display = 'flex';
         modal.classList.add('active');
@@ -280,7 +315,7 @@ export function showPhoneArrival(buildingOrId, source = null) {
     setPhoneSheetView('dir');
     setPhoneSheetSnap('peek');
 
-    // Focus on destination building in 3D tilt, framed above the bottom-docked arrival card
+    // Focus on destination building in 3D tilt, framed cleanly above the arrival card
     if (building && building.coords) {
         map.easeTo({
             center: building.coords,
@@ -293,6 +328,24 @@ export function showPhoneArrival(buildingOrId, source = null) {
     }
 }
 
+export function viewBuildingFromArrival() {
+    const targetId = lastArrivedBuildingId;
+    const modal = document.getElementById('phone-arrived-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('active');
+    }
+    document.body.classList.remove('phone-arrival-open');
+    resetVoiceNavigationState();
+    state.lastArrivalWasGps = false;
+    clearRoute();
+    if (targetId && typeof showPhoneBuildingDetails === 'function') {
+        showPhoneBuildingDetails(targetId);
+    } else {
+        closePhoneArrivalPopup();
+    }
+}
+
 export function closePhoneArrivalPopup() {
     const modal = document.getElementById('phone-arrived-modal');
     if (modal) {
@@ -302,7 +355,12 @@ export function closePhoneArrivalPopup() {
         if (actionsEl) actionsEl.classList.remove('is-gps-mode');
         const repeatBtn = document.getElementById('pam-repeat-btn') || modal.querySelector('.pam-btn-repeat');
         if (repeatBtn) repeatBtn.style.display = '';
+        const infoBtn = document.getElementById('pam-info-btn');
+        if (infoBtn) infoBtn.style.display = 'none';
     }
+    document.body.classList.remove('phone-arrival-open');
+    resetVoiceNavigationState();
+    lastArrivedBuildingId = null;
     state.lastArrivalWasGps = false;
     state.selectedBuildingId = null;
     state.selectedPlotZoneId = null;
@@ -348,6 +406,7 @@ function _replayFromArrivalPopupImpl() {
         const repeatBtn = document.getElementById('pam-repeat-btn') || modal.querySelector('.pam-btn-repeat');
         if (repeatBtn) repeatBtn.style.display = '';
     }
+    document.body.classList.remove('phone-arrival-open');
     clearArrivedCountdown();
     clearRoute();
 
@@ -381,4 +440,5 @@ window.cancelPhoneRoute = cancelPhoneRoute;
 window.showPhoneArrival = showPhoneArrival;
 window.closePhoneArrivalPopup = closePhoneArrivalPopup;
 window.replayFromArrivalPopup = replayFromArrivalPopup;
+window.viewBuildingFromArrival = viewBuildingFromArrival;
 window.donePhoneArrival = donePhoneArrival;

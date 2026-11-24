@@ -696,7 +696,7 @@ export function drawRoute(coords, options = {}) {
 
 
 
-    // Glow layer (Emerald Green Ambience)
+    // Glow layer (Emerald Green Ambience, zoom-scaled)
 
     map.addLayer({
 
@@ -710,11 +710,16 @@ export function drawRoute(coords, options = {}) {
 
             'line-color': '#22c55e',
 
-            'line-width': 18,
+            'line-width': [
+                'interpolate', ['linear'], ['zoom'],
+                16, 16,
+                19, 22,
+                21, 28
+            ],
 
-            'line-opacity': 0.25,
+            'line-opacity': 0.24,
 
-            'line-blur': 0
+            'line-blur': 2
 
         }
 
@@ -722,7 +727,7 @@ export function drawRoute(coords, options = {}) {
 
 
 
-    // High-contrast dark casing layer under green line
+    // Clean deep-emerald casing layer under green line (zoom-scaled)
 
     map.addLayer({
 
@@ -734,11 +739,16 @@ export function drawRoute(coords, options = {}) {
 
         paint: {
 
-            'line-color': '#020617',
+            'line-color': '#052e16',
 
-            'line-width': 14,
+            'line-width': [
+                'interpolate', ['linear'], ['zoom'],
+                16, 12,
+                19, 16,
+                21, 20
+            ],
 
-            'line-opacity': 0.95
+            'line-opacity': 0.92
 
         },
 
@@ -754,7 +764,7 @@ export function drawRoute(coords, options = {}) {
 
 
 
-    // Main core route line (Vibrant green core)
+    // Main core route line (Vibrant emerald core, thicker & zoom-responsive for sunlight readability)
 
     map.addLayer({
 
@@ -768,7 +778,12 @@ export function drawRoute(coords, options = {}) {
 
             'line-color': '#22c55e',
 
-            'line-width': 8,
+            'line-width': [
+                'interpolate', ['linear'], ['zoom'],
+                16, 7.5,
+                19, 10.5,
+                21, 13.5
+            ],
 
             'line-opacity': 1
 

@@ -255,6 +255,40 @@
         line-height: 1.35;
     }
 
+    body.phone-arrival-open #phone-bottom-sheet {
+        opacity: 0 !important;
+        pointer-events: none !important;
+        transform: translateY(100%) !important;
+    }
+
+    .pam-badge-circle {
+        width: 44px;
+        height: 44px;
+        margin: 0 auto 8px;
+        border-radius: 999px;
+        background: rgba(16, 185, 129, 0.16);
+        border: 1.5px solid rgba(52, 211, 153, 0.55);
+        color: #34d399;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 18px rgba(16, 185, 129, 0.25);
+    }
+
+    .pam-kicker {
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        color: #34d399;
+        margin-bottom: 4px;
+    }
+
+    .pam-btn-info {
+        background: rgba(255, 255, 255, 0.09);
+        color: #f8fafc;
+        border: 1px solid rgba(148, 163, 184, 0.28) !important;
+    }
+
     .pam-actions {
         display: grid;
         grid-template-columns: 1fr 1fr;

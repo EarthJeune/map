@@ -107,6 +107,14 @@
         .ctrl-orbit-btn.active, .ctrl-orbit-btn.active .lucide-rotate-3d { color: #ffffff !important; }
         .orbit-toast-icon { color: #a78bfa; }
 
+        /* Mobile-only Voice Directions Mute/Unmute button placed directly under Toggle Orbit */
+        .ctrl-voice-btn { color: #34d399 !important; }
+        .ctrl-voice-btn.is-muted { color: #f87171 !important; opacity: 0.9; }
+        @media (min-width: 769px) {
+            body:not(.phone-mode) .ctrl-voice-group { display: none !important; }
+        }
+        body.kiosk-mode .ctrl-voice-group { display: none !important; }
+
         /* Keep sidebar Botanical Deep-Canopy background consistent even when low-perf-mode disables backdrop blur */
         body.low-perf-mode .sidebar { background: linear-gradient(180deg, #0d1d19 0%, #07100e 100%) !important; }
 
@@ -1164,12 +1172,18 @@
     <div class="phone-arrived-modal-backdrop" id="phone-arrived-modal" style="display: none;">
         <div class="phone-arrived-modal-card">
             <button type="button" class="pam-close-btn" id="pam-exit-btn" aria-label="Exit arrival notification" title="Exit" onclick="closePhoneArrivalPopup()">✕</button>
-            <div class="pam-confetti"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-party-popper" aria-hidden="true"><path d="M5.8 11.3 2 22l10.7-3.79"/><path d="M4 3h.01"/><path d="M22 8h.01"/><path d="M15 2h.01"/><path d="M22 20h.01"/><path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10"/><path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.7-.72 1.22-1.43 1.22H17"/><path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98C9.52 4.9 9 5.52 9 6.23V7"/><path d="M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z"/></svg></div>
-            <div class="pam-title" id="pam-title">Arrived at Destination!</div>
-            <div class="pam-desc" id="pam-desc">You have reached your destination.</div>
+            <div class="pam-badge-circle">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            </div>
+            <div class="pam-kicker">ARRIVED</div>
+            <div class="pam-title" id="pam-title">Destination</div>
+            <div class="pam-desc" id="pam-desc">You have arrived at your destination.</div>
             <div class="pam-actions" id="pam-actions">
                 <button class="pam-btn pam-btn-repeat" id="pam-repeat-btn" onclick="replayFromArrivalPopup()">
                     <span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-rotate-ccw" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></span> Repeat
+                </button>
+                <button class="pam-btn pam-btn-info" id="pam-info-btn" style="display: none;" onclick="viewBuildingFromArrival()">
+                    <span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-info" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span> View Info
                 </button>
                 <button class="pam-btn pam-btn-done" id="pam-done-btn" onclick="closePhoneArrivalPopup()">
                     <span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon lucide-check" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span> Done

@@ -14,6 +14,7 @@ import {
 
 import { STATIONS, getActiveStationDefaultView, getStationIntroViews } from './data/stations.js';
 import { lucideIcon } from './data/icons.js';
+import { isMobileVoiceDevice, isVoiceMuted, toggleVoiceMute } from './voice-nav.js';
 
 import {
     DA_LARES_OUTER_PERIMETER,
@@ -1628,6 +1629,38 @@ class OrbitControl {
     }
 }
 
+// Mobile-Only Voice Directions Mute/Unmute Control (placed directly under Toggle Orbit)
+class VoiceMuteControl {
+    onAdd(map) {
+        this._map = map;
+        this._container = document.createElement('div');
+        this._container.className = 'mapboxgl-ctrl mapboxgl-ctrl-group ctrl-voice-group';
+
+        const muted = isVoiceMuted();
+        const btn = document.createElement('button');
+        btn.className = `mapboxgl-ctrl-icon ctrl-voice-btn${muted ? ' is-muted' : ''}`;
+        btn.type = 'button';
+        btn.setAttribute('aria-pressed', String(!muted));
+        btn.title = muted ? 'Voice Directions Muted (Tap to Unmute)' : 'Voice Directions ON (Tap to Mute)';
+        btn.innerHTML = `<span style="display: inline-flex; align-items: center; justify-content: center;">${lucideIcon(muted ? 'volume-x' : 'volume-2', 16)}</span>`;
+
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            toggleVoiceMute();
+        };
+
+        this._container.appendChild(btn);
+        return this._container;
+    }
+
+    onRemove() {
+        if (this._container && this._container.parentNode) {
+            this._container.parentNode.removeChild(this._container);
+        }
+        this._map = undefined;
+    }
+}
+
 // Height Limit & Metric Scale Control (Includes 75m threshold and limits maximum vertical display to 75m)
 class HeightLimitScaleControl extends mapboxgl.ScaleControl {
     constructor(options = {}) {
@@ -1657,6 +1690,9 @@ if (!window._mapControlsAdded) {
     window._mapControlsAdded = true;
     map.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), 'top-right');
     map.addControl(new OrbitControl(), 'top-right');
+    if (isMobileVoiceDevice()) {
+        map.addControl(new VoiceMuteControl(), 'top-right');
+    }
     map.addControl(new HeightLimitScaleControl(), 'bottom-right');
     map.addControl(new mapboxgl.FullscreenControl({ container: document.documentElement }), 'top-right');
 }
