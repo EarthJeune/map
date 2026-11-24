@@ -358,47 +358,10 @@ const requireDiskGeometryWrite = (stationParam = null, defaultStation = null) =>
                 error: 'Static disk geometry editing is locked in live production (LOCK_STATIC_DISK_EDITORS=1). Edit geometry locally and deploy via Git.'
             });
         }
-        try {
-            const st = String(stationParam || req.query?.station || req.body?.station || defaultStation || 'lares').toLowerCase();
-            const rows = await query(`SELECT require_publish_for_map_editors FROM stations WHERE station_id = ? LIMIT 1`, [st]);
-            const gateOn = Number(rows?.[0]?.require_publish_for_map_editors || 0) === 1;
-            const hasDirectPub = Array.isArray(req.adminUser?.permissions) && req.adminUser.permissions.includes('changes:publish');
-            if (gateOn && !hasDirectPub) {
-                req._mapEditorQueuedForPublish = true;
-                const actor = phase1.formatActorAuditMeta(req.adminUser);
-                const summary = `Map editor update (${req.path}) for DA-${st.toUpperCase()}`;
-                const ins = await query(
-                    `INSERT INTO change_requests (
-                        station_id, target_table, target_id, action, summary,
-                        previous_json, payload_json, status,
-                        submitted_by_email, submitted_by_user_id, submitted_by_name,
-                        actor_base_role, actor_effective_role
-                     ) VALUES (?, 'map_geometry', ?, 'UPDATE', ?, NULL, ?, 'approved', ?, ?, ?, ?, ?)`,
-                    [
-                        st, req.path, summary, JSON.stringify(req.body || {}),
-                        actor.email, actor.userId, actor.displayName,
-                        actor.baseRole, actor.effectiveRole
-                    ]
-                );
-                await query(
-                    `INSERT INTO admin_audit_logs (
-                        admin_username, action, target_table, target_id, summary,
-                        actor_user_id, actor_display_name, actor_base_role, actor_effective_role, acting_label, is_test
-                     ) VALUES (?, 'MAP_EDITOR_QUEUED', 'map_geometry', ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [
-                        actor.email, String(ins.insertId), `Queued ${summary} for Administrator publish`,
-                        actor.userId, actor.displayName, actor.baseRole,
-                        actor.effectiveRole, actor.actingLabel, actor.isTest
-                    ]
-                ).catch(() => {});
-                return res.json({
-                    success: true,
-                    queuedForPublish: true,
-                    changeRequestId: ins.insertId,
-                    message: 'Map editor changes queued for Administrator publish.'
-                });
-            }
-        } catch (_) { }
+        // NOTE: All non-Super-Admin visual editor saves are routed into `change_requests`
+        // with `status = 'pending'` inside `maybeQueueVisualEditorForReview()` (with full
+        // Before/After GeoJSON diff) so the Station Reviewer MUST Approve, Request Revision, or Deny
+        // before an Administrator can Publish Live.
         next();
     }
 ];
@@ -698,10 +661,12 @@ function readLaresBuildingsGeoSafe() {
  */
 async function maybeQueueVisualEditorForReview(req, res, { editorType, stationId, relFilePath, prevGeo, nextGeo }) {
     const user = req.adminUser || {};
-    const effectiveRole = String(user.role || user.baseRole || '').toLowerCase();
-    // STRICT GOVERNANCE: Every save from the 5 Visual Map Editing Tools MUST go to the Station Reviewer
-    // (Approve / Request Revision / Deny) before an Administrator can Publish Live — never bypass straight to published.
-    const mustQueue = true;
+    const effectiveRole = String(user.switchedRole || user.role || user.baseRole || '').toLowerCase();
+    const explicitReview = req.headers['x-submit-for-review'] === '1' || req.body?._submitForReview === true;
+    // Role-aware governance: GIS Editor (including Super Admin acting as GIS Editor via Role Switcher)
+    // ALWAYS submits to Station Reviewer (status = 'pending') to Approve, Request Revision, or Deny.
+    // Super Admin acting as Super Admin can Publish Live directly or choose Submit for Review.
+    const mustQueue = effectiveRole !== 'super_admin' || explicitReview;
     if (!mustQueue) return false;
 
     const cleanNext = {

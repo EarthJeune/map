@@ -346,9 +346,14 @@
         if (!msg || msg.type !== 'IGUIDE_PORTAL_CONTEXT') return;
 
         const shouldForce = Boolean(state.lockedStation) || msg.forceStation === true || !new URLSearchParams(global.location.search).get('station');
-        if (msg.token && msg.token !== state.token) {
-            state.token = msg.token;
-            try { sessionStorage.setItem(TOKEN_KEY, msg.token); } catch (_) {}
+        const roleChanged = Boolean(msg.effectiveRole && msg.effectiveRole !== state.effectiveRole);
+        if ((msg.token && msg.token !== state.token) || roleChanged) {
+            if (msg.token) {
+                state.token = msg.token;
+                try { sessionStorage.setItem(TOKEN_KEY, msg.token); } catch (_) {}
+            }
+            if (msg.effectiveRole) state.effectiveRole = msg.effectiveRole;
+            if (msg.baseRole) state.baseRole = msg.baseRole;
             verifyCurrentToken().then(() => {
                 const forceAfter = Boolean(state.lockedStation) || msg.forceStation === true || !new URLSearchParams(global.location.search).get('station');
                 if (msg.currentStation && forceAfter && !state.lockedStation && typeof state.onForceStation === 'function') {
@@ -375,9 +380,7 @@
     }
 
     function isDirectPublisher() {
-        // Strict Governance: Visual Map Editors ALWAYS submit to Station Reviewer (Approve / Request Revision / Deny)
-        // before Administrator Publish Live — never bypass straight to published.
-        return false;
+        return state.effectiveRole === 'super_admin';
     }
 
     function formatSaveResultMessage(res, liveFallbackMsg) {
