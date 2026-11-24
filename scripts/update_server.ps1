@@ -13,8 +13,8 @@ Write-Host "`n=== iGUIDE Server Update ===" -ForegroundColor Cyan
 Write-Host "[1/4] Pulling latest code from GitHub (master)..." -ForegroundColor Yellow
 git pull origin master
 
-Write-Host "[2/4] Rebuilding & restarting iguide-app container..." -ForegroundColor Yellow
-docker compose --profile production up -d --build iguide-app
+Write-Host "[2/4] Rebuilding & restarting iguide-app + iguide-tunnel containers..." -ForegroundColor Yellow
+docker compose --profile production up -d --build --force-recreate iguide-app iguide-tunnel
 
 Write-Host "[3/4] Running database migrations..." -ForegroundColor Yellow
 Start-Sleep -Seconds 3
