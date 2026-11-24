@@ -3,6 +3,7 @@
 
 import { BUILDING_DIRECTORY, getBuildingById } from './data/buildings.js';
 import { DA_LARES_OUTER_PERIMETER, QARES_MASK, RARES_MASK } from './data/geo.js';
+import { STATIONS } from './data/stations.js';
 import { lucideIcon } from './data/icons.js';
 import { state } from './data/state.js';
 import { map, stopIntroAnimation } from './map-setup.js';
@@ -184,19 +185,66 @@ let activeTouchCount = 0;
 const CAMPUS_GATE_BUFFER_METERS = 35;
 let isOffCampusFallbackActive = false;
 let userDismissedOffCampusPrompt = false;
+let lastOffCampusStationId = null;
+
+export function getActiveStationGpsMeta(stationIdOverride) {
+    const stationId = String(stationIdOverride || state.currentStationId || 'lares').toLowerCase();
+    const st = STATIONS[stationId] || STATIONS.lares;
+    const label = st?.name || `DA-${stationId.toUpperCase()}`;
+
+    // Station Main Entrance Gate / Kiosk coordinates [lng, lat]
+    let gateCoords;
+    if (stationId === 'qares') {
+        gateCoords = (Array.isArray(state.QARES_KIOSK_COORDS) && state.QARES_KIOSK_COORDS.length >= 2)
+            ? state.QARES_KIOSK_COORDS
+            : (st.kioskCoords || [121.3713315, 13.9432268]);
+    } else if (stationId === 'rares') {
+        gateCoords = (Array.isArray(state.RARES_KIOSK_COORDS) && state.RARES_KIOSK_COORDS.length >= 2)
+            ? state.RARES_KIOSK_COORDS
+            : (st.kioskCoords || st.center || [121.34000, 14.57550]);
+    } else if (stationId === 'cares') {
+        gateCoords = st.kioskCoords || st.center || [120.7925, 14.2965];
+    } else {
+        // DA-LARES Main Entrance Gate
+        gateCoords = [121.165745, 13.958380];
+    }
+
+    const fallbackCenter = st.kioskCoords || st.center || gateCoords;
+    return {
+        stationId,
+        label,
+        gateCoords,
+        gateLatLng: `${gateCoords[1]},${gateCoords[0]}`,
+        fallbackCenter
+    };
+}
 
 export function evaluateCampusPerimeter(coord, toleranceMeters = CAMPUS_GATE_BUFFER_METERS) {
     if (!Array.isArray(coord) || coord.length < 2 || isNaN(coord[0]) || isNaN(coord[1])) {
         return { inside: false, distanceOutsideMeters: Infinity };
     }
+    const meta = getActiveStationGpsMeta();
     try {
         const pt = turf.point(coord);
-        const stationId = state.currentStationId || 'lares';
-        const ring = stationId === 'qares'
-            ? (QARES_MASK?.features?.[0]?.geometry?.coordinates?.[1] || DA_LARES_OUTER_PERIMETER)
-            : stationId === 'rares'
-                ? (RARES_MASK?.features?.[0]?.geometry?.coordinates?.[1] || DA_LARES_OUTER_PERIMETER)
-                : DA_LARES_OUTER_PERIMETER;
+        let ring = null;
+        if (meta.stationId === 'qares') {
+            ring = QARES_MASK?.features?.[0]?.geometry?.coordinates?.[1] || null;
+        } else if (meta.stationId === 'rares') {
+            ring = RARES_MASK?.features?.[0]?.geometry?.coordinates?.[1] || null;
+        } else if (meta.stationId === 'lares') {
+            ring = DA_LARES_OUTER_PERIMETER;
+        }
+
+        if (!ring) {
+            // Stations without a surveyed perimeter polygon yet (e.g., DA-CARES): use station center radius
+            const centerPt = turf.point(meta.fallbackCenter);
+            const distFromCenter = turf.distance(pt, centerPt, { units: 'meters' });
+            const radiusM = 450;
+            return {
+                inside: distFromCenter <= radiusM + toleranceMeters,
+                distanceOutsideMeters: Math.max(0, distFromCenter - radiusM)
+            };
+        }
 
         const poly = turf.polygon([ring]);
         if (turf.booleanPointInPolygon(pt, poly)) {
@@ -209,7 +257,7 @@ export function evaluateCampusPerimeter(coord, toleranceMeters = CAMPUS_GATE_BUF
             distanceOutsideMeters: distMeters
         };
     } catch (e) {
-        const fallbackCenter = turf.point(state.KIOSK_COORDS || [121.1665, 13.9582]);
+        const fallbackCenter = turf.point(meta.fallbackCenter);
         const d = turf.distance(turf.point(coord), fallbackCenter, { units: 'meters' });
         return { inside: d <= 450, distanceOutsideMeters: d };
     }
@@ -982,7 +1030,15 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
         });
     }
 
-    // Off-campus perimeter check: prevent floating marker / camera pan into black mask outside DA-LARES
+    // Off-campus perimeter check: prevent floating marker / camera pan into black mask outside active station
+    const activeMeta = getActiveStationGpsMeta();
+    if (lastOffCampusStationId && lastOffCampusStationId !== activeMeta.stationId) {
+        isOffCampusFallbackActive = false;
+        userDismissedOffCampusPrompt = false;
+        dismissOffCampusPromptCard(false);
+    }
+    lastOffCampusStationId = activeMeta.stationId;
+
     if (!perimStatus.inside) {
         state.lastKnownGPSCoords = userCoord;
         if (state.userGPSMarker) {
@@ -995,11 +1051,7 @@ export function handleGPSPositionUpdate(pos, targetBuildingId) {
             const distLabel = perimStatus.distanceOutsideMeters >= 1000
                 ? `${(perimStatus.distanceOutsideMeters / 1000).toFixed(1)} km`
                 : `${Math.round(perimStatus.distanceOutsideMeters)} m`;
-            const stationLabel = state.currentStationId === 'qares'
-                ? 'DA-QARES'
-                : state.currentStationId === 'rares'
-                    ? 'DA-RARES'
-                    : 'DA-LARES';
+            const stationLabel = activeMeta.label;
             showMobileToast(`📍 Outside ${stationLabel} (${distLabel} away). Showing campus route from Kiosk — live GPS activates when you enter.`, 4500);
             const kCoords = computeRouteFromKiosk(targetBuildingId);
             state.activeFullRouteCoords = kCoords;
@@ -1311,10 +1363,9 @@ export function showOffCampusPromptCard(userCoord, distOutsideMeters, buildingId
         card.className = 'phone-gps-permission-card';
         document.body.appendChild(card);
     }
-    const isQares = state.currentStationId === 'qares';
-    const stationLabel = isQares ? 'DA-QARES' : 'DA-LARES';
-    // Main Entrance Gate coordinates: DA-LARES [121.165745, 13.958380], DA-QARES [121.3713315, 13.9432268]
-    const gateLatLng = isQares ? '13.9432268,121.3713315' : '13.958380,121.165745';
+    const activeMeta = getActiveStationGpsMeta();
+    const stationLabel = activeMeta.label;
+    const gateLatLng = activeMeta.gateLatLng;
     const originParam = (Array.isArray(userCoord) && userCoord.length >= 2)
         ? `&origin=${userCoord[1]},${userCoord[0]}`
         : '';
