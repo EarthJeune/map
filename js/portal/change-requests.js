@@ -2639,8 +2639,10 @@ async function renderChangeRequestWorkspace(container, { isReviewerView = false 
         pending: cachedRequests.filter(r => r.status === 'pending').length,
         rejected: cachedRequests.filter(r => r.status === 'rejected').length,
         denied: cachedRequests.filter(r => r.status === 'denied').length,
+        withdrawn: cachedRequests.filter(r => r.status === 'withdrawn').length,
         approved: cachedRequests.filter(r => r.status === 'approved').length,
         published: cachedRequests.filter(r => r.status === 'published').length,
+        undone: cachedRequests.filter(r => r.status === 'undone').length,
         all: cachedRequests.length
     };
 
@@ -2662,6 +2664,8 @@ async function renderChangeRequestWorkspace(container, { isReviewerView = false 
         ...(counts.denied > 0 ? [{ id: 'denied', label: 'Denied (Closed)', count: counts.denied, urgent: false }] : []),
         { id: 'approved', label: 'Approved (Ready to Publish)', count: counts.approved, urgent: counts.approved > 0 && hasPermission('changes:publish') },
         { id: 'published', label: 'Published', count: counts.published, urgent: false },
+        ...(counts.withdrawn > 0 ? [{ id: 'withdrawn', label: 'Withdrawn', count: counts.withdrawn, urgent: false }] : []),
+        ...(counts.undone > 0 ? [{ id: 'undone', label: 'Undone', count: counts.undone, urgent: false }] : []),
         { id: 'all', label: 'All History', count: counts.all, urgent: false }
     ];
 
